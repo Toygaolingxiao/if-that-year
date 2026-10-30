@@ -1,67 +1,224 @@
-// 《如果那年》事件数据 v0.1 —— 原型用小事件库（目标正式版见 DESIGN-BOOK §6.2）
-// 结构: routes 开局路线 / forks 大分岔(按年龄) / events 年度事件池 / shadows 影子剪影
+// 《如果那年》v0.2 内容数据 — 重设计后版本（见 docs/CRITIQUE-AND-REDESIGN.md）
+// 变化要点：
+//  - 分岔选择写入状态标记（flags），事件可按 require/forbid 标记与 route 限定触发——选择开始有后果（回响事件）。
+//  - 年度事件扩容并加入「带小选择的事件」：选完当场给一句回响（echo），不是只动数字。
+//  - 数值再平衡：压低关系/成长的无脑正向通胀，金钱有真实起伏。
+//  - 影子：每阶段 2 个变体 + 独立的「代价」句，结局揭晓的不再是 50 岁看过的那句。
+//  - 平年微文本池（MICRO）：只写日常，不升华、不总结（COPY-AND-AI 第 7 条）。
 window.GAME_DATA = {
   routes: [
-    { id: "bigcity", name: "大城市 · 大厂", desc: "稳定，贵，远。", stats: { money: 12, growth: 10, freedom: -6, relation: -4, health: -2 } },
-    { id: "abroad", name: "出国 · 读研", desc: "再读三年，赌一个更大的世界。", stats: { money: -6, growth: 16, freedom: 8, relation: -6, health: 0 } },
-    { id: "hometown", name: "回家乡 · 体制内", desc: "离父母 20 分钟，离野心有点远。", stats: { money: 2, growth: -4, freedom: 2, relation: 14, health: 6 } },
-    { id: "startup", name: "创业 / 自由职业", desc: "没人管你，也没人给你发工资。", stats: { money: -4, growth: 12, freedom: 16, relation: -2, health: -4 } },
-    { id: "gap", name: "先停一年", desc: "所有人都会问你：这一年你干嘛去了？", stats: { money: -8, growth: 4, freedom: 14, relation: 2, health: 8 } }
+    { id: "corp", name: "去大城市，进大厂", desc: "宿舍要退了。行李箱里是四年的书，电脑包里是简历。工资卡下个月开始进账，房租也开始扣。", stats: { money: 8, growth: 10, freedom: -4, health: -4 } },
+    { id: "home", name: "回家乡，进体制内", desc: "离父母 20 分钟，离野心有点远。饭桌上能多一副碗筷，周末不用赶车。", stats: { relation: 8, health: 6, freedom: 2, money: -4, growth: -4 } },
+    { id: "abroad", name: "出国，从头开始", desc: "语言还没那么利索，箱子里塞了半箱子药和一包火锅底料。落地那天，谁也不认识你。", stats: { growth: 10, freedom: 8, relation: -8, money: -6 } },
+    { id: "study", name: "继续读下去", desc: "同学开始领工资了，你的账户还是助学金和家教费。图书馆闭馆音乐，你听得比谁都熟。", stats: { growth: 10, money: -10, freedom: 4 } },
+    { id: "gap", name: "先停一年", desc: "没有 offer，没有课表。先去看看别的生活长什么样，再决定自己要哪种。这个决定，你得跟家里解释很多遍。", stats: { freedom: 12, health: 4, money: -8, growth: -2, relation: -2 } },
   ],
-  // 影子剪影: 按未选路线给片段, 在 30/40/50 岁瞥视时按年龄段取
-  shadows: {
-    bigcity: ["在上海买了房，还在还贷", "升到经理，周末经常在加班", "孩子上了小学，他说想慢一点了"],
-    abroad: ["留在国外定居了", "在研究所工作，假期才回国", "父母去探亲，住了一个月"],
-    hometown: ["在县城当中学老师", "有两个孩子，周末去钓鱼", "陪父亲把老房子翻修了"],
-    startup: ["公司活下来了，不大", "搬了三次办公室，还在折腾", "把公司卖了，正在想下一步"],
-    gap: ["旅行一年后去做了完全不同的工作", "那一年拍的照片，后来办了个小展", "他说那一年是他最不后悔的选择"]
-  },
+  // 分岔：choice.set 写入状态标记，后续回响事件按标记触发
   forks: [
-    { age: 25, title: "25 岁 · 第一次动摇", text: "工作两年，你发现日子和当初想的不太一样。", choices: [
-      { label: "咬牙熬资历", effects: { money: 6, growth: 6, health: -4, freedom: -4 } },
-      { label: "跳槽换个活法", effects: { money: 2, growth: 4, freedom: 6, health: 0 } },
-      { label: "下班后学新东西", effects: { growth: 10, freedom: -2, health: -2 } } ] },
-    { age: 28, title: "28 岁 · 回不回老家", text: "老同学在老家安顿下来。深夜你第很多次想：如果当年选了另一条呢？", choices: [
-      { label: "留下，继续闯", effects: { money: 6, growth: 6, relation: -4 } },
-      { label: "回去，重新开始", effects: { money: -6, relation: 12, health: 6, freedom: 2 } },
-      { label: "先拖着，再看看", effects: { health: -4, freedom: -4 } } ] },
-    { age: 31, title: "31 岁 · 婚与不婚", text: "身边的人陆续结婚。你们谈了很久，没有标准答案，只有你们的日子。", choices: [
-      { label: "结婚成家", effects: { relation: 14, money: -6, freedom: -6 } },
-      { label: "先不结，同行一段", effects: { relation: 6, freedom: 6 } },
-      { label: "一个人也很好", effects: { freedom: 10, relation: -6, growth: 4 } } ] },
-    { age: 35, title: "35 岁 · 要不要孩子", text: "这不是一道对错题。你们算了钱，算了时间，也算了心。", choices: [
-      { label: "要，迎接新成员", effects: { relation: 12, money: -10, health: -4, freedom: -8 } },
-      { label: "不要，把日子过给自己", effects: { money: 8, freedom: 10, relation: -2 } },
-      { label: "顺其自然", effects: { relation: 4, freedom: 2 } } ] },
-    { age: 38, title: "38 岁 · 买房关口", text: "房价和你的存款赛跑。你站在售楼处门口，站了很久。", choices: [
-      { label: "上车，背上贷款", effects: { money: -12, relation: 4, health: -4 } },
-      { label: "不买，租着住", effects: { money: 6, freedom: 8 } },
-      { label: "去更小的城市买", effects: { money: -4, freedom: 4, growth: -4 } } ] },
-    { age: 42, title: "42 岁 · 行业变冷", text: "行业忽然变冷。比你小十岁的人，开始面试你。", choices: [
-      { label: "转管理，守住阵地", effects: { money: 6, growth: 4, health: -6 } },
-      { label: "转行，从头学起", effects: { money: -8, growth: 12, freedom: 6 } },
-      { label: "降薪换清闲", effects: { money: -8, health: 10, freedom: 8 } } ] },
-    { age: 47, title: "47 岁 · 中年分岔", text: "你要不要从做了二十年的生活里，抽身出来一点？", choices: [
-      { label: "培养一个能陪老去的爱好", effects: { health: 8, freedom: 6, growth: 4 } },
-      { label: "再拼一次大的", effects: { money: 8, growth: 8, health: -8 } },
-      { label: "多陪陪父母", effects: { relation: 12, money: -4 } } ] },
-    { age: 52, title: "52 岁 · 照护与自己", text: "父母老了，你也开始体检单上见红字。日子要重新排优先级。", choices: [
-      { label: "接父母同住", effects: { relation: 12, health: -4, freedom: -6 } },
-      { label: "请人照护，自己常回去", effects: { money: -8, relation: 6 } },
-      { label: "先把自己身体管起来", effects: { health: 12, money: -4 } } ] }
+    { age: 25, title: "25 岁 · 第一份工作的第三年", text: "新鲜劲过去了，每天做的事开始重复。你站在一个小分岔口。",
+      choices: [
+        { label: "跳槽，换个活法", effects: { growth: 6, money: 4, freedom: 2, relation: -2 }, set: "job_hop" },
+        { label: "留下，把手头的事做深", effects: { growth: 4, money: 2, health: -2 }, set: "stay_put" },
+        { label: "工作照旧，下班折腾点自己的事", effects: { freedom: 5, growth: 3, health: -3 }, set: "side_start" },
+      ] },
+    { age: 28, title: "28 岁 · 回不回老家", text: "过年回家，母亲包饺子时说起，邻居家的孩子考回了县里。夜里你躺在小时候的床上，天花板还是那块天花板。你第无数次想：如果当年选了另一条呢？",
+      choices: [
+        { label: "认真考虑回去，先打听好岗位", effects: { relation: 5, freedom: -2, money: -2 }, set: "saw_home" },
+        { label: "不回。把现在的城市过成家", effects: { growth: 3, freedom: 3, relation: -2 }, set: "stayed_city" },
+        { label: "不回，但把探亲假用满，一年回四趟", effects: { relation: 4, money: -3 }, set: "often_back" },
+      ] },
+    { age: 31, title: "31 岁 · 感情的路口", text: "身边的人陆陆续续定下来。有人给你介绍，也有人问你到底想怎么样。",
+      choices: [
+        { label: "认真谈一场，往结婚的方向走", effects: { relation: 6, freedom: -4 }, set: "partner" },
+        { label: "一个人也很好，先把自己过明白", effects: { freedom: 6, growth: 3, relation: -3 }, set: "single_ok" },
+        { label: "不排斥，也不将就，慢慢来", effects: { relation: 3, freedom: 2 }, set: "slow_love" },
+      ] },
+    { age: 33, title: "33 岁 · 住在哪儿", text: "房租又涨了。中介的朋友圈里，全是「最后的机会」。",
+      choices: [
+        { label: "咬牙买一套，先上车", effects: { money: -8, freedom: -4, health: -2 }, set: "bought_house" },
+        { label: "继续租，把钱留在手里", effects: { money: 4, freedom: 4, relation: -1 }, set: "renting" },
+        { label: "搬去离家人近的地方住", effects: { relation: 5, money: 2, growth: -2 }, set: "near_family" },
+      ] },
+    { age: 38, title: "38 岁 · 要不要孩子", text: "这个问题从「以后的事」，变成了「就这几年的事」。",
+      choices: [
+        { label: "要。日子会变样，心里有数", effects: { relation: 7, money: -6, freedom: -6, health: -2 }, set: "has_kid" },
+        { label: "不要。两个人的日子也完整", effects: { freedom: 6, money: 4, relation: -2 }, set: "no_kid" },
+        { label: "再等等，看看身体和钱包", effects: { health: -2, money: 2 }, set: "undecided_kid" },
+      ] },
+    { age: 44, title: "44 岁 · 中年的岔路", text: "往上看，天花板好像就在头顶；往旁边看，路还很多，就是每条都费劲。",
+      choices: [
+        { label: "搞个副业，给自己留条后路", effects: { money: 5, growth: 4, health: -4, freedom: -2 }, set: "side_job" },
+        { label: "稳住主业，把身体找回来", effects: { health: 6, money: 1, growth: -1 }, set: "steady_job" },
+        { label: "主动降速，钱少点就少点", effects: { freedom: 6, health: 4, money: -5 }, set: "less_work" },
+      ] },
+    { age: 52, title: "52 岁 · 父母需要人了", text: "父亲住院的消息是半夜来的。手术不大，但医生说，以后身边离不了人。",
+      choices: [
+        { label: "调整工作，自己多回去陪", effects: { relation: 7, money: -4, freedom: -3, health: -2 }, set: "care_self" },
+        { label: "请靠谱的护工，自己出钱出力协调", effects: { money: -5, relation: 3 }, set: "care_hired" },
+        { label: "和兄弟姐妹排班，一人一段", effects: { relation: 5, freedom: -2 }, set: "care_rotate" },
+      ] },
+    { age: 58, title: "58 岁 · 退还是不退", text: "单位在谈弹性退休。退了，时间全是自己的；不退，日子还有个框架撑着。",
+      choices: [
+        { label: "退。把欠自己的时间还给自己", effects: { freedom: 8, health: 3, money: -3 }, set: "retired_full" },
+        { label: "返聘几年，慢慢交棒", effects: { money: 5, growth: 2, freedom: -3 }, set: "rehire" },
+        { label: "半退，去做点不挣钱但喜欢的事", effects: { freedom: 5, relation: 3, growth: 2 }, set: "slow_life" },
+      ] },
   ],
+  // 年度事件：可选 route（路线专属）/ require（需持有标记）/ forbid（持有标记则不出现）/ choices（小选择+回响）
   events: [
-    { min: 23, max: 30, text: "项目上线那晚你睡在公司。奖金到账时，你给家里换了台冰箱。母亲说：冰箱很好，就是你过年能回来吗。", effects: { money: 5, health: -3 } },
-    { min: 23, max: 40, text: "父亲体检有个指标异常，要复查。那一周，你什么选择题都做不好。", effects: { relation: 4, health: -2 } },
-    { min: 24, max: 35, text: "你在异乡的超市里学会做家乡菜。视频那头，父亲的头发白了一大半。", effects: { relation: 3, growth: 2 } },
-    { min: 26, max: 45, text: "你带的小团队第一次拿了奖。回家路上你买了一束花，没什么理由。", effects: { growth: 5, health: 2 } },
-    { min: 30, max: 50, text: "老同学聚会。有人升了总监，有人回了老家，有人正在离。你们都没说自己过得好不好。", effects: { relation: 4 } },
-    { min: 32, max: 55, text: "你开始失眠，又开始跑步。身体用它的方式提醒你排顺序。", effects: { health: 5 } },
-    { min: 34, max: 48, text: "账上第一次有了一笔像样的存款。你盯着数字看了很久，想起 22 岁宿舍退掉的那天。", effects: { money: 7 } },
-    { min: 36, max: 58, text: "母亲学会用视频通话了。她举着手机给你看院子里的花，花比人清楚。", effects: { relation: 5 } },
-    { min: 40, max: 60, text: "你把父母接来住了一阵。家里变挤了，晚饭变热闹了，你的睡眠变差了。三件事都是真的。", effects: { relation: 6, health: -3 } },
-    { min: 45, max: 64, text: "年轻同事问你职业建议。你说了一半，停住——你其实也不确定。", effects: { growth: 3 } },
-    { min: 50, max: 64, text: "你重拾年轻时放下的相机/琴/球拍。手生了，心是热的。", effects: { health: 4, freedom: 4 } },
-    { min: 23, max: 64, text: "平平常常的一年。没有大事发生。后来你才知道，这样的一年最难得。", effects: { health: 2, relation: 2 } }
-  ]
+    { id: "e_dish", min: 23, max: 34, forbidRoute: "home", text: "你在异乡的超市里学会做家乡菜。盐放多了，凑合吃，也算一顿。", effects: { health: 2, relation: 1 } },
+    { id: "e_video", min: 24, max: 46, text: "和父母视频。母亲把镜头对着新买的沙发，父亲在旁边报菜价，像汇报工作。", effects: { relation: 2 } },
+    { id: "e_saving", min: 24, max: 40, text: "工资到账，你先划走一笔存起来。剩下的日子，咖啡就改成自己冲。", effects: { money: 3, freedom: -1 } },
+    { id: "e_rent", min: 24, max: 40, text: "房东说下季度涨租，两百块。你把这事在备忘录里记了一行。",
+      choices: [
+        { label: "认了，懒得搬", effects: { money: -3 }, echo: "那一年你学会了：有些钱是花在「不动」上的。" },
+        { label: "周末看房，搬远一点", effects: { money: 2, health: -2, freedom: 1 }, echo: "新住处远了二十分钟地铁，房租省下的钱，你给自己买了盏台灯。" },
+      ] },
+    { id: "e_wedding", min: 26, max: 38, text: "老同学结婚，你去了。红包掏出去的时候，心里算了一下这个月的账。",
+      choices: [
+        { label: "红包给足，人也到场", effects: { money: -3, relation: 3 }, echo: "新郎敬酒时抱了你一下，说：还是你们几个靠谱。" },
+        { label: "红包随份子，人就不去了", effects: { money: -1, relation: -1 }, echo: "你在家刷到了婚礼视频，新娘笑得很开心。你关掉手机，屋里很安静。" },
+      ] },
+    { id: "e_class", min: 24, max: 50, text: "夜里的时间空出来一块，你盯着它看了几天。",
+      choices: [
+        { label: "报个班，学点新东西", effects: { growth: 4, money: -2, health: -1 }, echo: "班里最小的同学 19 岁，管你叫哥/姐。你们后来还真成了朋友。" },
+        { label: "什么都不报，早点睡", effects: { health: 3, freedom: 1 }, echo: "那阵子你睡得很好，梦里都没什么事。" },
+      ] },
+    { id: "e_dinner", min: 25, max: 45, text: "同事离职，散伙饭吃到很晚。出租车上你们说保持联系，后来联系的是朋友圈的点赞。", effects: { relation: 1 } },
+    { id: "e_reunion", min: 30, max: 45, text: "同学聚会。有人在带娃，有人在带团队，有人什么都不想带，只想早点回家。", effects: { relation: 2, growth: 1 } },
+    { id: "e_invest", min: 30, max: 50, text: "跟风买的那笔理财，跌了。你盯着账户看了很久，最后关掉页面，去煮了碗面。",
+      choices: [
+        { label: "割肉出来，再也不碰", effects: { money: -4, growth: 1 }, echo: "学费交了。你后来跟人说起，只说「买过教训」。" },
+        { label: "放着不动，就当存了定期", effects: { money: -1, health: -1 }, echo: "它在你账户里躺了很多年，涨涨跌跌，像另一个你：不声不响，也没消失。" },
+      ] },
+    { id: "e_parents_check", min: 35, max: 55, text: "你给父母约了全面体检，陪他们跑了一天医院。报告出来，几项指标要复查。", effects: { relation: 2, money: -2, health: -1 } },
+    { id: "e_house_watch", min: 32, max: 48, text: "你关注的楼盘又涨了。你把计算器按了一遍，首付、月供、剩下的生活费，一项项对。", effects: { health: -1, growth: 1 } },
+    { id: "e_reshuffle", min: 35, max: 50, text: "公司架构调整，你的部门被拆开重组。新工位在窗边，就是离茶水间远了点。",
+      choices: [
+        { label: "主动争取想去的组", effects: { growth: 3, freedom: 1 }, echo: "你头一回为这种事开口。说完发现，也没那么难。" },
+        { label: "随安排，先看看", effects: { health: 1, growth: -1 }, echo: "新组里有个老同事，你们中午开始搭伙吃饭。" },
+      ] },
+    { id: "e_mentor", min: 38, max: 55, text: "带过你的前辈退休了。告别饭上他说：别光顾着往前跑，偶尔也看看谁还在旁边。", effects: { relation: 2, growth: 1 } },
+    { id: "e_body", min: 32, max: 58, text: "体检报告上有两个箭头朝上。医生说，没大事，但得当回事。",
+      choices: [
+        { label: "办了张卡，开始规律锻炼", effects: { health: 5, money: -1, freedom: -1 }, echo: "头一个月最难。后来跑步机旁边的大爷成了你的固定搭子。" },
+        { label: "先把报告收进抽屉", effects: { health: -4 }, echo: "抽屉关上的声音很轻。你也没再想起它——直到下一次体检。" },
+      ] },
+    { id: "e_friendkid", min: 30, max: 45, text: "朋友的孩子满月，你包了红包去喝喜酒。回来的路上，你想了想自己的安排。", effects: { relation: 1, money: -1 } },
+    { id: "e_funeral", min: 48, max: 64, text: "一位老同学走了，走得很突然。葬礼上大家约好每年聚一次。第二年，群里没人再提。", effects: { relation: 2, health: -2 } },
+    { id: "e_teach", min: 52, max: 64, text: "社区开了个小班，请你去给年轻人讲讲你这行。你讲了两个小时，超时了，没人走。", effects: { growth: 2, relation: 2 } },
+    { id: "e_photos", min: 55, max: 64, text: "整理旧硬盘，翻到年轻时的照片。那时候的你，眼睛里全是打算。", effects: { freedom: 2, growth: 1 } },
+    { id: "e_trip", min: 56, max: 64, text: "你请了个长假，去了个惦记很多年的地方。风很大，饭很咸，照片拍糊了三张。",
+      choices: [
+        { label: "慢慢逛，不赶景点", effects: { freedom: 3, health: 2, money: -2 }, echo: "你在海边坐了一下午，什么也没想明白，但心情很好。" },
+        { label: "把行程排满，一个不落", effects: { freedom: 2, health: -2, money: -2 }, echo: "回来你跟朋友说：都去了。也确实，都去了。" },
+      ] },
+    { id: "e_bonus", min: 26, max: 45, text: "年终奖发下来，比预想的多一点。你请自己吃了顿好的，剩下的存了起来。", effects: { money: 4, health: 1 } },
+    { id: "e_refund", min: 28, max: 55, text: "个税汇算，退回来一笔不大不小的钱。像在旧外套口袋里摸到的零钱，只是数额像样些。", effects: { money: 2 } },
+    { id: "r_corp_launch", route: "corp", min: 23, max: 40, text: "项目上线那晚你睡在公司。凌晨四点数据跑通，你趴在桌上睡了两个小时，脖子落了枕。", effects: { growth: 3, money: 2, health: -3 } },
+    { id: "r_corp_talk", route: "corp", min: 30, max: 48, text: "行业会上让你讲二十分钟。讲完有人来加微信，说：你们那套打法，我们学不来。", effects: { growth: 3, relation: 1 } },
+    { id: "r_home_renovate", route: "home", min: 28, max: 45, text: "老家房子翻修，你请假回去盯了半个月。工人是熟人介绍的，活干得不快，茶倒是没断过。", effects: { relation: 2, money: -3, health: -1 } },
+    { id: "r_home_dinner", route: "home", min: 25, max: 50, text: "镇上办事，饭桌上坐了一圈熟人。你发现小时候觉得天大的事，现在都是下酒的话。", effects: { relation: 2 } },
+    { id: "r_abroad_exam", route: "abroad", min: 23, max: 35, text: "语言考试前一晚，你在出租屋里对着墙自言自语。楼下便利店的店员，已经能听懂你的口音了。", effects: { growth: 3, health: -1 } },
+    { id: "r_abroad_pr", route: "abroad", min: 30, max: 50, text: "永住手续批下来那天，你去吃了顿好的。服务员问要不要庆祝一下，你说，不用，就和平常一样。", effects: { freedom: 3, relation: 1, money: -2 } },
+    { id: "r_study_reject", route: "study", min: 23, max: 32, text: "投稿被拒，审稿意见写了整整两页。你在实验室坐到保安来催，才把意见又看了一遍。", effects: { growth: 3, health: -2 } },
+    { id: "r_study_student", route: "study", min: 32, max: 50, text: "你带的学生第一次在组会上讲清楚了自己的课题。你在后面听着，想起自己第一次讲的那回。", effects: { growth: 3, relation: 2 } },
+    { id: "r_gap_work", route: "gap", min: 23, max: 30, text: "打工换宿的那家店，老板娘教你认山里的菌子。哪种能吃，哪种要命，她说得比课本清楚。", effects: { health: 2, freedom: 2, growth: 1 } },
+    { id: "r_gap_print", route: "gap", min: 30, max: 55, text: "你把停年时拍的照片洗了出来，贴在书桌对面。忙起来抬头看一眼，还行。", effects: { freedom: 2, health: 1 } },
+    { id: "c_saw_home", require: "saw_home", min: 31, max: 45, text: "当年你认真打听过的那个岗位，后来被老同学的妹妹考上了。她朋友圈里的县城生活，慢，但也齐全。你看了两眼，关掉了。", effects: { relation: 1, growth: 1 } },
+    { id: "c_stayed", require: "stayed_city", min: 33, max: 50, text: "末班地铁上，你认出了刚来这座城市时住的那一站。窗外广告牌换了十几轮，你还在车上。", effects: { freedom: 1, growth: 1 } },
+    { id: "c_often_back", require: "often_back", min: 32, max: 52, text: "售票员都眼熟你了。这一年你回了四趟家，最短的一趟只待了一个晚上，陪母亲去复查。", effects: { relation: 2, money: -2, health: -1 } },
+    { id: "c_has_kid", require: "has_kid", min: 45, max: 60, text: "孩子第一次自己出远门。你把注意事项打了个清单，临出门又删了一半——剩下的，让路上教吧。", effects: { relation: 3, freedom: 1 } },
+    { id: "c_no_kid", require: "no_kid", min: 45, max: 60, text: "朋友们忙着给孩子张罗的时候，你和另一半开车去了趟远方。车里放着年轻时的歌单。", effects: { freedom: 3, relation: 1, money: -2 } },
+    { id: "c_care_self", require: "care_self", min: 55, max: 64, text: "陪护那阵子过去之后，你和父亲的关系变了。他开始跟你说他年轻时候的事，有些你从没听过。", effects: { relation: 3, health: -1 } },
+    { id: "c_care_hired", require: "care_hired", min: 55, max: 64, text: "护工阿姨发来一段视频：父亲今天自己走了一圈。她说，老人家念叨你呢。你把视频看了三遍。", effects: { relation: 2, money: -1 } },
+    { id: "c_house", require: "bought_house", min: 40, max: 55, text: "你提前还了一笔房贷。柜员说可以少还不少利息。你走出银行，脚步比进去时轻。", effects: { money: 3, freedom: 1 } },
+    { id: "c_rent", require: "renting", min: 40, max: 55, text: "房东要卖房，你又搬了一次家。东西越搬越少，最后只剩六个箱子。你想，这样也挺好。", effects: { freedom: 2, health: -1 } },
+    { id: "c_side", require: "side_job", min: 50, max: 62, text: "副业那摊子事，居然慢慢成了气候。不大，但每个月都有一笔钱，是睡着觉也在进的。", effects: { money: 3, growth: 2 } },
+    { id: "c_partner", require: "partner", min: 40, max: 58, text: "你们吵了一架，为的还是那些老问题。冷战两天，最后是对方先把热水递了过来。日子就是这么续上的。", effects: { relation: 2, freedom: -1 } },
+    { id: "c_single", require: "single_ok", min: 40, max: 58, text: "一个人过年，你给自个儿做了四个菜。电视里放着春晚，你吃得很慢，觉得这样也不差。", effects: { freedom: 2, health: 1 } },
+  ],
+  crisis: {
+    health: { threshold: 30, title: "身体先说话了", text: "体检之外，身体直接给了信号：爬三楼要歇两次，觉也睡不整。你得做个决定。",
+      choices: [
+        { label: "认真治，认真练，把日程让出来", effects: { health: 10, money: -3, freedom: -2 }, echo: "半年后你再爬那栋楼，一口气上去了。你在楼梯间站了一会儿，有点想笑。" },
+        { label: "先拖着，手头的事放不下", effects: { health: -6, money: 2 }, echo: "它没再大声说话，只是把声音调小，一直在。" },
+      ] },
+    money: { threshold: 20, title: "钱紧的月份", text: "几笔大的支出撞在一起，账户见了底。这个月，得有个过法。",
+      choices: [
+        { label: "砍掉一半开支，难看就难看", effects: { money: 6, freedom: -3, relation: -1 }, echo: "你请朋友在家吃饭，自己下的厨。他们说，比外面强。" },
+        { label: "接点私活，把窟窿先堵上", effects: { money: 8, health: -4, freedom: -2 }, echo: "窟窿堵上了。那两个月的觉，你后来一直没补回来。" },
+      ] },
+    relation: { threshold: 25, title: "很久没人说话的周末", text: "周末两天，你的手机只亮过两次：一条广告，一条天气预报。",
+      choices: [
+        { label: "主动约老朋友出来", effects: { relation: 7, money: -1 }, echo: "他说：我也正想找你呢。你们在小馆子里坐到打烊。" },
+        { label: "就这样吧，一个人待着", effects: { freedom: 3, relation: -3, health: -1 }, echo: "安静是安静的。只是后来你发现，安静也会积灰。" },
+      ] },
+  },
+  micro: [
+    "楼下的桂花开了，你路过时站了一会儿。",
+    "这一年没什么大事。工资照发，饭照吃，觉照睡。",
+    "你换了个手机壳。旧的那个，边都磨白了。",
+    "楼道里的声控灯坏了半个月，你摸黑上了半个月的楼，后来它自己又好了。",
+    "母亲寄来一箱橘子，吃到最后两个，坏了。你扔的时候有点舍不得。",
+    "这一年你学会了做三道新菜，都是跟着视频学的，盐口也对了。",
+    "雨下得很大的一个晚上，你在家把衣柜整理了一遍。",
+    "你常去的那家小店换了招牌，老板没换，面也没换味道。",
+  ],
+  shadows: {
+    corp: { name: "去大城市进大厂的你",
+      teaser: ["升了一级，工位从中间挪到了窗边。", "带了个小团队，开始学着开会不发火。", "成了别人嘴里的「前辈」，聚餐时坐主位旁边。"],
+      stages: [
+        ["在大厂站稳了，工资涨了两回，觉卖出去了一些。", "项目上线那晚是在公司过的夜，第二天照常打卡。"],
+        ["带了个小团队，开始学着开会不发火。", "工资卡上的数字好看，就是到家的时间越来越晚。"],
+        ["成了别人嘴里的「前辈」，聚餐时坐主位旁边。", "买了房，阳台对着一所学校的操场。"],
+      ],
+      cost: "代价也清楚：那些年父母老去的速度，大多是在电话里听说的。" },
+    home: { name: "回家乡的你",
+      teaser: ["在县里站稳了，周末能陪父母吃饭。", "孩子在院子里长大，下班能赶上晚饭。", "镇上的人都认得，办事很少排队。"],
+      stages: [
+        ["在县里站稳了，晚饭基本能回家吃。", "单位分了房，不大，离父母十分钟。"],
+        ["孩子在院子里长大，下班能赶上晚饭。", "同学聚会都是那条路上的人张罗，谁家有事都到。"],
+        ["镇上的事门儿清，谁家老人住院，都去看过。", "老房翻修了，院子里种了棵柿子树。"],
+      ],
+      cost: "代价也清楚：老同学聊起外面的世界时，那条路上的人大多只能听着，后来就不太去了。" },
+    abroad: { name: "出国的你",
+      teaser: ["语言过关了，在当地站住了脚。", "换了城市，工作稳定，朋友还是不多。", "拿了永住，逢年过节往家里打视频。"],
+      stages: [
+        ["语言过关了，头一份工作干得不轻松，但站住了。", "租的公寓能看到河，房租占了工资的三分之一。"],
+        ["换了城市，工作稳定了，朋友还是不多。", "学会了自己过年，饺子包得比以前像样了。"],
+        ["拿了永住，逢年过节往家里打视频。", "父母老了，视频那头的人帮不上手，只能多打钱。"],
+      ],
+      cost: "代价也清楚：团圆饭的桌上，常年空着一个位置——是留给那条路上的人的。" },
+    study: { name: "继续读下去的你",
+      teaser: ["博士读下来了，进了高校。", "带了自己的学生，课讲得越来越稳。", "评上了职称，办公室窗外有棵银杏。"],
+      stages: [
+        ["博士读下来了，第一份教职在外地。", "还在熬论文，是同学里最晚一个买房的。"],
+        ["带了自己的学生，课讲得越来越稳。", "评上了副教授，父母在亲戚面前腰板直了些。"],
+        ["办公室窗外有棵银杏，秋天给学生讲最后一课。", "读过的书摞起来比人高。花掉的时间，也是真的。"],
+      ],
+      cost: "代价也清楚：同龄人安顿下来的那几年，那条路上的人还在为下一篇论文和明年的经费熬夜。" },
+    gap: { name: "先停了一年的你",
+      teaser: ["那一年走完，回来重新找了工作。", "换了个行业，从头学起，居然站住了。", "日子过得不宽裕，但很少失眠。"],
+      stages: [
+        ["那一年走完，回来重新找了工作，起薪比同届低一截。", "换了行业，从最基础的活儿干起。"],
+        ["换了个行业，从头学起，居然站住了。", "开了间小店，不大，够过日子，也够自由。"],
+        ["日子过得不宽裕，但很少失眠。", "相册里那一年的照片，比后来十年加起来都多。"],
+      ],
+      cost: "代价也清楚：重新出发比别人晚了几年，简历上那一年，每次面试都要解释一遍。" },
+  },
+  verdictTop: {
+    money: "钱这件事，你一辈子没含糊过。该挣的挣到了，该花的也没太亏待自己。",
+    growth: "你一直在往前走。慢的时候也有，但没停过。",
+    freedom: "你把日子过成了自己的。别人觉得不划算的，你觉得值。",
+    health: "你把身体放在心上。这一项看着不显眼，到老了最显眼。",
+    relation: "你把人放在前面。人这东西，你对他们好，他们大都知道。",
+  },
+  verdictCost: {
+    money: "只是账本的另一面，钱也是紧过的，有些想要的，你等了很多年。",
+    growth: "只是往前走的人，容易错过路边坐着的人。",
+    freedom: "只是自由这东西，年轻时是翅膀，年纪大了，有时候是没人管的清静。",
+    health: "只是身体好的人，容易忘了时间不等人，有些事拖着拖着就过了。",
+    relation: "只是把人放在前面的人，自己的事，常常排在最后。",
+  },
 };

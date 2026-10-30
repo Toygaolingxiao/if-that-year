@@ -20,3 +20,18 @@ h1{font-family:Georgia,"Songti SC",serif;font-weight:500;font-size:28px;line-hei
 .timeline{margin-top:16px;border-top:1px solid var(--line);padding-top:12px;font-size:13px;display:grid;gap:6px;max-height:300px;overflow:auto}
 .row{display:flex;gap:10px;flex-wrap:wrap}.refl-out{font-style:italic}
 .foot{text-align:center;font-size:12px;opacity:.5;padding:16px}
+
+/* v0.2 additions */
+.glimpse{border:1.5px dashed #8A948C;background:#F4F1EA}
+.glimpse .teaser{font-family:Georgia,"Songti SC",serif;font-size:18px}
+.crisis{border-color:#B08D6A}
+.delta{color:var(--accent);font-size:13px;margin:4px 0 0}
+.echo{border-left:3px solid var(--line);padding-left:12px;color:#4A463C}
+.verdict{font-family:Georgia,"Songti SC",serif;font-size:20px;line-height:1.8}
+.seedrow{display:flex;gap:8px;margin-top:18px}
+.seedrow input{flex:1;font-size:16px;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.refl-label{display:block;margin:14px 0;font-size:14px}
+.refl-label input[type="text"]{display:block;width:100%;font-size:16px;padding:10px;margin-top:6px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.refl{font-family:Georgia,"Songti SC",serif}
+.timeline{max-height:480px}
+button.big{width:100%;margin-bottom:14px}
