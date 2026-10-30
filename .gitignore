@@ -1,0 +1,3 @@
+*.muse-github-snapshot-sync.json
+*.muse-github-snapshot-sync.json.tmp-*
+.DS_Store

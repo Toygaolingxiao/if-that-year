@@ -1,0 +1,22 @@
+:root{--paper:#FAF8F4;--ink:#23211C;--accent:#2F4A3C;--line:#DDD6C9;--card:#FFFDF8}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:"Hiragino Sans","Noto Sans SC",system-ui,sans-serif;line-height:1.75}
+.wrap{max-width:640px;margin:0 auto;padding:24px 18px 40px}
+header{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:8px}
+.brand{font-family:Georgia,"Songti SC",serif;font-size:22px;letter-spacing:.1em;color:var(--accent)}
+.seed{font-size:12px;opacity:.6}
+.stats{margin:14px 0 4px}.stat{display:flex;align-items:center;gap:8px;font-size:13px;margin:3px 0}
+.stat span{width:34px}.stat .bar{flex:1;height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.stat .bar i{display:block;height:100%;background:var(--accent)}.stat b{width:28px;text-align:right;font-weight:400}
+h1{font-family:Georgia,"Songti SC",serif;font-weight:500;font-size:28px;line-height:1.4}
+.lead{font-size:15px}.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px;margin-top:14px}
+.card .age{font-size:13px;color:var(--accent);letter-spacing:.08em;margin-bottom:6px}
+.choices{display:grid;gap:10px;margin-top:14px}
+.choice{text-align:left;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-size:15px;cursor:pointer;color:var(--ink)}
+.choice:hover{border-color:var(--accent)}.choice b{display:block;font-weight:600}.choice span{font-size:13px;opacity:.75}
+.primary{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:12px 20px;font-size:15px;cursor:pointer;margin-top:12px}
+.ghost{background:none;border:1px solid var(--line);border-radius:8px;padding:11px 18px;font-size:14px;cursor:pointer;margin-top:12px;color:var(--ink)}
+.hint{font-size:13px;opacity:.65}.refl{display:block;margin-top:14px;font-size:13px}
+.refl input{display:block;width:100%;margin-top:6px;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:#fff}
+.timeline{margin-top:16px;border-top:1px solid var(--line);padding-top:12px;font-size:13px;display:grid;gap:6px;max-height:300px;overflow:auto}
+.row{display:flex;gap:10px;flex-wrap:wrap}.refl-out{font-style:italic}
+.foot{text-align:center;font-size:12px;opacity:.5;padding:16px}
