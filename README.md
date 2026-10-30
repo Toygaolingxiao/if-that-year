@@ -32,6 +32,7 @@ docs/DESIGN-BOOK.md 方案设计书 v0.1（立项、裂变、变现、止损线�
 docs/SCALING.md     扩展与负载架构（静态优先、四级扩容）
 docs/COPY-AND-AI.md 文字原则（自然人语感）与 AI 使用边界（对局与结算不用 AI，AI 仅离线辅助）
 docs/DEPLOY-CLOUDFLARE.md Cloudflare Pages 接入步骤（后台点选清单与排障）
+docs/VISUAL-DESIGN.md 视觉与出图设计（纸感风格系统、分岔路图、分享卡三模板规格）
 _headers            Cloudflare Pages 缓存与响应头规则
 ```
 

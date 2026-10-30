@@ -132,12 +132,71 @@
       ${refl ? `<p class="refl-out">${refl}</p>` : ""}
       <div class="timeline">${S.log.map(l => `<div><b>${l.age} 岁</b> ${l.text}</div>`).join("")}</div>
       <div class="row">
+        <button class="primary" id="card">生成分享卡（PNG）</button>
         <button class="primary" id="again-same">同种子再来一局（换选择）</button>
         <button class="ghost" id="again-new">随机种子新开一局</button>
       </div>
       <p class="hint">分享种子码「${S.seedStr}」给朋友：同样的运气，不同的选择——这就是同种子对战。</p></div>`);
     el("again-same").addEventListener("click", () => newGame(S.seedStr));
     el("again-new").addEventListener("click", () => newGame(String(Math.floor(Math.random() * 1e6))));
+    el("card").addEventListener("click", drawCard);
+  }
+  // --- 分享卡出图 (VISUAL-DESIGN §二, A 判词版): Canvas 1080x1440, 本地生成零服务器 ---
+  function wrapText(ctx, text, x, y, maxW, lh) {
+    let line = "", yy = y;
+    for (const ch of text) {
+      if (ctx.measureText(line + ch).width > maxW && line) { ctx.fillText(line, x, yy); line = ch; yy += lh; }
+      else line += ch;
+    }
+    if (line) ctx.fillText(line, x, yy);
+    return yy + lh;
+  }
+  function drawCard() {
+    const sh = shadowLine();
+    const c = document.createElement("canvas"); c.width = 1080; c.height = 1440;
+    const x = c.getContext("2d");
+    x.fillStyle = "#FAF8F4"; x.fillRect(0, 0, 1080, 1440);
+    x.strokeStyle = "#DDD6C9"; x.lineWidth = 3; x.strokeRect(36, 36, 1008, 1368);
+    x.fillStyle = "#2F4A3C"; x.font = "34px Georgia, 'Songti SC', serif"; x.textBaseline = "alphabetic";
+    x.fillText("如果那年 · 另一条路", 90, 130);
+    x.fillStyle = "#8A948C"; x.font = "28px monospace"; x.textAlign = "right";
+    x.fillText("种子 " + S.seedStr, 990, 130); x.textAlign = "left";
+    x.fillStyle = "#23211C"; x.font = "64px Georgia, 'Songti SC', serif";
+    let y = wrapText(x, verdict(), 90, 250, 900, 84);
+    // 分岔路图: 实线一生 + 虚线影子
+    const gy = y + 90;
+    x.strokeStyle = "#2F4A3C"; x.lineWidth = 7; x.beginPath(); x.moveTo(90, gy); x.lineTo(990, gy); x.stroke();
+    const forks = S.log.filter(l => window.GAME_DATA.forks.some(f => f.age === l.age));
+    x.strokeStyle = "#8A948C"; x.lineWidth = 4; x.setLineDash([14, 12]);
+    forks.forEach((l) => {
+      const fx = 90 + (900 * (l.age - 22)) / (END_AGE - 22);
+      x.beginPath(); x.moveTo(fx, gy); x.quadraticCurveTo(fx + 60, gy - 90, fx + 150, gy - 110); x.stroke();
+    });
+    x.setLineDash([]);
+    x.fillStyle = "#2F4A3C"; x.beginPath(); x.arc(990, gy, 12, 0, 7); x.fill();
+    x.font = "30px Georgia, 'Songti SC', serif"; x.fillStyle = "#8A948C";
+    x.fillText("22 岁", 90, gy + 54); x.textAlign = "right"; x.fillText("65 岁", 990, gy + 54); x.textAlign = "left";
+    y = gy + 130;
+    x.fillStyle = "#23211C"; x.font = "36px 'Hiragino Sans', 'Noto Sans SC', sans-serif";
+    y = wrapText(x, "这条路：" + S.route.name + "，你走完了。", 90, y, 900, 52);
+    x.fillStyle = "#8A948C";
+    y = wrapText(x, "另一条路（" + sh.name + "）：" + sh.text + "。", 90, y + 8, 900, 52);
+    // 五维小条 (不带名次不带总分)
+    y += 30; x.font = "28px 'Hiragino Sans', 'Noto Sans SC', sans-serif";
+    STAT_META.forEach(([k, label]) => {
+      x.fillStyle = "#23211C"; x.fillText(label, 90, y + 8);
+      x.fillStyle = "#DDD6C9"; x.fillRect(190, y - 8, 560, 14);
+      x.fillStyle = "#2F4A3C"; x.fillRect(190, y - 8, 560 * S.stats[k] / 100, 14);
+      x.fillStyle = "#23211C"; x.fillText(String(S.stats[k]), 780, y + 8);
+      y += 52;
+    });
+    x.fillStyle = "#2F4A3C"; x.font = "34px Georgia, 'Songti SC', serif";
+    x.fillText("你敢看你的另一条路吗？", 90, 1300);
+    x.fillStyle = "#8A948C"; x.font = "28px 'Hiragino Sans', 'Noto Sans SC', sans-serif";
+    x.fillText("if-that-year.pages.dev", 90, 1352);
+    const a = document.createElement("a");
+    a.download = "if-that-year-" + S.seedStr + ".png";
+    a.href = c.toDataURL("image/png"); a.click();
   }
   // 启动: URL ?seed= 优先, 否则随机
   const params = new URLSearchParams(location.search);
