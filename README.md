@@ -9,7 +9,9 @@
 
 ## 现在就能玩（原型 v0.1）
 
-纯静态、免构建、免注册。用任意静态服务器打开即可：
+**线上（正式）**：托管在 Cloudflare Pages（用户 2026-10-30 拍板，与《80亿分之一》同一家）。接入步骤见 [docs/DEPLOY-CLOUDFLARE.md](docs/DEPLOY-CLOUDFLARE.md)，接入完成后网址为 `https://if-that-year.pages.dev`，推 `main` 自动部署。
+
+**本地**：纯静态、免构建、免注册。用任意静态服务器打开即可：
 
 ```bash
 python3 -m http.server 8000
@@ -29,6 +31,8 @@ src/style.css       纸感极简视觉（与作者主页同一套色板）
 docs/DESIGN-BOOK.md 方案设计书 v0.1（立项、裂变、变现、止损线、待拍板清单 §15）
 docs/SCALING.md     扩展与负载架构（静态优先、四级扩容）
 docs/COPY-AND-AI.md 文字原则（自然人语感）与 AI 使用边界（对局与结算不用 AI，AI 仅离线辅助）
+docs/DEPLOY-CLOUDFLARE.md Cloudflare Pages 接入步骤（后台点选清单与排障）
+_headers            Cloudflare Pages 缓存与响应头规则
 ```
 
 ## 开发纪律
