@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.6.0 —— 版本号规则见 docs/DEVLOG.md 卷首
+// 《如果那年》引擎 v0.6.2 —— 版本号规则见 docs/DEVLOG.md 卷首
 // 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 (function () {
@@ -210,7 +210,7 @@
           <button class="ghost" id="seedgo">用这个种子</button>
           <button class="ghost" id="daily">今日种子</button>
         </div>
-        <p class="hint ver">v0.6.0</p>
+        <p class="hint ver">v0.6.2</p>
         <p class="hint">不填随机。填了，运气定下来，跟朋友比同一局就用它。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam || endParam ? "，年代与跨度也按对方那局选好了" : ""}，点任意一条路就开始同一局。` : ""}</p>
       </section>`;
     if (saved) el("resume").addEventListener("click", () => { S = saved; S.usedRare = S.usedRare || []; S.era = S.era || "c2000"; S.birthYear = S.birthYear || 2000; S.endAge = S.endAge || 65; S.autoOn = prefs.auto; S.speed = prefs.speed; RNG.a = saved.rngA || seedFromString(saved.seedStr); step(); });
@@ -399,6 +399,32 @@
     const variants = shadowRoute().stages[stage];
     return variants[Math.floor(rng() * variants.length)];
   }
+  function shadowFinalText(sh) {
+    const finals = sh && sh.stages && sh.stages[2];
+    if (!Array.isArray(finals) || !finals.length) return "";
+    return finals.find((t) => !(S.shadowSeenTexts || []).includes(t)) || finals[0] || "";
+  }
+  // 结算页与发帖文案共用同一组对照行：主影子拼入结局与代价，其余未选路线按 routes 原序各出一行。
+  function shadowCompareLines() {
+    if (!S || !Array.isArray(S.unchosen)) return { main: "", others: [] };
+    const routeEntries = S.unchosen.filter((u) => u && u.kind === "route");
+    if (!routeEntries.length) return { main: "", others: [] };
+    const mainEntry = routeEntries[0];
+    const mainShadow = D.shadows && D.shadows[mainEntry.id];
+    const mainFinal = shadowFinalText(mainShadow);
+    const main = mainShadow && mainShadow.name && mainFinal && mainShadow.cost
+      ? `另一条路（${mainShadow.name}）也走完了它的一生。${mainFinal}${mainShadow.cost}` : "";
+    const routeOrder = new Map(D.routes.map((r, i) => [r.id, i]));
+    const others = routeEntries.slice(1)
+      .sort((a, b) => (routeOrder.has(a.id) ? routeOrder.get(a.id) : Number.MAX_SAFE_INTEGER)
+        - (routeOrder.has(b.id) ? routeOrder.get(b.id) : Number.MAX_SAFE_INTEGER))
+      .map((entry) => {
+        const sh = D.shadows && D.shadows[entry.id];
+        const final = shadowFinalText(sh);
+        return sh && sh.name && final ? `${sh.name}：${final}` : "";
+      }).filter(Boolean);
+    return { main, others };
+  }
   function renderGlimpse(stage) {
     const sh = shadowRoute();
     const text = shadowStageText(stage); // 先抽定，点不点开都是这一条（但只有点开才显示）
@@ -446,7 +472,7 @@
     const v = verdict();
     const sp = specialEnding();
     S.special = sp;
-    const sh = shadowRoute();
+    const shadowLines = shadowCompareLines();
     const skippedLine = S.glimpsesSkipped ? `<p>你有 ${S.glimpsesSkipped} 次没有去细看另一条路。这样也好，有些事不知道，更睡得着。</p>` : "";
     const reflHtml = S.reflections.length
       ? `<h3>你留给自己的话</h3>` + S.reflections.map((r) => `<p class="refl">「${esc(r.text)}」（${r.age} 岁）</p>`).join("") : "";
@@ -455,8 +481,8 @@
       ${sp ? `<div class="special"><p class="rare-tag">${TIER_LABEL[sp.tier]}</p><p class="special-title">${esc(sp.title)}</p><p>${esc(sp.text)}</p></div>` : ""}
       <p class="verdict">${esc(v.text)}</p>
       <p>你走了这条路：${esc(S.route.name)}。</p>
-      <p>另一条路（${esc(sh.name)}）也走完了它的一生。${esc(sh.stages[2].find((t) => !(S.shadowSeenTexts || []).includes(t)) || sh.stages[2][0])}</p>
-      <p>${esc(sh.cost)}</p>
+      ${shadowLines.main ? `<p>${esc(shadowLines.main)}</p>` : ""}
+      ${shadowLines.others.length ? `<h3>其他几条路</h3>${shadowLines.others.map((line) => `<p>${esc(line)}</p>`).join("")}` : ""}
       ${skippedLine}
       ${reflHtml}
       <div class="row">
@@ -567,12 +593,15 @@
     if (!box || !box.checked || !inp) return "";
     return (inp.value || "").trim().slice(0, 40);
   }
-  // 发帖文案：感想（若填）+ 判词 + 钩子 + 同局链接
+  // 发帖文案：感想（若填）+ 判词 + 主影子 + 其他三条路 + 钩子 + 同局链接
   function shareCopy() {
     const line = (el("shareline") ? el("shareline").value : "").trim();
     const parts = [];
     if (line) parts.push(line);
     parts.push(verdict().text);
+    const shadowLines = shadowCompareLines();
+    if (shadowLines.main) parts.push(shadowLines.main);
+    parts.push(...shadowLines.others);
     parts.push("同样的运气，你会怎么选？");
     parts.push(sameSeedUrl());
     return parts.join("\n");
