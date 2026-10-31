@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.9.2 —— 版本号规则见 docs/DEVLOG.md 卷首
+// 《如果那年》引擎 v0.10.0 —— 版本号规则见 docs/DEVLOG.md 卷首
 // 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 (function () {
@@ -395,7 +395,7 @@
           <button class="ghost" id="seedgo">用这个种子</button>
           <button class="ghost" id="daily">今日种子</button>
         </div>
-        <p class="hint ver">v0.9.2</p>
+        <p class="hint ver">v0.10.0</p>
         <p class="hint">不填随机。填了，运气定下来，跟朋友比同一局就用它。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam ? "，年代也按对方那局选好了" : ""}，点任意一条路就开始同一局。` : ""}</p>
       </section>`;
     if (saved) el("resume").addEventListener("click", () => {
@@ -579,18 +579,18 @@
         if (c.set) S.flags[c.set] = true;
         fork.choices.forEach((o) => { if (o !== c) S.unchosen.push({ kind: "fork", age: fork.age, label: o.label }); });
         S.log.push(`${fork.age} 岁 · ${fork.title.split("·")[1].trim()}：${c.label}`);
-        S.pendingFork = { age: fork.age, label: c.label }; // §3.3 复述拍：先存下，续玩回到这一拍而不是重选
+        S.pendingFork = { age: fork.age, label: c.label, echo: c.echo || null }; // §3.3 复述拍：先存下，续玩回到这一拍而不是重选
         save();
         renderForkEcho();
         mountStream();
       });
     }));
   }
-  // §3.3 最小版：分岔选后不直接进下一年，先留一拍复述（与事件回响同构）。完整版（专属回响文案）卡在内容侧数据，见 DEVLOG。
+  // §3.3 完整版（v0.10.0）：分岔选后不直接进下一年，先留一拍专属回响（文案在 events.js 各分岔选项的 echo 字段；旧存档无 echo 时回落最小版复述）。
   function renderForkEcho() {
     curKind = "fork";
     const pf = S.pendingFork;
-    app().innerHTML = `<section class="card">${head()}${deltaLine()}<p class="echo">你选了「${esc(pf.label)}」</p><button class="primary" id="cont">过一年</button></section>`;
+    app().innerHTML = `<section class="card">${head()}${deltaLine()}<p class="echo">${esc(pf.echo || ("你选了「" + pf.label + "」"))}</p><button class="primary" id="cont">过一年</button></section>`;
     finishRender();
     el("cont").addEventListener("click", () => { S.pendingFork = null; save(); advance(); });
   }
@@ -683,6 +683,17 @@
     const variants = shadowRoute().stages[stage];
     return variants[Math.floor(rng() * variants.length)];
   }
+  // 影子代价三选一（v0.10.0）：按种子+路线名哈希定值，同一局内结算页与分享卡取同一行；存量字符串原样返回。
+  function shadowCostText(sh) {
+    if (!sh) return "";
+    const c = sh.cost;
+    if (!Array.isArray(c)) return c || "";
+    if (c.length === 1) return c[0];
+    let h = 2166136261;
+    const s = String((S && S.seed) || "") + ":" + sh.name;
+    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return c[Math.abs(h) % c.length];
+  }
   function shadowFinalText(sh) {
     const finals = sh && sh.stages && sh.stages[2];
     if (!Array.isArray(finals) || !finals.length) return "";
@@ -697,7 +708,7 @@
     const mainShadow = D.shadows && D.shadows[mainEntry.id];
     const mainFinal = shadowFinalText(mainShadow);
     const main = mainShadow && mainShadow.name && mainFinal && mainShadow.cost
-      ? `另一条路（${mainShadow.name}）也走完了它的一生。${mainFinal}${mainShadow.cost}` : "";
+      ? `另一条路（${mainShadow.name}）也走完了它的一生。${mainFinal}${shadowCostText(mainShadow)}` : "";
     const routeOrder = new Map(D.routes.map((r, i) => [r.id, i]));
     const others = routeEntries.slice(1)
       .sort((a, b) => (routeOrder.has(a.id) ? routeOrder.get(a.id) : Number.MAX_SAFE_INTEGER)
@@ -1132,7 +1143,7 @@
       if (keyFork) y = wrapText(x, "关键的一岔：" + keyFork.split("· ")[1], 90, y, 900, 50);
       y = wrapText(x, "这条路：" + S.route.name + "，你走完了。", 90, y + 6, 900, 50);
       x.fillStyle = "#8A948C";
-      y = wrapText(x, "另一条路（" + sh.name + "）：" + sh.cost, 90, y + 6, 900, big ? 50 : 46);
+      y = wrapText(x, "另一条路（" + sh.name + "）：" + shadowCostText(sh), 90, y + 6, 900, big ? 50 : 46);
       if (refl) { x.fillStyle = "#2F4A3C"; x.font = "34px " + SERIF; y = wrapText(x, "「" + refl + "」", 90, y + 10, 900, 50); }
       cardStats(x, y + (big ? 26 : 14), 560, big ? 50 : 42);
     }

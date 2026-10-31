@@ -8,7 +8,7 @@ window.GAME_PACKS=(window.GAME_PACKS||[]).concat([
 {"id":"p6_007","min":46,"max":60,"require":"side_start","text":"早年买的那套工具落了灰，又被你翻了出来。邻居家的门锁坏了，你拎着工具箱就过去了。"},
 {"id":"p6_008","min":42,"max":58,"require":"saw_home","text":"回老家办事，路过当年打听过的那家单位。楼还在，牌子换了，门口的梧桐粗了一圈。"},
 {"id":"p6_009","min":48,"max":62,"require":"saw_home","text":"同学群里说，当年你想考的那个岗位，后来并进了新单位，编制只剩一半。有人@你：幸好你没回来。","choices":[{"label":"回了个表情，没接话","effects":{"freedom":1,"wisdom":5},"echo":"你在群里潜水惯了，这次也一样。"},{"label":"说：回来也有回来的活法","effects":{"relation":1,"wisdom":5},"echo":"群里安静了一会儿，老班长出来岔开了话题。"}]},
-{"id":"p6_010","min":52,"max":64,"require":"saw_home","text":"父亲收拾老屋，翻出你当年打印的招考简章，问还留着吗。你说留着吧，垫桌脚正好。"},
+{"id":"p6_010","min":52,"max":64,"require":"saw_home","text":"父亲收拾老屋，翻出你当年打印的招考简章，问还留着吗。你说留着吧，垫桌脚正好。","effects":{"wisdom":4}},
 {"id":"p6_011","min":40,"max":55,"require":"stayed_city","text":"你刚来这座城市时住的那片城中村拆了。你绕路去看了一眼，卖肠粉的摊子还在路口，就是挪了地方。"},
 {"id":"p6_012","min":50,"max":63,"require":"stayed_city","text":"父母第一次来你这边过冬。你带他们坐地铁、扫码买菜，母亲学会了用手机付款，逢人就讲。","choices":[{"label":"多留他们住些日子","effects":{"relation":2,"money":-2,"wisdom":3},"echo":"阳台上多了两盆他们侍弄的花，你下班回家先去看一眼长势。"},{"label":"按原计划送他们回去","effects":{"money":1,"freedom":1},"echo":"送站回来屋里一下子空了，你把电视打开，声音调大了一格。"}]},
 {"id":"p6_013","min":42,"max":56,"require":"often_back","text":"老家那趟慢车停运了，换成了高铁。四十分钟，你还没睡着就到了。车站新楼亮堂，就是等车的那排长椅没了。"},

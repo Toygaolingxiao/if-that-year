@@ -20,7 +20,7 @@ window.GAME_PACKS=(window.GAME_PACKS||[]).concat([
 {"id":"p3_019","min":45,"max":58,"require":"partner","text":"你们俩的体检报告是一起到的。对方的指标比你好，还得意了一下。你说下个月一起晨练，看谁先起不来。","effects":{"health":2,"relation":1}},
 {"id":"p3_020","min":34,"max":48,"require":"partner","text":"你们为纪念日吵了一架：对方说你忘了，你说没忘。查完聊天记录才发现，日期两边都记错了。"},
 {"id":"p3_021","min":36,"max":52,"require":"partner","text":"对方学了个新爱好，水平很差，兴致很高。你陪着去了几次，后来发现自己也能上手两下子了。"},
-{"id":"p3_022","min":42,"max":58,"require":"partner","text":"你们把结婚时的照片翻出来看。对方说你那时候头发真多，你说对方那时候真敢穿。"},
+{"id":"p3_022","min":42,"max":58,"require":"partner","text":"你们把结婚时的照片翻出来看。对方说你那时候头发真多，你说对方那时候真敢穿。","effects":{"wisdom":3}},
 {"id":"p3_023","min":32,"max":40,"require":"partner","text":"第一次一起出远门旅行，行李是对方收的，攻略是你做的。第三天吵了一架，为要不要早起看日出。","effects":{"relation":1,"money":-2,"freedom":1,"wisdom":3}},
 {"id":"p3_024","min":40,"max":57,"require":"partner","text":"看了套大一点的房子，采光好，就是月供要多还四千。你们在售楼处的沙盘前站了很久。","choices":[{"label":"换，日子往宽敞里过","effects":{"money":-5,"freedom":-2,"relation":1},"echo":"搬家那天累得不行。晚上在新家阳台喝了罐啤酒，觉得值。"},{"label":"不换了，小房子先住着","effects":{"money":2,"freedom":1},"echo":"回家的路上你们买了盆绿植，摆在旧房子的窗台上。"}]},
 {"id":"p3_025","min":50,"max":58,"require":"partner","text":"对方开始念叨退休以后去哪儿住，拿个本子记了几个城市，附上房价和天气。你在本子最后添了一行：冬天别太冷。"},
