@@ -13,7 +13,7 @@
 ## 2. 分级扩容路线（每一级都有触发条件，不提前买）
 
 ### L0 起步：Cloudflare Pages（当前阶段，2026-10-30 用户拍板直接采用，跳过 GitHub Pages）
-- 形态：Cloudflare Pages 连 GitHub 仓库，推 main 自动部署，全球边缘 CDN 分发。与《80亿分之一》官网公示的托管（Cloudflare, Inc.）相同。仓库私有不影响部署，站点经 pages.dev 公开。
+- 形态：Cloudflare Pages 连 GitHub 仓库，推 main 自动部署，全球边缘 CDN 分发。仓库私有不影响部署，站点经 pages.dev 公开（仓库接入尚待用户在 Cloudflare 后台完成，站点未上线）。
 - 接入步骤与排障见 `docs/DEPLOY-CLOUDFLARE.md`；缓存规则在仓库根 `_headers`。
 - 带宽量级参考：一局首屏约 300–600KB（gzip 后），静态分发的成本在百万次访问量级前都接近零；各家免费额度与条款上线时复核，不把「免费无限」写进承诺。
 

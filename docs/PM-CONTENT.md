@@ -174,3 +174,23 @@ Cost 句（代价）：
 其余已登记标记（110）：ad_first, ai_daily, aims_team_lead, asked_leave, back_home_stay, badminton_captain, bookkeeping, bought_car, bought_commodity, bought_fangai, bought_renzheng, calligraphy_teach, car_bought, carpool_group, cert_study_started, cert_try, classmate_table, community_active, commute_reading, cooking_recipe, data_only_rep, dca, dinner_prep_habit, dog_home, door_neighbor, e78_ai, e78_car, edu_fund, ev_car, ex_colleague_neighbor, faded, fam_shop_in, fish_spot, frugal_rule, fund_bought, garden_share, had_pager, hainan_dream, helped_divorce_colleague, hobby_badminton, hobby_calligraphy, hobby_cooking, hobby_fishing, hobby_garden, hobby_music, hobby_photo, hobby_run, ins_critical, jizi_house, kid2, kid_abroad, knows_boss_focus, laid_off, legacy_sharing_done, let_go, library_talk_given, library_volunteer, loan_swap, long_dist, mentor_bond, monthly_sync_habit, moved_city, moved_school, music_stage, new_friend, night_school, no_ins, parent_help, parent_pension_ok, parents_money_guard, photo_show, photos_scanned, plan_late_retire, prepaid, promise_grandkid, refused_drink_once, run_marathon, secondment_extended, shop_closed, stall_breakfast, stock_2008, together, took_over_job, touched_trade, tutor_hard, two_cities, video_addict, video_quit, volunteer_regular, went_sancan, xiahai, traj_antique, traj_award, traj_book, traj_champ, traj_drug1, traj_drug2, traj_funded, traj_hero, traj_ipo, traj_lottery, traj_patent, traj_school, traj_startup, traj_viral, traj_vp, traj_windfall
 
 已知教训（避免重蹈）：pack13 曾引用 craft_hands / keep_fit / married_fast / dual_career / side_hustle / frugal / invest_bold / mentor / pet_home / own_boss 等**从未被任何 set 写过的标记**，导致约 60 条回响事件永不触发、靠集成阶段映射到真实标记才救回。下一轮凡引用清单外标记，一律视为未交付。
+
+
+---
+
+## 五、状态更新（2026-10-31）
+
+本文实测与方案不动，以下只对齐落地现状。
+
+**已落地（前提与周边）**
+
+- 判词片段的数组化抽取：引擎结算已支持 verdictTop / verdictCost 按片段数组随机抽取，且整局缓存同一份判词（页面判词、分享文案、卡面三处同源，不再各抽各的）。§1.2 落地前提里「变体须按种子随机抽取」这一半已经具备；缺的是池厚本身——片段还没补，撞句率仍是 §1.1 的实测（现代局 33.8%、1955 长局 65.8%）。
+- 浪潮事件组设计已定（docs/WAVE-EVENTS.md）：大事件必经、个人剧情路线按早年标记分流，试点两组为 c1978 房价起飞组与 c1955 恢复高考组。浪潮包与 §3.3 配额表的分工以 WAVE 文档为准，不重复计条。
+
+**仍是计划**
+
+- 判词碎片加厚（pack20 的判词 50 条）：未写作、未入库。
+- 影子线加厚（pack20 的 stages +30 条、cost +10 条）：未落地，cost 仍为每路线 1 条。
+- 写手第三轮（pack15–pack19，共 210 条事件）：未派发。§3.2 的三个最薄格子（c1965 × 65–80 = 0 条、c1978 × 65–80 = 0 条、c1978 × 55–64 = 9 条）原样未补。
+- 浪潮试点两组：设计已定，未写作、未落地（引擎的必经机制改动也未做）。
+- 数值生态平衡（money 最常垫底、relation 最常登顶这个分布偏斜的根源）：未动，属引擎事项；平衡调整后须按 §1.2 重跑模拟验收。

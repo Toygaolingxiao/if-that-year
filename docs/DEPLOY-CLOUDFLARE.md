@@ -1,6 +1,5 @@
 # Cloudflare Pages 部署（用户 2026-10-30 拍板：托管直接上 Cloudflare，跳过 GitHub Pages）
 
-与《80亿分之一》同一家托管（其官网运营信息页公示 호스팅 Cloudflare, Inc.）。
 仓库保持私有也可以：Cloudflare Pages 连私有仓照样部署，站点通过 pages.dev 域名公开访问。
 
 ## 一次性接入（约 3 分钟，用户在 Cloudflare 后台操作）
