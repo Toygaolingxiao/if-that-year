@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.8.0 —— 版本号规则见 docs/DEVLOG.md 卷首
+// 《如果那年》引擎 v0.9.0 —— 版本号规则见 docs/DEVLOG.md 卷首
 // 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 (function () {
@@ -25,8 +25,12 @@
       "河边护栏外的一块地面塌了，人掉了下去。等找到时，已经晚了。",
     ],
   };
-  // 维度定义表：[键, 名, 初始值]。所有渲染（游玩五维条、分享卡）都从这张表生成，不写死根数——加新维度只改这里与数据。
-  const STAT_META = [["health", "健康", 60], ["money", "金钱", 45], ["growth", "成长", 50], ["freedom", "自由", 50], ["relation", "关系", 50]];
+  // 维度定义表：[键, 名, 初始值]。所有渲染（游玩数值条、分享卡）都从这张表生成，不写死根数——加新维度只改这里与数据。
+  // v0.9.0 第六维「智慧」：成长=本事（学与练，前半生为主），智慧=判断（阅历与吃亏换来，全程可涨）。
+  // 初值 40 为六维最低：22 岁的人本事可以现学，判断还没攒下——留出一生去涨的空间。取 40 而非更低，是 16000 局模拟校准的结果：
+  // 关系终局中位约 99（存量生态），初值 35 时智慧登顶率为 0；初值 40＋改挂幅度校准后登顶约 5%、打满约 3% 以内（见 DEVLOG v0.9.0）。
+  // 智慧不进危机表（D.crisis 无此键，pickCrisis 自动跳过）。
+  const STAT_META = [["health", "健康", 60], ["money", "金钱", 45], ["growth", "成长", 50], ["freedom", "自由", 50], ["relation", "关系", 50], ["wisdom", "智慧", 40]];
   const GLIMPSE_AGES = { 30: 0, 40: 1, 50: 2 };
   const ERAS = [
     { id: "c1955", birth: 1955, label: "1955 年生", desc: "22 岁是 1977 年：恢复高考、返城、分房、下岗潮" },
@@ -56,7 +60,7 @@
   const el = (id) => document.getElementById(id);
   const app = () => el("app");
   const reducedMotion = () => !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-  // v0.8.0 呈现层状态：上一屏数值快照（五维条旧值→新值）、画面类型（分级入场）、续玩定位标记、流水账跟随状态
+  // v0.8.0 呈现层状态：上一屏数值快照（数值条旧值→新值）、画面类型（分级入场）、续玩定位标记、流水账跟随状态
   let prevStats = null, prevKind = null, curKind = null, resumeMark = false;
   let streamFollow = true, streamSeen = 0, streamTop = 0, streamProgUntil = 0;
 
@@ -251,7 +255,7 @@
     });
     if (S) prevStats = { ...S.stats };
   }
-  // 渲染收尾：§1.1 分级入场（同类画面卡壳不动、只正文淡入）+ 五维条动画
+  // 渲染收尾：§1.1 分级入场（同类画面卡壳不动、只正文淡入）+ 数值条动画
   function finishRender() {
     const sec = app().querySelector("section.card");
     if (sec && curKind === prevKind && (curKind === "year" || curKind === "fork")) {
@@ -391,7 +395,7 @@
           <button class="ghost" id="seedgo">用这个种子</button>
           <button class="ghost" id="daily">今日种子</button>
         </div>
-        <p class="hint ver">v0.8.0</p>
+        <p class="hint ver">v0.9.0</p>
         <p class="hint">不填随机。填了，运气定下来，跟朋友比同一局就用它。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam ? "，年代也按对方那局选好了" : ""}，点任意一条路就开始同一局。` : ""}</p>
       </section>`;
     if (saved) el("resume").addEventListener("click", () => {
@@ -401,6 +405,8 @@
       S.death = S.death || null;
       S.pendingFork = S.pendingFork || null;
       delete S.endAge;
+      S.stats = S.stats || {};
+      for (const [k, , init] of STAT_META) if (typeof S.stats[k] !== "number") S.stats[k] = init; // 新维度迁移：旧存档缺的维度按初值补齐（如 v0.9.0 新增的智慧），不清档不报错
       S.autoMode = prefs.mode; S.speed = prefs.speed;
       RNG.a = saved.rngA || seedFromString(saved.seedStr);
       prevStats = null; resumeMark = true; // §6.2 续玩第一屏给一句定位
@@ -839,8 +845,8 @@
         <label class="refl-label"><input type="checkbox" id="cardrefl"> 把这句话印到分享卡上（只有你勾选才会印）</label>
         <p class="setlab">卡面</p>
         <div class="segpicks" id="cardtype">
-          <button type="button" class="segbtn sel" data-type="verdict"><b>判词卡</b><small>判词 + 分岔路图 + 五维</small></button>
-          <button type="button" class="segbtn" data-type="log"><b>流水账卡</b><small>公元年轴 + 关键节点 + 五维</small></button>
+          <button type="button" class="segbtn sel" data-type="verdict"><b>判词卡</b><small>判词 + 分岔路图 + 六维</small></button>
+          <button type="button" class="segbtn" data-type="log"><b>流水账卡</b><small>公元年轴 + 关键节点 + 六维</small></button>
         </div>
         <p class="setlab">尺寸</p>
         <div class="segpicks" id="cardratio">
@@ -921,8 +927,8 @@
     return yy + lh;
   }
   // ---------- 分享台出图：buildCard(type, ratio) 参数化绘制 ----------
-  // type: "verdict" 判词卡（模板 A：特殊结局标题+判词+分岔路图+五维）
-  //       "log"     流水账卡（公元年轴+关键节点+判词节选+五维小条）
+  // type: "verdict" 判词卡（模板 A：特殊结局标题+判词+分岔路图+六维）
+  //       "log"     流水账卡（公元年轴+关键节点+判词节选+六维小条）
   // ratio: "45" 1080×1350 | "916" 1080×1920
   const SERIF = "Georgia, 'Songti SC', 'Noto Serif SC', serif";
   const SANS = "'Hiragino Sans', 'Noto Sans SC', sans-serif";

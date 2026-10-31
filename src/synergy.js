@@ -10,7 +10,7 @@ window.GAME_SYNERGY = {
     { id: "cb_dink_plan", all: ["partner", "no_kid"], stats: [{ k: "money", gt: 58 }], min: 44, max: 58, text: "你和对方把养老的账认真算了一遍：社保、存款、一套小房子。算完你们去吃了顿火锅。计划表压在茶几玻璃板下面，一直没动过。", effects: { money: 1, freedom: 2 } },
     { id: "cb_old_couple", all: ["partner", "retired_full"], min: 59, max: 64, text: "退休后第一个长假，你和对方报了个慢悠悠的团。全程没赶过景点，倒是跟团里另一对老夫妻约好了明年再一起走。", effects: { relation: 2, health: 2, money: -2 } },
     { id: "cb_sandwich", all: ["has_kid", "care_self"], min: 53, max: 60, text: "这一年你两头跑：孩子的家长会，父亲的复查单。有一天你在医院走廊里坐着，把两边的日程对了对，发现自己居然没漏过一次。", effects: { relation: 2, health: -2 } },
-    { id: "cb_rent_free", all: ["renting", "less_work"], stats: [{ k: "freedom", gt: 63 }], min: 45, max: 60, text: "房东问你要不要续租三年。你说先一年一年来吧。没房的人有没房的自由，这话你以前不信，现在信一半。", effects: { freedom: 2 } },
+    { id: "cb_rent_free", all: ["renting", "less_work"], stats: [{ k: "freedom", gt: 63 }], min: 45, max: 60, text: "房东问你要不要续租三年。你说先一年一年来吧。没房的人有没房的自由，这话你以前不信，现在信一半。", effects: { freedom: 2, wisdom: 5 } },
     { id: "cb_hop_viral_base", all: ["job_hop", "side_start"], min: 30, max: 45, text: "跳槽面试时，对方翻到你下班做的那个小账号，抬头看了你一眼：这个也是你做的？聊了四十分钟，工作本身只占了十分钟。", effects: { growth: 2, relation: 1 } },
   ],
   rare: [
@@ -18,12 +18,12 @@ window.GAME_SYNERGY = {
     { id: "r_startup", min: 38, max: 50, all: ["side_start", "side_job"], chance: 0.05, text: "副业的收入第一次超过工资。晚上你坐在书桌前，面前摊着一张白纸，上面就写了一行：要不要把它当正事干？",
       choices: [
         { label: "干。辞职，全职做这件事", effects: { money: -6, growth: 5, freedom: 4 }, set: "traj_startup", echo: "离职那天你把工牌交了，保安说：慢走。你走出大楼，脚步比上班时快。" },
-        { label: "再稳一年，副业先养着", effects: { freedom: 1, money: 2 }, echo: "白纸被收进抽屉。这个念头没死，只是睡下了。" },
+        { label: "再稳一年，副业先养着", effects: { freedom: 1, money: 2, wisdom: 3 }, echo: "白纸被收进抽屉。这个念头没死，只是睡下了。" },
       ] },
     { id: "r_funding", min: 40, max: 55, chain: "r_startup", chance: 0.055, text: "投资人约你喝咖啡，聊了两个小时。临走他说：钱可以投，但你要想清楚，拿了钱就没有回头路了。",
       choices: [
         { label: "拿。把盘子做大", effects: { money: 10, growth: 3, health: -3 }, set: "traj_funded", echo: "签完协议那晚你失眠了。账户里的数字变多了，肩上的东西也变重了。" },
-        { label: "不拿。慢慢长大也行", effects: { money: 3, freedom: 2 }, echo: "公司不大，但每一分钱都是自己挣的。你睡了个好觉。" },
+        { label: "不拿。慢慢长大也行", effects: { money: 3, freedom: 2, wisdom: 5 }, echo: "公司不大，但每一分钱都是自己挣的。你睡了个好觉。" },
       ] },
     { id: "r_ipo", min: 45, max: 60, chain: "r_funding", stats: [{ k: "money", gt: 54 }], chance: 0.05, text: "敲钟那天，你西装里的衬衫是对方前一天熨的。锣声一响，身边的人都在喊，你站在原地，想起了书桌前那张白纸。", effects: { money: 25, growth: 3 }, set: "traj_ipo" },
     // —— 神药轨迹链：study 路线 + 高成长 ——
