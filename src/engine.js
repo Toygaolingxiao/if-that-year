@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.9.0 —— 版本号规则见 docs/DEVLOG.md 卷首
+// 《如果那年》引擎 v0.9.1 —— 版本号规则见 docs/DEVLOG.md 卷首
 // 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 (function () {
@@ -395,7 +395,7 @@
           <button class="ghost" id="seedgo">用这个种子</button>
           <button class="ghost" id="daily">今日种子</button>
         </div>
-        <p class="hint ver">v0.9.0</p>
+        <p class="hint ver">v0.9.1</p>
         <p class="hint">不填随机。填了，运气定下来，跟朋友比同一局就用它。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam ? "，年代也按对方那局选好了" : ""}，点任意一条路就开始同一局。` : ""}</p>
       </section>`;
     if (saved) el("resume").addEventListener("click", () => {
