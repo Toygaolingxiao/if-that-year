@@ -5,6 +5,11 @@
   "use strict";
   const D = window.GAME_DATA;
   if (window.GAME_PACKS) D.events = D.events.concat(window.GAME_PACKS); // 事件扩展包（src/packs/）在引擎启动时并入主池
+  if (window.GAME_SYNERGY) { // 协同组合与稀有系统（docs/SYNERGY-AND-RARE-ENDINGS.md）
+    D.events = D.events.concat(window.GAME_SYNERGY.combos || []);
+    D.rare = window.GAME_SYNERGY.rare || [];
+    D.endings = window.GAME_SYNERGY.endings || [];
+  }
   const START_AGE = 22, END_AGE = 65;
   const STAT_META = [["health", "健康"], ["money", "金钱"], ["growth", "成长"], ["freedom", "自由"], ["relation", "关系"]];
   const GLIMPSE_AGES = { 30: 0, 40: 1, 50: 2 };
@@ -30,7 +35,7 @@
       seedStr, age: START_AGE,
       stats: { health: 60, money: 45, growth: 50, freedom: 50, relation: 50 },
       route: null, unchosen: [], log: [], reflections: [],
-      usedEvents: [], flags: {}, crisisUsed: {}, microUsed: [],
+      usedEvents: [], flags: {}, crisisUsed: {}, microUsed: [], usedRare: [],
       glimpsesSeen: 0, glimpsesSkipped: 0, lastDelta: "",
     };
   }
@@ -71,7 +76,7 @@
         </div>
         <p class="hint">也可以自己写一个词当种子（比如生日、幸运数字）。同一种子，同样的运气，不同的选择。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」，点任意一条路就开始同一局。` : ""}</p>
       </section>`;
-    if (saved) el("resume").addEventListener("click", () => { S = saved; RNG.a = saved.rngA || seedFromString(saved.seedStr); step(); });
+    if (saved) el("resume").addEventListener("click", () => { S = saved; S.usedRare = S.usedRare || []; RNG.a = saved.rngA || seedFromString(saved.seedStr); step(); });
     document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {
       const chosen = D.routes[Number(b.dataset.i)];
       const seedStr = (el("seedin").value || "").trim() || seedParam || String(Math.floor(Math.random() * 1e6));
@@ -105,9 +110,53 @@
     const fork = D.forks.find((f) => f.age === S.age);
     if (fork) return renderFork(fork);
     if (S.age in GLIMPSE_AGES) return renderGlimpse(GLIMPSE_AGES[S.age]);
+    const rare = pickRare();
+    if (rare) return renderRare(rare);
     const crisis = pickCrisis();
     if (crisis) return renderCrisis(crisis);
     renderEventYear();
+  }
+  // --- 统一条件求值：路线/标记组合/数值形状/前置链 ---
+  function met(e) {
+    if (e.route && e.route !== S.route.id) return false;
+    if (e.routeIn && !e.routeIn.includes(S.route.id)) return false;
+    if (e.forbidRoute && e.forbidRoute === S.route.id) return false;
+    if (e.require && !S.flags[e.require]) return false;
+    if (e.forbid && S.flags[e.forbid]) return false;
+    if (e.all && !e.all.every((f) => S.flags[f])) return false;
+    if (e.any && !e.any.some((f) => S.flags[f])) return false;
+    if (e.chain && !S.usedEvents.includes(e.chain) && !(S.usedRare || []).includes(e.chain)) return false;
+    if (e.when && (e.when.lt !== undefined ? S.stats[e.when.stat] >= e.when.lt : S.stats[e.when.stat] <= e.when.gt)) return false;
+    if (e.stats && !e.stats.every((c) => (c.lt !== undefined ? S.stats[c.k] < c.lt : S.stats[c.k] > c.gt))) return false;
+    return true;
+  }
+  // --- 稀有事件：条件是门票，骰子是第二道门 ---
+  function pickRare() {
+    for (const r of D.rare || []) {
+      if ((S.usedRare || []).includes(r.id)) continue;
+      if (S.age < r.min || S.age > r.max) continue;
+      if (!met(r)) continue;
+      if (rng() < (r.chance !== undefined ? r.chance : 0.1)) return r;
+    }
+    return null;
+  }
+  function renderRare(r) {
+    S.usedRare.push(r.id);
+    if (!r.choices) { applyEffects(r.effects); if (r.set) S.flags[r.set] = true; } else S.lastDelta = "";
+    S.log.push(`${S.age} 岁 · 【稀有】${r.text}`);
+    app().innerHTML = `<section class="card rare">${head("这一年不太一样")}
+      <p class="rare-tag">稀有事件</p><p class="body">${esc(r.text)}</p>${deltaLine()}
+      ${r.choices ? `<div class="choices">${r.choices.map((c, i) => `<button class="choice" data-i="${i}">${esc(c.label)}</button>`).join("")}</div><div id="echo"></div>`
+                  : `<button class="primary" id="cont">过一年</button>`}</section>`;
+    if (!r.choices) { save(); el("cont").addEventListener("click", advance); return; }
+    document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {
+      const c = r.choices[Number(b.dataset.i)];
+      applyEffects(c.effects);
+      if (c.set) S.flags[c.set] = true;
+      document.querySelector(".choices").remove();
+      el("echo").innerHTML = `${deltaLine()}<p class="echo">${esc(c.echo)}</p><button class="primary" id="cont">过一年</button>`;
+      save(); el("cont").addEventListener("click", advance);
+    }));
   }
   function advance() { S.age += 1; step(); }
 
@@ -146,11 +195,7 @@
 
   function pickEvent() {
     const pool = D.events.filter((e) =>
-      S.age >= e.min && S.age <= e.max && !S.usedEvents.includes(e.id) &&
-      (!e.route || e.route === S.route.id) && (!e.forbidRoute || e.forbidRoute !== S.route.id) &&
-      (!e.require || S.flags[e.require]) && (!e.forbid || !S.flags[e.forbid]) &&
-      (!e.chain || S.usedEvents.includes(e.chain)) &&
-      (!e.when || (e.when.lt !== undefined ? S.stats[e.when.stat] < e.when.lt : S.stats[e.when.stat] > e.when.gt)));
+      S.age >= e.min && S.age <= e.max && !S.usedEvents.includes(e.id) && met(e));
     if (!pool.length) return null;
     // 回响事件（require 命中）权重更高：早年的选择应该更容易被「想起来」
     const weighted = pool.flatMap((e) => (e.require ? [e, e, e] : [e]));
@@ -222,15 +267,26 @@
     const top = sorted[0][0], bottom = sorted[sorted.length - 1][0];
     return { text: D.verdictTop[top] + D.verdictCost[bottom], top, bottom };
   }
+  const TIER_ORDER = { legendary: 0, epic: 1, rare: 2 };
+  const TIER_LABEL = { legendary: "传说结局", epic: "史诗结局", rare: "稀有结局" };
+  function specialEnding() {
+    const hits = (D.endings || []).filter((e) => met(e));
+    if (!hits.length) return null;
+    hits.sort((a, b) => TIER_ORDER[a.tier] - TIER_ORDER[b.tier]);
+    return hits[0];
+  }
   function renderEnd() {
     clearSave();
     const v = verdict();
+    const sp = specialEnding();
+    S.special = sp;
     const sh = shadowRoute();
     const skippedLine = S.glimpsesSkipped ? `<p>你有 ${S.glimpsesSkipped} 次没有去细看另一条路。这样也好，有些事不知道，更睡得着。</p>` : "";
     const reflHtml = S.reflections.length
       ? `<h3>你留给自己的话</h3>` + S.reflections.map((r) => `<p class="refl">「${esc(r.text)}」（${r.age} 岁）</p>`).join("") : "";
     app().innerHTML = `<section class="card">${head()}
       <h2>65 岁 · 这一局走完了</h2>
+      ${sp ? `<div class="special"><p class="rare-tag">${TIER_LABEL[sp.tier]}</p><p class="special-title">${esc(sp.title)}</p><p>${esc(sp.text)}</p></div>` : ""}
       <p class="verdict">${esc(v.text)}</p>
       <p>你走了这条路：${esc(S.route.name)}。</p>
       <p>另一条路（${esc(sh.name)}）也走完了它的一生。${esc(sh.stages[2].find((t) => !(S.shadowSeenTexts || []).includes(t)) || sh.stages[2][0])}</p>
@@ -278,7 +334,9 @@
     x.fillStyle = "#8A948C"; x.font = "28px monospace"; x.textAlign = "right";
     x.fillText("种子 " + S.seedStr, 990, 130); x.textAlign = "left";
     x.fillStyle = "#23211C"; x.font = "58px Georgia, 'Songti SC', serif";
-    let y = wrapText(x, v.text, 90, 246, 900, 80);
+    let y = S.special ? wrapText(x, "【" + S.special.title + "】", 90, 246, 900, 80) : 246;
+    if (S.special) { x.font = "46px Georgia, 'Songti SC', serif"; y = wrapText(x, v.text, 90, y + 6, 900, 66); }
+    else y = wrapText(x, v.text, 90, 246, 900, 80);
     const gy = y + 80;
     x.strokeStyle = "#2F4A3C"; x.lineWidth = 7; x.beginPath(); x.moveTo(90, gy); x.lineTo(990, gy); x.stroke();
     x.strokeStyle = "#8A948C"; x.lineWidth = 4; x.setLineDash([14, 12]);

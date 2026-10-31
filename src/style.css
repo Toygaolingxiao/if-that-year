@@ -35,3 +35,7 @@ h1{font-family:Georgia,"Songti SC",serif;font-weight:500;font-size:28px;line-hei
 .refl{font-family:Georgia,"Songti SC",serif}
 .timeline{max-height:480px}
 button.big{width:100%;margin-bottom:14px}
+.rare{border-color:#B08D6A;background:#FBF7EE}
+.rare-tag{color:#B08D6A;font-size:13px;letter-spacing:.2em;margin:0 0 6px}
+.special{border:1.5px solid #B08D6A;border-radius:10px;padding:14px 16px;margin:10px 0;background:#FBF7EE}
+.special-title{font-family:Georgia,"Songti SC",serif;font-size:26px;color:var(--accent);margin:2px 0 6px}
