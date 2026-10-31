@@ -6,10 +6,10 @@ window.GAME_SYNERGY = {
   combos: [
     { id: "cb_family3", all: ["bought_house"], stateAll: { spouse: "partnered", kids: "has" }, min: 40, max: 55, text: "周六早上，孩子在客厅地板上搭积木，搭到第三层塌了，又从头来。对方在厨房煎蛋，鸡蛋是昨晚超市买的，一盒 12 个，小票上 18 块 9，够吃四天。你在阳台给那盆薄荷浇完水，把水壶放回窗台原处。早饭三个人吃了二十分钟，煎蛋有点糊，谁也没提。", effects: { relation: 3, health: 1 } },
     { id: "cb_solo_free", stateAll: { spouse: "single" }, stats: [{ k: "freedom", gt: 68 }], min: 40, max: 58, text: "你一个人去看了场午夜场电影，会员票 45，座位随便挑，你坐了正中间。散场时整条街都是刚下班的年轻人，你在路边摊买了份炒粉，15 块，加了个蛋，边走边吃，到家十二点四十。", effects: { freedom: 2, health: 1 } },
-    { id: "cb_care_near", all: ["care_self", "near_family"], min: 53, max: 64, text: "父亲半夜胃不舒服，电话打过来，你开车七分钟就到了。急诊抽血、做心电图，折腾到凌晨三点，医生说先留观。你在走廊的自助机上交了 480，自费部分。他看见缴费单，先说的是：把你折腾起来了。你说，没事，我住得近。", effects: { relation: 3, health: -1 } },
+    { id: "cb_care_near", all: ["care_self", "near_family"], stateAll: { dad: "alive" }, min: 53, max: 64, text: "父亲半夜胃不舒服，电话打过来，你开车七分钟就到了。急诊抽血、做心电图，折腾到凌晨三点，医生说先留观。你在走廊的自助机上交了 480，自费部分。他看见缴费单，先说的是：把你折腾起来了。你说，没事，我住得近。", effects: { relation: 3, health: -1 } },
     { id: "cb_dink_plan", stateAll: { spouse: "partnered", kids: "none" }, stats: [{ k: "money", gt: 58 }], min: 44, max: 58, text: "你和对方把养老的账认真算了一遍，列了张表：社保还要交几年、存款够花几年、现在这套小房子的月供还剩多少。算完你们去吃了顿火锅，两个人 178。计划表压在茶几玻璃板下面，压了两年，一直没动过。", effects: { money: 1, freedom: 2 } },
     { id: "cb_old_couple", all: ["retired_full"], stateAll: { spouse: "partnered" }, min: 59, max: 64, text: "退休后第一个长假，你和对方报了个慢团，六天，一个人 4200，全程没赶过景点，中午还回酒店睡午觉。团里另一对老夫妻跟你们拼了四次饭，散团那天互相加了微信，约好明年还走这一条线。", effects: { relation: 2, health: 2, money: -2 } },
-    { id: "cb_sandwich", all: ["care_self"], stateAll: { kids: "has" }, min: 53, max: 60, text: "这一天你两头跑：上午请了半天假，去学校坐最后一排开家长会；下午赶到医院，父亲的复查号是提前一周在手机上抢的，取报告、排队缴费，来回打车 63。晚上回家，你把成绩单和复查单夹进同一个文件夹，放在抽屉第二层。", effects: { relation: 2, health: -2 } },
+    { id: "cb_sandwich", all: ["care_self"], stateAll: { kids: "has", dad: "alive" }, min: 53, max: 60, text: "这一天你两头跑：上午请了半天假，去学校坐最后一排开家长会；下午赶到医院，父亲的复查号是提前一周在手机上抢的，取报告、排队缴费，来回打车 63。晚上回家，你把成绩单和复查单夹进同一个文件夹，放在抽屉第二层。", effects: { relation: 2, health: -2 } },
     { id: "cb_rent_free", all: ["renting", "less_work"], stats: [{ k: "freedom", gt: 63 }], min: 45, max: 60, text: "房东在微信上问：续三年就不涨租，续一年要涨 100。你回：先续一年吧。签完你把合同塞进抽屉，抽屉里还有前两年的合同，三份叠在一起，租金那一栏一年比一年高一点。你给阳台那几盆花浇了水，明年住哪，到时候再说。", effects: { freedom: 2, wisdom: 5 } },
     { id: "cb_hop_viral_base", all: ["job_hop", "side_start"], min: 30, max: 45, text: "跳槽面试聊到一半，面试官把手机转过来：这个账号也是你做的？那是你下班更新的小账号，粉丝不多，置顶那条有两万多播放。后面又聊了四十分钟，聊的全是它，岗位本身只占了十分钟。临走对方说，账号别停更。", effects: { growth: 2, relation: 1 } },
   ],
@@ -44,7 +44,7 @@ window.GAME_SYNERGY = {
     { id: "r_book", label: "编辑找上门", clue: "合同薄薄几页，在家里看了三遍的人。", min: 33, max: 55, all: ["side_start"], stats: [{ k: "growth", gt: 65 }], chance: 0.010, text: "出版社的编辑找到你，说你陆续写的那些东西，想结集出本书。合同寄到家里，薄薄几页，你看了三遍。", effects: { growth: 3, money: 2 }, set: "traj_book" },
     { id: "r_viral", label: "一夜六个零", clue: "早上醒来，手机烫得像块铁的人。", min: 30, max: 50, all: ["side_start", "side_job"], chance: 0.012, text: "你随手发的一条视频，第二天早上醒来，播放量后面跟了六个零。手机烫得像块铁，一整天都在震。", effects: { money: 6, relation: 2, health: -2 }, set: "traj_viral" },
     // —— 学术荣誉 ——
-    { id: "r_award", label: "提名名单上有你", clue: "横幅拉起来，路过时放慢脚步的人。", min: 46, max: 62, stats: [{ k: "growth", gt: 84 }], chance: 0.06, text: "提名名单公布，你的名字在里面。单位拉了条横幅，你有点不好意思，但路过的时候，还是放慢脚步看了一眼。", effects: { growth: 3, relation: 2 }, set: "traj_award" },
+    { id: "r_award", label: "提名名单上有你", clue: "横幅拉起来，路过时放慢脚步的人。", min: 46, max: 62, stats: [{ k: "growth", gt: 84 }], chance: 0.02, text: "提名名单公布，你的名字在里面。单位拉了条横幅，你有点不好意思，但路过的时候，还是放慢脚步看了一眼。", effects: { growth: 3, relation: 2 }, set: "traj_award" },
     // —— 独立稀有点 ——
     { id: "r_lottery", label: "楼下中了头奖", clue: "楼下彩票站贴出红纸那天，名字没写、照常去上班的人。", min: 23, max: 60, chance: 0.00015, text: "楼下彩票站贴了张红纸：本站中出头奖。名字没写，但你知道是你——那组号码，是你随手写的生日组合。税后的钱到账那天，你照常去上了班。", effects: { money: 40 }, set: "traj_lottery" },
     { id: "r_patent", label: "小专利卖了个好价", clue: "捣鼓了两年的方案，被人找上门来买的人。", min: 32, max: 55, stats: [{ k: "growth", gt: 71 }], chance: 0.015, text: "你业余捣鼓出来的一个小专利，被一家公司看上了，开价比你想的高得多。签约的时候对方说：我们找这个方案找了两年。", effects: { money: 14, growth: 2 }, set: "traj_patent" },

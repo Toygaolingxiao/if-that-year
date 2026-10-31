@@ -23,7 +23,7 @@
 - 每次往 `main` 推代码，Cloudflare 自动重新部署，不需要任何手动操作。
 - 其他分支/PR 会生成预览网址，可先看再合并。
 - 自定义域名（如以后用 game 子域名）走 Pages 项目 → Custom domains 添加，按提示加 DNS 记录；域名若也在 Cloudflare（参考 komesomme.jp）则自动配好。
-- 缓存与响应头由仓库根目录 `_headers` 控制，已预置：`/src/*` 缓存 1 小时、HTML 不强缓存（改文案能较快生效）。
+- 缓存与响应头由仓库根目录 `_headers` 控制：`/src/*` 为 `no-cache` 回源校验（v0.13.1 起——此前缓存 1 小时曾使新旧版本脚本混装：新 index.html 配旧 engine.js 会白页或行为错乱；no-cache 每次先向源站校验，未变更才用本地副本，流量代价小）、HTML 不强缓存（改文案能较快生效）。
 
 ## 出问题先看
 

@@ -1,9 +1,14 @@
-// 《如果那年》引擎 v0.13.0 —— 版本号规则见 docs/DEVLOG.md 卷首
+// 《如果那年》引擎 v0.13.1 —— 版本号规则见 docs/DEVLOG.md 卷首
 // 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 (function () {
   "use strict";
   const D = window.GAME_DATA;
+  if (!D || !Array.isArray(D.events) || !D.routes || !D.forks) { // 数据缺失守卫（v0.13.1）：脚本加载不全时渲染提示，不白页
+    const appEl = document.getElementById("app");
+    if (appEl) appEl.innerHTML = "<section class=\"card\"><h2>如果那年 · 另一条路</h2><p>这一生的账本没能打开：游戏数据没有加载完。检查一下网络，再刷新一次。</p></section>";
+    return;
+  }
   if (window.GAME_PACKS) D.events = D.events.concat(window.GAME_PACKS); // 事件扩展包（src/packs/）在引擎启动时并入主池
   if (window.GAME_SYNERGY) { // 协同组合与稀有系统（docs/SYNERGY-AND-RARE-ENDINGS.md）
     D.events = D.events.concat(window.GAME_SYNERGY.combos || []);
@@ -11,6 +16,7 @@
     D.endings = window.GAME_SYNERGY.endings || [];
   }
   const CARDS = window.GAME_CARDS || null; // 出身牌（v0.13.0，src/cards.js；设计 docs/DESIGN-V013.md §A）
+  const ANA = window.GAME_ANALYTICS || { track() {}, flush() {} }; // 匿名埋点（v0.13.1，src/analytics.js；默认关闭、关闭时无操作，口径见 docs/ANALYTICS.md）
   // --- 状态矩阵（v0.12.0，docs/STATE-MATRIX.md）：域内互斥/不可逆的人生状态收进 S.state，
   // 流转只能走注册表（src/registry.js）声明的边；普通叙事旗标仍留在 S.flags（里程碑）。
   const REG = window.GAME_REGISTRY || { domains: {} };
@@ -458,10 +464,10 @@
           <button class="ghost" id="seedgo">用这个种子</button>
           <button class="ghost" id="daily">今日种子</button>
         </div>
-        <p class="hint ver">v0.13.0</p>
+        <p class="hint ver">v0.13.1</p>
         <p class="hint">不填随机。填了，运气定下来，跟朋友比同一局就用它。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam ? "，年代也按对方那局选好了" : ""}，点任意一条路就开始同一局。` : ""}</p>
       </section>`;
-    el("liveslink").addEventListener("click", renderLives);
+    el("liveslink").addEventListener("click", () => { ANA.track("lives_view", {}); renderLives(); });
     if (saved) el("resume").addEventListener("click", () => {
       S = saved;
       S.usedRare = S.usedRare || []; S.era = S.era || "c2000"; S.birthYear = S.birthYear || 2000;
@@ -519,6 +525,7 @@
       const chosen = D.routes[Number(b.dataset.i)];
       const seedStr = (el("seedin").value || "").trim() || seedParam || candSeed; // 随机开局用开局页渲染时已生成的候选种子（牌面据此而发，§A3.2）
       const eb = document.querySelector("#erapick .segbtn.sel");
+      if (CARDS_ON && dealt) for (const cat of ["family", "temper", "era"]) ANA.track("card_pick", { cat, pick: picked[cat], changed: picked[cat] !== 0 });
       newGame(seedStr, chosen, { era: eb ? eb.dataset.era : "c2000", birth: eb ? +eb.dataset.birth : 2000, cards: CARDS_ON && dealt ? [dealt.family[picked.family], dealt.temper[picked.temper], dealt.era[picked.era]] : [] });
     }));
     el("seedgo").addEventListener("click", () => {
@@ -541,6 +548,7 @@
     if (opts) { S.era = opts.era; S.birthYear = opts.birth; }
     S.autoMode = prefs.mode; S.speed = prefs.speed;
     S.route = route;
+    ANA.track("game_start", { era: S.era, route: route.id });
     S.unchosen = D.routes.filter((r) => r.id !== route.id).map((r) => ({ kind: "route", label: r.name, id: r.id }));
     // 出身层（v0.13.0，§A2.1）：叠加顺序 初值 → 牌面修正（数值+钩子旗同一拍） → 路线 stats；出身行记在出发之前
     S.cards = (opts && opts.cards) || [];
@@ -665,10 +673,21 @@
     el("toend").addEventListener("click", renderEnd);
   }
 
+  // 分岔文案状态感知（v0.13.1，B2）：选项可带 labelBySpouse/echoBySpouse 变体——partnered 用原文字段，
+  // dating 优先 dating 变体、其余状态（single/none/divorced/widowed）用 solo 变体，缺变体回落原文。
+  function spouseText(c, kind) {
+    const orig = kind === "label" ? c.label : (c.echo || "");
+    const m = kind === "label" ? c.labelBySpouse : c.echoBySpouse;
+    if (!m) return orig;
+    const sp = S.state.spouse;
+    if (sp === "partnered") return orig;
+    if (sp === "dating" && m.dating) return m.dating;
+    return m.solo || orig;
+  }
   function renderFork(fork) {
     curKind = "fork";
     app().innerHTML = `<section class="card">${head()}<h2>${esc(fork.title)}</h2><p>${esc(fork.text)}</p>
-      <div class="choices">${fork.choices.map((c, i) => `<button class="choice" data-i="${i}">${esc(c.label)}</button>`).join("")}</div></section>`;
+      <div class="choices">${fork.choices.map((c, i) => `<button class="choice" data-i="${i}">${esc(spouseText(c, "label"))}</button>`).join("")}</div></section>`;
     finishRender();
     document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {
       const c = fork.choices[Number(b.dataset.i)];
@@ -676,9 +695,9 @@
         applyEffects(c.effects);
         if (c.set) S.flags[c.set] = true;
         applyState(c);
-        fork.choices.forEach((o) => { if (o !== c) S.unchosen.push({ kind: "fork", age: fork.age, label: o.label }); });
-        S.log.push(`${fork.age} 岁 · ${fork.title.split("·")[1].trim()}：${c.label}`);
-        S.pendingFork = { age: fork.age, label: c.label, echo: c.echo || null }; // §3.3 复述拍：先存下，续玩回到这一拍而不是重选
+        fork.choices.forEach((o) => { if (o !== c) S.unchosen.push({ kind: "fork", age: fork.age, label: spouseText(o, "label") }); });
+        S.log.push(`${fork.age} 岁 · ${fork.title.split("·")[1].trim()}：${spouseText(c, "label")}`);
+        S.pendingFork = { age: fork.age, label: spouseText(c, "label"), echo: spouseText(c, "echo") || null }; // §3.3 复述拍：先存下，续玩回到这一拍而不是重选
         save();
         renderForkEcho();
         mountStream();
@@ -834,9 +853,9 @@
       <div class="row"><button class="primary" id="look">看细节</button><button class="ghost" id="skip">不看，继续过日子</button></div>
       <div id="detail"></div></section>`;
     finishRender();
-    el("skip").addEventListener("click", () => { S.glimpsesSkipped += 1; S.log.push(`${S.age} 岁 · 没有去看另一条路`); advance(); });
+    el("skip").addEventListener("click", () => { S.glimpsesSkipped += 1; ANA.track("glimpse", { age: S.age, seen: false }); S.log.push(`${S.age} 岁 · 没有去看另一条路`); advance(); });
     el("look").addEventListener("click", () => {
-      S.glimpsesSeen += 1;
+      S.glimpsesSeen += 1; ANA.track("glimpse", { age: S.age, seen: true });
       (S.shadowSeenTexts = S.shadowSeenTexts || []).push(text);
       S.log.push(`${S.age} 岁 · 影子：${text}`);
       el("detail").innerHTML = `<p class="body">「${esc(text)}」</p>
@@ -1011,6 +1030,7 @@
     const v = verdict();
     const sp = specialEnding();
     S.special = sp;
+    ANA.track("game_complete", { era: S.era, route: S.route.id, endAge: finalAge(), death: !!S.death, ending: sp ? sp.id : "none", tier: sp ? sp.tier : "none" });
     const livesNew = recordLives(sp ? sp.id : null, S.usedRare || []); // 活过记录：落盘 + 本局新纪录（§B3）
     const shadowLines = shadowCompareLines();
     const skippedLine = S.glimpsesSkipped ? `<p>你有 ${S.glimpsesSkipped} 次没有去细看另一条路。这样也好，有些事不知道，更睡得着。</p>` : "";
@@ -1085,6 +1105,7 @@
     el("again-same").addEventListener("click", () => location.assign(sameSeedUrl()));
     el("again-new").addEventListener("click", () => location.assign(location.pathname));
     el("copylink").addEventListener("click", async () => {
+      ANA.track("share_click", { action: "copy_link" });
       const url = sameSeedUrl();
       try { await navigator.clipboard.writeText(url); el("copylink").textContent = "已复制，去发给他"; }
       catch (e) { el("copylink").textContent = url; }
@@ -1115,9 +1136,10 @@
       if (el("cardrefl").checked) refreshCard(); // 勾选了印卡，改字要即时重绘
     });
     el("cardrefl").addEventListener("change", refreshCard);
-    el("share").addEventListener("click", shareCurrent);
-    el("saveimg").addEventListener("click", downloadCurrent);
+    el("share").addEventListener("click", () => { ANA.track("share_click", { action: "share" }); shareCurrent(); });
+    el("saveimg").addEventListener("click", () => { ANA.track("share_click", { action: "save_image" }); downloadCurrent(); });
     el("copytext").addEventListener("click", async () => {
+      ANA.track("share_click", { action: "copy_text" });
       try { await navigator.clipboard.writeText(shareCopy()); el("copytext").textContent = "已复制，去粘贴吧"; }
       catch (e) { el("copytext").textContent = "复制失败，展开下面的文案预览手动复制"; }
     });

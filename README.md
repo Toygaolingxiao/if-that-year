@@ -7,7 +7,7 @@
 - **核心机制**：选择 + 影子人生 —— 未选之路不消失，作为平行线继续运行；30/40/50 岁可瞥见它，结算时揭晓它的代价。
 - **设计原则**：规则决定，故事呈现。确定性种子引擎算后果（同一种子可复现，支撑「同种子对战」），在线零 LLM 调用——所以它天然抗流量，扩容路线见 [docs/SCALING.md](docs/SCALING.md)。
 
-## 现在就能玩（v0.13.0）
+## 现在就能玩（v0.13.1）
 
 **线上**：托管定为 Cloudflare Pages（用户 2026-10-30 拍板）。仓库接入尚待用户在 Cloudflare 后台完成，站点尚未上线；接入步骤见 [docs/DEPLOY-CLOUDFLARE.md](docs/DEPLOY-CLOUDFLARE.md)，接入完成后网址为 `https://if-that-year.pages.dev`，推 `main` 自动部署。
 
@@ -35,7 +35,7 @@ python3 -m http.server 8000
 - 手感与无障碍（[docs/UX-MOTION.md](docs/UX-MOTION.md) 的 P0–P2 已落地）：六维条按旧值→新值真过渡（不做数字滚动）、某维跌破 30 有静态临界提示、手动选择留一拍并在回响复述所选、分岔选择有复述拍、自动推进剩余时间是一条 2px 松绿细线（暂停冻结、切档不回跳）、全程自动选最后 400ms 预高亮可夺回、按钮命中高度 44px 上下、系统减动效全站降级静态、开局防连点、续玩第一屏标注「上次玩到这里」。
 - 分享台：判词卡 / 流水账卡 × 两种比例（4:5、9:16），页面内实时预览；感想可勾选印到卡上，发帖文案（感想 + 判词 + 同局链接）一键复制；系统分享（Web Share）优先，不可用时下载 PNG。
 
-未实现：珍藏付费、影子完整推演引擎（现为查表文本）、浪潮事件组（设计已定、试点两组待用户点头，见 [docs/WAVE-EVENTS.md](docs/WAVE-EVENTS.md)）、日文版、B 端引导版、故事墙、匿名埋点。
+未实现：珍藏付费、影子完整推演引擎（现为查表文本）、浪潮事件组（设计已定、试点两组待用户点头，见 [docs/WAVE-EVENTS.md](docs/WAVE-EVENTS.md)）、日文版、B 端引导版、故事墙。匿名埋点已备接口（v0.13.1，`src/analytics.js`，默认关闭，见 [docs/ANALYTICS.md](docs/ANALYTICS.md)）。
 
 ## 仓库结构
 
@@ -60,6 +60,8 @@ docs/STATE-MATRIX.md 状态矩阵（域/流转图/注册表/旧存档迁移映�
 docs/WAVE-EVENTS.md 浪潮事件组设计（大事件必经、个人路线分流）
 docs/MORTALITY-MODEL.md 死亡模型（判定公式、参数、4000 局/年代模拟实测与校准差距）
 docs/SYNERGY-AND-RARE-ENDINGS.md 协同组合与稀有结局系统（机制与红线）
+docs/ANALYTICS.md   匿名埋点（事件表、开关方法、隐私口径；默认关闭）
+docs/REVIEW-COMPLETENESS-V013.md 六角色完成度评审归档（v0.13.0 时点，结论原文）
 content-drafts/     事件库研究稿与史实出处清单（SOURCES.md）
 _headers            Cloudflare Pages 缓存与响应头规则
 ```

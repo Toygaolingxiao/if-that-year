@@ -42,7 +42,7 @@ window.GAME_DATA = {
     { age: 38, title: "38 岁 · 要不要孩子", text: "这个问题从「以后的事」，变成了「就这几年的事」。",
       choices: [
         { label: "要。日子会变样，心里有数", effects: { relation: 7, money: -6, freedom: -6, health: -2 }, setState: { kids: "has" }, echo: "家里开始腾地方，婴儿床的尺寸量了又量，你把容易磕碰的桌角都贴上了软条。" },
-        { label: "不要。两个人的日子也完整", effects: { freedom: 6, money: 4, relation: -2 }, setState: { kids: "none" }, echo: "亲戚再问起，你和另一半就把话岔到旅行上，回来在冰箱上多贴了一张车票根。" },
+        { label: "不要。两个人的日子也完整", labelBySpouse: { dating: "不要。孩子的事先放放", solo: "不要。一个人的日子也完整" }, effects: { freedom: 6, money: 4, relation: -2 }, setState: { kids: "none" }, echo: "亲戚再问起，你和另一半就把话岔到旅行上，回来在冰箱上多贴了一张车票根。", echoBySpouse: { solo: "亲戚再问起，你把话岔到旅行上，回来在冰箱上多贴了一张车票根。" } },
         { label: "再等等，看看身体和钱包", effects: { health: -2, money: 2 }, echo: "你去做了次全面检查，又把存款重新算了一遍，文件夹最上面压了张写着日期的纸。" },
       ] },
     { age: 44, title: "44 岁 · 中年的岔路", text: "往上看，天花板好像就在头顶；往旁边看，路还很多，就是每条都费劲。",

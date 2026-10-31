@@ -5,7 +5,7 @@
    新增/改动旗标必须同步登记，tools/validate-state.js 会逐项核对，未登记即报错。
    详细口径见 docs/STATE-MATRIX.md。 */
 window.GAME_REGISTRY = {
- "version": "0.13.0",
+ "version": "0.13.1",
  "domains": {
   "spouse": {
    "label": "配偶",
@@ -69,6 +69,15 @@ window.GAME_REGISTRY = {
       "p32_003"
      ],
      "note": "再结伴边（v0.13.0 启用）：载体 pack32 三环（相识 p32_001→相处 p32_002→落点 p32_003），同上"
+    },
+    {
+     "from": "dating",
+     "to": "partnered",
+     "by": [
+      "p3_043",
+      "e55_017"
+     ],
+     "note": "慢线成婚边（v0.13.1 启用）：p3_043「结吧」选项级 setState（慢线 dating 的叙事出口）；e55_017 为 c1955 年代婚事事件，呈现即成婚（事件级 setState，门控 stateAll 限 dating/partnered）"
     }
    ]
   },

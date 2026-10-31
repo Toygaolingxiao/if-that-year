@@ -2,7 +2,8 @@
 /* 《如果那年》状态矩阵入库门（v0.12.0 起）——内容轮交付前必跑，绿了才入库。
    用法：node tools/validate-state.js
    检查：注册表为单一事实源——数据里出现的每个旗标/状态/流转都必须在 src/registry.js 登记，
-   登记与数据实扫必须双向一致；不可逆边、互斥组合、终态自门控在数据层报错拦截。
+   登记与数据实扫必须双向一致；不可逆边、互斥组合、终态自门控在数据层报错拦截；
+   另含旗标可生产性 fixpoint（v0.13.1 起）：依赖环造成的不可达条目列为错误。
    退出码：0 = 通过（警告可存在，需在交付说明里交代）；1 = 有错误。 */
 "use strict";
 const fs = require("fs"), vm = require("vm"), path = require("path");
@@ -122,6 +123,62 @@ for (const [dom, def] of Object.entries(DOMAINS)) {
   for (const s of def.states) if (!reach.has(s)) warn(`域 ${dom} 状态 ${s} 无已启用可达路径`);
   for (const e of (def.edges || [])) if (!(e.by || []).length) warn(`域 ${dom} 边 ${e.from}→${e.to} 为 reserved（已设计无载体）：${e.note || ""}`);
   for (const s of def.states) if (s !== def.initial && ![...declaredEdges.values()].some((e) => e.dom === dom && e.to === s)) warn(`域 ${dom} 状态 ${s} 无任何入边声明`);
+}
+
+// ---- 旗标可生产性（v0.13.1 补盲，B1 教训：chain 方向写反造成的「立旗环」旧检查全绿却整线死亡）----
+// 可达 fixpoint：条目可呈现 ⟺ 其正向依赖全可满足（require/all 旗可生产、any 至少一可生产、chain 前置可呈现、正向状态值可达）；
+// 旗可生产 ⟺ 至少一个 setter 条目可呈现；状态值可达 ⟺ 初始值，或存在已声明边 u→v 且 u 可达、某载体条目可呈现并写出该流转。
+// 负向门（forbid/stateNot）不影响可生产性；数值门（when/stats/危机阈值）、年代/路线/公历年不建模（视为可满足）。口径见 docs/STATE-MATRIX.md §7。
+const prodItems = new Map();
+function newAcc() { return { flags: new Set(), any: new Set(), chain: null, states: new Map(), sets: new Set(), setStates: [] }; }
+function collectDeps(item, acc) {
+  for (const f of asArr(item.require)) acc.flags.add(f);
+  for (const f of asArr(item.all)) acc.flags.add(f);
+  for (const f of asArr(item.any)) acc.any.add(f);
+  if (item.chain) acc.chain = item.chain;
+  for (const fld of ["state", "stateAll"]) if (item[fld]) for (const [dom, v] of Object.entries(item[fld])) { if (!acc.states.has(dom)) acc.states.set(dom, new Set()); for (const val of asArr(v)) acc.states.get(dom).add(val); }
+  if (item.set) acc.sets.add(item.set);
+  if (item.setState) for (const [dom, to] of Object.entries(item.setState)) acc.setStates.push([dom, to]);
+  for (const c of (item.choices || [])) collectDeps(c, acc);
+}
+for (const e of events) { const acc = newAcc(); collectDeps(e, acc); prodItems.set(e.id, acc); }
+for (const f of D.forks) { const acc = newAcc(); for (const c of f.choices) collectDeps(c, acc); prodItems.set(f.id || `fork${f.age}`, acc); }
+for (const [k, c] of Object.entries(D.crisis || {})) { const acc = newAcc(); for (const ch of c.choices) collectDeps(ch, acc); prodItems.set(`crisis_${k}`, acc); }
+if (CARDS && CARDS.byId) for (const c of Object.values(CARDS.byId)) { const acc = newAcc(); collectDeps(c, acc); prodItems.set(c.id, acc); }
+const structural = new Set([...D.forks.map((f) => f.id || `fork${f.age}`), ...Object.keys(D.crisis || {}).map((k) => `crisis_${k}`), ...(CARDS && CARDS.byId ? Object.keys(CARDS.byId) : [])]);
+const presentable = new Set(structural);
+const producible = new Set();
+const attainable = new Map(); for (const [dom, def] of Object.entries(DOMAINS)) attainable.set(dom, new Set([def.initial]));
+const edgeList = [...declaredEdges.values()];
+let grewP = true;
+while (grewP) {
+  grewP = false;
+  for (const [id, acc] of prodItems) {
+    if (presentable.has(id)) continue;
+    let ok = true;
+    for (const f of acc.flags) if (!producible.has(f)) { ok = false; break; }
+    if (ok && acc.any.size && ![...acc.any].some((f) => producible.has(f))) ok = false;
+    if (ok && acc.chain && !presentable.has(acc.chain)) ok = false;
+    if (ok) for (const [dom, vals] of acc.states) { if (![...vals].some((v) => attainable.get(dom).has(v))) { ok = false; break; } }
+    if (ok) { presentable.add(id); grewP = true; }
+  }
+  for (const [id, acc] of prodItems) {
+    if (!presentable.has(id)) continue;
+    for (const f of acc.sets) if (!producible.has(f)) { producible.add(f); grewP = true; }
+    for (const [dom, to] of acc.setStates) {
+      const att = attainable.get(dom);
+      if (!att.has(to) && edgeList.some((e) => e.dom === dom && e.to === to && att.has(e.from))) { att.add(to); grewP = true; }
+    }
+  }
+}
+for (const [id, acc] of prodItems) {
+  if (structural.has(id) || presentable.has(id)) continue;
+  const why = [];
+  for (const f of acc.flags) if (!producible.has(f)) why.push(`旗标 ${f} 无可达 setter`);
+  if (acc.any.size && ![...acc.any].some((f) => producible.has(f))) why.push(`any 旗标组 [${[...acc.any].join("/")}] 无一可生产`);
+  if (acc.chain && !presentable.has(acc.chain)) why.push(`chain 前置 ${acc.chain} 不可达`);
+  for (const [dom, vals] of acc.states) if (![...vals].some((v) => attainable.get(dom).has(v))) why.push(`状态 ${dom}∈{${[...vals].join("/")}} 不可达`);
+  err(`不可达条目 ${id}: ${why.join("；") || "依赖链不可达"}`);
 }
 
 console.log(`validate-state: 条目 ${events.length}（含核心/扩展/协同/稀有/结局）+ 出身牌 ${cardCount} | 域 ${Object.keys(DOMAINS).length} | 里程碑 ${Object.keys(MILESTONES).length}`);
