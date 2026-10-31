@@ -84,3 +84,19 @@ canvas.card-img{max-width:100%;height:auto}
 .autolive{color:var(--accent)}
 
 .hint.ver { text-align: right; opacity: .65; margin-bottom: 2px; }
+
+/* v0.7.0：续玩降级、自动推进三态与自动选留痕 */
+.resume-link{display:inline-block;margin:14px 0 2px;padding:7px 13px;font-size:13px}
+.autorow{flex-wrap:wrap;gap:4px 10px}
+.autorow .automode.on{color:var(--accent);font-weight:700}
+.autonote{color:var(--accent);font-size:13px;margin:8px 0 0}
+.death h2{color:var(--accent)}
+
+/* v0.7.0：游玩页宽屏双栏；流水账拆为同级栏，窄屏仍由引擎放回卡内 */
+.wrap{padding-bottom:28px}
+.foot{padding-bottom:24px}
+@media (min-width:1024px){
+  #app.playwrap{max-width:1120px;display:grid;grid-template-columns:minmax(0,7fr) minmax(320px,5fr);gap:20px;align-items:start}
+  #app.playwrap .streamwrap{margin-top:14px;border:1px solid var(--line);border-radius:14px;background:var(--card);box-shadow:0 4px 14px rgba(35,33,28,.05);padding:16px 16px 12px;position:sticky;top:14px}
+  #app.playwrap .stream{max-height:calc(100vh - 110px)}
+}
