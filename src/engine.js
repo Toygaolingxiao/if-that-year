@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.10.0 —— 版本号规则见 docs/DEVLOG.md 卷首
+// 《如果那年》引擎 v0.11.0 —— 版本号规则见 docs/DEVLOG.md 卷首
 // 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 (function () {
@@ -395,7 +395,7 @@
           <button class="ghost" id="seedgo">用这个种子</button>
           <button class="ghost" id="daily">今日种子</button>
         </div>
-        <p class="hint ver">v0.10.0</p>
+        <p class="hint ver">v0.11.0</p>
         <p class="hint">不填随机。填了，运气定下来，跟朋友比同一局就用它。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam ? "，年代也按对方那局选好了" : ""}，点任意一条路就开始同一局。` : ""}</p>
       </section>`;
     if (saved) el("resume").addEventListener("click", () => {
@@ -489,6 +489,7 @@
     if (e.routeIn && !e.routeIn.includes(S.route.id)) return false;
     if (e.forbidRoute && e.forbidRoute === S.route.id) return false;
     if (e.era && S.era !== e.era) return false;
+    if (e.minYear && (S.birthYear || 1978) + S.age < e.minYear) return false; // 公历门（v0.11.0）：事件标注的最早公历年，出生年+年龄换算
     if (e.eraIn && !e.eraIn.includes(S.era || "c2000")) return false;
     if (e.require && !(Array.isArray(e.require) ? e.require : [e.require]).every((f) => S.flags[f])) return false;
     if (e.forbid && (Array.isArray(e.forbid) ? e.forbid : [e.forbid]).some((f) => S.flags[f])) return false;
@@ -512,7 +513,8 @@
   function renderRare(r) {
     curKind = "rare";
     S.usedRare.push(r.id);
-    if (!r.choices) { applyEffects(r.effects); if (r.set) S.flags[r.set] = true; } else S.lastDelta = "";
+    if (r.set) S.flags[r.set] = true; // 呈现即立旗（v0.11.0 起覆盖有选项事件：去世旗等必立旗靠它保证）
+    if (!r.choices) { applyEffects(r.effects); } else S.lastDelta = "";
     S.log.push(`${S.age} 岁 · 【稀有】${r.text}`);
     app().innerHTML = `<section class="card rare">${head("这一年不太一样")}
       <p class="rare-tag">稀有事件</p><p class="body">${esc(r.text)}</p>${deltaLine()}
@@ -625,7 +627,7 @@
       S.age >= e.min && S.age <= e.max && !S.usedEvents.includes(e.id) && met(e));
     if (!pool.length) return null;
     // 回响事件（require 命中）与本年代事件权重更高：早年的选择更容易被「想起来」，年代质感不能被大池稀释
-    const weighted = pool.flatMap((e) => { let n = 1; if (e.require) n = 3; if (e.era && e.era === S.era) n = Math.max(n, 3); return Array(n).fill(e); });
+    const weighted = pool.flatMap((e) => { let n = 1; if (e.require) n = 3; if (e.era && e.era === S.era) n = Math.max(n, 3); if (e.w) n *= e.w; return Array(n).fill(e); }); // e.w 数据权重倍数（v0.11.0：中段苦味事件 w:2）
     return weighted[Math.floor(rng() * weighted.length)];
   }
   function renderEventYear() {
@@ -644,7 +646,8 @@
       return;
     }
     S.usedEvents.push(e.id);
-    if (!e.choices) { applyEffects(e.effects); if (e.set) S.flags[e.set] = true; } else S.lastDelta = ""; // 顶层 set 与稀有路径同语义：无选项事件呈现即立旗（v0.9.2 补齐，此前普通事件从不应用）
+    if (e.set) S.flags[e.set] = true; // 顶层 set 呈现即立（v0.9.2 补齐普通事件路径；v0.11.0 起覆盖有选项事件：去世旗等必立旗靠它保证）
+    if (!e.choices) { applyEffects(e.effects); } else S.lastDelta = "";
     S.log.push(`${S.age} 岁 · ${e.text}`);
     app().innerHTML = `<section class="card">${head()}<p class="body">${esc(e.text)}</p>${deltaLine()}
       ${e.choices ? `<div class="choices">${e.choices.map((c, i) => `<button class="choice" data-i="${i}">${esc(c.label)}</button>`).join("")}</div><div id="echo"></div>`
@@ -750,11 +753,64 @@
   // ---------- 结算 ----------
   function verdict() {
     if (S._verdict) return S._verdict;
-    const sorted = Object.entries(S.stats).sort((a, b) => b[1] - a[1]);
+    // 并列打破（v0.11.0）：同值维度用本局 rng 随机定序，不再按固定键序隐式优先
+    const sorted = Object.entries(S.stats).map(([k, v]) => [k, v, rng()]).sort((a, b) => (b[1] - a[1]) || (a[2] - b[2]));
     const top = sorted[0][0], bottom = sorted[sorted.length - 1][0];
     const pickF = (v) => (Array.isArray(v) ? v[Math.floor(rng() * v.length)] : v);
     S._verdict = { text: pickF(D.verdictTop[top]) + pickF(D.verdictCost[bottom]), top, bottom };
     return S._verdict;
+  }
+  // ---------- 事实标签行（v0.11.0） ----------
+  // 只从本局事实取材，三段为限、纯描述：①路线与人生形状（迁徙旗标优先于路线默认）②一条最有分量的轨迹（按下方优先级取第一条有旗标/日志证据的，无证据不生成）③晚年与家庭收尾。
+  // 无稀有度、无档位；不复述特殊结局名；纯函数（不耗 rng），同局在结算页与分享卡恒一致。
+  function lifeTags() {
+    const F = S.flags, used = S.usedEvents, out = [];
+    let shape = "";
+    if (F.back_home_stay) shape = "最后回了老家";
+    else if (F.stayed_city) shape = "在异乡扎下根";
+    else if (F.moved_city) shape = "换过城市生活";
+    else if (F.near_family) shape = "守在家人近处";
+    else if (F.often_back) shape = "一直没断了回老家的路";
+    else shape = { corp: "去大城市闯过", home: "留在家乡过日子", abroad: "去远方生活过", study: "多读了几年书", gap: "停过一年再出发" }[S.route.id] || "";
+    if (shape) out.push(shape);
+    const traj = [
+      [used.includes("p11_054"), "送走过一条狗"],
+      [used.includes("p5_044") || used.includes("p13_055"), "送走过一只猫"],
+      [!!F.care_self, "把工作放一放，回去陪过父母"],
+      [!!F.laid_off, "下过岗，又重新站住"],
+      [!!F.xiahai, "下过海"],
+      [!!F.exam_landed, "考进过体制内"],
+      [!!F.stock_2008, "在六千点那年跟过风"],
+      [!!F.crypto_old, "早年倒腾过一阵币"],
+      [!!F.stall_breakfast, "摆过早点摊"],
+      [!!F.kid_abroad, "把孩子送到了国外"],
+      [!!F.two_cities, "过过两地奔波的日子"],
+      [!!F.long_dist, "和对方两地过"],
+      [!!(F.side_business || F.side_start || F.side_job), "正职之外干过副业"]
+    ];
+    let t2 = "";
+    for (const [ok, label] of traj) if (ok) { t2 = label; break; }
+    if (!t2 && finalAge() >= 55) {
+      const HOB = { hobby_calligraphy: "书法", hobby_photo: "摄影", hobby_fishing: "钓鱼", hobby_garden: "种菜", hobby_music: "音乐", hobby_run: "跑步", hobby_cook: "做饭", hobby_badminton: "羽毛球" };
+      const hk = Object.keys(HOB).find((k) => F[k]);
+      if (hk) t2 = HOB[hk] + "陪了大半辈子";
+    }
+    if (!t2 && F.dog_home) t2 = "养过一条狗";
+    if (!t2 && F.bought_house) t2 = "供过一套房";
+    if (t2) out.push(t2);
+    const res = (F.back_home_stay || S.route.id === "home" || F.near_family) ? "家乡" : (S.route.id === "abroad" ? "异国" : (F.stayed_city || F.moved_city || S.route.id === "corp" ? "异乡" : "住了大半辈子的地方"));
+    let close = "";
+    if (F.spouse_dead) close = "老伴先走，最后一段自己过";
+    else if (F.divorced && F.has_kid) close = "后来一个人把孩子带大";
+    else if (F.divorced) close = "后来一个人过";
+    else if (F.partner && F.kid_abroad) close = "和老伴相伴，儿女在远方";
+    else if (F.partner && F.has_kid) close = "和老伴、儿女一起走完";
+    else if (F.partner) close = "和老伴走完这一生";
+    else if (F.has_kid) close = "儿女陪着走完";
+    else if (F.single_ok) close = "一个人走完这一生";
+    else close = S.death ? "最后住在" + res : "终老在" + res;
+    out.push(close);
+    return out.join(" · ");
   }
   const TIER_ORDER = { legendary: 0, epic: 1, rare: 2 };
   const TIER_LABEL = { legendary: "传说结局", epic: "史诗结局", rare: "稀有结局" };
@@ -831,6 +887,7 @@
       ${sp ? `<div class="special"><p class="rare-tag">${TIER_LABEL[sp.tier]}</p><p class="special-title">${esc(sp.title)}</p><p>${esc(sp.text)}</p></div>` : ""}
       </div>
       <div class="rev" style="--d:.12s">
+      <p class="lifetags">${esc(lifeTags())}</p>
       <p class="verdict">${esc(v.text)}</p>
       <p>你走了这条路：${esc(S.route.name)}。</p>
       </div>
@@ -1133,6 +1190,8 @@
         x.font = (big ? 58 : 52) + "px " + SERIF;
         y = wrapText(x, v.text, 90, titleY + tall * 0.4, 900, big ? 80 : 68);
       }
+      x.fillStyle = "#8A948C"; x.font = "27px " + SANS; // 事实标签行（v0.11.0，与结算页同一行）
+      y = wrapText(x, lifeTags(), 90, y + 4, 900, 40);
       const gy = y + (big ? 80 : 56) + tall * 0.6;
       drawRoad(x, gy);
       x.font = "30px " + SERIF; x.fillStyle = "#8A948C";

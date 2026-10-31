@@ -84,7 +84,7 @@ window.GAME_DATA = {
         { label: "报个班，学点新东西", effects: { growth: 4, money: -2, health: -1 }, echo: "班里最小的同学 19 岁，管你叫哥/姐。你们后来还真成了朋友。" },
         { label: "什么都不报，早点睡", effects: { health: 3, freedom: 1 }, echo: "那阵子你睡得很好，梦里都没什么事。" },
       ] },
-    { id: "e_dinner", min: 25, max: 45, text: "同事离职，散伙饭吃到很晚。出租车上你们说保持联系，后来联系的是朋友圈的点赞。", effects: { relation: 1 } },
+    { id: "e_dinner", min: 25, max: 45, minYear: 2012, text: "同事离职，散伙饭吃到很晚。出租车上你们说保持联系，后来联系的是朋友圈的点赞。", effects: { relation: 1 } },
     { id: "e_reunion", min: 30, max: 45, text: "同学聚会。有人在带娃，有人在带团队，有人什么都不想带，只想早点回家。", effects: { relation: 2, wisdom: 3 } },
     { id: "e_invest", min: 30, max: 50, text: "跟风买的那笔理财，跌了。你盯着账户看了很久，最后关掉页面，去煮了碗面。",
       choices: [
@@ -105,7 +105,7 @@ window.GAME_DATA = {
         { label: "先把报告收进抽屉", effects: { health: -4 }, echo: "抽屉关上的声音很轻。你也没再想起它——直到下一次体检。" },
       ] },
     { id: "e_friendkid", min: 30, max: 45, text: "朋友的孩子满月，你包了红包去喝喜酒。回来的路上，你想了想自己的安排。", effects: { relation: 1, money: -1 } },
-    { id: "e_funeral", min: 48, max: 64, text: "一位老同学走了，走得很突然。葬礼上大家约好每年聚一次。第二年，群里没人再提。", effects: { relation: 2, health: -2, wisdom: 5 } },
+    { id: "e_funeral", min: 48, max: 64, w: 2, text: "一位老同学走了，走得很突然。葬礼上大家约好每年聚一次。第二年，群里没人再提。", effects: { relation: 2, health: -2, wisdom: 5 } },
     { id: "e_teach", min: 52, max: 64, text: "社区开了个小班，请你去给年轻人讲讲你这行。你讲了两个小时，超时了，没人走。", effects: { wisdom: 5, relation: 2 } },
     { id: "e_photos", min: 55, max: 64, text: "整理旧硬盘，翻到年轻时的照片。那时候的你，眼睛里全是打算。", effects: { freedom: 2, wisdom: 5 } },
     { id: "e_trip", min: 56, max: 64, text: "你请了个长假，去了个惦记很多年的地方。风很大，饭很咸，照片拍糊了三张。",
@@ -116,7 +116,7 @@ window.GAME_DATA = {
     { id: "e_bonus", min: 26, max: 45, text: "年终奖发下来，比预想的多一点。你请自己吃了顿好的，剩下的存了起来。", effects: { money: 4, health: 1 } },
     { id: "e_refund", min: 28, max: 55, text: "个税汇算，退回来一笔不大不小的钱。像在旧外套口袋里摸到的零钱，只是数额像样些。", effects: { money: 2 } },
     { id: "r_corp_launch", route: "corp", min: 23, max: 40, text: "项目上线那晚你睡在公司。凌晨四点数据跑通，你趴在桌上睡了两个小时，脖子落了枕。", effects: { growth: 3, money: 2, health: -3 } },
-    { id: "r_corp_talk", route: "corp", min: 30, max: 48, text: "行业会上让你讲二十分钟。讲完有人来加微信，说：你们那套打法，我们学不来。", effects: { growth: 3, relation: 1 } },
+    { id: "r_corp_talk", route: "corp", min: 30, max: 48, minYear: 2011, text: "行业会上让你讲二十分钟。讲完有人来加微信，说：你们那套打法，我们学不来。", effects: { growth: 3, relation: 1 } },
     { id: "r_home_renovate", route: "home", min: 28, max: 45, text: "老家房子翻修，你请假回去盯了半个月。工人是熟人介绍的，活干得不快，茶倒是没断过。", effects: { relation: 2, money: -3, health: -1 } },
     { id: "r_home_dinner", route: "home", min: 25, max: 50, text: "镇上办事，饭桌上坐了一圈熟人。你发现小时候觉得天大的事，现在都是下酒的话。", effects: { relation: 2 } },
     { id: "r_abroad_exam", route: "abroad", min: 23, max: 35, text: "语言考试前一晚，你在出租屋里对着墙自言自语。楼下便利店的店员，已经能听懂你的口音了。", effects: { growth: 3, health: -1 } },
@@ -125,17 +125,17 @@ window.GAME_DATA = {
     { id: "r_study_student", route: "study", min: 32, max: 50, text: "你带的学生第一次在组会上讲清楚了自己的课题。你在后面听着，想起自己第一次讲的那回。", effects: { growth: 1, relation: 2, wisdom: 5 } },
     { id: "r_gap_work", route: "gap", min: 23, max: 30, text: "打工换宿的那家店，老板娘教你认山里的菌子。哪种能吃，哪种要命，她说得比课本清楚。", effects: { health: 2, freedom: 2, growth: 1, wisdom: 3 } },
     { id: "r_gap_print", route: "gap", min: 30, max: 55, text: "你把停年时拍的照片洗了出来，贴在书桌对面。忙起来抬头看一眼，还行。", effects: { freedom: 2, health: 1 } },
-    { id: "c_saw_home", require: "saw_home", min: 31, max: 45, text: "当年你认真打听过的那个岗位，后来被老同学的妹妹考上了。她朋友圈里的县城生活，慢，但也齐全。你看了两眼，关掉了。", effects: { relation: 1, growth: 1 } },
+    { id: "c_saw_home", require: "saw_home", min: 31, max: 45, minYear: 2012, text: "当年你认真打听过的那个岗位，后来被老同学的妹妹考上了。她朋友圈里的县城生活，慢，但也齐全。你看了两眼，关掉了。", effects: { relation: 1, growth: 1 } },
     { id: "c_stayed", require: "stayed_city", min: 33, max: 50, text: "末班地铁上，你认出了刚来这座城市时住的那一站。窗外广告牌换了十几轮，你还在车上。", effects: { freedom: 1, growth: 1 } },
     { id: "c_often_back", require: "often_back", min: 32, max: 52, text: "售票员都眼熟你了。这一年你回了四趟家，最短的一趟只待了一个晚上，陪母亲去复查。", effects: { relation: 2, money: -2, health: -1 } },
     { id: "c_has_kid", require: "has_kid", min: 45, max: 60, text: "孩子第一次自己出远门。你把注意事项打了个清单，临出门又删了一半——剩下的，让路上教吧。", effects: { relation: 3, freedom: 1, wisdom: 5 } },
-    { id: "c_no_kid", require: "no_kid", min: 45, max: 60, text: "朋友们忙着给孩子张罗的时候，你和另一半开车去了趟远方。车里放着年轻时的歌单。", effects: { freedom: 3, relation: 1, money: -2 } },
-    { id: "c_care_self", require: "care_self", min: 55, max: 64, text: "陪护那阵子过去之后，你和父亲的关系变了。他开始跟你说他年轻时候的事，有些你从没听过。", effects: { relation: 3, health: -1, wisdom: 5 } },
-    { id: "c_care_hired", require: "care_hired", min: 55, max: 64, text: "护工阿姨发来一段视频：父亲今天自己走了一圈。她说，老人家念叨你呢。你把视频看了三遍。", effects: { relation: 2, money: -1 } },
+    { id: "c_no_kid", require: ["no_kid", "partner"], forbid: ["divorced", "spouse_dead"], min: 45, max: 60, text: "朋友们忙着给孩子张罗的时候，你和另一半开车去了趟远方。车里放着年轻时的歌单。", effects: { freedom: 3, relation: 1, money: -2 } },
+    { id: "c_care_self", require: "care_self", min: 55, max: 64, forbid: ["dad_dead"], text: "陪护那阵子过去之后，你和父亲的关系变了。他开始跟你说他年轻时候的事，有些你从没听过。", effects: { relation: 3, health: -1, wisdom: 5 } },
+    { id: "c_care_hired", require: "care_hired", min: 55, max: 64, forbid: ["dad_dead"], text: "护工阿姨发来一段视频：父亲今天自己走了一圈。她说，老人家念叨你呢。你把视频看了三遍。", effects: { relation: 2, money: -1 } },
     { id: "c_house", require: "bought_house", min: 40, max: 55, text: "你提前还了一笔房贷。柜员说可以少还不少利息。你走出银行，脚步比进去时轻。", effects: { money: 3, freedom: 1 } },
     { id: "c_rent", require: "renting", min: 40, max: 55, text: "房东要卖房，你又搬了一次家。东西越搬越少，最后只剩六个箱子。你想，这样也挺好。", effects: { freedom: 2, health: -1 } },
     { id: "c_side", require: "side_job", min: 50, max: 62, text: "副业那摊子事，居然慢慢成了气候。不大，但每个月都有一笔钱，是睡着觉也在进的。", effects: { money: 3, growth: 2 } },
-    { id: "c_partner", require: "partner", min: 40, max: 58, text: "你们吵了一架，为的还是那些老问题。冷战两天，最后是对方先把热水递了过来。日子就是这么续上的。", effects: { relation: 2, freedom: -1 } },
+    { id: "c_partner", require: "partner", forbid: ["divorced", "spouse_dead"], min: 40, max: 58, text: "你们吵了一架，为的还是那些老问题。冷战两天，最后是对方先把热水递了过来。日子就是这么续上的。", effects: { relation: 2, freedom: -1 } },
     { id: "c_single", require: "single_ok", min: 40, max: 58, text: "一个人过年，你给自个儿做了四个菜。电视里放着春晚，你吃得很慢，觉得这样也不差。", effects: { freedom: 2, health: 1 } },
   ],
   crisis: {
@@ -209,7 +209,7 @@ window.GAME_DATA = {
   },
   verdictTop: {
     freedom: [
-      "你把日子过成了自己的。别人觉得不划算的，你觉得值。",
+      "想出门的时候你不用等谁点头，年假攒在账上，提前几天订票，拎起行李箱就走。",
       "你想走的时候拎包就能走，证件放在同一个抽屉里，票说订就订。",
       "工作辞过两回，空过几个月，账上留着底，你没为工资把自己拴在一张桌子前。",
       "退休后的日子你自己排，种菜、走路，哪天不想动就在阳台坐一下午。",
@@ -217,7 +217,7 @@ window.GAME_DATA = {
       "别人排满的日程你没跟，你的日历大半是空的，空着的地方你自己觉得金贵。",
     ],
     growth: [
-      "你一直在往前走。慢的时候也有，但没停过。",
+      "换了三回岗，每回你都先把新规矩摸透，培训的结业单攒了一沓，压在抽屉最上面。",
       "你那手老本事到退休还有人来问，工具箱里的件什摆得整齐，拿起来就能上手。",
       "新软件换了一茬又一茬，你总要多花几晚学明白，学完就能教组里的年轻人。",
       "证书考下来好几本，最管用的不是墙上那张，是你闭着眼也能做顺的那套活。",
@@ -225,7 +225,7 @@ window.GAME_DATA = {
       "手艺这东西你没丢，退休后修个水管换个锁芯，邻里有事还是先敲你家的门。",
     ],
     health: [
-      "你把身体放在心上。这一项看着不显眼，到老了最显眼。",
+      "你睡觉的时间雷打不动，十一点准时关灯，早起先在楼下活动二十分钟，再回来吃早饭。",
       "到老还能自己提着菜篮上四楼，膝盖有点响，歇一歇也就上去了。",
       "体检单年年就那几项被圈出来，医生说的话你听得懂，也照着做了。",
       "晚饭后绕着小区走三圈，鞋底磨平了两双，步数从没跟人比过。",
@@ -233,7 +233,7 @@ window.GAME_DATA = {
       "牙口还算行，硬一点的苹果切成块慢慢嚼，一顿饭能吃得完整。",
     ],
     money: [
-      "钱这件事，你一辈子没含糊过。该挣的挣到了，该花的也没太亏待自己。",
+      "你的账本记了几十年，一月一页，收入支出笔笔对得上，年底合上本子，数目比年初定的只多不少。",
       "账上留着两年的生活费，屋里哪样东西坏了，当月就能换，不用等谁点头。",
       "退休后每个月进账不多不少，房子的尾款早结清了，存折上那行字看着踏实。",
       "你给孩子留的不是大钱，是一套没欠款的房子和几本写清楚的存折。",
@@ -241,7 +241,7 @@ window.GAME_DATA = {
       "借出去的钱多半要得回来，要不回来的那两笔，你在旧账本上划了线，没再提。",
     ],
     relation: [
-      "你把人放在前面。人这东西，你对他们好，他们大都知道。",
+      "谁家有红白事你都到场，喜事帮着迎客摆桌，丧事帮着记礼账，一站就是大半天。",
       "家里有事你随叫随到，亲戚的电话都存着备注，谁家孩子升学你都记得日子。",
       "老朋友还是那几个，逢年过节桌上能凑齐一桌，凉菜没上齐话就先聊开了。",
       "你和另一半吵过也和好过，到老还是两个人一起买菜，推一辆车慢慢挑。",
@@ -259,7 +259,7 @@ window.GAME_DATA = {
   },
   verdictCost: {
     freedom: [
-      "只是自由这东西，年轻时是翅膀，年纪大了，有时候是没人管的清静。",
+      "只是想走就走的日子过久了，过年家里就你一个人，饺子包了一盖帘，初一吃到初三还没吃完。",
       "只是没人催的日子过久了，有些事也就一直拖着，抽屉里的计划写了好几页没动。",
       "只是想走就走的另一面，是落脚的地方总换，旧邻居的电话慢慢就打得少了。",
       "只是你不爱被人管，合作的活儿接得少，有些机会在门口转了一圈，就去了别人那里。",
@@ -267,7 +267,7 @@ window.GAME_DATA = {
       "只是空闲多了时间反而不好打发，你养的花开了又谢，电视开着常常没看进去。",
     ],
     growth: [
-      "只是往前走的人，容易错过路边坐着的人。",
+      "只是那些年，你的年假攒着没休，年年清零，抽屉里一沓过期的调休单，最后都作了废。",
       "只是早年学的那套东西换了行当就用不上，新规矩要从头学，你比别人多熬了几个月。",
       "只是忙着赶活的那些年，你没顾上考那张证，岗位卡在那里，工资也跟着停了几年。",
       "只是你会的活儿越来越窄，换到新地方才发现，拿得出手的就那么一两样。",
@@ -275,7 +275,7 @@ window.GAME_DATA = {
       "只是年纪大了学新东西慢了，同一套操作年轻人看两遍就会，你要记在小本子上反复练。",
     ],
     health: [
-      "只是身体好的人，容易忘了时间不等人，有些事拖着拖着就过了。",
+      "只是你仗着身体还行，复查单压在茶几底下拖了半年，再去时医生指着日期把你说了两句。",
       "只是有些清晨起床要先坐一会儿，扶着床沿缓一缓，才能稳稳站起来。",
       "只是药盒格子越分越多，出门前要对着清单点一遍，漏一顿心里就不踏实。",
       "只是爬两层楼就得停下喘气，买菜的袋子换成了小推车，推着慢慢往家走。",
@@ -283,7 +283,7 @@ window.GAME_DATA = {
       "只是夜里醒来的次数多了，白天坐着容易打盹，热闹的场合待久了会觉得累。",
     ],
     money: [
-      "只是账本的另一面，钱也是紧过的，有些想要的，你等了很多年。",
+      "只是早年手头紧过，想买的相机在购物车里放了两年，降了三次价，你才在过年前下了单。",
       "只是工资卡里的余额有好些年只够撑三个月，想换的东西先记在纸上，过阵子再看。",
       "只是每个月发了工资先还月供，剩下的排着队花，想添的大件常常要等到年底。",
       "只是给家里人应急的那几笔钱出去之后，你自己的存钱计划往后推了好几年。",
@@ -291,7 +291,7 @@ window.GAME_DATA = {
       "只是年轻时错过的那次买房机会，往后租了好多年房，搬家的单子留了一沓。",
     ],
     relation: [
-      "只是把人放在前面的人，自己的事，常常排在最后。",
+      "只是你帮人搬家随叫随到，轮到自己家搬柜子，你一个人踩着凳子弄到天黑，没好意思打电话喊人。",
       "只是走得近的人就那么几个，新朋友难再交心，聚会散了你常常一个人往家走。",
       "只是有些亲戚多年没联系，通讯录里的号码还在，过年群发消息你也不知道发不发。",
       "只是和另一半有些话说到一半就停了，停了这些年，屋里安静的时候最明显。",

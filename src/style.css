@@ -52,6 +52,7 @@ button.big{width:100%;margin-bottom:14px}
 .special{border:1.5px solid var(--gold);border-radius:12px;padding:14px 18px;margin:10px 0;background:#FBF7EE}
 .special-title{font-family:var(--serif);font-size:26px;color:var(--accent);margin:2px 0 6px;font-weight:700}
 .verdict{font-family:var(--serif);font-size:20.5px;line-height:1.85;font-weight:600}
+.lifetags{font-size:13.5px;color:var(--mut);letter-spacing:.4px;margin:0 0 4px}
 .timeline{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;font-size:13.5px;display:grid;gap:5px;max-height:480px;overflow:auto}
 .timeline p{margin:0;padding:3px 0;border-bottom:1px solid #EFEAE0}
 .streamwrap{border-top:1.5px dashed var(--line);margin-top:22px;padding-top:10px}
