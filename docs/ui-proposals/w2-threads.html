@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>W2 · 世界线束 —— 画轴推开，取其一线</title>
+<style>
+  :root{
+    --paper:#FAF8F4; --card:#FFFDF8; --ink:#23211C; --ink2:#4A463C; --mut:#6E6A5E;
+    --line:#DDD6C9; --pine:#2F4A3C; --shadow:#8A948C; --roll:#E9E2D2;
+    --serif:"Songti SC","STSong","Noto Serif SC",Georgia,serif;
+    --sans:-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.75}
+  .wrap{max-width:1180px;margin:0 auto;padding:34px 20px 70px}
+  .kicker{font-size:12px;letter-spacing:.3em;color:var(--pine);margin:0 0 6px}
+  h1{font-family:var(--serif);font-size:30px;font-weight:600;margin:0 0 8px;letter-spacing:.04em}
+  .lede{color:var(--ink2);max-width:46em;margin:0 0 20px;font-size:15px}
+  .scrollbox{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:10px 6px 2px}
+  canvas{display:block;width:100%;height:auto}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:18px 0 6px}
+  button{font-family:var(--sans);font-size:15px;cursor:pointer;border-radius:999px;padding:10px 22px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+  button.primary{background:var(--pine);border-color:var(--pine);color:#fff}
+  button:disabled{opacity:.38;cursor:default}
+  button:not(:disabled):hover{border-color:var(--pine)}
+  button.primary:not(:disabled):hover{opacity:.92}
+  .readout{display:grid;grid-template-columns:170px 1fr;gap:18px;margin-top:14px;border-top:1px solid var(--line);padding-top:16px}
+  .age{font-family:var(--serif);font-size:44px;line-height:1.1;color:var(--pine)}
+  .age small{display:block;font-size:13px;color:var(--mut);letter-spacing:.14em;margin-top:6px;font-family:var(--sans)}
+  .fork{font-family:var(--serif);font-size:19px;margin:2px 0 4px}
+  .status{color:var(--ink2);font-size:14.5px;margin:0}
+  .log{margin:10px 0 0;padding:0;list-style:none;font-size:13.5px;color:var(--mut)}
+  .log li{border-top:1px dashed var(--line);padding:3px 0}
+  .log li b{color:var(--ink);font-weight:600}
+  .legend{display:flex;gap:22px;flex-wrap:wrap;font-size:13px;color:var(--mut);margin-top:16px}
+  .legend i{display:inline-block;width:26px;height:0;border-top:3px solid var(--pine);vertical-align:middle;margin-right:7px}
+  .legend .g i{border-top:2px solid #6E6A5E}
+  .legend .s i{border-top:3px solid var(--shadow)}
+  .note{font-size:12.5px;color:var(--mut);margin-top:22px;border-top:1px solid var(--line);padding-top:12px}
+  @media (max-width:640px){ .readout{grid-template-columns:1fr} h1{font-size:24px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="kicker">视觉方向 W2 · 世界线束</p>
+  <h1>几十条线一起往前走，你只取其中一条</h1>
+  <p class="lede">所有的人生从同一点出发，缠成一束往前流。每个分岔口，整束裂成两股继续膨胀——你选的那股里有你，没选的那股也不会消失，它就在旁边，隔着几根线的地方。画轴从左往右慢慢推开，推到哪儿，日子就过到哪儿。演示路线：<b>去大城市，进大厂</b>（22 岁）。</p>
+
+  <div class="scrollbox"><canvas id="cv" width="1160" height="560"></canvas></div>
+
+  <div class="bar">
+    <button class="primary" id="bYear">过一年</button>
+    <button id="bNear" disabled>分岔 · 选近</button>
+    <button id="bFar" disabled>分岔 · 选远</button>
+    <button id="bGlimpse" disabled>瞥视影子</button>
+    <button id="bSettle">结算全貌</button>
+    <button id="bReset">重置</button>
+  </div>
+
+  <div class="readout">
+    <div class="age"><span id="ageNow">22</span> 岁<small id="phase">画轴刚展开</small></div>
+    <div>
+      <p class="fork" id="forkTitle">站在宿舍门口，往后的路要自己选。</p>
+      <p class="status" id="status">46 条线在同一点上，还看不出彼此。点「过一年」，看它们缠着往前走。</p>
+      <ul class="log" id="log"></ul>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span><i></i>你走的这一条（松绿）</span>
+    <span class="g"><i></i>其他世界线（墨灰，深浅不一）</span>
+    <span class="s"><i></i>影子那一股（灰绿，只在瞥视时亮起）</span>
+  </div>
+
+  <p class="note">样稿说明：分岔口以「近 / 远」两股示意——近股向下、远股向上；正式版每个分岔口对应事件库里的三个选项，子束按选项分股，股数随之变化。文案年份与分岔名摘自 src/events.js（25 第一份工作的第三年 · 28 回不回老家 · 31 感情的路口 · 33 住在哪儿 · 38 要不要孩子 · 44 中年的岔路 · 52 父母需要人了 · 58 退还是不退）。</p>
+</div>
+
+<script>
+(function(){
+"use strict";
+var PAPER="#FAF8F4", CARD="#FFFDF8", INK="#23211C", MUT="#6E6A5E", LINEC="#DDD6C9",
+    PINE="#2F4A3C", SHADOW="#8A948C", ROLL="#E9E2D2";
+var FORKS=[
+  {age:25, short:"第一份工作", title:"25 岁 · 第一份工作的第三年"},
+  {age:28, short:"回不回老家", title:"28 岁 · 回不回老家"},
+  {age:31, short:"感情的路口", title:"31 岁 · 感情的路口"},
+  {age:33, short:"住在哪儿",   title:"33 岁 · 住在哪儿"},
+  {age:38, short:"要不要孩子", title:"38 岁 · 要不要孩子"},
+  {age:44, short:"中年的岔路", title:"44 岁 · 中年的岔路"},
+  {age:52, short:"父母需要人了", title:"52 岁 · 父母需要人了"},
+  {age:58, short:"退还是不退", title:"58 岁 · 退还是不退"}
+];
+var START=22, END=65, PLOT_MAX=67;
+var STEPS=[58,46,36,27,20,15,11,8];           // 每个分岔口的最大分流距离，越往后越小（束不散架）
+var cv=document.getElementById("cv"), ctx=cv.getContext("2d");
+var W=1160,H=560, CY=282, PL=74, PW=1010, PT=40, PB=516;
+function X(age){ return PL + (age-START)/(PLOT_MAX-START)*PW; }
+function ramp(t){ t=Math.max(0,Math.min(1,t)); return t*t*(3-2*t); }
+function seededRand(seed){ var a=seed>>>0; return function(){ a|=0; a=(a+0x6D2B79F5)|0; var t=Math.imul(a^(a>>>15),1|a); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; }; }
+
+/* ---- 线的定义：每条影子线相对玩家而定义 ----
+   d = 在第几个分岔口与玩家分道（0..7），99 = 全程同行；分道前与玩家完全重合，分道口取反向，之后随机。 */
+var SHADES=["#4A463C","#6E6A5E","#8A8378","#3A372F","#5A564B"];
+var threads=[];
+(function buildThreads(){
+  var rnd=seededRand(20261031);
+  function mk(d){
+    var post=[]; for(var k=0;k<8;k++) post.push(rnd()<0.5?-1:1);
+    return { d:d, post:post, ph1:rnd()*6.28, ph2:rnd()*6.28,
+             shade:SHADES[Math.floor(rnd()*SHADES.length)],
+             alpha:0.34+rnd()*0.26, w:0.7+rnd()*0.35 };
+  }
+  for(var k=0;k<8;k++) for(var j=0;j<5;j++) threads.push(mk(k));  // 每个分岔口留一股 5 条的邻束
+  for(var j2=0;j2<6;j2++) threads.push(mk(99));                    // 全程同行的 6 条
+})();
+
+/* ---- 状态 ---- */
+var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+var S;
+function reset(){
+  S={ age:START, disp:START-1.6, target:START, bits:[0,0,0,0,0,0,0,0], decided:0,
+      settled:false, fade:1, glimpseFork:-1, glimpseUntil:0, log:[] };
+  syncUI("站在宿舍门口，往后的路要自己选。","46 条线在同一点上，还看不出彼此。点「过一年」，看它们缠着往前走。","画轴刚展开");
+}
+function pendingFork(){ for(var k=0;k<8;k++) if(FORKS[k].age===S.age && S.bits[k]===0) return k; return -1; }
+function lastFork(){ var lf=-1; for(var k=0;k<8;k++) if(FORKS[k].age<=S.age && S.bits[k]!==0) lf=k; return lf; }
+
+/* 某条线在 age 处的纵坐标：bits 为玩家选择（0=未定，按 0 处理） */
+function threadY(th, age, time){
+  var off=0;
+  for(var k=0;k<8;k++){
+    var fa=FORKS[k].age; if(age<=fa) break;
+    var bit;
+    if(k<th.d) bit=S.bits[k];
+    else if(k===th.d) bit=(S.bits[k]===0?0:-S.bits[k]);
+    else bit=th.post[k];
+    off -= bit*STEPS[k]*ramp((age-fa)/5);
+  }
+  var braid = 6.5*Math.sin(age*0.5 + th.ph1 + time*0.12) + 2.0*Math.sin(age*1.3 + th.ph2 + time*0.05);
+  return CY + off + braid;
+}
+function playerY(age, time){
+  var off=0;
+  for(var k=0;k<8;k++){
+    var fa=FORKS[k].age; if(age<=fa) break;
+    off -= S.bits[k]*STEPS[k]*ramp((age-fa)/5);
+  }
+  return CY + off + 3.5*Math.sin(age*0.6 + time*0.12);
+}
+
+/* ---- 绘制 ---- */
+function drawThread(th, time, alphaMul, widthMul, colorOverride){
+  ctx.beginPath();
+  var step=0.3, first=true;
+  for(var a=START;a<=S.disp+0.001;a+=step){
+    var x=X(a), y=threadY(th,a,time);
+    if(first){ ctx.moveTo(x,y); first=false; } else ctx.lineTo(x,y);
+  }
+  ctx.strokeStyle=colorOverride||th.shade;
+  ctx.globalAlpha=(colorOverride?1:th.alpha)*alphaMul;
+  ctx.lineWidth=th.w*widthMul;
+  ctx.stroke(); ctx.globalAlpha=1;
+}
+function draw(now){
+  var time = reduced?0:now/1000;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle=PAPER; ctx.fillRect(0,0,W,H);
+  var frontX=X(Math.max(S.disp,START))+30;
+
+  /* 画轴：已展开的纸面 + 上下裱边双线 + 左右轴杆 */
+  ctx.fillStyle=CARD; ctx.fillRect(40,PT,frontX-40,PB-PT);
+  ctx.strokeStyle=INK; ctx.lineWidth=1; ctx.strokeRect(40,PT,frontX-40,PB-PT);
+  ctx.strokeStyle=LINEC;
+  ctx.beginPath();
+  ctx.moveTo(40,PT+7); ctx.lineTo(frontX,PT+7);
+  ctx.moveTo(40,PB-7); ctx.lineTo(frontX,PB-7);
+  ctx.stroke();
+  function roller(x){
+    ctx.fillStyle=ROLL; ctx.strokeStyle=INK; ctx.lineWidth=1;
+    ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(x,PT-14,17,PB-PT+28,8); else ctx.rect(x,PT-14,17,PB-PT+28);
+    ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x+8.5,PT-14,5,0,7); ctx.arc(x+8.5,PB+14,5,0,7);
+    ctx.fillStyle=INK; ctx.fill();
+  }
+  roller(21); roller(Math.min(frontX,W-24));
+
+  /* 线束本体：裁剪在纸面内 */
+  ctx.save();
+  ctx.beginPath(); ctx.rect(44,PT+3,Math.max(0,frontX-44),PB-PT-6); ctx.clip();
+  var glimpsing = now<S.glimpseUntil;
+  for(var i=0;i<threads.length;i++){
+    var th=threads[i];
+    if(glimpsing && th.d===S.glimpseFork) continue;      // 邻束最后画，压在上面
+    drawThread(th,time,S.fade,1,null);
+  }
+  if(glimpsing){
+    for(var j=0;j<threads.length;j++)
+      if(threads[j].d===S.glimpseFork) drawThread(threads[j],time,1,2.1,SHADOW);
+    /* 邻束标注 */
+    var gAge=Math.min(S.disp, FORKS[S.glimpseFork].age+11);
+    var gy=threadY(threads.filter(function(t){return t.d===S.glimpseFork;})[0], gAge, time);
+    ctx.globalAlpha=1; ctx.fillStyle=SHADOW;
+    ctx.font="600 14px 'Songti SC','STSong',Georgia,serif"; ctx.textAlign="center";
+    ctx.fillText("另 一 条 路", X(gAge), Math.max(PT+22, gy-16));
+  }
+  /* 玩家线 */
+  ctx.beginPath();
+  for(var a=START;a<=S.disp+0.001;a+=0.25){
+    var x=X(a), y=playerY(a,time);
+    if(a===START) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.strokeStyle=PINE; ctx.globalAlpha=1; ctx.lineWidth=S.settled?2.7:2.1; ctx.stroke();
+  /* 已过分岔口在玩家线上的墨点 */
+  for(var k=0;k<8;k++){
+    if(S.bits[k]!==0 && S.disp>FORKS[k].age){
+      ctx.beginPath(); ctx.arc(X(FORKS[k].age), playerY(FORKS[k].age,time),3.4,0,7);
+      ctx.fillStyle=PINE; ctx.fill();
+    }
+  }
+  /* 线头：当前年龄 */
+  if(S.disp>=START){
+    var hx=X(S.disp), hy=playerY(S.disp,time);
+    ctx.beginPath(); ctx.arc(hx,hy,S.settled?5:4.2,0,7); ctx.fillStyle=PINE; ctx.fill();
+    ctx.font="600 15px 'Songti SC','STSong',Georgia,serif"; ctx.textAlign="left";
+    ctx.fillText(Math.floor(S.disp)+" 岁", hx+11, hy-9);
+    if(pendingFork()>=0 && !S.settled){
+      ctx.beginPath(); ctx.arc(hx,hy,9+2*Math.sin(now/280),0,7);
+      ctx.strokeStyle=PINE; ctx.lineWidth=1.2; ctx.stroke();
+    }
+  }
+  ctx.restore();
+
+  /* 分岔口标签：上方短名（双行错开）+ 下方年龄 */
+  ctx.fillStyle=MUT; ctx.textAlign="center";
+  for(var m=0;m<8;m++){
+    var fa2=FORKS[m].age; if(S.disp<fa2+1.5) continue;
+    ctx.font="11px 'Songti SC','STSong',Georgia,serif";
+    ctx.fillText(FORKS[m].short, X(fa2), m%2? PT+30 : PT+17);
+    ctx.font="11px Georgia,serif";
+    ctx.fillText(fa2+"", X(fa2), PB+20);
+  }
+  ctx.fillStyle=MUT; ctx.font="11px Georgia,serif"; ctx.textAlign="center";
+  if(S.disp>START+1){ ctx.fillText(START+"", X(START), PB+20); }
+  if(S.settled){ ctx.fillText(END+"", X(END), PB+20); }
+
+  /* 推进动画 */
+  var diff=S.target-S.disp;
+  if(Math.abs(diff)>0.005){ S.disp += diff*(reduced?1:0.055); }
+  else S.disp=S.target;
+  if(S.settled && S.fade>0.26) S.fade=Math.max(0.26,S.fade-0.008);
+  requestAnimationFrame(draw);
+}
+
+/* ---- 交互 ---- */
+var el=function(id){ return document.getElementById(id); };
+function syncUI(forkText,status,phase){
+  if(forkText!==null) el("forkTitle").textContent=forkText;
+  if(status!==null) el("status").textContent=status;
+  if(phase) el("phase").textContent=phase;
+  el("ageNow").textContent=S.age;
+  var pf=pendingFork();
+  el("bYear").disabled = S.settled || S.age>=END || pf>=0;
+  el("bNear").disabled = pf<0 || S.settled;
+  el("bFar").disabled  = pf<0 || S.settled;
+  el("bGlimpse").disabled = S.settled || lastFork()<0;
+  el("bSettle").disabled = S.settled;
+  el("log").innerHTML=S.log.map(function(l){ return "<li>"+l+"</li>"; }).join("");
+}
+function arrive(){
+  var pf=pendingFork();
+  if(pf>=0){
+    syncUI(FORKS[pf].title,"到分岔口了。整束线停在这里，等你选：近股向下，远股向上。选完，其他没选的那股会继续往前流，不会消失。","分岔口 · 等你选");
+  } else if(S.age>=END){
+    syncUI(END+" 岁 · 这一局走完了","点「结算全貌」：整幅画轴推开，其他线淡下去，你取的那一条留在中间。","走到了 "+END+" 岁");
+  } else {
+    syncUI(null,"线束往前流了一年。彼此还缠在一起，分岔口在前面。","正在往前流");
+  }
+}
+el("bYear").addEventListener("click",function(){
+  if(pendingFork()>=0||S.age>=END) return;
+  S.age+=1; S.target=S.age; arrive();
+});
+function choose(bit){
+  var pf=pendingFork(); if(pf<0) return;
+  S.bits[pf]=bit; S.decided++;
+  S.log.push("<b>"+FORKS[pf].title+"</b> —— 你选了"+(bit<0?"近股":"远股")+"，另一股从这里分出去。");
+  if(S.age<END){ S.age+=1; S.target=S.age; }
+  syncUI(null,"选好了。松绿这条是你的；刚分出去的那股，就是你的「另一条路」。想看它的时候，点「瞥视影子」。","已选 · 继续往前");
+  arrive();
+}
+el("bNear").addEventListener("click",function(){ choose(-1); });
+el("bFar").addEventListener("click",function(){ choose(1); });
+el("bGlimpse").addEventListener("click",function(){
+  var lf=lastFork(); if(lf<0) return;
+  S.glimpseFork=lf; S.glimpseUntil=performance.now()+2400;
+  syncUI(null,"灰绿亮起来的那一股，是 "+FORKS[lf].age+" 岁那年没选的路。它一直在旁边流，只淡不灭。看一眼就好，日子还要往前过。","瞥视 · "+FORKS[lf].age+" 岁的那股");
+});
+el("bSettle").addEventListener("click",function(){
+  for(var k=0;k<8;k++) if(S.bits[k]===0 && FORKS[k].age<END) S.bits[k]=(k%2? -1:1); // 未决分岔按默认补齐，保证全貌完整
+  S.settled=true; S.age=END; S.target=END; S.disp=Math.max(S.disp,START);
+  syncUI(END+" 岁 · 全貌","整幅画轴推开了。几十条线都在，你取的只是其中一条——松绿这条从头到尾没有断过。其他线淡下去不是输了，只是这一局不归你看。","结算 · 取其一");
+});
+el("bReset").addEventListener("click",function(){ reset(); });
+
+reset();
+requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>

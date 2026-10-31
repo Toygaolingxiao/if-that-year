@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>W1 · 长卷世界树 —— 《如果那年》视觉提案</title>
+<style>
+  :root{--paper:#FAF8F4;--card:#FFFDF8;--ink:#23211C;--mut:#6E6A5E;--line:#DDD6C9;--accent:#2F4A3C;--shadow:#8A948C;
+    --serif:"Songti SC","STSong","Noto Serif SC","Hiragino Mincho ProN",Georgia,serif;
+    --sans:-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.75}
+  .wrap{max-width:1000px;margin:0 auto;padding:28px 18px 70px}
+  .brand{font-family:var(--serif);letter-spacing:.35em;color:var(--accent);font-size:14px;font-weight:700;margin:0 0 8px}
+  h1{font-family:var(--serif);font-size:29px;margin:0 0 6px;font-weight:700}
+  .sub{color:var(--mut);font-size:14.5px;margin:0 0 18px}
+  .scrollframe{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:14px 10px 8px;box-shadow:0 4px 14px rgba(35,33,28,.05)}
+  canvas{display:block;width:100%;height:auto}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:16px}
+  button{font-family:var(--sans);cursor:pointer;font-size:14.5px}
+  .primary{background:var(--accent);color:#fff;border:none;border-radius:999px;padding:10px 22px}
+  .primary:disabled{opacity:.35;cursor:default}
+  .ghost{background:none;border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:9px 18px}
+  .ghost:disabled{opacity:.35;cursor:default}
+  .ghost:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+  .forkbox{margin-top:14px;border:1.5px dashed var(--shadow);border-radius:10px;padding:14px 16px;background:#FBFAF6;display:none}
+  .forkbox.on{display:block}
+  .forkbox .ft{font-family:var(--serif);font-size:17px;font-weight:700;margin:0 0 8px}
+  .forkbox .row{display:flex;gap:8px;flex-wrap:wrap}
+  .choice{background:#fff;border:1px solid var(--line);border-left:3px solid var(--line);border-radius:9px;padding:9px 14px;font-size:14.5px;text-align:left}
+  .choice:hover{border-color:var(--accent);border-left-color:var(--accent)}
+  .status{font-size:14.5px;color:var(--ink);margin-top:14px;min-height:26px}
+  .status .yr{font-family:var(--serif);color:var(--accent);font-weight:700}
+  .note{color:var(--mut);font-size:13px;margin-top:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="brand">如果那年 · 视觉提案 W1</p>
+  <h1>长卷世界树</h1>
+  <p class="sub">一卷横轴，随年纪从左向右慢慢推开。卷上只有一棵树：每个分岔口，主干裂开，没选的支流变细、发灰，还往前长一段就淡了；你选的那一支，一直是松绿的粗线。</p>
+
+  <div class="scrollframe"><canvas id="cv" width="960" height="520"></canvas></div>
+
+  <div class="controls">
+    <button class="primary" id="btnYear">过一年</button>
+    <button class="ghost" id="btnSettle">取这一条（结算视角）</button>
+    <button class="ghost" id="btnReset">重置</button>
+  </div>
+
+  <div class="forkbox" id="forkbox">
+    <p class="ft" id="forktitle"></p>
+    <div class="row" id="forkchoices"></div>
+  </div>
+
+  <p class="status" id="status"></p>
+  <p class="note">演示路线：去大城市，进大厂。分岔口与选项均为游戏真实数据（25 / 28 / 31 / 33 / 38 / 44 / 52 / 58 岁）。</p>
+</div>
+
+<script>
+"use strict";
+/* ---------- 真实数据（摘自 src/events.js） ---------- */
+const ROUTE_NAME = "去大城市，进大厂";
+const FORKS = [
+  { age: 25, title: "25 岁 · 第一份工作的第三年", choices: ["跳槽，换个活法", "留下，把手头的事做深", "工作照旧，下班折腾点自己的事"] },
+  { age: 28, title: "28 岁 · 回不回老家",       choices: ["认真考虑回去，先打听好岗位", "不回。把现在的城市过成家", "不回，但把探亲假用满，一年回四趟"] },
+  { age: 31, title: "31 岁 · 感情的路口",       choices: ["认真谈一场，往结婚的方向走", "一个人也很好，先把自己过明白", "不排斥，也不将就，慢慢来"] },
+  { age: 33, title: "33 岁 · 住在哪儿",         choices: ["咬牙买一套，先上车", "继续租，把钱留在手里", "搬去离家人近的地方住"] },
+  { age: 38, title: "38 岁 · 要不要孩子",       choices: ["要。日子会变样，心里有数", "不要。两个人的日子也完整", "再等等，看看身体和钱包"] },
+  { age: 44, title: "44 岁 · 中年的岔路",       choices: ["搞个副业，给自己留条后路", "稳住主业，把身体找回来", "主动降速，钱少点就少点"] },
+  { age: 52, title: "52 岁 · 父母需要人了",     choices: ["调整工作，自己多回去陪", "请靠谱的护工，自己出钱出力协调", "和兄弟姐妹排班，一人一段"] },
+  { age: 58, title: "58 岁 · 退还是不退",       choices: ["退。把欠自己的时间还给自己", "返聘几年，慢慢交棒", "半退，去做点不挣钱但喜欢的事"] },
+];
+const AGE_MIN = 22, AGE_MAX = 65;
+
+/* ---------- 几何 ---------- */
+const VW = 960, VH = 520, CY = 262;              // 视图（逻辑像素）与主干中线
+const X0 = 130, PXPY = 47;                        // 22 岁起点 x、每年像素
+const xAge = (a) => X0 + (a - AGE_MIN) * PXPY;
+const WORLD_W = xAge(AGE_MAX) + 190;              // 卷面总宽
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+const DPR = Math.min(2, window.devicePixelRatio || 1);
+cv.width = VW * DPR; cv.height = VH * DPR;
+
+/* 确定性伪随机（同一局同一棵树） */
+function hash(n) { let h = 2166136261; const s = String(n); for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return ((h >>> 0) % 1000) / 1000; }
+
+/* ---------- 状态 ---------- */
+let S;
+function reset() {
+  S = {
+    age: AGE_MIN, drawAge: AGE_MIN,      // 逻辑年龄 / 已画出的年龄（浮点，动画用）
+    lane: 0,                              // 主干当前纵向车道（分岔选择累积偏移）
+    mainPts: [{ age: AGE_MIN, y: CY }],   // 主干已生成的点
+    shadows: [],                          // 未选支流
+    forksDone: [],                        // {age, title, chosenLabel, chosenDir}
+    pendingFork: null,
+    front: xAge(AGE_MIN) + 110,           // 展开前沿（世界坐标）
+    camX: 0, scale: 1,
+    settle: 0,                            // 0 游玩 / 1 结算视角（动画插值）
+    mode: "play",                         // play | settling | settled
+    busy: false,
+  };
+  setStatus(`<span class="yr">22 岁</span> · 出发：${ROUTE_NAME}。卷还卷着，往右推开就是这一生。`);
+  document.getElementById("forkbox").classList.remove("on");
+  document.getElementById("btnYear").disabled = false;
+  document.getElementById("btnSettle").disabled = false;
+}
+
+/* 主干下一年长到的 y：车道 + 细微起伏（像手绘的线，不像尺子） */
+function mainY(age) {
+  const wig = Math.sin((age - AGE_MIN) * 0.9) * 5 + Math.sin((age - AGE_MIN) * 2.3) * 2.2;
+  return CY + S.lane + wig;
+}
+function growMainTo(age) {
+  let last = S.mainPts[S.mainPts.length - 1].age;
+  while (last < age - 1e-9) {
+    const na = Math.min(age, last + 0.5);
+    S.mainPts.push({ age: na, y: mainY(na) });
+    last = na;
+  }
+}
+/* 支流：从分岔点出发，往 dir 方向漂移，长度 len 年，之后渐渐淡出，不再分叉 */
+function spawnShadow(forkAge, fromY, dir, seedKey) {
+  const len = 9 + Math.floor(hash(seedKey) * 6);              // 9–14 年
+  const endAge = Math.min(AGE_MAX, forkAge + len);
+  const pts = [];
+  for (let a = forkAge; a <= endAge + 1e-9; a += 0.5) {
+    const t = a - forkAge;
+    const drift = dir * Math.min(150, t * 13) * (0.82 + hash(seedKey + a) * 0.3);
+    const wig = Math.sin(t * 1.15 + hash(seedKey) * 6.28) * 4;
+    pts.push({ age: a, y: fromY + drift + wig });
+  }
+  S.shadows.push({ pts, birth: forkAge, end: endAge, len });
+}
+
+/* ---------- 缓动：纸的摩擦感 = 三段微顿的 easeOut ---------- */
+function easePaper(t) {
+  const e = 1 - Math.pow(1 - t, 3);
+  return e + Math.sin(t * Math.PI * 5) * 0.008 * (1 - t);   // 细微顿挫，不匀速
+}
+function easeInOut(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+
+const tweens = [];
+function tween(dur, onU, onC) { tweens.push({ t0: performance.now(), dur, onU, onC }); }
+function stepTweens(now) {
+  for (let i = tweens.length - 1; i >= 0; i--) {
+    const tw = tweens[i], t = Math.min(1, (now - tw.t0) / tw.dur);
+    tw.onU(t);
+    if (t >= 1) { tweens.splice(i, 1); tw.onC && tw.onC(); }
+  }
+}
+
+/* ---------- 推进 ---------- */
+const btnYear = document.getElementById("btnYear");
+function advanceYear() {
+  if (S.busy || S.mode !== "play") return;
+  const fork = FORKS.find((f) => f.age === S.age + 1);
+  const target = S.age + 1;
+  S.busy = true; btnYear.disabled = true;
+  const fromDraw = S.drawAge, fromFront = S.front;
+  const frontTarget = Math.min(xAge(target) + 130, WORLD_W - 60);
+  growMainTo(target);
+  tween(950, (t) => {
+    const e = easePaper(t);
+    S.drawAge = fromDraw + (target - fromDraw) * e;
+    S.front = fromFront + (frontTarget - fromFront) * e;
+  }, () => {
+    S.age = target; S.drawAge = target;
+    setTimeout(() => {           // 段与段之间留一口气，像纸面顿住
+      S.busy = false;
+      if (fork) openFork(fork);
+      else if (S.age >= AGE_MAX) { setStatus(`<span class="yr">65 岁</span> · 走完了。点「取这一条」，把整卷收回来看。`); btnYear.disabled = true; }
+      else { btnYear.disabled = false; setStatus(`<span class="yr">${S.age} 岁</span> · 卷往右推开了一年。`); }
+    }, 90);
+  });
+}
+function openFork(fork) {
+  S.pendingFork = fork;
+  document.getElementById("forktitle").textContent = fork.title;
+  const box = document.getElementById("forkchoices");
+  box.innerHTML = "";
+  const dirs = [-1, 0, 1];
+  fork.choices.forEach((label, i) => {
+    const b = document.createElement("button");
+    b.className = "choice"; b.textContent = label;
+    b.addEventListener("click", () => chooseFork(fork, i, dirs[i], label));
+    box.appendChild(b);
+  });
+  document.getElementById("forkbox").classList.add("on");
+  setStatus(`<span class="yr">${fork.age} 岁</span> · 分岔口。主干在这里裂开——选一支，其余两支会变成影子，继续往前长一段。`);
+}
+function chooseFork(fork, idx, dir, label) {
+  document.getElementById("forkbox").classList.remove("on");
+  const node = S.mainPts[S.mainPts.length - 1];
+  const dirs = [-1, 0, 1];
+  dirs.forEach((d, i) => { if (i !== idx) spawnShadow(fork.age, node.y, d === 0 ? (i === 0 ? -1 : 1) : d, fork.age * 10 + i); });
+  S.lane = Math.max(-92, Math.min(92, S.lane + dir * 36));
+  S.forksDone.push({ age: fork.age, title: fork.title, label, dir });
+  S.pendingFork = null;
+  setStatus(`<span class="yr">${fork.age} 岁</span> · ${fork.title.split("· ")[1]}：${label}`);
+  /* 选完后自动再往前长一年，让裂开的样子立刻看得见 */
+  setTimeout(() => { if (S.age < AGE_MAX) { btnYear.disabled = false; advanceYear(); } }, 160);
+}
+function settle() {
+  if (S.busy || S.mode !== "play") return;
+  S.mode = "settling"; btnYear.disabled = true; document.getElementById("btnSettle").disabled = true;
+  document.getElementById("forkbox").classList.remove("on");
+  growMainTo(Math.max(S.age, S.drawAge));
+  const from = { cam: S.camX, sc: S.scale, st: S.settle, front: S.front };
+  const scT = VW / WORLD_W;                       // 整卷一眼看完的缩放
+  tween(1700, (t) => {
+    const e = easeInOut(t);
+    S.camX = from.cam + (0 - from.cam) * e;
+    S.scale = from.sc + (scT - from.sc) * e;
+    S.settle = from.st + (1 - from.st) * e;
+    S.front = from.front + (WORLD_W - from.front) * e;
+  }, () => { S.mode = "settled"; setStatus(`<span class="yr">结算视角</span> · 整卷收回来了。粗的那条是你走的；细的、灰的，是在每个分岔口分出去、又慢慢淡掉的那些人生。`); });
+}
+
+/* ---------- 绘制 ---------- */
+function drawBranch(pts, uptoAge, opt) {
+  const vis = pts.filter((p) => p.age <= uptoAge + 1e-9);
+  if (vis.length < 2) return;
+  ctx.save();
+  if (opt.dash) ctx.setLineDash(opt.dash);
+  for (let i = 1; i < vis.length; i++) {
+    const p0 = vis[i - 1], p1 = vis[i];
+    const f = i / (vis.length - 1);
+    ctx.strokeStyle = opt.color;
+    ctx.globalAlpha = opt.alpha * (opt.fadeTail ? (1 - f * opt.fadeTail) : 1);
+    ctx.lineWidth = opt.w0 + (opt.w1 - opt.w0) * f;
+    ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(xAge(p0.age), p0.y); ctx.lineTo(xAge(p1.age), p1.y); ctx.stroke();
+  }
+  ctx.restore();
+}
+function render(now) {
+  stepTweens(now);
+  /* 相机跟随展开前沿 */
+  if (S.mode === "play") {
+    const target = Math.max(0, Math.min(S.front - VW * 0.72, WORLD_W - VW));
+    S.camX += (target - S.camX) * 0.07;
+  }
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.fillStyle = "#FAF8F4"; ctx.fillRect(0, 0, VW, VH);
+  ctx.setTransform(DPR * S.scale, 0, 0, DPR * S.scale, -S.camX * S.scale * DPR, 0);
+
+  /* 卷面：上下装裱边 + 纸面 */
+  ctx.fillStyle = "#F3EFE4"; ctx.fillRect(0, 0, WORLD_W, 34); ctx.fillRect(0, VH - 34, WORLD_W, 34);
+  ctx.fillStyle = "#E7E1D2"; ctx.fillRect(0, 34, WORLD_W, 1.5); ctx.fillRect(0, VH - 35.5, WORLD_W, 1.5);
+  ctx.fillStyle = "rgba(35,33,28,0.05)";
+  for (let i = 0; i < 26; i++) { const y = 52 + hash(i * 7) * (VH - 104); ctx.fillRect(0, y, WORLD_W, 1); }  // 纸纹细线
+
+  /* 只画已展开的部分（卷外不透） */
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, 0, S.front, VH); ctx.clip();
+
+  /* 影子支流：灰绿虚线，越往后越细越淡；结算后整体再褪一层 */
+  for (const sh of S.shadows) {
+    const upto = Math.min(S.drawAge, sh.end);
+    drawBranch(sh.pts, Math.max(upto, sh.birth), {
+      color: "#8A948C", dash: [8, 7], w0: 3.1, w1: 0.7,
+      alpha: (0.88 - S.settle * 0.5), fadeTail: 0.55,
+    });
+  }
+  /* 没走到分岔前，先把「将要裂开」的主干画到 drawAge */
+  drawBranch(S.mainPts, S.drawAge, { color: "#2F4A3C", w0: 4.6, w1: 3.4, alpha: 1 });
+  /* 已生成但未走完的主干后段不画——mainPts 只长到当前年龄，天然如此 */
+
+  /* 分岔节点与年份戳 */
+  ctx.fillStyle = "#2F4A3C"; ctx.strokeStyle = "#2F4A3C";
+  for (const fd of S.forksDone) {
+    const p = S.mainPts.find((q) => Math.abs(q.age - fd.age) < 0.01) || { y: CY };
+    ctx.beginPath(); ctx.arc(xAge(fd.age), p.y, 4.5, 0, 7); ctx.fill();
+    ctx.font = "12.5px 'Songti SC','Noto Serif SC',Georgia,serif";
+    ctx.fillStyle = "#6E6A5E"; ctx.textAlign = "center";
+    ctx.fillText(fd.age + " 岁", xAge(fd.age), VH - 48);
+    if (S.settle > 0.4) {   // 结算时把每个分岔的选择标回卷面
+      ctx.globalAlpha = (S.settle - 0.4) / 0.6;
+      ctx.fillStyle = "#2F4A3C"; ctx.font = "13px 'Songti SC','Noto Serif SC',Georgia,serif";
+      const ly = p.y + (fd.dir >= 0 ? 30 : -22);
+      ctx.fillText(fd.label.length > 14 ? fd.label.slice(0, 14) + "…" : fd.label, xAge(fd.age) + 6, ly);
+      ctx.globalAlpha = 1;
+    }
+    ctx.fillStyle = "#2F4A3C";
+  }
+  /* 起点与当前点头 */
+  ctx.font = "14px 'Songti SC','Noto Serif SC',Georgia,serif"; ctx.textAlign = "left";
+  ctx.fillText("22 岁 · " + ROUTE_NAME, X0 - 62, CY - 42);
+  ctx.beginPath(); ctx.arc(xAge(AGE_MIN), CY, 5, 0, 7); ctx.fill();
+  if (S.mode === "play" && !S.pendingFork) {
+    const hp = S.mainPts[S.mainPts.length - 1];
+    const pulse = 5.5 + Math.sin(now / 480) * 1.1;
+    ctx.beginPath(); ctx.arc(xAge(hp.age), hp.y, pulse, 0, 7); ctx.fill();
+    ctx.font = "13px 'Songti SC','Noto Serif SC',Georgia,serif";
+    ctx.fillText("现在 · " + Math.floor(S.drawAge) + " 岁", xAge(hp.age) - 16, hp.y - 40);
+  }
+  if (S.settle > 0.4) {
+    ctx.globalAlpha = (S.settle - 0.4) / 0.6;
+    ctx.font = "15px 'Songti SC','Noto Serif SC',Georgia,serif"; ctx.fillStyle = "#23211C";
+    ctx.fillText("65 岁 · 走完的这一条", xAge(AGE_MAX) - 30, CY - 118);
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+
+  /* 卷轴：展开前沿的轴杆（未展开部分只见轴与一截空白纸） */
+  if (S.front < WORLD_W - 4) {
+    const fx = S.front;
+    ctx.fillStyle = "rgba(35,33,28,0.10)"; ctx.fillRect(fx + 10, 26, 5, VH - 52);
+    ctx.fillStyle = "rgba(35,33,28,0.06)"; ctx.fillRect(fx + 15, 26, 9, VH - 52);
+    ctx.fillStyle = "#23211C";
+    roundRect(fx, 22, 11, VH - 44, 5); ctx.fill();
+    ctx.fillStyle = "#2F4A3C";
+    roundRect(fx - 1.5, 22, 14, 7, 3); ctx.fill(); roundRect(fx - 1.5, VH - 29, 14, 7, 3); ctx.fill();
+    ctx.fillStyle = "#8A948C"; ctx.font = "12.5px 'Songti SC','Noto Serif SC',Georgia,serif"; ctx.textAlign = "left";
+    ctx.fillText("未展开", fx + 26, 60);
+  }
+  /* 左端轴头 */
+  ctx.fillStyle = "#23211C"; roundRect(56, 22, 9, VH - 44, 4); ctx.fill();
+
+  requestAnimationFrame(render);
+}
+function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function setStatus(html) { document.getElementById("status").innerHTML = html; }
+
+btnYear.addEventListener("click", advanceYear);
+document.getElementById("btnSettle").addEventListener("click", settle);
+document.getElementById("btnReset").addEventListener("click", reset);
+reset();
+requestAnimationFrame(render);
+</script>
+</body>
+</html>

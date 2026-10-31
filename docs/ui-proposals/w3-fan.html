@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>W3 · 纵深扇面 —— 世界线无限膨胀，取了其中之一</title>
+<style>
+  :root{
+    --paper:#FAF8F4; --card:#FFFDF8; --ink:#23211C; --pine:#2F4A3C;
+    --line:#DDD6C9; --shadow:#8A948C; --scroll:#EFE9DC;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--paper); color:var(--ink);
+    font-family:"Hiragino Sans","Noto Sans SC",system-ui,sans-serif;
+    line-height:1.75; padding:36px 18px 64px;}
+  .wrap{max-width:880px; margin:0 auto;}
+  .eyebrow{font-size:12px; letter-spacing:.32em; color:var(--pine);
+    font-family:Georgia,"Songti SC",serif;}
+  h1{font-family:Georgia,"Songti SC","Noto Serif SC",serif; font-weight:500;
+    font-size:30px; letter-spacing:.06em; margin:6px 0 4px;}
+  .sub{font-size:14px; color:#5A564C; margin-bottom:20px;}
+  .stage{background:var(--card); border:1px solid var(--line); border-radius:10px;
+    overflow:hidden; box-shadow:0 1px 0 rgba(35,33,28,.03);}
+  svg{display:block; width:100%; height:auto;}
+  /* ---- 画轴 ---- */
+  .panel{transition:transform 1.6s cubic-bezier(.22,.8,.24,1);}
+  .stage-wrap.open .panel-l{transform:translateX(-408px);}
+  .stage-wrap.open .panel-r{transform:translateX(408px);}
+  #fanRoot{opacity:0; transition:opacity 1.1s ease .35s;}
+  .stage-wrap.open #fanRoot{opacity:1;}
+  #world{transition:transform 1.3s cubic-bezier(.25,.8,.25,1);
+    transform-origin:0 0;}
+  /* ---- 扇面线条 ---- */
+  .edge{fill:none; stroke:#6B675C; stroke-linecap:round;
+    transition:stroke .5s ease, stroke-width .5s ease, opacity .8s ease;}
+  .edge.cand{stroke:var(--shadow); stroke-dasharray:5 4;}
+  .edge.chosen{stroke:var(--pine); stroke-dasharray:none;}
+  .edge.dim{opacity:.13 !important;}
+  .leaf{fill:var(--card); stroke:#6B675C; stroke-width:1.1; cursor:pointer;
+    transition:fill .3s, stroke .3s;}
+  .leaf:hover{stroke:var(--pine);}
+  .leaf.cand{fill:var(--shadow); stroke:var(--shadow);}
+  .leaf.me{fill:var(--pine); stroke:var(--pine);}
+  .arc{fill:none; stroke:var(--line); stroke-width:1; stroke-dasharray:2 5;}
+  .lvl{font-size:11px; fill:var(--shadow); font-family:ui-monospace,Menlo,monospace;}
+  .vplab{font-size:13px; fill:var(--pine); font-family:Georgia,"Songti SC",serif;
+    letter-spacing:.18em;}
+  #underfoot{opacity:0; transition:opacity .9s ease .45s;}
+  #underfoot.on{opacity:1;}
+  /* ---- 文案与控制 ---- */
+  .caption{border-top:1px solid var(--line); padding:14px 20px 4px; min-height:56px;}
+  .caption .t{font-family:Georgia,"Songti SC",serif; font-size:17px;}
+  .caption .n{font-size:13px; color:#5A564C;}
+  .pathlist{padding:2px 20px 14px; font-size:13.5px; color:var(--pine); display:none;}
+  .pathlist.on{display:block;}
+  .pathlist span{white-space:nowrap;}
+  .pathlist i{font-style:normal; color:var(--shadow); margin:0 4px;}
+  .controls{display:flex; gap:10px; flex-wrap:wrap; margin-top:16px;}
+  button{font:inherit; font-size:14.5px; cursor:pointer; border-radius:8px;
+    padding:11px 20px; border:1px solid var(--line); background:var(--card); color:var(--ink);
+    transition:border-color .2s, background .2s, color .2s, opacity .2s;}
+  button:hover:not(:disabled){border-color:var(--pine);}
+  button.primary{background:var(--pine); border-color:var(--pine); color:#fff;}
+  button:disabled{opacity:.38; cursor:default;}
+  .hint{margin-top:14px; font-size:12.5px; color:var(--shadow);}
+  @media (max-width:560px){ h1{font-size:24px;} .caption .t{font-size:15.5px;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">如果那年 · 另一条路</p>
+  <h1>世界线 · 纵深扇面</h1>
+  <p class="sub">所有的路从远处一点向你展开。你站在岔路口，望出去的全是远方——最后取的，只是其中一条。</p>
+
+  <div class="stage stage-wrap" id="stageWrap">
+    <svg id="scene" viewBox="0 0 800 560" role="img" aria-label="纵深扇面：人生分岔的世界线">
+      <g id="world">
+        <g id="fanRoot">
+          <g id="arcs"></g>
+          <g id="edges"></g>
+          <g id="labels"></g>
+          <g id="leaves"></g>
+          <circle cx="400" cy="110" r="4" fill="#2F4A3C"/>
+          <text class="vplab" x="400" y="86" text-anchor="middle">22 岁 · 出发</text>
+        </g>
+      </g>
+      <g id="underfoot">
+        <polygon id="ufPoly" points="" fill="#2F4A3C" opacity="0.10"/>
+        <line id="ufLine" x1="0" y1="0" x2="0" y2="0" stroke="#2F4A3C" stroke-width="2.4"/>
+      </g>
+      <!-- 画轴：左右两幅卷面 + 中央轴杆，推开时向两边滑出 -->
+      <g id="scroll">
+        <g class="panel panel-l">
+          <rect x="0" y="0" width="400" height="560" fill="#EFE9DC"/>
+          <rect x="392" y="0" width="5" height="560" fill="#2F4A3C"/>
+          <circle cx="394.5" cy="26" r="7" fill="#23211C"/>
+          <circle cx="394.5" cy="534" r="7" fill="#23211C"/>
+          <text x="200" y="286" text-anchor="middle" font-size="15" fill="#8A948C"
+            font-family="Georgia,'Songti SC',serif" letter-spacing="6">如果那年</text>
+        </g>
+        <g class="panel panel-r">
+          <rect x="400" y="0" width="400" height="560" fill="#EFE9DC"/>
+          <rect x="403" y="0" width="5" height="560" fill="#2F4A3C"/>
+          <circle cx="405.5" cy="26" r="7" fill="#23211C"/>
+          <circle cx="405.5" cy="534" r="7" fill="#23211C"/>
+          <text x="600" y="286" text-anchor="middle" font-size="15" fill="#8A948C"
+            font-family="Georgia,'Songti SC',serif" letter-spacing="6">另一条路</text>
+        </g>
+      </g>
+    </svg>
+    <div class="caption">
+      <p class="t" id="capTitle">画轴还没推开。</p>
+      <p class="n" id="capNote">行李收好，站在宿舍门口。往后的路要自己选。</p>
+    </div>
+    <div class="pathlist" id="pathList"></div>
+  </div>
+
+  <div class="controls">
+    <button class="primary" id="btnOpen">推开画轴（开场）</button>
+    <button id="btnFork" disabled>到分岔口</button>
+    <button id="btnPick" disabled>选这条路</button>
+    <button id="btnReset">重置</button>
+  </div>
+  <p class="hint">操作：推开画轴 → 反复「到分岔口」看扇面翻倍 → 点任意一个末端圆点换候选路 → 「选这条路」把它抽到脚下。文案摘自 src/events.js（路线与分岔原文）。</p>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var FORKS = [
+    {age:25, title:"25 岁 · 第一份工作的第三年", opts:["跳槽，换个活法","留下，把手头的事做深"]},
+    {age:28, title:"28 岁 · 回不回老家",       opts:["认真考虑回去，先打听好岗位","不回。把现在的城市过成家"]},
+    {age:31, title:"31 岁 · 感情的路口",       opts:["认真谈一场，往结婚的方向走","一个人也很好，先把自己过明白"]},
+    {age:33, title:"33 岁 · 住在哪儿",         opts:["咬牙买一套，先上车","继续租，把钱留在手里"]},
+    {age:38, title:"38 岁 · 要不要孩子",       opts:["要。日子会变样，心里有数","不要。两个人的日子也完整"]},
+    {age:44, title:"44 岁 · 中年的岔路",       opts:["搞个副业，给自己留条后路","稳住主业，把身体找回来"]}
+  ];
+  var MAXL = FORKS.length;               // 演示 6 层 → 64 条末端
+  var Y = [110, 185, 255, 320, 380, 435, 488]; // 每层纵深 y（消失点在 110）
+  var OP = [0, .78, .66, .55, .45, .36, .28];  // 越远的层越淡
+  var WD = [0, 2.3, 1.9, 1.6, 1.3, 1.05, .85]; // 越深线越细
+  var NS = "http://www.w3.org/2000/svg";
+
+  // 建满二叉树：叶子层（第 6 层）等距排布，父节点 x = 子节点均值 → 天然扇形加宽
+  var nodes = [{x:400, y:Y[0], lvl:0, parent:-1, side:-1}];
+  (function build(){
+    var levelStart = [0];
+    for (var l = 1; l <= MAXL; l++){
+      var prev = nodes.slice(levelStart[l-1], levelStart[l-1] + Math.pow(2, l-1));
+      var start = nodes.length; levelStart.push(start);
+      var band = 760, n = Math.pow(2, l);
+      prev.forEach(function(p, i){
+        for (var s = 0; s < 2; s++){
+          var leafIdx = i*2 + s; // 在本层中的序号（满二叉树下与叶子序号同构）
+          var x;
+          if (l === MAXL) x = 20 + leafIdx * (band/(n-1));
+          else x = 0; // 先占位，深层建完后自底向上回填
+          nodes.push({x:x, y:Y[l], lvl:l, parent: nodes.indexOf(p), side:s, leafIdx:leafIdx});
+        }
+      });
+    }
+    // 回填内层 x：按叶子序号比例落在该层带宽内
+    for (var l = 1; l < MAXL; l++){
+      var cnt = Math.pow(2, l), bandW = 120 + l*106;
+      nodes.forEach(function(nd){
+        if (nd.lvl === l) nd.x = 400 + ((nd.leafIdx + .5)/cnt - .5) * bandW;
+      });
+    }
+  })();
+
+  var svgEdges = document.getElementById("edges");
+  var svgLeaves = document.getElementById("leaves");
+  var svgArcs = document.getElementById("arcs");
+  var svgLabels = document.getElementById("labels");
+  var edgeEls = {}, leafEls = {}, arcEls = [], labEls = [];
+
+  nodes.forEach(function(nd, idx){
+    if (nd.parent < 0) return;
+    var p = nodes[nd.parent];
+    var cx = p.x + (nd.x - p.x) * .18, cy = p.y + (nd.y - p.y) * .55;
+    var path = document.createElementNS(NS, "path");
+    path.setAttribute("d", "M "+p.x+" "+p.y+" Q "+cx+" "+cy+" "+nd.x+" "+nd.y);
+    path.setAttribute("class", "edge");
+    path.style.strokeWidth = WD[nd.lvl];
+    path.style.opacity = 0;
+    path.dataset.node = idx;
+    svgEdges.appendChild(path);
+    edgeEls[idx] = path;
+    var c = document.createElementNS(NS, "circle");
+    c.setAttribute("cx", nd.x); c.setAttribute("cy", nd.y);
+    c.setAttribute("r", nd.lvl === MAXL ? 5 : 3.6);
+    c.setAttribute("class", "leaf");
+    c.style.opacity = 0;
+    c.style.pointerEvents = "none";
+    c.dataset.node = idx;
+    svgLeaves.appendChild(c);
+    leafEls[idx] = c;
+  });
+  for (var l = 1; l <= MAXL; l++){
+    var bandW2 = l === MAXL ? 760 : 120 + l*106;
+    var arc = document.createElementNS(NS, "path");
+    arc.setAttribute("d", "M "+(400-bandW2/2)+" "+Y[l]+" Q 400 "+(Y[l]+16)+" "+(400+bandW2/2)+" "+Y[l]);
+    arc.setAttribute("class", "arc"); arc.style.opacity = 0;
+    svgArcs.appendChild(arc); arcEls.push(arc);
+    var lab = document.createElementNS(NS, "text");
+    lab.setAttribute("x", 16); lab.setAttribute("y", Y[l]+4);
+    lab.setAttribute("class", "lvl"); lab.style.opacity = 0;
+    lab.textContent = FORKS[l-1].age + " 岁";
+    svgLabels.appendChild(lab); labEls.push(lab);
+  }
+
+  function drawIn(el, delay, lvlOf){
+    var len = el.getTotalLength ? el.getTotalLength() : 300;
+    el.style.transition = "none";
+    el.style.strokeDasharray = len; el.style.strokeDashoffset = len;
+    el.style.opacity = OP[lvlOf];
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        el.style.transition = "stroke-dashoffset .7s ease "+delay+"ms, stroke .5s ease, stroke-width .5s ease, opacity .8s ease";
+        el.style.strokeDashoffset = 0;
+        setTimeout(function(){ el.style.strokeDasharray = "none"; }, 750 + delay);
+      });
+    });
+  }
+  function ancestry(idx){
+    var chain = [];
+    while (idx > 0){ chain.push(idx); idx = nodes[idx].parent; }
+    return chain;
+  }
+
+  var phase = "closed", lvl = 0, candidate = -1, picked = -1;
+  var stageWrap = document.getElementById("stageWrap");
+  var capT = document.getElementById("capTitle"), capN = document.getElementById("capNote");
+  var pathList = document.getElementById("pathList");
+  var btnOpen = document.getElementById("btnOpen"), btnFork = document.getElementById("btnFork"),
+      btnPick = document.getElementById("btnPick"), btnReset = document.getElementById("btnReset");
+  var world = document.getElementById("world"), underfoot = document.getElementById("underfoot");
+
+  function setCandidate(idx){
+    if (phase === "picked") return;
+    candidate = idx;
+    var chain = ancestry(idx);
+    Object.keys(edgeEls).forEach(function(k){
+      var e = edgeEls[k];
+      e.classList.toggle("cand", chain.indexOf(+k) >= 0);
+    });
+    Object.keys(leafEls).forEach(function(k){
+      leafEls[k].classList.toggle("cand", +k === idx);
+    });
+  }
+  Object.keys(leafEls).forEach(function(k){
+    leafEls[k].addEventListener("click", function(){
+      if (phase !== "growing") return;
+      if (nodes[+k].lvl !== lvl) return;
+      setCandidate(+k);
+      capN.textContent = "候选的路已换到这一条——点「选这条路」，它就落到你脚下。";
+    });
+  });
+
+  btnOpen.addEventListener("click", function(){
+    if (phase !== "closed") return;
+    phase = "open";
+    stageWrap.classList.add("open");
+    btnOpen.disabled = true; btnFork.disabled = false;
+    capT.textContent = "画轴推开了。远处只有一点，路还没分。";
+    capN.textContent = "22 岁，宿舍要退了。行李收好，站在宿舍门口——第一个岔口在 25 岁。";
+    setTimeout(function(){
+      var sc = document.getElementById("scroll");
+      if (sc) sc.style.display = "none";
+    }, 1750);
+  });
+
+  btnFork.addEventListener("click", function(){
+    if (phase !== "open" && phase !== "growing") return;
+    if (lvl >= MAXL) return;
+    phase = "growing";
+    lvl++;
+    var delay = 0;
+    nodes.forEach(function(nd, idx){
+      if (nd.lvl !== lvl) return;
+      drawIn(edgeEls[idx], delay, lvl); delay += 26;
+      leafEls[idx].style.transition = "opacity .5s ease "+(delay)+"ms";
+      leafEls[idx].style.opacity = 1;
+      leafEls[idx].style.pointerEvents = "auto";
+    });
+    arcEls[lvl-1].style.transition = "opacity .8s ease";
+    arcEls[lvl-1].style.opacity = 1;
+    labEls[lvl-1].style.transition = "opacity .8s ease";
+    labEls[lvl-1].style.opacity = 1;
+    // 默认候选：一直走右侧的那条（把手头的事做深那一脉）
+    var leaf = nodes.findIndex(function(nd){ return nd.lvl === lvl && nd.leafIdx === Math.pow(2, lvl) - 1; });
+    setCandidate(leaf);
+    var ways = Math.pow(2, lvl);
+    capT.textContent = FORKS[lvl-1].title;
+    capN.textContent = lvl < MAXL
+      ? "扇面又翻了一倍——现在有 " + ways + " 条可能的路。再往前走，还会再翻。"
+      : ways + " 条还只是演示。再往后，线多到数不清了——那才是「无限」。";
+    btnPick.disabled = false;
+    if (lvl >= MAXL) btnFork.disabled = true;
+  });
+
+  btnPick.addEventListener("click", function(){
+    if (phase !== "growing" || candidate < 0) return;
+    phase = "picked"; picked = candidate;
+    var chain = ancestry(picked);
+    Object.keys(edgeEls).forEach(function(k){
+      var e = edgeEls[k];
+      e.classList.remove("cand");
+      if (chain.indexOf(+k) >= 0){
+        e.classList.add("chosen");
+        e.style.strokeWidth = 3.4; e.style.opacity = 1;
+      } else e.classList.add("dim");
+    });
+    Object.keys(leafEls).forEach(function(k){
+      leafEls[k].classList.remove("cand");
+      if (+k === picked) leafEls[k].classList.add("me");
+      else leafEls[k].style.opacity = .25;
+    });
+    // 镜头推近：把选中的末端送到近处中央
+    var nd = nodes[picked], s = 1.35;
+    var tx = 400 - s * nd.x, ty = 428 - s * nd.y;
+    world.style.transform = "translate("+tx+"px,"+ty+"px) scale("+s+")";
+    // 脚下的路：从落点向观者张开的梯形路面
+    var poly = document.getElementById("ufPoly"), line = document.getElementById("ufLine");
+    poly.setAttribute("points", "386,428 414,428 566,560 234,560");
+    line.setAttribute("x1", 400); line.setAttribute("y1", 428);
+    line.setAttribute("x2", 400); line.setAttribute("y2", 560);
+    underfoot.classList.add("on");
+    // 这条路上的选择（真实选项文案，按岔口顺序）
+    var parts = chain.slice().reverse().map(function(nid){
+      var n = nodes[nid];
+      return "<span>"+FORKS[n.lvl-1].age+" 岁 · "+FORKS[n.lvl-1].opts[n.side]+"</span>";
+    });
+    pathList.innerHTML = parts.join("<i>→</i>");
+    pathList.classList.add("on");
+    capT.textContent = "你取了这一条。";
+    capN.textContent = "其余的路没有消失，只是退远了——30、40、50 岁，你还能远远看它们一眼。";
+    btnFork.disabled = true; btnPick.disabled = true;
+  });
+
+  btnReset.addEventListener("click", function(){ location.reload(); });
+})();
+</script>
+</body>
+</html>

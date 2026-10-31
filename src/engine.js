@@ -20,6 +20,9 @@
     { id: "c2000", birth: 2000, label: "2000 年生", desc: "22 岁是 2022 年：现在这一代人的路" },
   ];
   const SAVE_KEY = "ify-save-v2";
+  const PREFS_KEY = "ify-prefs";
+  const SPEED_BASE = { slow: 2800, mid: 1600, fast: 800 }; // 速度三档的基础停留时长 (ms)
+  const SPEED_LABEL = { slow: "慢", mid: "中", fast: "快" };
 
   // --- 可序列化的种子随机 (状态可存档) ---
   const RNG = { a: 0 };
@@ -43,11 +46,90 @@
       route: null, unchosen: [], log: [], reflections: [],
       usedEvents: [], flags: {}, crisisUsed: {}, microUsed: [], usedRare: [],
       glimpsesSeen: 0, glimpsesSkipped: 0, lastDelta: "",
+      autoOn: false, speed: "mid", // 推进设定在本局的副本；权威来源是 localStorage 的 ify-prefs
     };
   }
   function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify({ ...S, rngA: RNG.a })); } catch (e) { /* 存不了不阻塞游玩 */ } }
   function loadSave() { try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); return s && s.route ? s : null; } catch (e) { return null; } }
   function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
+
+  // ---------- 自动推进：偏好 (ify-prefs 为权威) + 单一全局计时器 ----------
+  // 口径：只在「只有一个『过一年』按钮」的画面计时（普通事件无选项 / 平年微文本 / 稀有事件无选项）；
+  // 凡带抉择的画面（分岔/选项/危机/瞥视）一律停住。step() 每次渲染前清旧计时，防串局。
+  let prefs = loadPrefs();
+  function loadPrefs() {
+    try {
+      const p = JSON.parse(localStorage.getItem(PREFS_KEY));
+      if (p && typeof p.auto === "boolean" && SPEED_BASE[p.speed]) return { auto: p.auto, speed: p.speed };
+    } catch (e) { /* 读不到就用默认：关 + 中速（保持原行为） */ }
+    return { auto: false, speed: "mid" };
+  }
+  function savePrefs() {
+    try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch (e) { /* 存不了不阻塞 */ }
+    if (S) { S.autoOn = prefs.auto; S.speed = prefs.speed; }
+  }
+  let autoTimer = null;  // 唯一的 setTimeout 句柄
+  let autoRemain = 0;    // 剩余毫秒（暂停/恢复用）
+  let autoStamp = 0;     // 本段计时起点
+  let autoText = null;   // 当前画面若可自动推进，其正文；抉择画面恒为 null
+  function clearAuto() { if (autoTimer !== null) { clearTimeout(autoTimer); autoTimer = null; } autoRemain = 0; }
+  function autoDelay(text) {
+    const base = SPEED_BASE[prefs.speed] || SPEED_BASE.mid;
+    return base + Math.min(1800, (text ? text.length : 0) * 12); // 正文越长留得越久，上限再加 1800ms
+  }
+  function startAuto(ms) {
+    if (autoTimer !== null) clearTimeout(autoTimer);
+    autoStamp = Date.now(); autoRemain = ms;
+    autoTimer = setTimeout(() => { autoTimer = null; autoRemain = 0; advance(); }, ms);
+  }
+  function armAuto(text) { // 只由三类无选项画面在渲染后调用
+    autoText = text;
+    clearAuto();
+    if (prefs.auto) {
+      autoRemain = autoDelay(text);
+      if (!document.hidden) startAuto(autoRemain);
+    }
+    refreshAutoRow();
+  }
+  function pauseAuto() {
+    if (autoTimer !== null) { clearTimeout(autoTimer); autoTimer = null; autoRemain = Math.max(0, autoRemain - (Date.now() - autoStamp)); }
+  }
+  function resumeAuto() { // 回到前台且当前画面可推进、还有剩余时间，才接着走
+    if (prefs.auto && autoText !== null && autoRemain > 0 && autoTimer === null && S && S.route && S.age < (S.endAge || 65) && !document.hidden) startAuto(autoRemain);
+  }
+  document.addEventListener("visibilitychange", () => { if (document.hidden) pauseAuto(); else resumeAuto(); });
+  window.addEventListener("blur", pauseAuto);
+  window.addEventListener("focus", resumeAuto);
+  function autoRowHtml() {
+    const counting = prefs.auto && autoText !== null;
+    const spd = ["slow", "mid", "fast"].map((k) => `<button type="button" class="autospd${prefs.speed === k ? " on" : ""}" data-autospeed="${k}">${SPEED_LABEL[k]}</button>`).join("");
+    return `<span class="autoleft">自动推进 <button type="button" class="autotog" data-autotoggle>${prefs.auto ? "开" : "关"}</button>${counting ? `<span class="autodot" aria-hidden="true"></span><span class="autolive">自动推进中</span>` : ""}</span><span class="autoright">${spd}</span>`;
+  }
+  function refreshAutoRow() { const r = el("autorow"); if (r) r.innerHTML = autoRowHtml(); }
+  // 游戏中控制行用事件委托接线：卡片每次重渲染都不丢监听
+  app().addEventListener("click", (ev) => {
+    const t = ev.target;
+    if (!t || !t.closest) return;
+    const tog = t.closest("[data-autotoggle]");
+    const spd = t.closest("[data-autospeed]");
+    if (tog) {
+      prefs.auto = !prefs.auto;
+      savePrefs();
+      if (!prefs.auto) clearAuto();
+      else if (autoText !== null) { autoRemain = autoDelay(autoText); if (!document.hidden) startAuto(autoRemain); }
+      refreshAutoRow();
+      if (S && S.route) save();
+    } else if (spd) {
+      const k = spd.getAttribute("data-autospeed");
+      if (SPEED_BASE[k] && k !== prefs.speed) {
+        prefs.speed = k;
+        savePrefs();
+        if (prefs.auto && autoText !== null) { clearAuto(); autoRemain = autoDelay(autoText); if (!document.hidden) startAuto(autoRemain); }
+      }
+      refreshAutoRow();
+      if (S && S.route) save();
+    }
+  });
 
   function applyEffects(ef) {
     if (!ef) { S.lastDelta = ""; return; }
@@ -69,9 +151,9 @@
     });
     return `<svg class="road" viewBox="0 0 ${W} 52" width="100%" aria-hidden="true"><line x1="${pad}" y1="30" x2="${W - pad}" y2="30" stroke="#D8D2C2" stroke-width="2"/>${s}<line x1="${pad}" y1="30" x2="${X(S.age)}" y2="30" stroke="#2F4A3C" stroke-width="2.5"/><circle cx="${X(S.age)}" cy="30" r="5" fill="#2F4A3C"/><text x="${pad}" y="49" font-size="10" fill="#8A8378">22 岁</text><text x="${W - pad}" y="49" font-size="10" fill="#8A8378" text-anchor="end">${end} 岁</text></svg>`;
   }
-  function head(note) {
+  function head(note, bare) {
     const yr = S.birthYear ? ` · 公元 ${S.birthYear + S.age} 年` : "";
-    return `${roadSvg()}${statsBar()}<p class="meta">${S.age} 岁${yr} · ${esc(S.route.name)} · 种子 ${esc(S.seedStr)}${note ? " · " + note : ""}</p>`;
+    return `${roadSvg()}${statsBar()}<p class="meta">${S.age} 岁${yr} · ${esc(S.route.name)} · 种子 ${esc(S.seedStr)}${note ? " · " + note : ""}</p>${bare ? "" : `<div class="autorow" id="autorow">${autoRowHtml()}</div>`}`;
   }
   function streamHtml() {
     if (!S || !S.log.length) return "";
@@ -110,6 +192,17 @@
           <div class="segpicks" id="erapick">${ERAS.map((e) => `<button type="button" class="segbtn${e.id === "c2000" ? " sel" : ""}" data-era="${e.id}" data-birth="${e.birth}"><b>${e.label}</b></button>`).join("")}</div>
           <p class="setlab">这一局走到几岁</p>
           <div class="segpicks" id="spanpick">${[60, 65, 70, 75, 80].map((a) => `<button type="button" class="segbtn${a === 65 ? " sel" : ""}" data-end="${a}">${a} 岁</button>`).join("")}</div>
+          <p class="setlab">自动推进</p>
+          <div class="segpicks" id="autopick">
+            <button type="button" class="segbtn" data-auto="off"><b>关</b></button>
+            <button type="button" class="segbtn" data-auto="on"><b>开</b></button>
+          </div>
+          <p class="setlab">速度</p>
+          <div class="segpicks" id="speedpick">
+            <button type="button" class="segbtn" data-speed="slow">慢</button>
+            <button type="button" class="segbtn" data-speed="mid">中</button>
+            <button type="button" class="segbtn" data-speed="fast">快</button>
+          </div>
           <p class="hint" id="setsummary"></p>
         </div>
         <div class="seedrow">
@@ -119,12 +212,20 @@
         </div>
         <p class="hint">不填随机。填了，运气定下来，跟朋友比同一局就用它。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam || endParam ? "，年代与跨度也按对方那局选好了" : ""}，点任意一条路就开始同一局。` : ""}</p>
       </section>`;
-    if (saved) el("resume").addEventListener("click", () => { S = saved; S.usedRare = S.usedRare || []; S.era = S.era || "c2000"; S.birthYear = S.birthYear || 2000; S.endAge = S.endAge || 65; RNG.a = saved.rngA || seedFromString(saved.seedStr); step(); });
+    if (saved) el("resume").addEventListener("click", () => { S = saved; S.usedRare = S.usedRare || []; S.era = S.era || "c2000"; S.birthYear = S.birthYear || 2000; S.endAge = S.endAge || 65; S.autoOn = prefs.auto; S.speed = prefs.speed; RNG.a = saved.rngA || seedFromString(saved.seedStr); step(); });
     const pickSeg = (id) => { const box = el(id); if (!box) return; box.querySelectorAll(".segbtn").forEach((b) => b.addEventListener("click", () => { box.querySelectorAll(".segbtn").forEach((o) => o.classList.remove("sel")); b.classList.add("sel"); })); };
     pickSeg("erapick"); pickSeg("spanpick");
     const preSel = (id, attr, val) => { const box = el(id); if (!box || !val) return; const btns = box.querySelectorAll(".segbtn"); btns.forEach((o) => { if (o.dataset[attr] === val) { btns.forEach((p) => p.classList.remove("sel")); o.classList.add("sel"); } }); };
     preSel("erapick", "era", eraParam); preSel("spanpick", "end", endParam);
-    const updSummary = () => { const eb = document.querySelector("#erapick .segbtn.sel"); const sb = document.querySelector("#spanpick .segbtn.sel"); const sv = (el("seedin").value || "").trim(); const birth = eb ? +eb.dataset.birth : 2000; el("setsummary").textContent = `这一局：${eb ? eb.textContent.trim() : "2000 年生"} · ${birth + 22} 年 22 岁 · 走到 ${sb ? sb.dataset.end : 65} 岁 · ${sv ? `种子「${sv}」` : "随机种子"}`; };
+    const updSummary = () => { const eb = document.querySelector("#erapick .segbtn.sel"); const sb = document.querySelector("#spanpick .segbtn.sel"); const sv = (el("seedin").value || "").trim(); const birth = eb ? +eb.dataset.birth : 2000; el("setsummary").textContent = `这一局：${eb ? eb.textContent.trim() : "2000 年生"} · ${birth + 22} 年 22 岁 · 走到 ${sb ? sb.dataset.end : 65} 岁 · ${sv ? `种子「${sv}」` : "随机种子"} · ${prefs.auto ? `自动推进 ${SPEED_LABEL[prefs.speed]}` : "手动推进"}`; };
+    const syncAutoPick = () => {
+      document.querySelectorAll("#autopick .segbtn").forEach((o) => o.classList.toggle("sel", (o.dataset.auto === "on") === prefs.auto));
+      document.querySelectorAll("#speedpick .segbtn").forEach((o) => o.classList.toggle("sel", o.dataset.speed === prefs.speed));
+      const sp = el("speedpick"); if (sp) sp.classList.toggle("dim", !prefs.auto);
+    };
+    document.querySelectorAll("#autopick .segbtn").forEach((b) => b.addEventListener("click", () => { prefs.auto = b.dataset.auto === "on"; savePrefs(); syncAutoPick(); updSummary(); }));
+    document.querySelectorAll("#speedpick .segbtn").forEach((b) => b.addEventListener("click", () => { prefs.speed = b.dataset.speed; savePrefs(); syncAutoPick(); updSummary(); }));
+    syncAutoPick();
     document.querySelectorAll(".segbtn").forEach((b) => b.addEventListener("click", updSummary));
     el("seedin").addEventListener("input", updSummary);
     updSummary();
@@ -150,6 +251,7 @@
     S = freshState(seedStr);
     RNG.a = seedFromString(seedStr);
     if (opts) { S.era = opts.era; S.birthYear = opts.birth; S.endAge = opts.endAge; }
+    S.autoOn = prefs.auto; S.speed = prefs.speed;
     S.route = route;
     S.unchosen = D.routes.filter((r) => r.id !== route.id).map((r) => ({ kind: "route", label: r.name, id: r.id }));
     applyEffects(route.stats); S.lastDelta = "";
@@ -160,6 +262,7 @@
 
   // ---------- 主推进 ----------
   function step() {
+    clearAuto(); autoText = null; // 每进一个新画面，先清掉上一个画面的计时，防串局
     if (S.age >= (S.endAge || 65)) return renderEnd();
     save();
     const fork = D.forks.find((f) => f.age === S.age);
@@ -206,7 +309,7 @@
       <p class="rare-tag">稀有事件</p><p class="body">${esc(r.text)}</p>${deltaLine()}
       ${r.choices ? `<div class="choices">${r.choices.map((c, i) => `<button class="choice" data-i="${i}">${esc(c.label)}</button>`).join("")}</div><div id="echo"></div>`
                   : `<button class="primary" id="cont">过一年</button>`}</section>`;
-    if (!r.choices) { save(); el("cont").addEventListener("click", advance); return; }
+    if (!r.choices) { save(); el("cont").addEventListener("click", advance); armAuto(r.text); return; }
     document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {
       const c = r.choices[Number(b.dataset.i)];
       applyEffects(c.effects);
@@ -269,6 +372,7 @@
       S.log.push(`${S.age} 岁 · ${D.micro[idx]}`);
       app().innerHTML = `<section class="card">${head()}<p class="body">${esc(D.micro[idx])}</p><button class="primary" id="cont">过一年</button></section>`;
       save(); el("cont").addEventListener("click", advance);
+      armAuto(D.micro[idx]);
       return;
     }
     S.usedEvents.push(e.id);
@@ -277,7 +381,7 @@
     app().innerHTML = `<section class="card">${head()}<p class="body">${esc(e.text)}</p>${deltaLine()}
       ${e.choices ? `<div class="choices">${e.choices.map((c, i) => `<button class="choice" data-i="${i}">${esc(c.label)}</button>`).join("")}</div><div id="echo"></div>`
                   : `<button class="primary" id="cont">过一年</button>`}</section>`;
-    if (!e.choices) { save(); el("cont").addEventListener("click", advance); return; }
+    if (!e.choices) { save(); el("cont").addEventListener("click", advance); armAuto(e.text); return; }
     document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {
       const c = e.choices[Number(b.dataset.i)];
       applyEffects(c.effects);
@@ -345,7 +449,7 @@
     const skippedLine = S.glimpsesSkipped ? `<p>你有 ${S.glimpsesSkipped} 次没有去细看另一条路。这样也好，有些事不知道，更睡得着。</p>` : "";
     const reflHtml = S.reflections.length
       ? `<h3>你留给自己的话</h3>` + S.reflections.map((r) => `<p class="refl">「${esc(r.text)}」（${r.age} 岁）</p>`).join("") : "";
-    app().innerHTML = `<section class="card">${head()}
+    app().innerHTML = `<section class="card">${head(null, true)}
       <h2>${S.endAge || 65} 岁 · 这一局走完了</h2>
       ${sp ? `<div class="special"><p class="rare-tag">${TIER_LABEL[sp.tier]}</p><p class="special-title">${esc(sp.title)}</p><p>${esc(sp.text)}</p></div>` : ""}
       <p class="verdict">${esc(v.text)}</p>

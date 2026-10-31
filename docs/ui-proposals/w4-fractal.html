@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>如果那年 · W4 分形星尘（墨洇）视觉样稿</title>
+<style>
+  :root{
+    --paper:#FAF8F4; --card:#FFFDF8; --ink:#23211C; --pine:#2F4A3C;
+    --line:#DDD6C9; --shadow:#8A948C; --mut:#6E6A5E;
+    --serif:"Songti SC","Noto Serif SC",Georgia,serif;
+    --sans:-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    --mono:"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.7}
+  .wrap{max-width:1060px;margin:0 auto;padding:34px 20px 70px}
+  .brand{font-family:var(--serif);font-size:14px;letter-spacing:.35em;color:var(--pine);margin:0 0 6px;font-weight:700}
+  h1{font-family:var(--serif);font-size:27px;margin:0 0 4px;font-weight:700}
+  .sub{color:var(--mut);font-size:14px;margin:0 0 22px}
+  .scrollbox{display:flex;align-items:stretch;gap:0}
+  .roller{flex:0 0 13px;background:#3A372E;border-radius:7px;position:relative;margin:6px 0}
+  .roller::before,.roller::after{content:"";position:absolute;left:50%;transform:translateX(-50%);width:21px;height:21px;border-radius:50%;background:#3A372E}
+  .roller::before{top:-9px}.roller::after{bottom:-9px}
+  .sheet{flex:1;background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:10px 0}
+  canvas{display:block;width:100%;height:auto}
+  #cardwrap{display:none;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:22px 0}
+  #cardwrap canvas{width:min(430px,92%);margin:0 auto}
+  .status{font-family:var(--serif);font-size:16.5px;margin:16px 2px 4px;min-height:28px}
+  .meta{font-family:var(--mono);font-size:12px;color:var(--mut);margin:0 2px 14px}
+  .controls{display:flex;gap:9px;flex-wrap:wrap;margin-top:6px}
+  button{font-family:var(--sans);cursor:pointer;font-size:14.5px;border-radius:999px;padding:10px 20px}
+  button.primary{background:var(--pine);color:#fff;border:1px solid var(--pine)}
+  button.primary:hover{opacity:.9}
+  button.ghost{background:none;border:1px solid var(--line);color:var(--ink)}
+  button.ghost:hover{border-color:var(--pine);color:var(--pine)}
+  button[disabled]{opacity:.35;cursor:default}
+  button[disabled]:hover{border-color:var(--line);color:var(--ink)}
+  .note{color:var(--mut);font-size:13px;margin-top:20px;border-top:1px dashed var(--line);padding-top:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="brand">如果那年 · 另一条路</p>
+  <h1>视觉样稿 W4 · 分形星尘（墨洇）</h1>
+  <p class="sub">世界线在每个分岔口分形裂开，密到成一片墨雾；你取的那一条，始终是松绿。画轴展开到哪，分形生长到哪。</p>
+
+  <div class="scrollbox" id="scrollbox">
+    <div class="roller"></div>
+    <div class="sheet"><canvas id="cv" width="1240" height="430"></canvas></div>
+    <div class="roller"></div>
+  </div>
+  <div id="cardwrap"><canvas id="cardcv" width="900" height="1125"></canvas></div>
+
+  <p class="status" id="status">22 岁。宿舍要退了，你选了「去大城市，进大厂」。</p>
+  <p class="meta" id="meta"></p>
+
+  <div class="controls">
+    <button class="primary" id="b-unroll">展开画轴</button>
+    <button class="ghost" id="b-year">过一年</button>
+    <button class="ghost" id="b-fork">分岔</button>
+    <button class="primary" id="b-take">取这一条</button>
+    <button class="ghost" id="b-card">看卡面效果</button>
+    <button class="ghost" id="b-reset">重置</button>
+  </div>
+
+  <p class="note">样稿边界：线条全部由种子随机生成的分形数据绘制（非图片、非 AI 生成图）；动效只有生长与呼吸两种。正式版的分形应由玩家本局的真实分岔数据驱动，此处用固定种子演示形态。</p>
+</div>
+
+<script>
+"use strict";
+// ---------- 数据：分岔口取自 src/events.js ----------
+const FORKS = [
+  { age: 25, title: "25 岁 · 第一份工作的第三年" },
+  { age: 28, title: "28 岁 · 回不回老家" },
+  { age: 31, title: "31 岁 · 感情的路口" },
+  { age: 33, title: "33 岁 · 住在哪儿" },
+  { age: 38, title: "38 岁 · 要不要孩子" },
+  { age: 44, title: "44 岁 · 中年的岔路" },
+  { age: 52, title: "52 岁 · 父母需要人了" },
+  { age: 58, title: "58 岁 · 退还是不退" },
+];
+const START = 22, END = 65;
+const PINE = "#2F4A3C", INK = "#23211C", SHADOW = "#8A948C", PAPER = "#FAF8F4", CARDBG = "#FFFDF8", LINEC = "#DDD6C9";
+
+// ---------- 种子随机（形态稳定，可复现） ----------
+function mulberry32(a){return function(){a|=0;a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
+const rng = mulberry32(20261031);
+
+// ---------- 坐标：x 为画轴逻辑像素（0..1240），y 为虚拟高度（0..350） ----------
+const VX = 1240, VY = 350;
+const ageX = (age) => 70 + ((age - START) / (END - START)) * 980; // 22→70, 65→1050
+
+// ---------- 生成分形 ----------
+// 主干树：每个分岔口，所有线裂成两条（1→2→…→256）
+const mainSegs = [];   // {x1,y1,x2,y2,level,onPath,fork}
+const pathPts = [{ x: ageX(START), y: VY / 2 }];
+const choiceBit = FORKS.map(() => (rng() < 0.5 ? 0 : 1));
+let nodes = [{ y: VY / 2, path: true }];
+let prevAge = START;
+FORKS.forEach((f, i) => {
+  const dy = VY * 0.44 * Math.pow(0.72, i) / 3.32 * 2; // 分岔张角逐级收窄，256 个终点收进画幅
+  const next = [];
+  nodes.forEach((n) => {
+    [-1, 1].forEach((s, k) => {
+      const cy = Math.max(8, Math.min(VY - 8, n.y + s * dy * (0.82 + rng() * 0.36)));
+      const isPath = n.path && k === choiceBit[i];
+      mainSegs.push({ x1: ageX(prevAge), y1: n.y, x2: ageX(f.age), y2: cy, level: i, onPath: isPath, fork: i });
+      next.push({ y: cy, path: isPath });
+      if (isPath) pathPts.push({ x: ageX(f.age), y: cy });
+    });
+  });
+  nodes = next; prevAge = f.age;
+});
+// 尾段：58 → 65，256 条线各自走完
+const endPts = [];
+nodes.forEach((n) => {
+  const ey = n.y + (rng() - 0.5) * 6;
+  endPts.push(ey);
+  mainSegs.push({ x1: ageX(58), y1: n.y, x2: ageX(END), y2: ey, level: 8, onPath: n.path, fork: 8 });
+});
+pathPts.push({ x: ageX(END), y: endPts[nodes.findIndex((n) => n.path)] });
+
+// 雾层一：主干上的小枝（分形深度 2），让线与线之间长出毛细的墨
+const twigs = [];
+function twig(x, y, ang, len, d, out) {
+  if (d === 0 || len < 2.5) return;
+  const x2 = x + Math.cos(ang) * len, y2 = y + Math.sin(ang) * len;
+  out.push({ x1: x, y1: y, x2, y2, d });
+  const n = 2;
+  for (let k = 0; k < n; k++) twig(x2, y2, ang + (k === 0 ? -1 : 1) * (0.3 + rng() * 0.35), len * 0.72, d - 1, out);
+}
+mainSegs.forEach((s) => {
+  if (s.level < 2 || rng() > 0.5) return;
+  const mx = (s.x1 + s.x2) / 2, my = (s.y1 + s.y2) / 2;
+  const base = Math.atan2(s.y2 - s.y1, s.x2 - s.x1);
+  twig(mx, my, base + (rng() < 0.5 ? -1 : 1) * (0.55 + rng() * 0.4), 13 + rng() * 9, 2, twigs);
+});
+// 雾层二：65 岁处 256 个终点各自开一朵分形（深度 3）——膨胀的顶点，密成墨雾
+const crowns = [];
+endPts.forEach((ey) => { twig(ageX(END), ey, (rng() - 0.5) * 0.5, 15 + rng() * 8, 3, crowns); });
+const TOTAL_SEGS = mainSegs.length + twigs.length + crowns.length;
+
+// ---------- 状态 ----------
+let age = START;
+let revealX = 0, revealTarget = 0;
+let committed = new Set();       // 已「取这一条」的分岔序号
+let mode = "scroll";
+const el = (id) => document.getElementById(id);
+const cv = el("cv"), ctx = cv.getContext("2d");
+const cardcv = el("cardcv"), cctx = cardcv.getContext("2d");
+(function fitDPR(c) { const d = Math.min(2, window.devicePixelRatio || 1); const w = c.width, h = c.height; c.width = w * d; c.height = h * d; c.getContext("2d").scale(d, d); c.style.aspectRatio = w + "/" + h; })(cv);
+(function fitDPR(c) { const d = Math.min(2, window.devicePixelRatio || 1); const w = c.width, h = c.height; c.width = w * d; c.height = h * d; c.getContext("2d").scale(d, d); c.style.aspectRatio = w + "/" + h; })(cardcv);
+
+// ---------- 绘制：T 是坐标变换（画轴版 / 卡面版各一套） ----------
+function strokeMist(c, segs, T, reveal, breath) {
+  // 按深度分组合并成少数几条 path 批量描边（性能账见 notes）
+  for (const d of [3, 2, 1]) {
+    c.beginPath();
+    let any = false;
+    for (const s of segs) {
+      if (s.d !== d || s.x1 > reveal) continue;
+      const a = T(s.x1, s.y1), b = T(s.x2, s.y2);
+      c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); any = true;
+    }
+    if (!any) continue;
+    c.strokeStyle = INK;
+    c.globalAlpha = (d === 3 ? 0.16 : d === 2 ? 0.11 : 0.07) * breath;
+    c.lineWidth = d === 3 ? 1 : 0.7;
+    c.stroke();
+  }
+  c.globalAlpha = 1;
+}
+function drawFractal(c, T, reveal, breath, full) {
+  // 雾层（洇进纸里的其余世界线）
+  c.save();
+  c.beginPath();
+  const r = T(reveal, 0);
+  c.rect(0, 0, r[0] + 1, 10000);
+  c.clip();
+  strokeMist(c, twigs, T, reveal, breath);
+  strokeMist(c, crowns, T, reveal, breath);
+  c.restore();
+  // 主干：未取的线是淡墨，取定之后的未选线再退一层
+  for (const s of mainSegs) {
+    if (s.x1 > reveal) continue;
+    const grow = Math.max(0, Math.min(1, (reveal - s.x1) / 46)); // 前沿处渐渐长出来
+    let a = 0.30, w = 1.05;
+    if (s.onPath) { a = 0; } // 主角线单独画
+    else if (committed.has(s.fork)) { a = 0.13; w = 0.8; }
+    if (a === 0) continue;
+    const A = T(s.x1, s.y1), B = T(s.x2, s.y2);
+    const mx = (A[0] + B[0]) / 2, my = (A[1] + B[1]) / 2 + (s.x2 - s.x1) * 0.012 * Math.sin(s.x1 * 1.7 + s.y1);
+    c.beginPath(); c.moveTo(A[0], A[1]); c.quadraticCurveTo(mx, my, B[0], B[1]);
+    c.strokeStyle = INK; c.globalAlpha = a * grow; c.lineWidth = w; c.stroke();
+  }
+  c.globalAlpha = 1;
+  // 你取的那一条：先垫一层纸色宽笔（不发光，只是把雾压开），再压松绿
+  const pts = pathPts.filter((p) => p.x <= reveal + 0.5 || full);
+  if (!full) { const head = pathHead(reveal); if (head && (!pts.length || head.x > pts[pts.length - 1].x + 0.5)) pts.push(head); }
+  if (pts.length > 1) {
+    for (const pass of [[CARDBG, 6.5, 0.85], [PINE, 2.8, 1]]) {
+      c.beginPath();
+      pts.forEach((p, i) => { const q = T(p.x, p.y); i === 0 ? c.moveTo(q[0], q[1]) : c.lineTo(q[0], q[1]); });
+      c.strokeStyle = pass[0]; c.lineWidth = pass[1]; c.globalAlpha = pass[2];
+      c.lineJoin = "round"; c.lineCap = "round"; c.stroke();
+    }
+    c.globalAlpha = 1;
+  }
+}
+function pathHead(reveal) {
+  // 当前前沿在主角线上的位置（段内插值）
+  for (let i = 0; i < pathPts.length - 1; i++) {
+    const a = pathPts[i], b = pathPts[i + 1];
+    if (reveal >= a.x && reveal <= b.x) { const t = (reveal - a.x) / (b.x - a.x || 1); return { x: reveal, y: a.y + (b.y - a.y) * t }; }
+  }
+  return null;
+}
+
+// ---------- 画轴版 ----------
+const SH = 430, SY = (y) => 40 + y; // 虚拟 y 0..350 → 画布 40..390
+function drawScroll(t) {
+  ctx.clearRect(0, 0, 1240, SH);
+  const breath = 0.88 + 0.12 * Math.sin(t * 0.00045); // 呼吸：雾的浓度缓缓涨落
+  drawFractal(ctx, (x, y) => [x, SY(y)], revealX, breath, false);
+  // 轴线与刻度
+  ctx.strokeStyle = LINEC; ctx.globalAlpha = 1; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(ageX(START), 404); ctx.lineTo(ageX(END) + 130, 404); ctx.stroke();
+  ctx.fillStyle = "#6E6A5E"; ctx.font = "11px Menlo, monospace"; ctx.textAlign = "center";
+  ctx.fillText("22 岁", ageX(START), 422);
+  FORKS.forEach((f) => { if (revealX >= ageX(f.age)) ctx.fillText(f.age + "", ageX(f.age), 422); });
+  if (revealX >= ageX(END)) ctx.fillText("65 岁", ageX(END), 422);
+  // 分岔口标记：小圆点 + 标题（展开到才出现）
+  ctx.textAlign = "left";
+  FORKS.forEach((f, i) => {
+    if (revealX < ageX(f.age)) return;
+    const p = pathPts[i + 1];
+    ctx.beginPath(); ctx.arc(p.x, SY(p.y), committed.has(i) ? 4 : 3, 0, 7);
+    ctx.fillStyle = committed.has(i) ? PINE : SHADOW; ctx.fill();
+    ctx.fillStyle = "#6E6A5E"; ctx.font = "12px 'Songti SC', 'Noto Serif SC', Georgia, serif";
+    const above = p.y < VY / 2;
+    ctx.fillText(f.title, Math.min(p.x + 8, 1010), SY(p.y) + (above ? -12 : 22));
+  });
+  // 当前点
+  const head = pathHead(revealX);
+  if (head && age < END) {
+    ctx.beginPath(); ctx.arc(head.x, SY(head.y), 5, 0, 7); ctx.fillStyle = PINE; ctx.fill();
+    ctx.beginPath(); ctx.arc(head.x, SY(head.y), 5, 0, 7); ctx.strokeStyle = CARDBG; ctx.lineWidth = 2; ctx.stroke();
+  }
+  // 展开前沿：一条淡线，像轴上正推开的那一折
+  if (revealX > 2 && revealX < 1238) {
+    ctx.strokeStyle = SHADOW; ctx.globalAlpha = 0.35;
+    ctx.beginPath(); ctx.moveTo(revealX, 18); ctx.lineTo(revealX, 404); ctx.stroke(); ctx.globalAlpha = 1;
+  }
+  ctx.fillStyle = PINE; ctx.font = "700 15px 'Songti SC', 'Noto Serif SC', Georgia, serif"; ctx.textAlign = "left";
+  ctx.fillText(age + " 岁", 26, 34);
+}
+
+// ---------- 卡面版（4:5，静态结算帧） ----------
+function drawCard() {
+  const c = cctx, W = 900, H = 1125;
+  c.clearRect(0, 0, W, H);
+  c.fillStyle = CARDBG; c.fillRect(0, 0, W, H);
+  c.strokeStyle = LINEC; c.lineWidth = 2; c.strokeRect(28, 28, W - 56, H - 56);
+  c.fillStyle = PINE; c.font = "700 25px 'Songti SC', 'Noto Serif SC', Georgia, serif"; c.textAlign = "left";
+  c.fillText("如果那年 · 另一条路", 72, 96);
+  c.fillStyle = SHADOW; c.font = "19px Menlo, monospace"; c.textAlign = "right";
+  c.fillText("种子 KX-2026", W - 72, 96); c.textAlign = "left";
+  // 判词（摘自 events.js verdictTop.relation + verdictCost.relation）
+  c.fillStyle = INK; c.font = "37px 'Songti SC', 'Noto Serif SC', Georgia, serif";
+  const lines = ["你把人放在前面。人这东西，", "你对他们好，他们大都知道。", "只是把人放在前面的人，", "自己的事，常常排在最后。"];
+  lines.forEach((l, i) => c.fillText(l, 72, 168 + i * 54));
+  // 分形全貌 + 一条绿线穿行（卡面主视觉）
+  const bx = 72, bw = W - 144, by = 430, bh = 300;
+  c.strokeStyle = LINEC; c.beginPath(); c.moveTo(bx, by + bh + 26); c.lineTo(bx + bw, by + bh + 26); c.stroke();
+  const breath = 1;
+  const savedCommitted = committed;
+  committed = new Set(FORKS.map((_, i) => i)); // 结算帧：八个分岔都已取定，未选线退到底纹层
+  drawFractal(c, (x, y) => [bx + (x / VX) * bw, by + (y / VY) * bh], VX, breath, true);
+  committed = savedCommitted;
+  c.fillStyle = "#6E6A5E"; c.font = "19px 'Songti SC', 'Noto Serif SC', Georgia, serif";
+  c.fillText("28 岁 · 你没回老家", bx, by + bh + 58);
+  // 两行对照
+  c.fillStyle = INK; c.font = "23px 'Songti SC', 'Noto Serif SC', Georgia, serif";
+  c.fillText("这条路：去大城市，进大厂，65 岁退休", 72, 856);
+  c.fillStyle = SHADOW;
+  c.fillText("另一条：回了家乡，周末钓鱼，孩子在镇上读书", 72, 898);
+  // 五维小条
+  const stats = [["健康", 62], ["金钱", 55], ["成长", 71], ["自由", 48], ["关系", 83]];
+  stats.forEach(([k, v], i) => {
+    const y = 946 + i * 30;
+    c.fillStyle = INK; c.font = "19px 'Hiragino Sans', sans-serif"; c.fillText(k, 72, y);
+    c.fillStyle = LINEC; c.fillRect(140, y - 13, 300, 7);
+    c.fillStyle = PINE; c.fillRect(140, y - 13, 300 * v / 100, 7);
+    c.fillStyle = "#6E6A5E"; c.font = "17px Menlo, monospace"; c.fillText(v + "", 458, y);
+  });
+  c.fillStyle = PINE; c.font = "700 26px 'Songti SC', 'Noto Serif SC', Georgia, serif";
+  c.fillText("你敢看你的另一条路吗？", 72, H - 62);
+  c.fillStyle = SHADOW; c.font = "19px Menlo, monospace"; c.textAlign = "right";
+  c.fillText("if-that-year.pages.dev", W - 72, H - 62); c.textAlign = "left";
+}
+
+// ---------- 交互 ----------
+function setStatus(t) { el("status").textContent = t; }
+function syncMeta() {
+  el("meta").textContent = "线段总数 " + TOTAL_SEGS + "（主干 " + mainSegs.length + " · 小枝 " + twigs.length + " · 冠雾 " + crowns.length + "）· 当前世界线 " + Math.pow(2, FORKS.filter((f) => f.age <= age).length) + " 条 · 已取定 " + committed.size + " / 8 个分岔";
+  el("b-year").disabled = el("b-fork").disabled = age >= END || mode === "card";
+  el("b-unroll").disabled = mode === "card";
+  el("b-take").disabled = mode === "card" || !FORKS.some((f, i) => f.age <= age && !committed.has(i));
+}
+function gotoAge(a, msg) {
+  age = Math.min(END, a);
+  revealTarget = age >= END ? VX - 4 : ageX(age);
+  if (msg) setStatus(msg);
+  syncMeta();
+}
+el("b-unroll").addEventListener("click", () => {
+  revealX = 0; revealTarget = ageX(age);
+  setStatus("画轴从左往右推开。展开到哪儿，分形就生长到哪儿。");
+});
+el("b-year").addEventListener("click", () => {
+  const na = age + 1;
+  const f = FORKS.find((x) => x.age === na);
+  gotoAge(na, f ? f.title + "——线在这里裂开。" : na + " 岁。日子往前走，线也往前长。");
+});
+el("b-fork").addEventListener("click", () => {
+  const f = FORKS.find((x) => x.age > age);
+  if (!f) { gotoAge(END, "65 岁。线不再裂了，剩下的都洇成了纸上的底纹。"); return; }
+  const n = Math.pow(2, FORKS.indexOf(f) + 1);
+  gotoAge(f.age, f.title + "。世界线裂成 " + n + " 条，你走的只是其中一条。");
+});
+el("b-take").addEventListener("click", () => {
+  const idx = FORKS.map((f, i) => i).filter((i) => FORKS[i].age <= age && !committed.has(i)).pop();
+  if (idx === undefined) return;
+  committed.add(idx);
+  setStatus(FORKS[idx].title + "——取了这一条。其余的线退后一步，洇进纸里，成为底纹。");
+  syncMeta();
+});
+el("b-card").addEventListener("click", () => {
+  mode = mode === "card" ? "scroll" : "card";
+  el("scrollbox").style.display = mode === "card" ? "none" : "flex";
+  el("cardwrap").style.display = mode === "card" ? "block" : "none";
+  el("b-card").textContent = mode === "card" ? "回到画轴" : "看卡面效果";
+  if (mode === "card") { drawCard(); setStatus("整卷展开。分形是全部的可能，绿线是你走的那一条——这一帧就是结算卡的主视觉。"); }
+  else setStatus(age + " 岁。回到画轴。");
+  syncMeta();
+});
+el("b-reset").addEventListener("click", () => {
+  age = START; committed = new Set(); revealX = 0; revealTarget = ageX(START);
+  if (mode === "card") el("b-card").click();
+  setStatus("22 岁。宿舍要退了，你选了「去大城市，进大厂」。"); syncMeta();
+});
+
+// ---------- 主循环：前沿缓动 + 雾的呼吸 ----------
+function loop(t) {
+  revealX += (revealTarget - revealX) * 0.045;
+  if (Math.abs(revealTarget - revealX) < 0.4) revealX = revealTarget;
+  if (mode === "scroll") drawScroll(t || 0);
+  requestAnimationFrame(loop);
+}
+revealTarget = ageX(START);
+syncMeta();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
