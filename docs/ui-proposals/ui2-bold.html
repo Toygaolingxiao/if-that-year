@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI 方向二（大胆）样稿 · 如果那年</title>
+<style>
+:root{
+  --paper:#FAF8F4; --card:#FFFDF8; --ink:#23211C; --mut:#6E6A5E;
+  --line:#DDD6C9; --accent:#2F4A3C; --accent-soft:#EAF0EA;
+  --shadow:#8A948C; --gold:#B08D3E; --seal:#A6493B;
+  --serif:"Songti SC","STSong","Noto Serif SC",Georgia,serif;
+  --sans:-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  --mono:"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#E9E4D8;color:var(--ink);font-family:var(--sans);line-height:1.75}
+.pagehead{max-width:1180px;margin:0 auto;padding:34px 20px 6px}
+.pagehead h1{font-family:var(--serif);font-size:26px;margin:0 0 4px}
+.pagehead p{color:#5C574C;margin:0;font-size:14px;max-width:720px}
+.deck{display:flex;flex-wrap:wrap;gap:34px;justify-content:center;max-width:1180px;margin:0 auto;padding:26px 20px 70px}
+.screen{width:400px;flex:none}
+.screencap{font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:#5C574C;margin:0 2px 8px}
+.screencap b{color:var(--seal)}
+.frame{background:var(--paper);border:1px solid #CFC7B4;border-radius:26px;overflow:hidden;box-shadow:0 24px 50px rgba(35,33,28,.16);
+  background-image:radial-gradient(rgba(47,74,60,.05) 1px,transparent 1.1px);background-size:22px 22px}
+.in{padding:22px 20px 26px}
+/* ---------- 通用原子 ---------- */
+.kicker{font-size:11px;letter-spacing:.34em;color:var(--accent);font-weight:700;margin:0}
+.stamp{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:64px;height:64px;border:2px solid var(--accent);border-radius:50%;color:var(--accent);transform:rotate(-7deg);background:rgba(255,253,248,.85);flex:none}
+.stamp b{font-family:var(--mono);font-size:15px;line-height:1.15}
+.stamp span{font-size:10px;letter-spacing:.18em}
+.stamp.shadow{border-color:var(--shadow);color:var(--shadow);transform:rotate(5deg)}
+.seal{display:inline-flex;align-items:center;justify-content:center;width:58px;height:58px;background:var(--seal);color:#FBF3EC;border-radius:7px;font-family:var(--serif);font-weight:700;font-size:14px;line-height:1.25;text-align:center;transform:rotate(-4deg);box-shadow:0 3px 8px rgba(166,73,59,.3);flex:none;padding:4px}
+.btn{display:block;width:100%;text-align:center;border-radius:999px;padding:13px 20px;font-size:15.5px;cursor:pointer;border:1px solid var(--accent);background:var(--accent);color:#FFFDF8;font-family:var(--sans)}
+.btn.ghost{background:none;color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--accent);color:var(--accent)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 14px;font-size:13.5px;cursor:pointer;color:var(--ink)}
+.chip.sel{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent);font-weight:600}
+/* ---------- 路图（签名） ---------- */
+.roadwrap{position:relative;margin:0 -20px;padding:6px 0 0}
+.roadlab{position:absolute;font-family:var(--serif);color:var(--shadow);font-size:12px;letter-spacing:.3em;writing-mode:vertical-rl}
+/* ---------- 屏一 开局 ---------- */
+.masthead{border-bottom:3px double var(--accent);padding-bottom:14px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:flex-end}
+.masthead .vol{font-family:var(--mono);font-size:11px;color:var(--mut);letter-spacing:.12em;text-align:right;line-height:1.6}
+.bigname{font-family:var(--serif);font-weight:700;font-size:64px;line-height:1.12;letter-spacing:.04em;margin:2px 0 0}
+.bigname em{font-style:normal;color:var(--accent)}
+.lede{font-size:15px;color:#3E3A31;margin:12px 0 4px}
+.route{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:6px;padding:13px 15px;margin:0 0 9px;cursor:pointer;font-family:var(--sans)}
+.route:hover{border-left-color:var(--accent);border-color:var(--accent)}
+.route b{font-family:var(--serif);font-size:18.5px;display:block}
+.route span{font-size:13.5px;color:var(--mut);line-height:1.55;display:block}
+.route .no{font-family:var(--mono);font-size:11px;color:var(--seal);letter-spacing:.1em}
+.formgrid{border:1.5px solid var(--ink);margin-top:18px}
+.formgrid .frow{display:flex;border-bottom:1px solid var(--line)}
+.formgrid .frow:last-child{border-bottom:none}
+.formgrid .flab{flex:none;width:86px;border-right:1px solid var(--line);padding:9px 10px;font-size:11px;letter-spacing:.22em;color:var(--mut);font-weight:700;background:#F5F1E8}
+.formgrid .fbody{padding:8px 10px;flex:1}
+.formgrid input{width:100%;border:none;background:transparent;font-family:var(--mono);font-size:14px;color:var(--ink);outline:none;padding:3px 0}
+.fhint{font-size:12px;color:var(--mut);margin:8px 0 0}
+/* ---------- 屏二 游玩 ---------- */
+.playtop{display:flex;justify-content:space-between;align-items:center}
+.agebig{font-family:var(--serif);font-size:44px;font-weight:700;line-height:1}
+.agebig small{font-size:15px;color:var(--mut);font-weight:400;letter-spacing:.1em}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:14px 0 4px}
+.stat .lab{font-size:11px;color:var(--mut);letter-spacing:.06em}
+.stat .val{font-family:var(--mono);font-size:14px}
+.stat .bar{height:4px;background:#EAE5D8;border-radius:2px;margin-top:2px}
+.stat .fill{height:100%;background:var(--accent);border-radius:2px}
+.evtcard{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:20px 18px 16px;box-shadow:0 16px 34px rgba(35,33,28,.09);position:relative;margin-top:12px}
+.evtcard:before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:3px;background:repeating-linear-gradient(var(--line) 0 5px,transparent 5px 10px)}
+.evtcard h2{font-family:var(--serif);font-size:21px;margin:0 0 8px;line-height:1.5}
+.evtcard p{margin:0;font-size:15.5px}
+.choice{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:13px 15px;margin:10px 0 0;cursor:pointer;font-family:var(--sans);font-size:15.5px}
+.choice:hover{border-color:var(--accent)}
+.choice .fork-ic{flex:none;margin-top:2px}
+.choice small{display:block;color:var(--mut);font-size:13px}
+.passyear{margin-top:14px}
+/* 流水账：装订册 */
+.ledger{margin-top:24px;position:relative;padding-left:26px}
+.ledger:before{content:"";position:absolute;left:8px;top:4px;bottom:4px;border-left:2px dashed #B9B09A}
+.ledger .hole{position:absolute;left:3.5px;width:11px;height:11px;border-radius:50%;background:var(--paper);border:1.5px solid #B9B09A}
+.ledger h3{font-size:12px;letter-spacing:.26em;color:var(--mut);margin:0 0 10px;font-weight:700}
+.lrow{display:grid;grid-template-columns:104px 1fr;gap:10px;padding:6px 2px;border-bottom:1px solid #EFEAE0;font-size:13.5px;line-height:1.6}
+.lrow .yr{font-family:var(--mono);font-size:11.5px;color:var(--accent);padding-top:3px;white-space:nowrap}
+.lrow.shadowy{color:var(--shadow)}
+.lrow.last{background:#F1ECDD;border-radius:6px;padding-left:8px}
+/* ---------- 屏三 结算分享台 ---------- */
+.verdict{font-family:var(--serif);font-size:31px;line-height:1.55;font-weight:700;margin:6px 0 10px}
+.verdict .price{color:var(--mut)}
+.endrow{display:flex;gap:14px;align-items:flex-start;margin:10px 0 4px}
+.endrow p{margin:0;font-size:14.5px}
+.panel{border-top:3px double var(--accent);margin-top:20px;padding-top:14px}
+.panel h3{font-size:12px;letter-spacing:.26em;color:var(--mut);margin:0 0 10px;font-weight:700}
+textarea.note{width:100%;border:1px solid var(--line);border-radius:8px;background:
+  repeating-linear-gradient(#FFFDF8 0 30px,#EFEAD9 30px 31px);font-family:var(--serif);font-size:15px;line-height:31px;padding:2px 12px;min-height:64px;resize:none;color:var(--ink)}
+.postprev{background:#F5F1E8;border:1px dashed #B9B09A;border-radius:8px;padding:11px 13px;font-size:13px;line-height:1.7;color:#4A463C;margin-top:10px;white-space:pre-line}
+.cardprev{margin:14px auto 4px;width:270px;background:#FFFDF8;border:1px solid var(--line);border-radius:8px;box-shadow:0 14px 30px rgba(35,33,28,.13);padding:18px 16px 14px;position:relative}
+.cardprev .brand{font-family:var(--serif);font-size:12px;letter-spacing:.3em;color:var(--accent)}
+.cardprev .seed{position:absolute;top:16px;right:16px;font-family:var(--mono);font-size:10.5px;color:var(--mut)}
+.cardprev .v{font-family:var(--serif);font-size:19.5px;font-weight:700;line-height:1.55;margin:10px 0 4px}
+.cardprev .foot{display:flex;justify-content:space-between;font-size:11px;color:var(--mut);border-top:1px solid var(--line);padding-top:8px;margin-top:8px}
+.cardprev .foot b{color:var(--accent);font-weight:600}
+.acts{display:grid;gap:9px;margin-top:16px}
+.acts .row2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.acts .btn{margin:0}
+.sizehint{font-size:12px;color:var(--mut);text-align:center;margin:6px 0 0}
+@media (max-width:460px){.screen{width:100%}}
+</style>
+</head>
+<body>
+
+<div class="pagehead">
+  <h1>《如果那年》UI 方向二 · 大胆样稿</h1>
+  <p>签名概念：一册装订起来的人生档案——分岔路放大为贯穿全页的长卷脊柱，年份是邮戳，流水账是装订线钉住的账页，传说结局要盖一枚朱印。色板与字体仍用现行暖纸 + 松绿 + 宋体；朱红只出现在印章与邮戳上。无深蓝、无渐变、无发光。</p>
+</div>
+
+<div class="deck">
+
+<!-- ================= 屏一 · 开局 ================= -->
+<div class="screen">
+  <p class="screencap"><b>屏一</b> · 开局页 —— 报头式 masthead + 路图起笔 + 档案登记表</p>
+  <div class="frame"><div class="in">
+    <div class="masthead">
+      <p class="kicker">如果那年 · 另一条路</p>
+      <p class="vol">人生档案 · 第壹册<br>ARCHIVE OF ONE LIFE</p>
+    </div>
+    <h1 class="bigname">如果<br><em>那年</em></h1>
+    <p class="lede">22 岁，宿舍要退了。选一条路走到底——没选的那条也不会消失，它会变成你的「另一条路」，在 30、40、50 岁时远远看你一眼。</p>
+
+    <!-- 路图：只起了个头，第一道岔口若隐若现 -->
+    <div class="roadwrap">
+      <svg viewBox="0 0 360 92" width="100%" aria-hidden="true">
+        <line x1="8" y1="52" x2="352" y2="52" stroke="#D8D2C2" stroke-width="2"/>
+        <line x1="8" y1="52" x2="86" y2="52" stroke="#2F4A3C" stroke-width="3"/>
+        <path d="M150 52 C 210 52, 240 22, 318 16" stroke="#8A948C" stroke-width="2" stroke-dasharray="4 4" fill="none" opacity=".65"/>
+        <circle cx="8" cy="52" r="4.5" fill="#2F4A3C"/>
+        <circle cx="86" cy="52" r="5.5" fill="#2F4A3C"/>
+        <circle cx="150" cy="52" r="4" fill="#FFFDF8" stroke="#8A948C" stroke-width="2"/>
+        <text x="8" y="76" font-size="10" fill="#8A8378" font-family="monospace">22 岁 · 出发</text>
+        <text x="318" y="10" font-size="10.5" fill="#8A948C" font-family="Songti SC, serif" text-anchor="middle">另一条路</text>
+        <text x="352" y="76" font-size="10" fill="#8A8378" font-family="monospace" text-anchor="end">65 岁</text>
+      </svg>
+    </div>
+
+    <div>
+      <button class="route"><span class="no">路 〇一</span><b>去大城市，进大厂</b><span>宿舍要退了。行李箱里是四年的书，电脑包里是简历。工资卡下个月开始进账，房租也开始扣。</span></button>
+      <button class="route"><span class="no">路 〇二</span><b>回家乡，进体制内</b><span>离父母 20 分钟，离野心有点远。饭桌上能多一副碗筷，周末不用赶车。</span></button>
+      <button class="route"><span class="no">路 〇三</span><b>出国，从头开始</b><span>语言还没那么利索，箱子里塞了半箱子药和一包火锅底料。落地那天，谁也不认识你。</span></button>
+      <button class="route"><span class="no">路 〇四</span><b>继续读下去</b><span>同学开始领工资了，你的账户还是助学金和家教费。图书馆闭馆音乐，你听得比谁都熟。</span></button>
+      <button class="route"><span class="no">路 〇五</span><b>先停一年</b><span>没有 offer，没有课表。先去看看别的生活长什么样，再决定自己要哪种。这个决定，你得跟家里解释很多遍。</span></button>
+    </div>
+
+    <!-- 出生年代 / 跨度 / 种子，做成档案登记表 -->
+    <div class="formgrid">
+      <div class="frow"><div class="flab">出生年代</div><div class="fbody"><div class="chips">
+        <button class="chip">1955 年生</button><button class="chip">1965 年生</button><button class="chip">1978 年生</button><button class="chip sel">2000 年生</button>
+      </div></div></div>
+      <div class="frow"><div class="flab">走到几岁</div><div class="fbody"><div class="chips">
+        <button class="chip">60</button><button class="chip sel">65</button><button class="chip">70</button><button class="chip">75</button><button class="chip">80</button>
+      </div></div></div>
+      <div class="frow"><div class="flab">种子码</div><div class="fbody">
+        <input type="text" placeholder="不填就是随机——每局的运气都不一样">
+      </div></div>
+    </div>
+    <p class="fhint">填了种子，运气就定下来：同一种子，同样的运气，不同的选择，正好跟朋友比。也可以用「今日种子」，今天点开的人都是同一局。</p>
+  </div></div>
+</div>
+
+<!-- ================= 屏二 · 游玩 ================= -->
+<div class="screen">
+  <p class="screencap"><b>屏二</b> · 游玩页 —— 路图长卷当顶 + 邮戳年份 + 装订流水账</p>
+  <div class="frame"><div class="in">
+    <div class="playtop">
+      <div>
+        <p class="kicker">如果那年 · 另一条路</p>
+        <p class="agebig">43 岁 <small>公元 2021 年 · 去大城市，进大厂</small></p>
+      </div>
+      <div class="stamp"><b>2021</b><span>43 岁</span></div>
+    </div>
+
+    <!-- 路图长卷：已走过的路点亮，每道岔口挂一枚小邮戳；影子虚线淡出 -->
+    <div class="roadwrap">
+      <span class="roadlab" style="right:2px;top:0">另一条路</span>
+      <svg viewBox="0 0 360 118" width="100%" aria-hidden="true">
+        <line x1="8" y1="72" x2="352" y2="72" stroke="#D8D2C2" stroke-width="2"/>
+        <!-- 影子支路（自各岔口分出，渐淡断开） -->
+        <path d="M58 72 C 96 72, 112 40, 168 30" stroke="#8A948C" stroke-width="1.8" stroke-dasharray="4 4" fill="none" opacity=".75"/>
+        <path d="M102 72 C 140 72, 158 102, 216 106" stroke="#8A948C" stroke-width="1.8" stroke-dasharray="4 4" fill="none" opacity=".55"/>
+        <path d="M146 72 C 184 72, 200 40, 252 32" stroke="#8A948C" stroke-width="1.8" stroke-dasharray="4 4" fill="none" opacity=".4"/>
+        <path d="M216 72 C 250 72, 262 100, 306 104" stroke="#8A948C" stroke-width="1.8" stroke-dasharray="4 4" fill="none" opacity=".28"/>
+        <!-- 已走过的主路 -->
+        <line x1="8" y1="72" x2="196" y2="72" stroke="#2F4A3C" stroke-width="3"/>
+        <!-- 未走完 -->
+        <line x1="196" y1="72" x2="352" y2="72" stroke="#2F4A3C" stroke-width="1.4" opacity=".35"/>
+        <!-- 岔口点 -->
+        <g fill="#2F4A3C"><circle cx="58" cy="72" r="4"/><circle cx="102" cy="72" r="4"/><circle cx="146" cy="72" r="4"/><circle cx="186" cy="72" r="4"/><circle cx="216" cy="72" r="4"/></g>
+        <!-- 当前点 -->
+        <circle cx="196" cy="72" r="7" fill="#FFFDF8" stroke="#A6493B" stroke-width="2.5"/>
+        <circle cx="196" cy="72" r="2.6" fill="#A6493B"/>
+        <text x="8" y="94" font-size="10" fill="#8A8378" font-family="monospace">2000 · 22</text>
+        <text x="58" y="94" font-size="10" fill="#8A8378" font-family="monospace" text-anchor="middle">25</text>
+        <text x="102" y="94" font-size="10" fill="#8A8378" font-family="monospace" text-anchor="middle">28</text>
+        <text x="146" y="94" font-size="10" fill="#8A8378" font-family="monospace" text-anchor="middle">31</text>
+        <text x="196" y="94" font-size="10.5" fill="#A6493B" font-family="monospace" text-anchor="middle" font-weight="bold">43</text>
+        <text x="352" y="94" font-size="10" fill="#8A8378" font-family="monospace" text-anchor="end">2043 · 65</text>
+      </svg>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="lab">健康</div><div class="bar"><div class="fill" style="width:52%"></div></div><div class="val">52</div></div>
+      <div class="stat"><div class="lab">金钱</div><div class="bar"><div class="fill" style="width:61%"></div></div><div class="val">61</div></div>
+      <div class="stat"><div class="lab">成长</div><div class="bar"><div class="fill" style="width:74%"></div></div><div class="val">74</div></div>
+      <div class="stat"><div class="lab">自由</div><div class="bar"><div class="fill" style="width:38%"></div></div><div class="val">38</div></div>
+      <div class="stat"><div class="lab">关系</div><div class="bar"><div class="fill" style="width:57%"></div></div><div class="val">57</div></div>
+    </div>
+
+    <div class="evtcard">
+      <h2>28 岁那年的岔口，又在梦里出现了一次</h2>
+      <p>过年回家，母亲包饺子时说起，邻居家的孩子考回了县里。夜里你躺在小时候的床上，天花板还是那块天花板。你第无数次想：如果当年选了另一条呢？——这一年，单位里有个去总部的名额，名单下周公布，你的名字在候选里。</p>
+      <button class="choice"><svg class="fork-ic" width="18" height="18" viewBox="0 0 18 18"><path d="M3 15 L9 9 M9 9 L15 3 M9 9 L15 12" stroke="#2F4A3C" stroke-width="2" fill="none" stroke-linecap="round"/></svg><span>争取这个名额，往上再走一步<small>名单公布前，还要请两顿饭</small></span></button>
+      <button class="choice"><svg class="fork-ic" width="18" height="18" viewBox="0 0 18 18"><path d="M3 15 L9 9 M9 9 L15 3 M9 9 L15 12" stroke="#8A948C" stroke-width="2" fill="none" stroke-linecap="round"/></svg><span>不争了，把周末还给家里<small>对方说，你最近笑得都多了一点</small></span></button>
+    </div>
+
+    <!-- 流水账：装订线 + 打孔 -->
+    <div class="ledger">
+      <span class="hole" style="top:26px"></span><span class="hole" style="top:118px"></span><span class="hole" style="top:210px"></span>
+      <h3>这一生 · 流水账</h3>
+      <div class="lrow"><span class="yr">2000 · 22 岁</span><span>出发：去大城市，进大厂</span></div>
+      <div class="lrow"><span class="yr">2003 · 25 岁</span><span>第一份工作的第三年：留下，把手头的事做深</span></div>
+      <div class="lrow"><span class="yr">2006 · 28 岁</span><span>回不回老家：不回。把现在的城市过成家</span></div>
+      <div class="lrow shadowy"><span class="yr">2008 · 30 岁</span><span>影子：回了县里的那一个你，评上了职称，晚饭后去河边走路</span></div>
+      <div class="lrow"><span class="yr">2016 · 38 岁</span><span>孩子的事：要。日子会变样，心里有数</span></div>
+      <div class="lrow"><span class="yr">2020 · 42 岁</span><span>父母的体检报告寄到了，你请了三天假回去陪床</span></div>
+      <div class="lrow last"><span class="yr">2021 · 43 岁</span><span>去总部的名额，名单下周公布——你正在这一页</span></div>
+    </div>
+  </div></div>
+</div>
+
+<!-- ================= 屏三 · 结算分享台 ================= -->
+<div class="screen">
+  <p class="screencap"><b>屏三</b> · 结算分享台 —— 判词 + 朱印 + 卡型切换 + 卡面预览</p>
+  <div class="frame"><div class="in">
+    <div class="playtop">
+      <div>
+        <p class="kicker">结算 · 这一局走完了</p>
+        <p class="agebig">65 岁 <small>公元 2043 年</small></p>
+      </div>
+      <div class="stamp shadow"><b>2043</b><span>65 岁</span></div>
+    </div>
+
+    <div class="endrow">
+      <div class="seal">传说<br>结局</div>
+      <p><b style="font-family:var(--serif);font-size:17px">定标准的人</b><br>你参与起草的那份行业规范，印出来有四十多页，名字在起草人一栏的第三行。后来入行的人，都得从这一册学起。</p>
+    </div>
+
+    <p class="verdict">这一生，你把本事练成了招牌。<br><span class="price">代价是，自由一直排在最后。</span></p>
+    <p style="font-size:14.5px;margin:0">你走了这条路：去大城市，进大厂。另一条路（回家乡，进体制内）也走完了它的一生——它的代价，是有些本事，一辈子没处使。</p>
+
+    <div class="panel">
+      <h3>分享这一局</h3>
+      <textarea class="note" placeholder="给这一生留一句话（任意）——会印在卡的最上面">那年要是回了老家，现在会在河边钓鱼吧。</textarea>
+
+      <p class="setlab" style="font-size:12px;letter-spacing:.22em;color:var(--mut);margin:14px 0 8px;font-weight:700">卡面</p>
+      <div class="chips">
+        <button class="chip sel">判词卡</button><button class="chip">路图卡</button><button class="chip">年表卡</button>
+      </div>
+      <p class="setlab" style="font-size:12px;letter-spacing:.22em;color:var(--mut);margin:12px 0 8px;font-weight:700">尺寸</p>
+      <div class="chips">
+        <button class="chip sel">4 : 5 卡片</button><button class="chip">9 : 16 故事</button><button class="chip">3 : 4 长图</button>
+      </div>
+
+      <!-- 卡面预览 -->
+      <div class="cardprev">
+        <span class="brand">如果那年 · 另一条路</span><span class="seed">种子 20261031</span>
+        <p class="v">「那年要是回了老家，<br>现在会在河边钓鱼吧。」</p>
+        <p style="font-family:var(--serif);font-size:15.5px;line-height:1.6;margin:0 0 4px">这一生，你把本事练成了招牌。代价是，自由一直排在最后。</p>
+        <svg viewBox="0 0 238 64" width="100%" aria-hidden="true">
+          <line x1="4" y1="38" x2="234" y2="38" stroke="#D8D2C2" stroke-width="1.6"/>
+          <path d="M40 38 C 70 38, 84 14, 128 10" stroke="#8A948C" stroke-width="1.5" stroke-dasharray="3 3" fill="none" opacity=".7"/>
+          <path d="M96 38 C 126 38, 140 54, 182 56" stroke="#8A948C" stroke-width="1.5" stroke-dasharray="3 3" fill="none" opacity=".45"/>
+          <line x1="4" y1="38" x2="234" y2="38" stroke="#2F4A3C" stroke-width="2.2"/>
+          <g fill="#2F4A3C"><circle cx="40" cy="38" r="3"/><circle cx="96" cy="38" r="3"/><circle cx="150" cy="38" r="3"/><circle cx="196" cy="38" r="3"/></g>
+          <circle cx="234" cy="38" r="4" fill="#A6493B"/>
+          <text x="4" y="58" font-size="8" fill="#8A8378" font-family="monospace">22 岁</text>
+          <text x="234" y="58" font-size="8" fill="#8A8378" font-family="monospace" text-anchor="end">65 岁</text>
+        </svg>
+        <p style="font-size:11.5px;color:var(--mut);margin:2px 0 0">28 岁 · 你没回老家</p>
+        <div class="foot"><span>健康 62 · 金钱 58 · 成长 88 · 自由 31 · 关系 66</span><b>同样的运气，你会怎么选？</b></div>
+      </div>
+      <p class="sizehint">预览即出图：1080 × 1350 · PNG · 浏览器内生成</p>
+
+      <div class="postprev">发出去的文案长这样——
+
+那年要是回了老家，现在会在河边钓鱼吧。
+这一生，我把本事练成了招牌。代价是，自由一直排在最后。
+同样的种子，你会怎么选？ if-that-year.pages.dev?seed=20261031</div>
+
+      <div class="acts">
+        <button class="btn">分享这一生（图片）</button>
+        <div class="row2">
+          <button class="btn ghost">保存图片</button>
+          <button class="btn ghost">复制文案</button>
+        </div>
+        <div class="row2">
+          <button class="btn ghost">同种子再来一局</button>
+          <button class="btn ghost">随机种子新开一局</button>
+        </div>
+      </div>
+    </div>
+  </div></div>
+</div>
+
+</div>
+</body>
+</html>

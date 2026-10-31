@@ -13,6 +13,12 @@
   const START_AGE = 22, END_AGE = 65;
   const STAT_META = [["health", "健康"], ["money", "金钱"], ["growth", "成长"], ["freedom", "自由"], ["relation", "关系"]];
   const GLIMPSE_AGES = { 30: 0, 40: 1, 50: 2 };
+  const ERAS = [
+    { id: "c1955", birth: 1955, label: "1955 年生", desc: "22 岁是 1977 年：恢复高考、返城、分房、下岗潮" },
+    { id: "c1965", birth: 1965, label: "1965 年生", desc: "22 岁是 1987 年：海南热、下海潮、房改" },
+    { id: "c1978", birth: 1978, label: "1978 年生", desc: "22 岁是 2000 年：互联网、非典、房价起飞" },
+    { id: "c2000", birth: 2000, label: "2000 年生", desc: "22 岁是 2022 年：现在这一代人的路" },
+  ];
   const SAVE_KEY = "ify-save-v2";
 
   // --- 可序列化的种子随机 (状态可存档) ---
@@ -32,7 +38,7 @@
   let S = null;
   function freshState(seedStr) {
     return {
-      seedStr, age: START_AGE,
+      seedStr, age: START_AGE, era: "c2000", birthYear: 2000, endAge: 65,
       stats: { health: 60, money: 45, growth: 50, freedom: 50, relation: 50 },
       route: null, unchosen: [], log: [], reflections: [],
       usedEvents: [], flags: {}, crisisUsed: {}, microUsed: [], usedRare: [],
@@ -53,8 +59,35 @@
     return `<div class="stats">${STAT_META.map(([k, label]) =>
       `<div class="stat"><span>${label}</span><div class="bar"><i style="width:${S.stats[k]}%"></i></div><b>${S.stats[k]}</b></div>`).join("")}</div>`;
   }
+  function roadSvg() {
+    const W = 640, pad = 14, end = S.endAge || 65;
+    const X = (a) => pad + ((a - START_AGE) / (end - START_AGE)) * (W - pad * 2);
+    let s = "";
+    (D.forks || []).filter((f) => f.age < end).forEach((f) => {
+      const on = S.age >= f.age, col = on ? "#2F4A3C" : "#C4BCA9";
+      s += `<line x1="${X(f.age)}" y1="30" x2="${X(f.age) + 13}" y2="13" stroke="${col}" stroke-width="1.6" stroke-dasharray="3 3"/><circle cx="${X(f.age)}" cy="30" r="3" fill="${col}"/>`;
+    });
+    return `<svg class="road" viewBox="0 0 ${W} 52" width="100%" aria-hidden="true"><line x1="${pad}" y1="30" x2="${W - pad}" y2="30" stroke="#D8D2C2" stroke-width="2"/>${s}<line x1="${pad}" y1="30" x2="${X(S.age)}" y2="30" stroke="#2F4A3C" stroke-width="2.5"/><circle cx="${X(S.age)}" cy="30" r="5" fill="#2F4A3C"/><text x="${pad}" y="49" font-size="10" fill="#8A8378">22 岁</text><text x="${W - pad}" y="49" font-size="10" fill="#8A8378" text-anchor="end">${end} 岁</text></svg>`;
+  }
   function head(note) {
-    return `${statsBar()}<p class="meta">${S.age} 岁 · ${esc(S.route.name)} · 种子 ${esc(S.seedStr)}${note ? " · " + note : ""}</p>`;
+    const yr = S.birthYear ? ` · 公元 ${S.birthYear + S.age} 年` : "";
+    return `${roadSvg()}${statsBar()}<p class="meta">${S.age} 岁${yr} · ${esc(S.route.name)} · 种子 ${esc(S.seedStr)}${note ? " · " + note : ""}</p>`;
+  }
+  function streamHtml() {
+    if (!S || !S.log.length) return "";
+    const rows = S.log.map((l, i) => {
+      const m = l.match(/^(\d+) 岁 · ([\s\S]*)$/);
+      const age = m ? +m[1] : S.age, txt = m ? m[2] : l;
+      const yr = S.birthYear ? `${S.birthYear + age} · ` : "";
+      return `<div class="srow${i === S.log.length - 1 ? " last" : ""}"><span class="sage">${yr}${age} 岁</span><span>${esc(txt)}</span></div>`;
+    }).join("");
+    return `<div class="streamwrap"><p class="streamtitle">这一生 · 流水账</p><div class="stream" id="stream">${rows}</div></div>`;
+  }
+  function mountStream() {
+    const sec = app().querySelector("section.card");
+    if (!sec || !S || !S.route || S.age >= (S.endAge || 65)) return;
+    sec.insertAdjacentHTML("beforeend", streamHtml());
+    requestAnimationFrame(() => { const st = el("stream"); if (st) st.scrollTop = st.scrollHeight; });
   }
   function deltaLine() { return S.lastDelta ? `<p class="delta">${esc(S.lastDelta)}</p>` : ""; }
 
@@ -63,24 +96,40 @@
     clearSave0();
     const saved = loadSave();
     const seedParam = new URLSearchParams(location.search).get("seed");
+    const eraParam = new URLSearchParams(location.search).get("era");
+    const endParam = new URLSearchParams(location.search).get("end");
     app().innerHTML = `
       <section class="card">
         <h1>22 岁，宿舍要退了。</h1>
-        <p>行李收好，站在宿舍门口。往后的路要自己选。这局大约十分钟，从 22 岁走到 65 岁。</p>
+        <p>行李收好，站在宿舍门口。往后的路要自己选。一局大约十分钟。走哪一代人的路、走到几岁，下面都能自己定。</p>
         <p>选一条路开始。其他的路也不会消失——它们会变成你的「另一条路」，在你 30、40、50 岁的时候，远远地看你一眼。</p>
         ${saved ? `<button class="primary big" id="resume">继续上次的人生（${saved.age} 岁 · ${esc(saved.route.name)}）</button>` : ""}
         <div class="choices">${D.routes.map((r, i) => `<button class="choice" data-i="${i}"><b>${esc(r.name)}</b><small>${esc(r.desc)}</small></button>`).join("")}</div>
-        <div class="seedrow">
-          <input id="seedin" type="text" placeholder="朋友给的种子码，填这里">
-          <button class="ghost" id="seedgo">用这个种子开局</button>
+        <div class="setblock">
+          <p class="setlab">出生年代 · 替哪一代人重走一遍</p>
+          <div class="segpicks" id="erapick">${ERAS.map((e) => `<button type="button" class="segbtn${e.id === "c2000" ? " sel" : ""}" data-era="${e.id}" data-birth="${e.birth}"><b>${e.label}</b><small>${e.desc}</small></button>`).join("")}</div>
+          <p class="setlab">这一局走到几岁</p>
+          <div class="segpicks" id="spanpick">${[60, 65, 70, 75, 80].map((a) => `<button type="button" class="segbtn${a === 65 ? " sel" : ""}" data-end="${a}">${a} 岁</button>`).join("")}</div>
         </div>
-        <p class="hint">也可以自己写一个词当种子（比如生日、幸运数字）。同一种子，同样的运气，不同的选择。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」，点任意一条路就开始同一局。` : ""}</p>
+        <div class="seedrow">
+          <input id="seedin" type="text" placeholder="种子码（不填就是随机）">
+          <button class="ghost" id="seedgo">用这个种子</button>
+          <button class="ghost" id="daily">今日种子</button>
+        </div>
+        <p class="hint">种子管的是「运气」：不填，每局随机，各不相同；填了，运气就定下来——同一种子，同样的运气，不同的选择，正好跟朋友比。今日种子是拿当天日期当种子，今天点开的人都是同一局。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam || endParam ? "，年代与跨度也按对方那局选好了" : ""}，点任意一条路就开始同一局。` : ""}</p>
       </section>`;
-    if (saved) el("resume").addEventListener("click", () => { S = saved; S.usedRare = S.usedRare || []; RNG.a = saved.rngA || seedFromString(saved.seedStr); step(); });
+    if (saved) el("resume").addEventListener("click", () => { S = saved; S.usedRare = S.usedRare || []; S.era = S.era || "c2000"; S.birthYear = S.birthYear || 2000; S.endAge = S.endAge || 65; RNG.a = saved.rngA || seedFromString(saved.seedStr); step(); });
+    const pickSeg = (id) => { const box = el(id); if (!box) return; box.querySelectorAll(".segbtn").forEach((b) => b.addEventListener("click", () => { box.querySelectorAll(".segbtn").forEach((o) => o.classList.remove("sel")); b.classList.add("sel"); })); };
+    pickSeg("erapick"); pickSeg("spanpick");
+    const preSel = (id, attr, val) => { const box = el(id); if (!box || !val) return; const btns = box.querySelectorAll(".segbtn"); btns.forEach((o) => { if (o.dataset[attr] === val) { btns.forEach((p) => p.classList.remove("sel")); o.classList.add("sel"); } }); };
+    preSel("erapick", "era", eraParam); preSel("spanpick", "end", endParam);
+    el("daily").addEventListener("click", () => { const d = new Date(); el("seedin").value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; el("daily").textContent = "今日种子已填好，选一条路开始"; });
     document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {
       const chosen = D.routes[Number(b.dataset.i)];
       const seedStr = (el("seedin").value || "").trim() || seedParam || String(Math.floor(Math.random() * 1e6));
-      newGame(seedStr, chosen);
+      const eb = document.querySelector("#erapick .segbtn.sel");
+      const sb = document.querySelector("#spanpick .segbtn.sel");
+      newGame(seedStr, chosen, { era: eb ? eb.dataset.era : "c2000", birth: eb ? +eb.dataset.birth : 2000, endAge: sb ? +sb.dataset.end : 65 });
     }));
     el("seedgo").addEventListener("click", () => {
       const v = (el("seedin").value || "").trim();
@@ -92,9 +141,10 @@
   }
   function clearSave0() { /* 开局页不清除存档，续玩入口要用 */ }
 
-  function newGame(seedStr, route) {
+  function newGame(seedStr, route, opts) {
     S = freshState(seedStr);
     RNG.a = seedFromString(seedStr);
+    if (opts) { S.era = opts.era; S.birthYear = opts.birth; S.endAge = opts.endAge; }
     S.route = route;
     S.unchosen = D.routes.filter((r) => r.id !== route.id).map((r) => ({ kind: "route", label: r.name, id: r.id }));
     applyEffects(route.stats); S.lastDelta = "";
@@ -105,24 +155,27 @@
 
   // ---------- 主推进 ----------
   function step() {
-    if (S.age >= END_AGE) return renderEnd();
+    if (S.age >= (S.endAge || 65)) return renderEnd();
     save();
     const fork = D.forks.find((f) => f.age === S.age);
-    if (fork) return renderFork(fork);
-    if (S.age in GLIMPSE_AGES) return renderGlimpse(GLIMPSE_AGES[S.age]);
+    if (fork) { renderFork(fork); return mountStream(); }
+    if (S.age in GLIMPSE_AGES) { renderGlimpse(GLIMPSE_AGES[S.age]); return mountStream(); }
     const rare = pickRare();
-    if (rare) return renderRare(rare);
+    if (rare) { renderRare(rare); return mountStream(); }
     const crisis = pickCrisis();
-    if (crisis) return renderCrisis(crisis);
+    if (crisis) { renderCrisis(crisis); return mountStream(); }
     renderEventYear();
+    mountStream();
   }
   // --- 统一条件求值：路线/标记组合/数值形状/前置链 ---
   function met(e) {
     if (e.route && e.route !== S.route.id) return false;
     if (e.routeIn && !e.routeIn.includes(S.route.id)) return false;
     if (e.forbidRoute && e.forbidRoute === S.route.id) return false;
-    if (e.require && !S.flags[e.require]) return false;
-    if (e.forbid && S.flags[e.forbid]) return false;
+    if (e.era && S.era !== e.era) return false;
+    if (e.eraIn && !e.eraIn.includes(S.era || "c2000")) return false;
+    if (e.require && !(Array.isArray(e.require) ? e.require : [e.require]).every((f) => S.flags[f])) return false;
+    if (e.forbid && (Array.isArray(e.forbid) ? e.forbid : [e.forbid]).some((f) => S.flags[f])) return false;
     if (e.all && !e.all.every((f) => S.flags[f])) return false;
     if (e.any && !e.any.some((f) => S.flags[f])) return false;
     if (e.chain && !S.usedEvents.includes(e.chain) && !(S.usedRare || []).includes(e.chain)) return false;
@@ -197,8 +250,8 @@
     const pool = D.events.filter((e) =>
       S.age >= e.min && S.age <= e.max && !S.usedEvents.includes(e.id) && met(e));
     if (!pool.length) return null;
-    // 回响事件（require 命中）权重更高：早年的选择应该更容易被「想起来」
-    const weighted = pool.flatMap((e) => (e.require ? [e, e, e] : [e]));
+    // 回响事件（require 命中）与本年代事件权重更高：早年的选择更容易被「想起来」，年代质感不能被大池稀释
+    const weighted = pool.flatMap((e) => { let n = 1; if (e.require) n = 3; if (e.era && e.era === S.era) n = Math.max(n, 3); return Array(n).fill(e); });
     return weighted[Math.floor(rng() * weighted.length)];
   }
   function renderEventYear() {
@@ -263,9 +316,12 @@
 
   // ---------- 结算 ----------
   function verdict() {
+    if (S._verdict) return S._verdict;
     const sorted = Object.entries(S.stats).sort((a, b) => b[1] - a[1]);
     const top = sorted[0][0], bottom = sorted[sorted.length - 1][0];
-    return { text: D.verdictTop[top] + D.verdictCost[bottom], top, bottom };
+    const pickF = (v) => (Array.isArray(v) ? v[Math.floor(rng() * v.length)] : v);
+    S._verdict = { text: pickF(D.verdictTop[top]) + pickF(D.verdictCost[bottom]), top, bottom };
+    return S._verdict;
   }
   const TIER_ORDER = { legendary: 0, epic: 1, rare: 2 };
   const TIER_LABEL = { legendary: "传说结局", epic: "史诗结局", rare: "稀有结局" };
@@ -285,7 +341,7 @@
     const reflHtml = S.reflections.length
       ? `<h3>你留给自己的话</h3>` + S.reflections.map((r) => `<p class="refl">「${esc(r.text)}」（${r.age} 岁）</p>`).join("") : "";
     app().innerHTML = `<section class="card">${head()}
-      <h2>65 岁 · 这一局走完了</h2>
+      <h2>${S.endAge || 65} 岁 · 这一局走完了</h2>
       ${sp ? `<div class="special"><p class="rare-tag">${TIER_LABEL[sp.tier]}</p><p class="special-title">${esc(sp.title)}</p><p>${esc(sp.text)}</p></div>` : ""}
       <p class="verdict">${esc(v.text)}</p>
       <p>你走了这条路：${esc(S.route.name)}。</p>
@@ -294,26 +350,83 @@
       ${skippedLine}
       ${reflHtml}
       <div class="row">
-        <button class="primary" id="card">生成分享卡（PNG）</button>
         <button class="ghost" id="copylink">复制同局链接（给朋友玩同一种子）</button>
       </div>
-      <label class="refl-label"><input type="checkbox" id="cardrefl"> 把我留的话里第一句放进分享卡（只有你勾选才会印）</label>
+      <div class="sharedesk">
+        <h3>把这一生寄出去</h3>
+        <label class="refl-label">给这一生留一句话（可选）
+          <input id="shareline" type="text" maxlength="60" placeholder="一句就好，会出现在发帖文案的开头" value="${S.reflections.length ? esc(S.reflections[0].text) : ""}">
+        </label>
+        <label class="refl-label"><input type="checkbox" id="cardrefl"> 把这句话印到分享卡上（只有你勾选才会印）</label>
+        <p class="setlab">卡面</p>
+        <div class="segpicks" id="cardtype">
+          <button type="button" class="segbtn sel" data-type="verdict"><b>判词卡</b><small>判词 + 分岔路图 + 五维</small></button>
+          <button type="button" class="segbtn" data-type="log"><b>流水账卡</b><small>公元年轴 + 关键节点 + 五维</small></button>
+        </div>
+        <p class="setlab">尺寸</p>
+        <div class="segpicks" id="cardratio">
+          <button type="button" class="segbtn sel" data-ratio="45">4:5</button>
+          <button type="button" class="segbtn" data-ratio="916">9:16</button>
+        </div>
+        <div class="cardpreview" id="cardpreview"></div>
+        <div class="row">
+          <button class="primary" id="share">分享这张卡</button>
+          <button class="ghost" id="saveimg">保存图片</button>
+          <button class="ghost" id="copytext">复制发帖文案</button>
+        </div>
+        <details class="sharetext">
+          <summary>发帖文案预览</summary>
+          <p class="sharetext-body" id="sharetext"></p>
+        </details>
+      </div>
       <div class="row">
         <button class="primary" id="again-same">同种子再来一局（换选择）</button>
         <button class="ghost" id="again-new">随机种子新开一局</button>
       </div>
       <p class="hint">种子码：${esc(S.seedStr)}。朋友打开同局链接，就是和你完全相同的运气——他选得不一样，会走成什么样？</p>
       <h3>这一生，年表</h3>
-      <div class="timeline">${S.log.map((l) => `<p>${esc(l)}</p>`).join("")}</div>
+      <div class="timeline">${S.log.map((l) => { const m = l.match(/^(\d+) 岁 · ([\s\S]*)$/); const yr = m && S.birthYear ? `${S.birthYear + (+m[1])} 年 · ` : ""; return `<p>${esc(yr + l)}</p>`; }).join("")}</div>
     </section>`;
-    el("again-same").addEventListener("click", () => location.assign(location.pathname + "?seed=" + encodeURIComponent(S.seedStr)));
+    el("again-same").addEventListener("click", () => location.assign(sameSeedUrl()));
     el("again-new").addEventListener("click", () => location.assign(location.pathname));
     el("copylink").addEventListener("click", async () => {
-      const url = location.origin + location.pathname + "?seed=" + encodeURIComponent(S.seedStr);
+      const url = sameSeedUrl();
       try { await navigator.clipboard.writeText(url); el("copylink").textContent = "已复制，去发给他"; }
       catch (e) { el("copylink").textContent = url; }
     });
-    el("card").addEventListener("click", drawCard);
+    // ---------- 分享台接线：切换版式/尺寸即重绘预览 ----------
+    let cardType = "verdict", cardRatio = "45";
+    const refreshCard = () => {
+      currentCanvas = buildCard(cardType, cardRatio);
+      currentCanvas.className = "card-img";
+      const box = el("cardpreview");
+      box.innerHTML = "";
+      box.appendChild(currentCanvas);
+      el("sharetext").textContent = shareCopy();
+    };
+    const pickDesk = (id, isType) => {
+      const box = el(id);
+      box.querySelectorAll(".segbtn").forEach((b) => b.addEventListener("click", () => {
+        box.querySelectorAll(".segbtn").forEach((o) => o.classList.remove("sel"));
+        b.classList.add("sel");
+        if (isType) cardType = b.dataset.type; else cardRatio = b.dataset.ratio;
+        refreshCard();
+      }));
+    };
+    pickDesk("cardtype", true);
+    pickDesk("cardratio", false);
+    el("shareline").addEventListener("input", () => {
+      el("sharetext").textContent = shareCopy();
+      if (el("cardrefl").checked) refreshCard(); // 勾选了印卡，改字要即时重绘
+    });
+    el("cardrefl").addEventListener("change", refreshCard);
+    el("share").addEventListener("click", shareCurrent);
+    el("saveimg").addEventListener("click", downloadCurrent);
+    el("copytext").addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(shareCopy()); el("copytext").textContent = "已复制，去粘贴吧"; }
+      catch (e) { el("copytext").textContent = "复制失败，展开下面的文案预览手动复制"; }
+    });
+    refreshCard();
   }
 
   // ---------- 分享卡出图 (VISUAL-DESIGN §二, A 判词版) ----------
@@ -323,52 +436,239 @@
     if (line) ctx.fillText(line, x, yy);
     return yy + lh;
   }
-  function drawCard() {
-    const sh = shadowRoute(); const v = verdict();
-    const c = document.createElement("canvas"); c.width = 1080; c.height = 1440;
-    const x = c.getContext("2d");
-    x.fillStyle = "#FAF8F4"; x.fillRect(0, 0, 1080, 1440);
-    x.strokeStyle = "#DDD6C9"; x.lineWidth = 3; x.strokeRect(36, 36, 1008, 1368);
-    x.fillStyle = "#2F4A3C"; x.font = "34px Georgia, 'Songti SC', serif";
+  // ---------- 分享台出图：buildCard(type, ratio) 参数化绘制 ----------
+  // type: "verdict" 判词卡（模板 A：特殊结局标题+判词+分岔路图+五维）
+  //       "log"     流水账卡（公元年轴+关键节点+判词节选+五维小条）
+  // ratio: "45" 1080×1350 | "916" 1080×1920
+  const SERIF = "Georgia, 'Songti SC', 'Noto Serif SC', serif";
+  const SANS = "'Hiragino Sans', 'Noto Sans SC', sans-serif";
+  let currentCanvas = null; // 分享台当前预览的 canvas，分享/保存都用它
+
+  // 同局链接：种子之外必须带年代与跨度，否则朋友点开不是同一道题
+  function sameSeedUrl() {
+    return location.origin + location.pathname
+      + "?seed=" + encodeURIComponent(S.seedStr)
+      + "&era=" + encodeURIComponent(S.era || "c2000")
+      + "&end=" + (S.endAge || 65);
+  }
+  // 勾选了「印到卡上」才取感想输入框的当前文字（预填的是第一句 reflection，可改）
+  function cardReflText() {
+    const box = el("cardrefl"), inp = el("shareline");
+    if (!box || !box.checked || !inp) return "";
+    return (inp.value || "").trim().slice(0, 40);
+  }
+  // 发帖文案：感想（若填）+ 判词 + 钩子 + 同局链接
+  function shareCopy() {
+    const line = (el("shareline") ? el("shareline").value : "").trim();
+    const parts = [];
+    if (line) parts.push(line);
+    parts.push(verdict().text);
+    parts.push("同样的运气，你会怎么选？");
+    parts.push(sameSeedUrl());
+    return parts.join("\n");
+  }
+  function fitText(ctx, text, maxW) {
+    if (ctx.measureText(text).width <= maxW) return text;
+    let t = text;
+    while (t.length && ctx.measureText(t + "…").width > maxW) t = t.slice(0, -1);
+    return t + "…";
+  }
+  function cardBase(x, W, H) {
+    x.fillStyle = "#FAF8F4"; x.fillRect(0, 0, W, H);
+    x.strokeStyle = "#DDD6C9"; x.lineWidth = 3; x.strokeRect(36, 36, W - 72, H - 72);
+    x.textAlign = "left";
+    x.fillStyle = "#2F4A3C"; x.font = "34px " + SERIF;
     x.fillText("如果那年 · 另一条路", 90, 130);
     x.fillStyle = "#8A948C"; x.font = "28px monospace"; x.textAlign = "right";
-    x.fillText("种子 " + S.seedStr, 990, 130); x.textAlign = "left";
-    x.fillStyle = "#23211C"; x.font = "58px Georgia, 'Songti SC', serif";
-    let y = S.special ? wrapText(x, "【" + S.special.title + "】", 90, 246, 900, 80) : 246;
-    if (S.special) { x.font = "46px Georgia, 'Songti SC', serif"; y = wrapText(x, v.text, 90, y + 6, 900, 66); }
-    else y = wrapText(x, v.text, 90, 246, 900, 80);
-    const gy = y + 80;
-    x.strokeStyle = "#2F4A3C"; x.lineWidth = 7; x.beginPath(); x.moveTo(90, gy); x.lineTo(990, gy); x.stroke();
-    x.strokeStyle = "#8A948C"; x.lineWidth = 4; x.setLineDash([14, 12]);
-    D.forks.forEach((f) => { const fx = 90 + (900 * (f.age - START_AGE)) / (END_AGE - START_AGE); x.beginPath(); x.moveTo(fx, gy); x.quadraticCurveTo(fx + 60, gy - 90, fx + 150, gy - 110); x.stroke(); });
-    x.setLineDash([]);
-    x.fillStyle = "#2F4A3C"; x.beginPath(); x.arc(990, gy, 12, 0, 7); x.fill();
-    x.font = "30px Georgia, 'Songti SC', serif"; x.fillStyle = "#8A948C";
-    x.fillText("22 岁", 90, gy + 54); x.textAlign = "right"; x.fillText("65 岁", 990, gy + 54); x.textAlign = "left";
-    const keyFork = S.log.find((l) => l.includes("回不回老家")) || S.log.find((l) => l.includes("·") && l.includes("："));
-    y = gy + 118;
-    x.fillStyle = "#23211C"; x.font = "34px 'Hiragino Sans', 'Noto Sans SC', sans-serif";
-    if (keyFork) y = wrapText(x, "关键的一岔：" + keyFork.split("· ")[1], 90, y, 900, 50);
-    y = wrapText(x, "这条路：" + S.route.name + "，你走完了。", 90, y + 6, 900, 50);
-    x.fillStyle = "#8A948C";
-    y = wrapText(x, "另一条路（" + sh.name + "）：" + sh.cost, 90, y + 6, 900, 50);
-    const withRefl = el("cardrefl") && el("cardrefl").checked && S.reflections.length;
-    if (withRefl) { x.fillStyle = "#2F4A3C"; x.font = "34px Georgia, 'Songti SC', serif"; y = wrapText(x, "「" + S.reflections[0].text.slice(0, 40) + "」", 90, y + 10, 900, 50); }
-    y += 26; x.font = "28px 'Hiragino Sans', 'Noto Sans SC', sans-serif";
+    x.fillText("种子 " + S.seedStr, W - 90, 130); x.textAlign = "left";
+  }
+  function cardFooter(x, W, H) {
+    x.fillStyle = "#2F4A3C"; x.font = "34px " + SERIF;
+    x.fillText("同样的运气，你会怎么选？", 90, H - 140);
+    x.fillStyle = "#8A948C"; x.font = "28px " + SANS;
+    x.fillText("if-that-year.pages.dev", 90, H - 88);
+  }
+  function cardStats(x, y, barW, rowH) {
+    const step = rowH || 50;
+    x.font = "28px " + SANS;
     STAT_META.forEach(([k, label]) => {
       x.fillStyle = "#23211C"; x.fillText(label, 90, y + 8);
-      x.fillStyle = "#DDD6C9"; x.fillRect(190, y - 8, 560, 14);
-      x.fillStyle = "#2F4A3C"; x.fillRect(190, y - 8, (560 * S.stats[k]) / 100, 14);
-      x.fillStyle = "#23211C"; x.fillText(String(S.stats[k]), 780, y + 8);
-      y += 50;
+      x.fillStyle = "#DDD6C9"; x.fillRect(190, y - 8, barW, 14);
+      x.fillStyle = "#2F4A3C"; x.fillRect(190, y - 8, (barW * S.stats[k]) / 100, 14);
+      x.fillStyle = "#23211C"; x.fillText(String(S.stats[k]), 190 + barW + 30, y + 8);
+      y += step;
     });
-    x.fillStyle = "#2F4A3C"; x.font = "34px Georgia, 'Songti SC', serif";
-    x.fillText("同样的运气，你会怎么选？", 90, 1300);
-    x.fillStyle = "#8A948C"; x.font = "28px 'Hiragino Sans', 'Noto Sans SC', sans-serif";
-    x.fillText("if-that-year.pages.dev", 90, 1352);
+    return y;
+  }
+  // 分岔路图：松绿实线一生 + 影子灰绿虚线支路（与原判词卡同一画法）
+  function drawRoad(x, gy) {
+    const end = S.endAge || 65;
+    x.strokeStyle = "#2F4A3C"; x.lineWidth = 7; x.beginPath(); x.moveTo(90, gy); x.lineTo(990, gy); x.stroke();
+    x.strokeStyle = "#8A948C"; x.lineWidth = 4; x.setLineDash([14, 12]);
+    D.forks.filter((f) => f.age < end).forEach((f) => { const fx = 90 + (900 * (f.age - START_AGE)) / (end - START_AGE); x.beginPath(); x.moveTo(fx, gy); x.quadraticCurveTo(fx + 60, gy - 90, fx + 150, gy - 110); x.stroke(); });
+    x.setLineDash([]);
+    x.fillStyle = "#2F4A3C"; x.beginPath(); x.arc(990, gy, 12, 0, 7); x.fill();
+  }
+  function parseLog() {
+    const entries = [];
+    for (const l of S.log) {
+      const m = l.match(/^(\d+) 岁 · ([\s\S]*)$/);
+      if (m) entries.push({ age: +m[1], text: m[2] });
+    }
+    return entries;
+  }
+  // 流水账卡的关键节点（3–5 个）：第一次分岔选择 / 稀有事件 / 后段分岔 / 特殊结局
+  function logNodes() {
+    const entries = parseLog();
+    const picked = [];
+    const push = (age, title) => { if (age !== null && title && !picked.some((p) => p.age === age)) picked.push({ age, title }); };
+    const forks = entries.filter((e) => e.age > START_AGE && e.text.includes("：") && !e.text.includes("影子"));
+    if (forks[0]) push(forks[0].age, forks[0].text.split("：")[0]);
+    const rares = entries.filter((e) => e.text.includes("【稀有】"));
+    if (rares[0]) push(rares[0].age, "稀有 · " + rares[0].text.replace("【稀有】", "").slice(0, 10));
+    if (rares[1]) push(rares[1].age, "稀有 · " + rares[1].text.replace("【稀有】", "").slice(0, 10));
+    if (forks.length > 1) push(forks[forks.length - 1].age, forks[forks.length - 1].text.split("：")[0]);
+    picked.sort((a, b) => a.age - b.age);
+    const out = picked.slice(0, 5);
+    if (S.special && !out.some((p) => p.age === (S.endAge || 65))) {
+      if (out.length >= 5) out.pop();
+      out.push({ age: S.endAge || 65, title: S.special.title });
+    }
+    return out;
+  }
+  // 9:16 流水账卡补的年表节选：带「：」的抉择行与稀有行优先，再等距补足
+  function logHighlights(n) {
+    const entries = parseLog();
+    if (entries.length <= n) return entries;
+    const picks = new Set();
+    entries.forEach((e, i) => { if (e.text.includes("：") || e.text.includes("【稀有】")) picks.add(i); });
+    const stepN = Math.max(1, Math.floor(entries.length / n));
+    for (let i = 0; i < entries.length && picks.size < n; i += stepN) picks.add(i);
+    return [...picks].sort((a, b) => a - b).slice(0, n + 1).map((i) => entries[i]);
+  }
+
+  function buildCard(type, ratio) {
+    const W = 1080, H = ratio === "916" ? 1920 : 1350;
+    const big = H > 1500; // 9:16 用宽松参数，4:5 用紧凑参数防溢出
+    const sh = shadowRoute(); const v = verdict();
+    const end = S.endAge || 65;
+    const refl = cardReflText();
+    const c = document.createElement("canvas"); c.width = W; c.height = H;
+    const x = c.getContext("2d");
+    cardBase(x, W, H);
+
+    if (type === "log") {
+      // ===== 流水账卡：公元年轴 + 关键节点 =====
+      x.fillStyle = "#23211C"; x.font = "52px " + SERIF;
+      x.fillText("这一生 · 流水账", 90, 252);
+      x.fillStyle = "#8A948C"; x.font = "30px " + SANS;
+      const spanTxt = S.birthYear
+        ? `公元 ${S.birthYear + START_AGE} 年 — ${S.birthYear + end} 年 · ${S.route.name}`
+        : `${START_AGE} 岁 — ${end} 岁 · ${S.route.name}`;
+      x.fillText(spanTxt, 90, 308);
+      let y = 340;
+      if (S.special) {
+        x.fillStyle = "#2F4A3C"; x.font = "40px " + SERIF;
+        y = wrapText(x, "【" + S.special.title + "】", 90, y + 44, 900, 58);
+      }
+      const gy = y + (S.special ? 150 : 210); // 年轴：上方留给分岔虚线
+      drawRoad(x, gy);
+      // 轴两端：公元年 · 年龄
+      x.font = "26px " + SANS; x.fillStyle = "#8A948C";
+      x.fillText(S.birthYear ? `${S.birthYear + START_AGE} 年 · 22 岁` : "22 岁", 90, gy + 148);
+      x.textAlign = "right";
+      x.fillText(S.birthYear ? `${S.birthYear + end} 年 · ${end} 岁` : `${end} 岁`, 990, gy + 148);
+      x.textAlign = "left";
+      // 关键节点：圆点 + 竖线 + 公元年/年龄 + 事件短题
+      logNodes().forEach((n) => {
+        const nx = 90 + (900 * (n.age - START_AGE)) / (end - START_AGE);
+        x.strokeStyle = "#DDD6C9"; x.lineWidth = 2;
+        x.beginPath(); x.moveTo(nx, gy + 12); x.lineTo(nx, gy + 30); x.stroke();
+        x.fillStyle = "#2F4A3C"; x.beginPath(); x.arc(nx, gy, 9, 0, 7); x.fill();
+        const align = nx < 210 ? "left" : nx > 870 ? "right" : "center";
+        const ax = nx < 210 ? 90 : nx > 870 ? 990 : nx;
+        x.textAlign = align;
+        x.fillStyle = "#8A948C"; x.font = "24px monospace";
+        x.fillText(S.birthYear ? `${S.birthYear + n.age} 年 · ${n.age} 岁` : `${n.age} 岁`, ax, gy + 62);
+        x.fillStyle = "#23211C"; x.font = "26px " + SANS;
+        x.fillText(fitText(x, n.title, 260), ax, gy + 100);
+        x.textAlign = "left";
+      });
+      y = gy + 196;
+      x.fillStyle = "#8A948C"; x.font = "26px " + SANS;
+      x.fillText("终局判词", 90, y);
+      x.fillStyle = "#23211C"; x.font = "36px " + SERIF;
+      const excerpt = v.text.split("。")[0] + "。"; // 节选第一句，卡面不贪多
+      y = wrapText(x, excerpt, 90, y + 52, 900, 52);
+      if (refl) { x.fillStyle = "#2F4A3C"; x.font = "34px " + SERIF; y = wrapText(x, "「" + refl + "」", 90, y + 12, 900, 50); }
+      if (big) {
+        // 9:16 长卡补年表节选，免得下半页空着
+        y += 40;
+        x.fillStyle = "#2F4A3C"; x.font = "32px " + SERIF;
+        x.fillText("年表节选", 90, y);
+        x.font = "27px " + SANS; x.fillStyle = "#23211C";
+        for (const h of logHighlights(7)) {
+          y += 46;
+          const line = (S.birthYear ? `${S.birthYear + h.age} 年 · ` : "") + `${h.age} 岁 · ${h.text}`;
+          x.fillText(fitText(x, line, 900), 90, y);
+        }
+        y += 8;
+      }
+      cardStats(x, y + 26, 560, 44);
+    } else {
+      // ===== 判词卡（模板 A），视觉元素与旧版一致 =====
+      const titleY = big ? 246 : 232;
+      const tall = big ? (H - 1350) * 0.35 : 0;
+      x.fillStyle = "#23211C";
+      let y;
+      if (S.special) {
+        x.font = (big ? 58 : 50) + "px " + SERIF;
+        y = wrapText(x, "【" + S.special.title + "】", 90, titleY + tall * 0.4, 900, big ? 80 : 72);
+        x.font = "46px " + SERIF;
+        y = wrapText(x, v.text, 90, y + 6, 900, big ? 66 : 60);
+      } else {
+        x.font = (big ? 58 : 52) + "px " + SERIF;
+        y = wrapText(x, v.text, 90, titleY + tall * 0.4, 900, big ? 80 : 68);
+      }
+      const gy = y + (big ? 80 : 56) + tall * 0.6;
+      drawRoad(x, gy);
+      x.font = "30px " + SERIF; x.fillStyle = "#8A948C";
+      x.fillText("22 岁", 90, gy + 54); x.textAlign = "right"; x.fillText(end + " 岁", 990, gy + 54); x.textAlign = "left";
+      const keyFork = S.log.find((l) => l.includes("回不回老家")) || S.log.find((l) => l.includes("·") && l.includes("："));
+      y = gy + (big ? 118 : 104);
+      x.fillStyle = "#23211C"; x.font = "34px " + SANS;
+      if (keyFork) y = wrapText(x, "关键的一岔：" + keyFork.split("· ")[1], 90, y, 900, 50);
+      y = wrapText(x, "这条路：" + S.route.name + "，你走完了。", 90, y + 6, 900, 50);
+      x.fillStyle = "#8A948C";
+      y = wrapText(x, "另一条路（" + sh.name + "）：" + sh.cost, 90, y + 6, 900, big ? 50 : 46);
+      if (refl) { x.fillStyle = "#2F4A3C"; x.font = "34px " + SERIF; y = wrapText(x, "「" + refl + "」", 90, y + 10, 900, 50); }
+      cardStats(x, y + (big ? 26 : 14), 560, big ? 50 : 42);
+    }
+    cardFooter(x, W, H);
+    return c;
+  }
+
+  function downloadCurrent() {
+    if (!currentCanvas) return;
     const a = document.createElement("a");
     a.download = "if-that-year-" + S.seedStr + ".png";
-    a.href = c.toDataURL("image/png"); a.click();
+    a.href = currentCanvas.toDataURL("image/png");
+    a.click();
+  }
+  // 主按钮：优先 Web Share API 带图片文件；不支持或失败退化为下载 PNG（用户取消分享则不打扰）
+  async function shareCurrent() {
+    if (!currentCanvas) return;
+    try {
+      const blob = await new Promise((res) => currentCanvas.toBlob(res, "image/png"));
+      const file = blob ? new File([blob], "if-that-year-" + S.seedStr + ".png", { type: "image/png" }) : null;
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], text: shareCopy() });
+        return;
+      }
+    } catch (e) {
+      if (e && e.name === "AbortError") return;
+    }
+    downloadCurrent();
   }
 
   renderStart();
