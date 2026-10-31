@@ -5,8 +5,9 @@ body{margin:0;color:var(--ink);font-family:"Hiragino Sans","Noto Sans SC",system
 h1{font-family:var(--serif);font-weight:600;font-size:29px;line-height:1.4;margin:2px 0 10px}
 h2{font-family:var(--serif);font-weight:600;font-size:22px;line-height:1.5;margin:4px 0 8px}
 h3{font-family:var(--serif);font-size:17px;margin:20px 0 6px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px 24px 20px;margin-top:14px;box-shadow:0 4px 14px rgba(35,33,28,.05);animation:rise .35s ease both}
-@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px 24px 20px;margin-top:14px;box-shadow:0 4px 14px rgba(35,33,28,.05);animation:rise .2s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
 .road{display:block;margin:0 0 6px}
 .stats{margin:8px 0 2px}
 .stat{display:flex;align-items:center;gap:8px;font-size:13px;margin:3px 0}
@@ -18,25 +19,25 @@ h3{font-family:var(--serif);font-size:17px;margin:20px 0 6px}
 .body{font-size:16.5px;margin:6px 0 10px}
 .choices{display:grid;gap:10px;margin-top:14px}
 .choice{text-align:left;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--line);border-radius:11px;padding:14px 16px;font-size:15px;cursor:pointer;color:var(--ink);transition:border-color .15s,transform .15s,box-shadow .15s;line-height:1.6}
-.choice:hover{border-color:var(--accent);border-left-color:var(--accent);transform:translateX(3px);box-shadow:0 6px 16px rgba(47,74,60,.10)}
+@media (hover:hover){.choice:hover{border-color:var(--accent);border-left-color:var(--accent);transform:translateX(3px);box-shadow:0 6px 16px rgba(47,74,60,.10)}}
 .choice b{display:block;font-weight:600;font-size:16px}
 .choice small,.choice span{font-size:13px;opacity:.75}
 .primary{background:var(--accent);color:#fff;border:none;border-radius:999px;padding:12px 24px;font-size:15px;cursor:pointer;margin-top:12px;transition:opacity .15s,transform .15s}
-.primary:hover{opacity:.92;transform:translateY(-1px)}
+@media (hover:hover){.primary:hover{opacity:.92;transform:translateY(-1px)}}
 button.big{width:100%;margin-bottom:14px}
-.ghost{background:none;border:1px solid var(--line);border-radius:999px;padding:11px 18px;font-size:14px;cursor:pointer;margin-top:12px;color:var(--ink)}
-.ghost:hover{border-color:var(--accent);color:var(--accent)}
-.hint{font-size:13px;color:var(--mut);opacity:.85}
+.ghost{background:none;border:1px solid var(--line);border-radius:999px;padding:12px 18px;font-size:14px;cursor:pointer;margin-top:12px;color:var(--ink)}
+@media (hover:hover){.ghost:hover{border-color:var(--accent);color:var(--accent)}}
+.hint{font-size:13px;color:var(--mut)}
 .delta{color:var(--accent);font-size:13px;margin:6px 0 0;font-family:Menlo,Consolas,monospace}
 .echo{border-left:3px solid var(--accent);background:#F6F3EC;border-radius:0 8px 8px 0;padding:10px 14px;color:#4A463C;font-size:15px}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .seedrow{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap}
-.seedrow input{flex:1;min-width:180px;font-size:15px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;font-family:Menlo,Consolas,monospace}
+.seedrow input{flex:1;min-width:180px;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;font-family:Menlo,Consolas,monospace}
 .seedrow .ghost{margin-top:0}
 .setblock{border-top:1.5px dashed var(--line);margin-top:22px;padding-top:14px}
 .setlab{font-size:12px;letter-spacing:.18em;color:var(--mut);margin:10px 0 8px;font-weight:700}
 .segpicks{display:flex;gap:8px;flex-wrap:wrap}
-.segbtn{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 13px;font-size:14px;cursor:pointer;color:var(--ink);text-align:left;line-height:1.45}
+.segbtn{background:#fff;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:14px;cursor:pointer;color:var(--ink);text-align:left;line-height:1.45}
 .segbtn b{display:block;font-size:14.5px}
 .segbtn small{display:block;color:var(--mut);font-size:12px}
 .segbtn.sel{border-color:var(--accent);background:#EAF0EA;box-shadow:inset 0 0 0 1px var(--accent)}
@@ -57,10 +58,10 @@ button.big{width:100%;margin-bottom:14px}
 .streamtitle{font-size:12px;letter-spacing:.22em;color:var(--mut);margin:0 0 6px;font-weight:700}
 .stream{max-height:280px;overflow-y:auto;padding-right:4px;scrollbar-width:thin}
 .srow{display:grid;grid-template-columns:118px 1fr;gap:10px;padding:5px 4px;border-bottom:1px solid #EFEAE0;font-size:13.5px;line-height:1.6}
-.srow .sage{font-family:Menlo,Consolas,monospace;font-size:11.5px;color:var(--accent);padding-top:3px;white-space:nowrap}
-.srow.last{background:#F1ECDD;border-radius:7px;border-bottom-color:transparent;animation:rise .4s ease both}
+.srow .sage{font-family:Menlo,Consolas,monospace;font-size:12px;color:var(--accent);padding-top:3px;white-space:nowrap}
+.srow.last{background:#F1ECDD;border-radius:7px;border-bottom-color:transparent;animation:fadein .2s ease both}
 canvas.card-img{max-width:100%;height:auto}
-.foot{max-width:660px;margin:0 auto;text-align:center;font-size:12px;color:#A39C8B;padding:0 18px 30px}
+.foot{max-width:660px;margin:0 auto;text-align:center;font-size:12px;color:var(--mut);padding:0 18px 30px}
 @media (max-width:560px){.card{padding:19px 16px 16px}h1{font-size:25px}.srow{grid-template-columns:96px 1fr}}
 
 /* 分享台 (share desk) */
@@ -83,7 +84,7 @@ canvas.card-img{max-width:100%;height:auto}
 @keyframes autoblink{0%,100%{opacity:.25}50%{opacity:1}}
 .autolive{color:var(--accent)}
 
-.hint.ver { text-align: right; opacity: .65; margin-bottom: 2px; }
+.hint.ver { text-align: right; margin-bottom: 2px; }
 
 /* v0.7.0：续玩降级、自动推进三态与自动选留痕 */
 .resume-link{display:inline-block;margin:14px 0 2px;padding:7px 13px;font-size:13px}
@@ -93,10 +94,63 @@ canvas.card-img{max-width:100%;height:auto}
 .death h2{color:var(--accent)}
 
 /* v0.7.0：游玩页宽屏双栏；流水账拆为同级栏，窄屏仍由引擎放回卡内 */
-.wrap{padding-bottom:28px}
-.foot{padding-bottom:24px}
+.wrap{padding-bottom:max(28px, env(safe-area-inset-bottom))}
+.foot{padding-bottom:max(24px, env(safe-area-inset-bottom))}
 @media (min-width:1024px){
   #app.playwrap{max-width:1120px;display:grid;grid-template-columns:minmax(0,7fr) minmax(320px,5fr);gap:20px;align-items:start}
   #app.playwrap .streamwrap{margin-top:14px;border:1px solid var(--line);border-radius:14px;background:var(--card);box-shadow:0 4px 14px rgba(35,33,28,.05);padding:16px 16px 12px;position:sticky;top:14px}
   #app.playwrap .stream{max-height:calc(100vh - 110px)}
+}
+
+/* v0.8.0：UX-MOTION 落地（按下/焦点态、选择留一拍、分级入场、临界分级、倒计时细线、流水账跟随、结算揭示与纵轴图、减动效） */
+/* §3.1/§8.3 焦点可见性与按下态 */
+button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.choice:active{background:#F6F3EC;border-color:var(--accent);border-left-color:var(--accent)}
+.primary:active{opacity:.85}
+.ghost:active{border-color:var(--accent);color:var(--accent);background:#F6F3EC}
+.segbtn:active{background:#F6F3EC}
+.autorow button:active{color:var(--accent)}
+/* §3.2 选择留一拍：选中态（借 .segbtn.sel 的视觉语言）与未选变淡 */
+.choice.picked{background:#EAF0EA;border-color:var(--accent);border-left-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.choice.faded{opacity:.45}
+.pickednote{color:var(--accent);font-size:13px;margin:8px 0 0}
+/* §1.3 回响与瞥视细节统一淡入（新插入的子元素自动播放） */
+#echo>*,#detail>*{animation:fadein .2s ease both}
+/* §1.1 分级入场：同类画面卡壳不动，只正文区淡入 */
+.card.still{animation:none}
+.enter{animation:fadein .15s ease both}
+/* §2.3 危机卡入场变「沉」：自上方 2px 沉下，不上浮 */
+.card.crisis{animation:sink .25s ease both}
+@keyframes sink{from{opacity:0;transform:translateY(-2px)}to{opacity:1;transform:none}}
+/* §2.3 一级临界：数字加粗 + 条尾墨点（静态，不闪） */
+.stat.crit b{font-weight:700}
+.stat .cdot{width:5px;height:5px;border-radius:50%;background:var(--ink);flex:none}
+/* §4.2 autorow 命中区放大：只长触摸层，负 margin 收回版面高度 */
+.autorow{margin:-13px 0 3px}
+.autorow button{padding:11px 6px}
+/* §4.1 自动推进剩余时间细线（宽度由引擎计时状态驱动） */
+.autoline{height:2px;margin:0 0 10px}
+.autoline i{display:block;height:100%;background:var(--accent);opacity:.4;width:0}
+/* §5.1 流水账自由浏览：未读新行高亮 + 标题旁提示 */
+.srow.new{background:#F1ECDD;border-radius:7px;border-bottom-color:transparent}
+.newhint{background:none;border:none;color:var(--accent);font:inherit;font-size:12px;letter-spacing:.05em;cursor:pointer;padding:8px 6px;margin-left:6px;text-decoration:underline;text-underline-offset:3px}
+/* §1.2 结算分段揭示：基础态即终态，动画只从透明来；点任意处 .shown 后立即全显 */
+.rev{animation:fadein .2s ease both;animation-delay:var(--d,0s)}
+.card.shown .rev{animation:none!important}
+/* §9.2 结算纵轴图：生长仪式（基础态即终态，动画只从未画来；.shown 跳过） */
+.mapwrap{margin:16px auto 4px;max-width:460px}
+.mapwrap svg{display:block;margin:0 auto;max-width:100%;height:auto}
+.mapspine{stroke-dasharray:100;stroke-dashoffset:0;animation:mapgrow 1.05s linear both;animation-delay:var(--gd,.36s)}
+@keyframes mapgrow{from{stroke-dashoffset:100}to{stroke-dashoffset:0}}
+.mapbranch{opacity:.55;animation:branchin .45s ease both;animation-delay:var(--bd,0s)}
+@keyframes branchin{from{opacity:0}to{opacity:.55}}
+.maplab{animation:fadein .2s ease both;animation-delay:var(--bd2,0s);paint-order:stroke;stroke:#FFFDF8;stroke-width:4px;stroke-linejoin:round}
+.mapwrap.shown .mapspine,.mapwrap.shown .mapbranch,.mapwrap.shown .maplab{animation:none!important}
+/* §9.1 游玩路图当前点淡入 */
+.road .nowdot{animation:dotin .2s ease both}
+@keyframes dotin{from{opacity:.3}to{opacity:1}}
+/* §8.1 减动效全站降级：功能不变，所有「动」降为「变」；闪烁圆点常亮 */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  .autodot{animation:none!important;opacity:1}
 }

@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.7.0 —— 版本号规则见 docs/DEVLOG.md 卷首
+// 《如果那年》引擎 v0.8.0 —— 版本号规则见 docs/DEVLOG.md 卷首
 // 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 (function () {
@@ -25,7 +25,8 @@
       "河边护栏外的一块地面塌了，人掉了下去。等找到时，已经晚了。",
     ],
   };
-  const STAT_META = [["health", "健康"], ["money", "金钱"], ["growth", "成长"], ["freedom", "自由"], ["relation", "关系"]];
+  // 维度定义表：[键, 名, 初始值]。所有渲染（游玩五维条、分享卡）都从这张表生成，不写死根数——加新维度只改这里与数据。
+  const STAT_META = [["health", "健康", 60], ["money", "金钱", 45], ["growth", "成长", 50], ["freedom", "自由", 50], ["relation", "关系", 50]];
   const GLIMPSE_AGES = { 30: 0, 40: 1, 50: 2 };
   const ERAS = [
     { id: "c1955", birth: 1955, label: "1955 年生", desc: "22 岁是 1977 年：恢复高考、返城、分房、下岗潮" },
@@ -54,16 +55,20 @@
   const esc = (s) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const el = (id) => document.getElementById(id);
   const app = () => el("app");
+  const reducedMotion = () => !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  // v0.8.0 呈现层状态：上一屏数值快照（五维条旧值→新值）、画面类型（分级入场）、续玩定位标记、流水账跟随状态
+  let prevStats = null, prevKind = null, curKind = null, resumeMark = false;
+  let streamFollow = true, streamSeen = 0, streamTop = 0, streamProgUntil = 0;
 
   let S = null;
   function freshState(seedStr) {
     return {
       seedStr, age: START_AGE, era: "c2000", birthYear: 2000,
-      stats: { health: 60, money: 45, growth: 50, freedom: 50, relation: 50 },
+      stats: Object.fromEntries(STAT_META.map(([k, , init]) => [k, init])),
       route: null, unchosen: [], log: [], reflections: [],
       usedEvents: [], flags: {}, crisisUsed: {}, microUsed: [], usedRare: [],
       glimpsesSeen: 0, glimpsesSkipped: 0, lastDelta: "",
-      healthCrisisSeen: false, death: null,
+      healthCrisisSeen: false, death: null, pendingFork: null,
       autoMode: DEFAULT_AUTO_MODE, speed: "mid", // 推进设定在本局的副本；权威来源是 localStorage 的 ify-prefs
     };
   }
@@ -86,17 +91,58 @@
     try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch (e) { /* 存不了不阻塞 */ }
     if (S) { S.autoMode = prefs.mode; S.speed = prefs.speed; }
   }
-  let autoTimer = null;  // 唯一的 setTimeout 句柄
-  let autoRemain = 0;    // 剩余毫秒（暂停/恢复用）
+  let autoTimer = null;  // 主 setTimeout 句柄（choice 模式下到点触发的是「预高亮」动作）
+  let autoPhase2 = null; // §4.3 全程自动选的第二段：预高亮后 400ms 真正执行选择的句柄
+  let autoRemain = 0;    // 剩余毫秒（暂停/恢复用；choice 模式为距预高亮的剩余）
   let autoStamp = 0;     // 本段计时起点
   let autoText = null;   // 当前画面若可自动推进，其正文；必停画面恒为 null
   let autoAction = null; // 当前画面可执行的自动动作（advance 或普通事件自动选）
   let autoKind = null;   // "advance" | "choice"
+  let autoTotal = 0;     // 本屏总停留（细线用，choice 模式含最后 400ms 预高亮段）
+  // §4.1 倒计时细线：纯计时账（总时长/已耗），不读布局，暂停冻结、恢复续走、切档由 scheduleAuto 干净重启
+  let lineTotal = 0, lineElapsedBase = 0, lineSegT = 0;
+  function linePaint(pct, transitionMs) {
+    const l = el("autolinefill");
+    if (!l) return;
+    l.style.transition = transitionMs ? `width ${transitionMs}ms linear` : "none";
+    l.style.width = pct + "%";
+  }
+  function lineStart(total) {
+    lineReset();
+    if (reducedMotion() || !total) return; // 减动效下不画细线，只留常亮圆点表示计时中（UX-MOTION §8.1 二选一取此）
+    lineTotal = total; lineSegT = Date.now();
+    linePaint(100, 0);
+    const l = el("autolinefill"); if (l) void l.offsetWidth; // 强制回流，让随后的收尽过渡真正播放
+    linePaint(0, total);
+  }
+  function lineFreeze() {
+    if (!lineSegT || !lineTotal) return;
+    lineElapsedBase += Date.now() - lineSegT; lineSegT = 0;
+    linePaint(Math.max(0, Math.min(100, (lineTotal - lineElapsedBase) / lineTotal * 100)), 0);
+  }
+  function lineResume() {
+    if (!lineTotal || reducedMotion()) return;
+    const rem = lineTotal - lineElapsedBase;
+    if (rem <= 0) { linePaint(0, 0); return; }
+    linePaint(Math.max(0, Math.min(100, rem / lineTotal * 100)), 0); // 先无过渡地站到剩余位置（冻结态或未启动态）
+    const l = el("autolinefill"); if (l) void l.offsetWidth;
+    lineSegT = Date.now();
+    linePaint(0, rem);
+  }
+  function lineReset() { lineTotal = 0; lineElapsedBase = 0; lineSegT = 0; linePaint(0, 0); }
   function autoEligible() {
     if (!autoText || !autoAction || prefs.mode === "off") return false;
     return autoKind === "advance" || (autoKind === "choice" && prefs.mode === "full");
   }
-  function clearAuto() { if (autoTimer !== null) { clearTimeout(autoTimer); autoTimer = null; } autoRemain = 0; }
+  function clearAuto() {
+    if (autoTimer !== null) { clearTimeout(autoTimer); autoTimer = null; }
+    if (autoPhase2 !== null) {
+      clearTimeout(autoPhase2); autoPhase2 = null;
+      // 预高亮被取消（切档/点正文夺回手动）时复位按钮，否则选项会被锁死在禁用态
+      document.querySelectorAll(".choices .choice").forEach((o) => { o.disabled = false; o.classList.remove("picked", "faded"); });
+    }
+    autoRemain = 0; lineReset();
+  }
   function clearAutoContext() { clearAuto(); autoText = null; autoAction = null; autoKind = null; }
   function autoDelay(text) {
     const base = autoKind === "choice" ? SPEED_BASE.mid : (SPEED_BASE[prefs.speed] || SPEED_BASE.mid);
@@ -111,8 +157,12 @@
   function scheduleAuto() {
     clearAuto();
     if (autoEligible()) {
-      autoRemain = autoDelay(autoText);
-      if (!document.hidden) startAuto(autoRemain);
+      autoTotal = autoDelay(autoText);
+      // choice 模式：主计时在总停留的最后 400ms 之前到点，先预高亮，再由第二段执行选择（§4.3）
+      const wait = autoKind === "choice" ? Math.max(200, autoTotal - 400) : autoTotal;
+      autoRemain = wait;
+      if (!document.hidden) { startAuto(wait); lineStart(autoTotal); }
+      else { lineTotal = autoTotal; lineElapsedBase = 0; lineSegT = 0; } // 后台排程：只记账，回前台由 lineResume 从全长起线
     }
     refreshAutoRow();
   }
@@ -121,10 +171,11 @@
     scheduleAuto();
   }
   function pauseAuto() {
-    if (autoTimer !== null) { clearTimeout(autoTimer); autoTimer = null; autoRemain = Math.max(0, autoRemain - (Date.now() - autoStamp)); }
+    if (autoTimer !== null) { clearTimeout(autoTimer); autoTimer = null; autoRemain = Math.max(0, autoRemain - (Date.now() - autoStamp)); lineFreeze(); }
+    // 第二段（预高亮后的 400ms）已承诺执行，不在此冻结：窗口极短且 clearAuto 仍可由玩家点击取消
   }
   function resumeAuto() { // 回到前台且当前画面仍可自动推进、还有剩余时间，才接着走
-    if (autoEligible() && autoRemain > 0 && autoTimer === null && S && S.route && !S.death && S.age < MAX_AGE && !document.hidden) startAuto(autoRemain);
+    if (autoEligible() && autoRemain > 0 && autoTimer === null && autoPhase2 === null && S && S.route && !S.death && S.age < MAX_AGE && !document.hidden) { startAuto(autoRemain); lineResume(); }
   }
   document.addEventListener("visibilitychange", () => { if (document.hidden) pauseAuto(); else resumeAuto(); });
   window.addEventListener("blur", pauseAuto);
@@ -144,16 +195,21 @@
     scheduleAuto();
     if (S && S.route) save();
   }
-  // 全程模式下，玩家点任意非控制区即暂停回手动；被点的控件本身仍按原动作执行（例如点中某个选项，就按手动选它）。
+  // 暂停手势（§4.2）：全程模式点任意非控制区即回手动；平年模式点正文区（非控件）同样暂停本屏并切到关——两模式语义统一。
+  // 被点的控件本身仍按原动作执行（例如点中某个选项，就按手动选它）。
   app().addEventListener("click", (ev) => {
     const t = ev.target;
     if (!t || !t.closest) return;
-    if (prefs.mode !== "full" || !autoText || t.closest("#autorow")) return;
-    prefs.mode = "off";
-    savePrefs();
-    clearAuto();
-    refreshAutoRow();
-    if (S && S.route) save();
+    if (!autoText || t.closest("#autorow")) return;
+    const turnOff = () => {
+      prefs.mode = "off";
+      savePrefs();
+      clearAuto();
+      refreshAutoRow();
+      if (S && S.route) save();
+    };
+    if (prefs.mode === "full") turnOff();
+    else if (prefs.mode === "plain" && autoKind === "advance" && !t.closest("button, a, input, select, textarea, summary, label")) turnOff();
   }, true);
   // 游戏中控制行用事件委托接线：卡片每次重渲染都不丢监听
   app().addEventListener("click", (ev) => {
@@ -182,8 +238,32 @@
     S.lastDelta = parts.join(" · ");
   }
   function statsBar() {
-    return `<div class="stats">${STAT_META.map(([k, label]) =>
-      `<div class="stat"><span>${label}</span><div class="bar"><i style="width:${S.stats[k]}%"></i></div><b>${S.stats[k]}</b></div>`).join("")}</div>`;
+    // §2.1：先按上屏快照的旧值出宽，渲染后一帧再写新值，让 .6s 过渡真正播放；§2.3：<30 的维度加临界静态分级
+    return `<div class="stats">${STAT_META.map(([k, label]) => {
+      const cur = S.stats[k], old = prevStats ? prevStats[k] : cur, crit = cur < 30;
+      return `<div class="stat${crit ? " crit" : ""}"><span>${label}</span><div class="bar"><i style="width:${old}%" data-cur="${cur}"></i></div><b>${cur}</b>${crit ? '<i class="cdot"></i>' : ""}</div>`;
+    }).join("")}</div>`;
+  }
+  function animateBars() {
+    document.querySelectorAll("#app .bar i[data-cur]").forEach((bar) => {
+      const cur = bar.getAttribute("data-cur");
+      requestAnimationFrame(() => { bar.style.width = cur + "%"; });
+    });
+    if (S) prevStats = { ...S.stats };
+  }
+  // 渲染收尾：§1.1 分级入场（同类画面卡壳不动、只正文淡入）+ 五维条动画
+  function finishRender() {
+    const sec = app().querySelector("section.card");
+    if (sec && curKind === prevKind && (curKind === "year" || curKind === "fork")) {
+      sec.classList.add("still");
+      let past = false;
+      [...sec.children].forEach((kid) => {
+        if (past) kid.classList.add("enter");
+        if (kid.classList.contains("autorow") || kid.classList.contains("autoline") || kid.classList.contains("meta")) past = true;
+      });
+    }
+    prevKind = curKind;
+    animateBars();
   }
   function finalAge() { return S && S.death ? S.death.age : MAX_AGE; }
   function roadSvg() {
@@ -194,21 +274,25 @@
       const on = S.age >= f.age, col = on ? "#2F4A3C" : "#C4BCA9";
       s += `<line x1="${X(f.age)}" y1="30" x2="${X(f.age) + 13}" y2="13" stroke="${col}" stroke-width="1.6" stroke-dasharray="3 3"/><circle cx="${X(f.age)}" cy="30" r="3" fill="${col}"/>`;
     });
-    return `<svg class="road" viewBox="0 0 ${W} 52" width="100%" aria-hidden="true"><line x1="${pad}" y1="30" x2="${W - pad}" y2="30" stroke="#D8D2C2" stroke-width="2"/>${s}<line x1="${pad}" y1="30" x2="${X(S.age)}" y2="30" stroke="#2F4A3C" stroke-width="2.5"/><circle cx="${X(S.age)}" cy="30" r="5" fill="#2F4A3C"/><text x="${pad}" y="49" font-size="10" fill="#8A8378">22 岁</text><text x="${W - pad}" y="49" font-size="10" fill="#8A8378" text-anchor="end">${end} 岁</text></svg>`;
+    return `<svg class="road" viewBox="0 0 ${W} 52" width="100%" aria-hidden="true"><line x1="${pad}" y1="30" x2="${W - pad}" y2="30" stroke="#D8D2C2" stroke-width="2"/>${s}<line x1="${pad}" y1="30" x2="${X(S.age)}" y2="30" stroke="#2F4A3C" stroke-width="2.5"/><circle class="nowdot" cx="${X(S.age)}" cy="30" r="5" fill="#2F4A3C"/><text x="${pad}" y="49" font-size="10" fill="#8A8378">22 岁</text><text x="${W - pad}" y="49" font-size="10" fill="#8A8378" text-anchor="end">${end} 岁</text></svg>`;
   }
   function head(note, bare) {
     const yr = S.birthYear ? ` · 公元 ${S.birthYear + S.age} 年` : "";
-    return `${roadSvg()}${statsBar()}<p class="meta">${S.age} 岁${yr} · ${esc(S.route.name)} · 种子 ${esc(S.seedStr)}${note ? " · " + note : ""}</p>${bare ? "" : `<div class="autorow" id="autorow">${autoRowHtml()}</div>`}`;
+    const mark = resumeMark ? " · （上次玩到这里）" : ""; // §6.2 续玩定位：只出现一次
+    if (resumeMark) resumeMark = false;
+    return `${roadSvg()}${statsBar()}<p class="meta">${S.age} 岁${yr} · ${esc(S.route.name)} · 种子 ${esc(S.seedStr)}${mark}${note ? " · " + note : ""}</p>${bare ? "" : `<div class="autorow" id="autorow">${autoRowHtml()}</div><div class="autoline"><i id="autolinefill"></i></div>`}`;
   }
   function streamHtml() {
     if (!S || !S.log.length) return "";
+    const unread = !streamFollow && S.log.length > streamSeen;
     const rows = S.log.map((l, i) => {
       const m = l.match(/^(\d+) 岁 · ([\s\S]*)$/);
       const age = m ? +m[1] : S.age, txt = m ? m[2] : l;
       const yr = S.birthYear ? `${S.birthYear + age} · ` : "";
-      return `<div class="srow${i === S.log.length - 1 ? " last" : ""}"><span class="sage">${yr}${age} 岁</span><span>${esc(txt)}</span></div>`;
+      const cls = i === S.log.length - 1 ? " last" : (!streamFollow && i >= streamSeen ? " new" : "");
+      return `<div class="srow${cls}"><span class="sage">${yr}${age} 岁</span><span>${esc(txt)}</span></div>`;
     }).join("");
-    return `<div class="streamwrap"><p class="streamtitle">这一生 · 流水账</p><div class="stream" id="stream">${rows}</div></div>`;
+    return `<div class="streamwrap"><p class="streamtitle">这一生 · 流水账<button type="button" class="newhint" id="newhint"${unread ? "" : " hidden"}>有新的一年 ↓</button></p><div class="stream" id="stream">${rows}</div></div>`;
   }
   function mountStream() {
     const sec = app().querySelector("section.card");
@@ -222,12 +306,59 @@
       app().classList.remove("playwrap");
       sec.insertAdjacentHTML("beforeend", html);
     }
-    requestAnimationFrame(() => { const st = el("stream"); if (st) st.scrollTop = st.scrollHeight; });
+    const st = el("stream");
+    if (!st) return;
+    // §5.1 跟随状态机：距底 <40px 为贴底跟随；上翻后切自由浏览，不再被新行拽回
+    st.addEventListener("scroll", () => {
+      streamTop = st.scrollTop;
+      if (Date.now() < streamProgUntil) return; // 程序滚动进行中，不让它误判跟随状态
+      const dist = st.scrollHeight - st.scrollTop - st.clientHeight;
+      const was = streamFollow;
+      streamFollow = dist < 40;
+      if (streamFollow && !was) markStreamRead(st);
+    });
+    const nh = el("newhint");
+    if (nh) nh.addEventListener("click", () => {
+      streamFollow = true;
+      markStreamRead(st);
+      streamProgUntil = Date.now() + 450;
+      st.scrollTo({ top: st.scrollHeight, behavior: reducedMotion() ? "auto" : "smooth" });
+    });
+    requestAnimationFrame(() => {
+      if (streamFollow) {
+        // §5.2 先回到上屏的滚动位置，再量剩余距离：贴底跟随平滑滚动；积压超过一屏则瞬时到位；减动效永远瞬时
+        st.scrollTop = Math.min(streamTop, Math.max(0, st.scrollHeight - st.clientHeight));
+        const dist = st.scrollHeight - st.clientHeight - st.scrollTop;
+        streamProgUntil = Date.now() + 450;
+        st.scrollTo({ top: st.scrollHeight, behavior: (reducedMotion() || dist > st.clientHeight) ? "auto" : "smooth" });
+        streamSeen = S.log.length;
+      } else {
+        st.scrollTop = Math.min(streamTop, Math.max(0, st.scrollHeight - st.clientHeight));
+      }
+    });
+  }
+  function markStreamRead(st) {
+    streamSeen = S.log.length;
+    const nh = el("newhint"); if (nh) nh.hidden = true;
+    if (st) st.querySelectorAll(".srow.new").forEach((r) => r.classList.remove("new"));
   }
   function deltaLine() { return S.lastDelta ? `<p class="delta">${esc(S.lastDelta)}</p>` : ""; }
+  // §3.2 选择留一拍：被选按钮先置选中态停留 250ms、其余变淡，然后才执行后续（回响/复述拍）
+  function choiceBeat(btn, fn) {
+    clearAuto();
+    const box = btn.closest(".choices");
+    if (box) box.querySelectorAll(".choice").forEach((o) => {
+      o.disabled = true;
+      o.classList.toggle("picked", o === btn);
+      o.classList.toggle("faded", o !== btn);
+    });
+    setTimeout(fn, 250);
+  }
 
   // ---------- 开局 ----------
   function renderStart() {
+    curKind = "start";
+    prevStats = null;
     clearAutoContext();
     app().classList.remove("playwrap");
     clearSave0();
@@ -260,7 +391,7 @@
           <button class="ghost" id="seedgo">用这个种子</button>
           <button class="ghost" id="daily">今日种子</button>
         </div>
-        <p class="hint ver">v0.7.0</p>
+        <p class="hint ver">v0.8.0</p>
         <p class="hint">不填随机。填了，运气定下来，跟朋友比同一局就用它。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam ? "，年代也按对方那局选好了" : ""}，点任意一条路就开始同一局。` : ""}</p>
       </section>`;
     if (saved) el("resume").addEventListener("click", () => {
@@ -268,9 +399,11 @@
       S.usedRare = S.usedRare || []; S.era = S.era || "c2000"; S.birthYear = S.birthYear || 2000;
       S.healthCrisisSeen = !!S.healthCrisisSeen || !!(S.crisisUsed && S.crisisUsed.health);
       S.death = S.death || null;
+      S.pendingFork = S.pendingFork || null;
       delete S.endAge;
       S.autoMode = prefs.mode; S.speed = prefs.speed;
       RNG.a = saved.rngA || seedFromString(saved.seedStr);
+      prevStats = null; resumeMark = true; // §6.2 续玩第一屏给一句定位
       if (S.death) renderDeath(); else step();
     });
     const pickSeg = (id) => { const box = el(id); if (!box) return; box.querySelectorAll(".segbtn").forEach((b) => b.addEventListener("click", () => { box.querySelectorAll(".segbtn").forEach((o) => o.classList.remove("sel")); b.classList.add("sel"); })); };
@@ -291,7 +424,11 @@
     el("seedin").addEventListener("input", updSummary);
     updSummary();
     el("daily").addEventListener("click", () => { const d = new Date(); el("seedin").value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; el("daily").textContent = "今日种子已填好，选一条路开始"; updSummary(); });
+    let startLock = false; // §6.1 防连点：双击不能在同一帧触发两次开局
     document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {
+      if (startLock) return;
+      startLock = true;
+      document.querySelectorAll(".choice").forEach((o) => { o.disabled = true; });
       const chosen = D.routes[Number(b.dataset.i)];
       const seedStr = (el("seedin").value || "").trim() || seedParam || String(Math.floor(Math.random() * 1e6));
       const eb = document.querySelector("#erapick .segbtn.sel");
@@ -304,11 +441,14 @@
       // 种子已填好，提示玩家选路即可
       el("seedgo").textContent = "好，选一条路开始";
     });
+    finishRender();
   }
   function clearSave0() { /* 开局页不清除存档，续玩入口要用 */ }
 
   function newGame(seedStr, route, opts) {
     S = freshState(seedStr);
+    prevStats = null; resumeMark = false;
+    streamFollow = true; streamSeen = 0; streamTop = 0;
     RNG.a = seedFromString(seedStr);
     if (opts) { S.era = opts.era; S.birthYear = opts.birth; }
     S.autoMode = prefs.mode; S.speed = prefs.speed;
@@ -326,6 +466,7 @@
     if (S.death) return renderDeath();
     if (S.age >= MAX_AGE) return renderEnd();
     save();
+    if (S.pendingFork && S.pendingFork.age === S.age) { renderForkEcho(); return mountStream(); } // 分岔复述拍未走时，续玩/重入都回到复述拍
     const fork = D.forks.find((f) => f.age === S.age);
     if (fork) { renderFork(fork); return mountStream(); }
     if (S.age in GLIMPSE_AGES) { renderGlimpse(GLIMPSE_AGES[S.age]); return mountStream(); }
@@ -363,6 +504,7 @@
     return null;
   }
   function renderRare(r) {
+    curKind = "rare";
     S.usedRare.push(r.id);
     if (!r.choices) { applyEffects(r.effects); if (r.set) S.flags[r.set] = true; } else S.lastDelta = "";
     S.log.push(`${S.age} 岁 · 【稀有】${r.text}`);
@@ -370,14 +512,17 @@
       <p class="rare-tag">稀有事件</p><p class="body">${esc(r.text)}</p>${deltaLine()}
       ${r.choices ? `<div class="choices">${r.choices.map((c, i) => `<button class="choice" data-i="${i}">${esc(c.label)}</button>`).join("")}</div><div id="echo"></div>`
                   : `<button class="primary" id="cont">过一年</button>`}</section>`;
+    finishRender();
     if (!r.choices) { save(); el("cont").addEventListener("click", advance); armAuto(r.text); return; }
     document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {
       const c = r.choices[Number(b.dataset.i)];
-      applyEffects(c.effects);
-      if (c.set) S.flags[c.set] = true;
-      document.querySelector(".choices").remove();
-      el("echo").innerHTML = `${deltaLine()}<p class="echo">${esc(c.echo)}</p><button class="primary" id="cont">过一年</button>`;
-      save(); el("cont").addEventListener("click", advance);
+      choiceBeat(b, () => {
+        applyEffects(c.effects);
+        if (c.set) S.flags[c.set] = true;
+        document.querySelector(".choices").remove();
+        el("echo").innerHTML = `${deltaLine()}<p class="pickednote">已选「${esc(c.label)}」</p><p class="echo">${esc(c.echo)}</p><button class="primary" id="cont">过一年</button>`;
+        save(); el("cont").addEventListener("click", advance);
+      });
     }));
   }
   function rollDeath() {
@@ -404,6 +549,7 @@
     step();
   }
   function renderDeath() {
+    curKind = "death";
     clearAutoContext();
     app().classList.remove("playwrap");
     app().innerHTML = `<section class="card death">${head(null, true)}
@@ -411,20 +557,36 @@
       <p class="body">${esc(S.death.text)}</p>
       <button class="primary" id="toend">看这一生的结算</button>
     </section>`;
+    finishRender();
     el("toend").addEventListener("click", renderEnd);
   }
 
   function renderFork(fork) {
+    curKind = "fork";
     app().innerHTML = `<section class="card">${head()}<h2>${esc(fork.title)}</h2><p>${esc(fork.text)}</p>
       <div class="choices">${fork.choices.map((c, i) => `<button class="choice" data-i="${i}">${esc(c.label)}</button>`).join("")}</div></section>`;
+    finishRender();
     document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {
       const c = fork.choices[Number(b.dataset.i)];
-      applyEffects(c.effects);
-      if (c.set) S.flags[c.set] = true;
-      fork.choices.forEach((o) => { if (o !== c) S.unchosen.push({ kind: "fork", age: fork.age, label: o.label }); });
-      S.log.push(`${fork.age} 岁 · ${fork.title.split("·")[1].trim()}：${c.label}`);
-      advance();
+      choiceBeat(b, () => {
+        applyEffects(c.effects);
+        if (c.set) S.flags[c.set] = true;
+        fork.choices.forEach((o) => { if (o !== c) S.unchosen.push({ kind: "fork", age: fork.age, label: o.label }); });
+        S.log.push(`${fork.age} 岁 · ${fork.title.split("·")[1].trim()}：${c.label}`);
+        S.pendingFork = { age: fork.age, label: c.label }; // §3.3 复述拍：先存下，续玩回到这一拍而不是重选
+        save();
+        renderForkEcho();
+        mountStream();
+      });
     }));
+  }
+  // §3.3 最小版：分岔选后不直接进下一年，先留一拍复述（与事件回响同构）。完整版（专属回响文案）卡在内容侧数据，见 DEVLOG。
+  function renderForkEcho() {
+    curKind = "fork";
+    const pf = S.pendingFork;
+    app().innerHTML = `<section class="card">${head()}${deltaLine()}<p class="echo">你选了「${esc(pf.label)}」</p><button class="primary" id="cont">过一年</button></section>`;
+    finishRender();
+    el("cont").addEventListener("click", () => { S.pendingFork = null; save(); advance(); });
   }
 
   function pickCrisis() {
@@ -435,16 +597,20 @@
     return null;
   }
   function renderCrisis(c) {
+    curKind = "crisis";
     if (c.key === "health") { S.healthCrisisSeen = true; save(); }
     app().innerHTML = `<section class="card crisis">${head("身体和日子，都得当回事")}<h2>${S.age} 岁 · ${esc(c.title)}</h2><p>${esc(c.text)}</p>
       <div class="choices">${c.choices.map((ch, i) => `<button class="choice" data-i="${i}">${esc(ch.label)}</button>`).join("")}</div><div id="echo"></div></section>`;
+    finishRender();
     document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {
       const ch = c.choices[Number(b.dataset.i)];
-      applyEffects(ch.effects); S.crisisUsed[c.key] = true;
-      S.log.push(`${S.age} 岁 · ${c.title}：${ch.label}`);
-      document.querySelector(".choices").remove();
-      el("echo").innerHTML = `${deltaLine()}<p class="echo">${esc(ch.echo)}</p><button class="primary" id="cont">过一年</button>`;
-      save(); el("cont").addEventListener("click", advance);
+      choiceBeat(b, () => {
+        applyEffects(ch.effects); S.crisisUsed[c.key] = true;
+        S.log.push(`${S.age} 岁 · ${c.title}：${ch.label}`);
+        document.querySelector(".choices").remove();
+        el("echo").innerHTML = `${deltaLine()}<p class="pickednote">已选「${esc(ch.label)}」</p><p class="echo">${esc(ch.echo)}</p><button class="primary" id="cont">过一年</button>`;
+        save(); el("cont").addEventListener("click", advance);
+      });
     }));
   }
 
@@ -457,6 +623,7 @@
     return weighted[Math.floor(rng() * weighted.length)];
   }
   function renderEventYear() {
+    curKind = "year";
     const e = pickEvent();
     if (!e) {
       // 平年微文本：年份不再被静默跳过
@@ -465,6 +632,7 @@
       if (!S.microUsed.includes(idx)) S.microUsed.push(idx);
       S.log.push(`${S.age} 岁 · ${D.micro[idx]}`);
       app().innerHTML = `<section class="card">${head()}<p class="body">${esc(D.micro[idx])}</p><button class="primary" id="cont">过一年</button></section>`;
+      finishRender();
       save(); el("cont").addEventListener("click", advance);
       armAuto(D.micro[idx]);
       return;
@@ -475,6 +643,7 @@
     app().innerHTML = `<section class="card">${head()}<p class="body">${esc(e.text)}</p>${deltaLine()}
       ${e.choices ? `<div class="choices">${e.choices.map((c, i) => `<button class="choice" data-i="${i}">${esc(c.label)}</button>`).join("")}</div><div id="echo"></div>`
                   : `<button class="primary" id="cont">过一年</button>`}</section>`;
+    finishRender();
     if (!e.choices) { save(); el("cont").addEventListener("click", advance); armAuto(e.text); return; }
     const chooseEventChoice = (c, autoSelected) => {
       clearAuto();
@@ -482,16 +651,23 @@
       if (c.set) S.flags[c.set] = true;
       if (autoSelected) S.log.push(`${S.age} 岁 · 自动选：${c.label}`);
       document.querySelector(".choices").remove();
-      el("echo").innerHTML = `${deltaLine()}${autoSelected ? `<p class="autonote">自动推进 · 已选「${esc(c.label)}」</p>` : ""}<p class="echo">${esc(c.echo)}</p><button class="primary" id="cont">过一年</button>`;
+      el("echo").innerHTML = `${deltaLine()}${autoSelected ? `<p class="autonote">自动推进 · 已选「${esc(c.label)}」</p>` : `<p class="pickednote">已选「${esc(c.label)}」</p>`}<p class="echo">${esc(c.echo)}</p><button class="primary" id="cont">过一年</button>`;
       save(); el("cont").addEventListener("click", advance);
       if (autoSelected) armAuto(c.echo || c.label, advance, "advance");
     };
     document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {
-      chooseEventChoice(e.choices[Number(b.dataset.i)], false);
+      choiceBeat(b, () => chooseEventChoice(e.choices[Number(b.dataset.i)], false));
     }));
+    // §4.3 全程自动选分两段：主计时到点先预高亮被选按钮 400ms（玩家可点任意处夺回手动），再执行选择
     armAuto(e.text, () => {
       const idx = Math.floor(rng() * e.choices.length);
-      chooseEventChoice(e.choices[idx], true);
+      const btns = document.querySelectorAll(".choices .choice");
+      btns.forEach((o, j) => {
+        o.disabled = true;
+        o.classList.toggle("picked", j === idx);
+        o.classList.toggle("faded", j !== idx);
+      });
+      autoPhase2 = setTimeout(() => { autoPhase2 = null; chooseEventChoice(e.choices[idx], true); }, 400);
     }, "choice");
   }
 
@@ -528,6 +704,7 @@
     return { main, others };
   }
   function renderGlimpse(stage) {
+    curKind = "glimpse";
     const sh = shadowRoute();
     const text = shadowStageText(stage); // 先抽定，点不点开都是这一条（但只有点开才显示）
     app().innerHTML = `<section class="card glimpse">${head()}
@@ -536,6 +713,7 @@
       <p class="hint">细节只给你看一眼。看，还是不看，你自己定——不看的那几次，结算时会记着。</p>
       <div class="row"><button class="primary" id="look">看细节</button><button class="ghost" id="skip">不看，继续过日子</button></div>
       <div id="detail"></div></section>`;
+    finishRender();
     el("skip").addEventListener("click", () => { S.glimpsesSkipped += 1; S.log.push(`${S.age} 岁 · 没有去看另一条路`); advance(); });
     el("look").addEventListener("click", () => {
       S.glimpsesSeen += 1;
@@ -569,7 +747,56 @@
     hits.sort((a, b) => TIER_ORDER[a.tier] - TIER_ORDER[b.tier]);
     return hits[0];
   }
+  // ---------- 结算纵轴立轴图（VISUAL-DESIGN 第四节裁定 + UX-MOTION §9.2 生长仪式） ----------
+  // 纵轴恒为 22→80 岁：走过的线居中成脊只画到实际终年，早夭的留白就是信息；未选支流按分岔序号左右交替。
+  function settlementMapHtml() {
+    const end = finalAge();
+    const W = Math.min(460, Math.max(300, (window.innerWidth || 360) - 56));
+    const cx = W / 2, pxY = 11, topPad = 34;
+    const Y = (a) => topPad + (a - START_AGE) * pxY;
+    const H = Y(MAX_AGE) + 30;
+    const GROW_S = 1.05, GROW_DELAY = 0.36;
+    // 标签按可用宽度截断：宽度单位（半角 0.55 / 全角 1）×字号 ≈ 实际像素，原型实测口径
+    const units = (s) => [...s].reduce((a, ch) => a + (ch.charCodeAt(0) < 256 ? 0.55 : 1), 0);
+    const fitW = (t) => {
+      const maxU = (W / 2 - 18) / 11.5;
+      if (units(t) <= maxU) return t;
+      let s = t;
+      while (s.length && units(s + "…") > maxU) s = s.slice(0, -1);
+      return s + "…";
+    };
+    const faced = (D.forks || []).filter((f) => !S.death || f.age < S.death.age);
+    const chosenOf = (f) => {
+      const line = S.log.find((l) => l.startsWith(`${f.age} 岁 · `) && f.choices.some((c) => l.endsWith(`：${c.label}`)));
+      return line ? line.slice(line.lastIndexOf("：") + 1) : "";
+    };
+    let g = `<line x1="${cx}" y1="${Y(START_AGE)}" x2="${cx}" y2="${Y(MAX_AGE)}" stroke="#DDD6C9" stroke-width="1.5"/>`;
+    g += `<path class="mapspine" style="--gd:${GROW_DELAY}s" pathLength="100" d="M ${cx} ${Y(START_AGE)} L ${cx} ${Y(end)}" fill="none" stroke="#2F4A3C" stroke-width="3" stroke-linecap="round"/>`;
+    const labels = [];
+    let prevBd = -1;
+    faced.forEach((f, fi) => {
+      const side = fi % 2 === 0 ? -1 : 1; // 分岔序号定侧：左右交替，横向偏移不编码好坏
+      const y0 = Y(f.age);
+      let bd = GROW_DELAY + ((f.age - START_AGE) / Math.max(1, end - START_AGE)) * GROW_S;
+      if (prevBd >= 0) bd = Math.max(bd, prevBd + 0.09); // 早年分岔密集：延迟加 90ms 最小间隔下限，保住「依次」感（原型验证对策）
+      prevBd = bd;
+      S.unchosen.filter((u) => u.kind === "fork" && u.age === f.age).forEach((u, j) => {
+        const dx = side * (84 + j * 42), dy = (6 + j * 2.5) * pxY;
+        g += `<path class="mapbranch" style="--bd:${bd.toFixed(2)}s" d="M ${cx} ${y0} Q ${cx + dx * 0.72} ${y0 + dy * 0.5} ${cx + dx} ${y0 + dy}" fill="none" stroke="#8A948C" stroke-width="2" stroke-dasharray="4 4" stroke-linecap="round"/><circle cx="${cx + dx}" cy="${y0 + dy}" r="2" fill="#8A948C" opacity=".45"/>`;
+      });
+      g += `<circle cx="${cx}" cy="${y0}" r="4" fill="#2F4A3C"/>`;
+      const chosen = chosenOf(f);
+      if (chosen) labels.push(`<text class="maplab" style="--bd2:${(bd + 0.1).toFixed(2)}s" x="${cx - side * 12}" y="${y0 + 4}" font-size="11.5" fill="#6E6A5E" text-anchor="${side === 1 ? "end" : "start"}">${esc(fitW(`${f.age} 岁 · ${chosen}`))}</text>`);
+    });
+    g += `<circle cx="${cx}" cy="${Y(START_AGE)}" r="4.5" fill="#2F4A3C"/>`;
+    labels.push(`<text class="maplab" style="--bd2:.4s" x="${cx + 12}" y="${Y(START_AGE) + 4}" font-size="11.5" fill="#6E6A5E">22 岁 · ${esc(S.route.name)}</text>`);
+    g += `<circle cx="${cx}" cy="${Y(end)}" r="4.5" fill="#2F4A3C"/>`;
+    labels.push(`<text class="maplab" style="--bd2:${(GROW_DELAY + GROW_S + 0.1).toFixed(2)}s" x="${cx - 12}" y="${Y(end) + 4}" font-size="11.5" fill="#6E6A5E" text-anchor="end">${end} 岁</text>`);
+    if (end < MAX_AGE) labels.push(`<text x="${cx + 12}" y="${Y(MAX_AGE) + 4}" font-size="11" fill="#A39C8B">80 岁</text>`);
+    return `<div class="mapwrap" id="mapwrap"><svg viewBox="0 0 ${W} ${H}" width="${W}" role="img" aria-label="这一生的分岔图">${g}${labels.join("")}</svg></div>`;
+  }
   function renderEnd() {
+    curKind = "end";
     clearAutoContext();
     app().classList.remove("playwrap");
     clearSave();
@@ -581,15 +808,26 @@
     const reflHtml = S.reflections.length
       ? `<h3>你留给自己的话</h3>` + S.reflections.map((r) => `<p class="refl">「${esc(r.text)}」（${r.age} 岁）</p>`).join("") : "";
     app().innerHTML = `<section class="card">${head(null, true)}
+      <div class="rev" style="--d:0s">
       <h2>${finalAge()} 岁 · 这一局走完了</h2>
       ${S.death ? `<p>这一生停在了 ${S.death.age} 岁：${esc(S.death.text)}</p>` : ""}
       ${sp ? `<div class="special"><p class="rare-tag">${TIER_LABEL[sp.tier]}</p><p class="special-title">${esc(sp.title)}</p><p>${esc(sp.text)}</p></div>` : ""}
+      </div>
+      <div class="rev" style="--d:.12s">
       <p class="verdict">${esc(v.text)}</p>
       <p>你走了这条路：${esc(S.route.name)}。</p>
+      </div>
+      <div class="rev" style="--d:.24s">
       ${shadowLines.main ? `<p>${esc(shadowLines.main)}</p>` : ""}
       ${shadowLines.others.length ? `<h3>其他几条路</h3>${shadowLines.others.map((line) => `<p>${esc(line)}</p>`).join("")}` : ""}
       ${skippedLine}
       ${reflHtml}
+      </div>
+      ${settlementMapHtml()}
+      <div class="rev" style="--d:.55s">
+      <h3>这一生，年表</h3>
+      <div class="timeline">${S.log.map((l) => { const m = l.match(/^(\d+) 岁 · ([\s\S]*)$/); const yr = m && S.birthYear ? `${S.birthYear + (+m[1])} 年 · ` : ""; return `<p>${esc(yr + l)}</p>`; }).join("")}</div>
+      </div>
       <div class="row">
         <button class="ghost" id="copylink">复制同局链接（给朋友玩同一种子）</button>
       </div>
@@ -625,9 +863,14 @@
         <button class="ghost" id="again-new">随机种子新开一局</button>
       </div>
       <p class="hint">种子码：${esc(S.seedStr)}。朋友打开同局链接，就是和你完全相同的运气——他选得不一样，会走成什么样？</p>
-      <h3>这一生，年表</h3>
-      <div class="timeline">${S.log.map((l) => { const m = l.match(/^(\d+) 岁 · ([\s\S]*)$/); const yr = m && S.birthYear ? `${S.birthYear + (+m[1])} 年 · ` : ""; return `<p>${esc(yr + l)}</p>`; }).join("")}</div>
     </section>`;
+    finishRender();
+    // §1.2/§9.2 揭示与生长都可跳过：点结算页任意处立即全显
+    const endSec = app().querySelector("section.card");
+    if (endSec) endSec.addEventListener("click", () => {
+      endSec.classList.add("shown");
+      const mw = el("mapwrap"); if (mw) mw.classList.add("shown");
+    });
     el("again-same").addEventListener("click", () => location.assign(sameSeedUrl()));
     el("again-new").addEventListener("click", () => location.assign(location.pathname));
     el("copylink").addEventListener("click", async () => {
