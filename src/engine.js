@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.11.0 —— 版本号规则见 docs/DEVLOG.md 卷首
+// 《如果那年》引擎 v0.12.0 —— 版本号规则见 docs/DEVLOG.md 卷首
 // 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 (function () {
@@ -9,6 +9,36 @@
     D.events = D.events.concat(window.GAME_SYNERGY.combos || []);
     D.rare = window.GAME_SYNERGY.rare || [];
     D.endings = window.GAME_SYNERGY.endings || [];
+  }
+  // --- 状态矩阵（v0.12.0，docs/STATE-MATRIX.md）：域内互斥/不可逆的人生状态收进 S.state，
+  // 流转只能走注册表（src/registry.js）声明的边；普通叙事旗标仍留在 S.flags（里程碑）。
+  const REG = window.GAME_REGISTRY || { domains: {} };
+  const STATE_EDGES = {}; // dom -> Set("from>to")，仅含已启用（有载体）的边
+  for (const [dom, def] of Object.entries(REG.domains || {})) STATE_EDGES[dom] = new Set((def.edges || []).filter((e) => (e.by || []).length).map((e) => e.from + ">" + e.to));
+  function initialState() { const o = {}; for (const [dom, def] of Object.entries(REG.domains || {})) o[dom] = def.initial; return o; }
+  function applyState(item) { // setState 的唯一执行点：未声明的边（含去世类反向边）结构性写不出
+    if (!item || !item.setState || !S || !S.state) return;
+    for (const [dom, to] of Object.entries(item.setState)) {
+      const from = S.state[dom];
+      if (from === undefined || from === to) continue;
+      if (STATE_EDGES[dom] && STATE_EDGES[dom].has(from + ">" + to)) S.state[dom] = to;
+    }
+  }
+  function deriveStateFromLegacy(saved) { // v0.11 及更早存档：由旧 flags 推导 state（映射见 docs/STATE-MATRIX.md §5）
+    const F = saved.flags || {}, used = saved.usedEvents || [], st = initialState();
+    const i27 = used.indexOf("p27_001"), i28 = used.indexOf("p28_001"); // 离异与丧偶互斥：旗标时代两者可同立，按事件先后取后发生者
+    if (F.divorced && F.spouse_dead) st.spouse = i28 > i27 ? "widowed" : "divorced";
+    else if (F.divorced) st.spouse = "divorced";
+    else if (F.spouse_dead) st.spouse = "widowed";
+    else if (F.partner) st.spouse = "partnered";
+    else if (F.single_ok) st.spouse = "single";
+    else if (F.slow_love) st.spouse = "dating";
+    if (F.has_kid) st.kids = "has"; else if (F.no_kid) st.kids = "none";
+    if (F.dad_dead) st.dad = "dead";
+    if (F.mom_dead) st.mom = "dead";
+    if (F.dog_gone) st.dog = "gone"; else if (F.dog_home) st.dog = "home";
+    if (F.cat_gone) st.cat = "gone"; else if (used.includes("p5_043")) st.cat = "home";
+    return st;
   }
   const START_AGE = 22, MAX_AGE = 80;
   // 死亡模型 v2（年龄×健康风险）：公式与校准实测见 docs/MORTALITY-MODEL.md
@@ -70,7 +100,7 @@
       seedStr, age: START_AGE, era: "c2000", birthYear: 2000,
       stats: Object.fromEntries(STAT_META.map(([k, , init]) => [k, init])),
       route: null, unchosen: [], log: [], reflections: [],
-      usedEvents: [], flags: {}, crisisUsed: {}, microUsed: [], usedRare: [],
+      usedEvents: [], flags: {}, state: initialState(), crisisUsed: {}, microUsed: [], usedRare: [],
       glimpsesSeen: 0, glimpsesSkipped: 0, lastDelta: "",
       healthCrisisSeen: false, death: null, pendingFork: null,
       autoMode: DEFAULT_AUTO_MODE, speed: "mid", // 推进设定在本局的副本；权威来源是 localStorage 的 ify-prefs
@@ -395,7 +425,7 @@
           <button class="ghost" id="seedgo">用这个种子</button>
           <button class="ghost" id="daily">今日种子</button>
         </div>
-        <p class="hint ver">v0.11.0</p>
+        <p class="hint ver">v0.12.0</p>
         <p class="hint">不填随机。填了，运气定下来，跟朋友比同一局就用它。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam ? "，年代也按对方那局选好了" : ""}，点任意一条路就开始同一局。` : ""}</p>
       </section>`;
     if (saved) el("resume").addEventListener("click", () => {
@@ -407,6 +437,8 @@
       delete S.endAge;
       S.stats = S.stats || {};
       for (const [k, , init] of STAT_META) if (typeof S.stats[k] !== "number") S.stats[k] = init; // 新维度迁移：旧存档缺的维度按初值补齐（如 v0.9.0 新增的智慧），不清档不报错
+      if (!S.state || typeof S.state !== "object") S.state = deriveStateFromLegacy(saved); // v0.12.0：旧存档无 state，由旧 flags 推导（docs/STATE-MATRIX.md §5）
+      else for (const [dom, def] of Object.entries(REG.domains || {})) if (!(dom in S.state)) S.state[dom] = def.initial;
       S.autoMode = prefs.mode; S.speed = prefs.speed;
       RNG.a = saved.rngA || seedFromString(saved.seedStr);
       prevStats = null; resumeMark = true; // §6.2 续玩第一屏给一句定位
@@ -495,6 +527,9 @@
     if (e.forbid && (Array.isArray(e.forbid) ? e.forbid : [e.forbid]).some((f) => S.flags[f])) return false;
     if (e.all && !e.all.every((f) => S.flags[f])) return false;
     if (e.any && !e.any.some((f) => S.flags[f])) return false;
+    if (e.state && !Object.entries(e.state).every(([dom, v]) => (Array.isArray(v) ? v.includes(S.state[dom]) : S.state[dom] === v))) return false; // 状态门（v0.12.0）：值可为单值或候选数组
+    if (e.stateAll && !Object.entries(e.stateAll).every(([dom, v]) => (Array.isArray(v) ? v.includes(S.state[dom]) : S.state[dom] === v))) return false; // 与 state 同语义；区别只在抽取权重（state 对应旧 require 的 ×3，stateAll 对应旧 all/forbid 的 ×1，迁移按来源保真，见 docs/STATE-MATRIX.md §6）
+    if (e.stateNot && Object.entries(e.stateNot).some(([dom, v]) => (Array.isArray(v) ? v.includes(S.state[dom]) : S.state[dom] === v))) return false;
     if (e.chain && !S.usedEvents.includes(e.chain) && !(S.usedRare || []).includes(e.chain)) return false;
     if (e.when && (e.when.lt !== undefined ? S.stats[e.when.stat] >= e.when.lt : S.stats[e.when.stat] <= e.when.gt)) return false;
     if (e.stats && !e.stats.every((c) => (c.lt !== undefined ? S.stats[c.k] < c.lt : S.stats[c.k] > c.gt))) return false;
@@ -514,6 +549,7 @@
     curKind = "rare";
     S.usedRare.push(r.id);
     if (r.set) S.flags[r.set] = true; // 呈现即立旗（v0.11.0 起覆盖有选项事件：去世旗等必立旗靠它保证）
+    applyState(r); // v0.12.0：状态流转与立旗同一时机
     if (!r.choices) { applyEffects(r.effects); } else S.lastDelta = "";
     S.log.push(`${S.age} 岁 · 【稀有】${r.text}`);
     app().innerHTML = `<section class="card rare">${head("这一年不太一样")}
@@ -527,6 +563,7 @@
       choiceBeat(b, () => {
         applyEffects(c.effects);
         if (c.set) S.flags[c.set] = true;
+        applyState(c);
         document.querySelector(".choices").remove();
         el("echo").innerHTML = `${deltaLine()}<p class="pickednote">已选「${esc(c.label)}」</p><p class="echo">${esc(c.echo)}</p><button class="primary" id="cont">过一年</button>`;
         save(); el("cont").addEventListener("click", advance);
@@ -579,6 +616,7 @@
       choiceBeat(b, () => {
         applyEffects(c.effects);
         if (c.set) S.flags[c.set] = true;
+        applyState(c);
         fork.choices.forEach((o) => { if (o !== c) S.unchosen.push({ kind: "fork", age: fork.age, label: o.label }); });
         S.log.push(`${fork.age} 岁 · ${fork.title.split("·")[1].trim()}：${c.label}`);
         S.pendingFork = { age: fork.age, label: c.label, echo: c.echo || null }; // §3.3 复述拍：先存下，续玩回到这一拍而不是重选
@@ -614,6 +652,7 @@
       const ch = c.choices[Number(b.dataset.i)];
       choiceBeat(b, () => {
         applyEffects(ch.effects); S.crisisUsed[c.key] = true;
+        if (ch.set) S.flags[ch.set] = true; applyState(ch); // v0.12.0：与其它选项路径统一（现行危机数据未用 set/setState，防未来内容轮）
         S.log.push(`${S.age} 岁 · ${c.title}：${ch.label}`);
         document.querySelector(".choices").remove();
         el("echo").innerHTML = `${deltaLine()}<p class="pickednote">已选「${esc(ch.label)}」</p><p class="echo">${esc(ch.echo)}</p><button class="primary" id="cont">过一年</button>`;
@@ -627,7 +666,7 @@
       S.age >= e.min && S.age <= e.max && !S.usedEvents.includes(e.id) && met(e));
     if (!pool.length) return null;
     // 回响事件（require 命中）与本年代事件权重更高：早年的选择更容易被「想起来」，年代质感不能被大池稀释
-    const weighted = pool.flatMap((e) => { let n = 1; if (e.require) n = 3; if (e.era && e.era === S.era) n = Math.max(n, 3); if (e.w) n *= e.w; return Array(n).fill(e); }); // e.w 数据权重倍数（v0.11.0：中段苦味事件 w:2）
+    const weighted = pool.flatMap((e) => { let n = 1; if (e.require || e.state) n = 3; if (e.era && e.era === S.era) n = Math.max(n, 3); if (e.w) n *= e.w; return Array(n).fill(e); }); // e.w 数据权重倍数（v0.11.0：中段苦味事件 w:2）；v0.12.0 状态门事件与 require 同权重
     return weighted[Math.floor(rng() * weighted.length)];
   }
   function renderEventYear() {
@@ -647,6 +686,7 @@
     }
     S.usedEvents.push(e.id);
     if (e.set) S.flags[e.set] = true; // 顶层 set 呈现即立（v0.9.2 补齐普通事件路径；v0.11.0 起覆盖有选项事件：去世旗等必立旗靠它保证）
+    applyState(e); // v0.12.0：状态流转与立旗同一时机
     if (!e.choices) { applyEffects(e.effects); } else S.lastDelta = "";
     S.log.push(`${S.age} 岁 · ${e.text}`);
     app().innerHTML = `<section class="card">${head()}<p class="body">${esc(e.text)}</p>${deltaLine()}
@@ -658,6 +698,7 @@
       clearAuto();
       applyEffects(c.effects);
       if (c.set) S.flags[c.set] = true;
+      applyState(c);
       if (autoSelected) S.log.push(`${S.age} 岁 · 自动选：${c.label}`);
       document.querySelector(".choices").remove();
       el("echo").innerHTML = `${deltaLine()}${autoSelected ? `<p class="autonote">自动推进 · 已选「${esc(c.label)}」</p>` : `<p class="pickednote">已选「${esc(c.label)}」</p>`}<p class="echo">${esc(c.echo)}</p><button class="primary" id="cont">过一年</button>`;
@@ -795,19 +836,20 @@
       const hk = Object.keys(HOB).find((k) => F[k]);
       if (hk) t2 = HOB[hk] + "陪了大半辈子";
     }
-    if (!t2 && F.dog_home) t2 = "养过一条狗";
+    if (!t2 && S.state && S.state.dog !== "none") t2 = "养过一条狗"; // v0.12.0：旗标时代 dog_home 立后不清（在养/已离世都算养过），状态读法等价取 ≠none
     if (!t2 && F.bought_house) t2 = "供过一套房";
     if (t2) out.push(t2);
     const res = (F.back_home_stay || S.route.id === "home" || F.near_family) ? "家乡" : (S.route.id === "abroad" ? "异国" : (F.stayed_city || F.moved_city || S.route.id === "corp" ? "异乡" : "住了大半辈子的地方"));
     let close = "";
-    if (F.spouse_dead) close = "老伴先走，最后一段自己过";
-    else if (F.divorced && F.has_kid) close = "后来一个人把孩子带大";
-    else if (F.divorced) close = "后来一个人过";
-    else if (F.partner && F.kid_abroad) close = "和老伴相伴，儿女在远方";
-    else if (F.partner && F.has_kid) close = "和老伴、儿女一起走完";
-    else if (F.partner) close = "和老伴走完这一生";
-    else if (F.has_kid) close = "儿女陪着走完";
-    else if (F.single_ok) close = "一个人走完这一生";
+    const ST = S.state || {}; // v0.12.0：收尾段改读状态矩阵（原旗标读法在离异/丧偶后因旗不清会误判，现按当前状态）
+    if (ST.spouse === "widowed") close = "老伴先走，最后一段自己过";
+    else if (ST.spouse === "divorced" && ST.kids === "has") close = "后来一个人把孩子带大";
+    else if (ST.spouse === "divorced") close = "后来一个人过";
+    else if (ST.spouse === "partnered" && F.kid_abroad) close = "和老伴相伴，儿女在远方";
+    else if (ST.spouse === "partnered" && ST.kids === "has") close = "和老伴、儿女一起走完";
+    else if (ST.spouse === "partnered") close = "和老伴走完这一生";
+    else if (ST.kids === "has") close = "儿女陪着走完";
+    else if (ST.spouse === "single") close = "一个人走完这一生";
     else close = S.death ? "最后住在" + res : "终老在" + res;
     out.push(close);
     return out.join(" · ");
