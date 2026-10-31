@@ -4,6 +4,7 @@
 (function () {
   "use strict";
   const D = window.GAME_DATA;
+  if (window.GAME_PACKS) D.events = D.events.concat(window.GAME_PACKS); // 事件扩展包（src/packs/）在引擎启动时并入主池
   const START_AGE = 22, END_AGE = 65;
   const STAT_META = [["health", "健康"], ["money", "金钱"], ["growth", "成长"], ["freedom", "自由"], ["relation", "关系"]];
   const GLIMPSE_AGES = { 30: 0, 40: 1, 50: 2 };
@@ -147,7 +148,9 @@
     const pool = D.events.filter((e) =>
       S.age >= e.min && S.age <= e.max && !S.usedEvents.includes(e.id) &&
       (!e.route || e.route === S.route.id) && (!e.forbidRoute || e.forbidRoute !== S.route.id) &&
-      (!e.require || S.flags[e.require]) && (!e.forbid || !S.flags[e.forbid]));
+      (!e.require || S.flags[e.require]) && (!e.forbid || !S.flags[e.forbid]) &&
+      (!e.chain || S.usedEvents.includes(e.chain)) &&
+      (!e.when || (e.when.lt !== undefined ? S.stats[e.when.stat] < e.when.lt : S.stats[e.when.stat] > e.when.gt)));
     if (!pool.length) return null;
     // 回响事件（require 命中）权重更高：早年的选择应该更容易被「想起来」
     const weighted = pool.flatMap((e) => (e.require ? [e, e, e] : [e]));
@@ -175,6 +178,7 @@
     document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {
       const c = e.choices[Number(b.dataset.i)];
       applyEffects(c.effects);
+      if (c.set) S.flags[c.set] = true;
       document.querySelector(".choices").remove();
       el("echo").innerHTML = `${deltaLine()}<p class="echo">${esc(c.echo)}</p><button class="primary" id="cont">过一年</button>`;
       save(); el("cont").addEventListener("click", advance);

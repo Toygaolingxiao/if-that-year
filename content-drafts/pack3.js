@@ -1,0 +1,198 @@
+// 《如果那年》事件包 3 —— 婚恋家庭 × 子女教育（离线草稿，人审后上线）
+// 分线：partner 25 / single_ok 12 / slow_love 8 / has_kid 25 / no_kid 8 / 通用家庭 7，共 85 条。
+// 状态纪律：partner/single_ok/slow_love 标记在 31 岁分岔写入，故相关事件 min≥32；has_kid/no_kid 在 38 岁写入，min≥39。
+// 子线标记：long_dist（两地）、together/faded（慢慢处的结果）、tutor_hard/let_go（鸡娃之争）只在本包内由 choices 写入。
+window.GAME_PACKS = (window.GAME_PACKS || []).concat([
+  // ================= require:"partner"（25 条） =================
+  { id: "p3_001", min: 32, max: 37, require: "partner", text: "第一次去对方家里吃饭。你帮忙端菜，对方母亲问了你工资，问得很直接，你答得也很直接。", effects: { relation: 2 } },
+  { id: "p3_002", min: 32, max: 38, require: "partner", text: "对方父亲不爱说话，饭后默默给你续了三回茶。临走，把一箱自家种的橙子搬上了你的后备箱。" },
+  { id: "p3_003", min: 32, max: 39, require: "partner", chain: "p3_004", text: "领证之后，婚礼怎么办，两家人坐下来谈。酒席桌数、彩礼、改口费，一项一项都在桌上。",
+    choices: [
+      { label: "听长辈的，办得体面些", effects: { money: -5, relation: 2 }, echo: "婚礼那天你脚后跟磨破了皮，敬酒敬到最后，笑得脸都僵了。" },
+      { label: "简单办，钱留着过日子", effects: { money: -2, freedom: 2 }, echo: "只请了至亲，一共六桌。吃完饭你们去江边走了一圈，鞋都没换。" },
+    ] },
+  { id: "p3_004", min: 33, max: 40, require: "partner", text: "结婚第一年，你们为牙膏从哪头挤吵了一架。吵完两个人都笑了，又都觉得这架吵得没出息。", effects: { relation: 1 } },
+  { id: "p3_005", min: 32, max: 45, require: "partner", text: "对方加班到半夜，你留了饭在锅里，贴了张纸条：微波炉三分钟。纸条一直贴在冰箱上，字都淡了。" },
+  { id: "p3_006", min: 33, max: 48, require: "partner", text: "家里的活儿一直没分清。这周你洗碗时摔了个盘子，对方在客厅说了一句：要不咱们列个表吧。",
+    choices: [
+      { label: "列个表，一人一半", effects: { relation: 2, freedom: -1 }, echo: "表贴在厨房门后。执行了三个月，后来谁有空谁多干，表就作废了。" },
+      { label: "请钟点工，钱解决", effects: { money: -3, freedom: 2 }, echo: "阿姨每周来两次。那两个小时，你们出门散步，或者各玩各的手机。" },
+    ] },
+  { id: "p3_007", min: 34, max: 50, require: "partner", text: "钱的用法上你们不一样：一个觉得该存，一个觉得该花。为一台要不要换的洗衣机，冷战了一个晚上。", effects: { relation: -1, money: 1 } },
+  { id: "p3_008", min: 32, max: 44, require: "partner", chain: "p3_009", text: "对方拿到一个外地的工作机会，待遇好，就是要分开两年。地图都打开了，两座城市之间高铁四个半小时。",
+    choices: [
+      { label: "去吧，我这边稳住", effects: { growth: 2, relation: -2 }, set: "long_dist", echo: "第一个月视频天天打，后来改成睡前十分钟，有时候说着说着就睡着了。" },
+      { label: "别去了，一起想别的办法", effects: { relation: 2, money: -2 }, echo: "对方留下了。后来提起那次机会，语气平平的，说还好没去。" },
+    ] },
+  { id: "p3_009", min: 34, max: 46, require: "long_dist", text: "两地第二年，对方的城市下大雪，高铁停了。你在电话里听那边的风声，两个人半天没说话，也没挂。", effects: { relation: 1 } },
+  { id: "p3_010", min: 35, max: 50, require: "partner", text: "结婚纪念日。你们都没想搞什么仪式，去吃了顿第一次约会的那家店。老板换人了，菜的味道也变了一点。" },
+  { id: "p3_011", min: 33, max: 52, require: "partner", text: "对方家里急用钱，数额不小。你们坐在餐桌前，把两个人的账户余额都打开，摊在桌上算。",
+    choices: [
+      { label: "把换车的钱先挪过去", effects: { money: -5, relation: 3 }, echo: "车晚买了两年。对方说，等手头宽裕了，换台好点的。" },
+      { label: "帮着想办法，能凑的先凑一部分", effects: { money: -2, relation: 1 }, echo: "钱分了三处凑齐。那阵子你们说话都轻声细语的，怕给对方添乱。" },
+    ] },
+  { id: "p3_012", min: 36, max: 55, require: "partner", text: "对方生病住院一周，你请假陪护。夜里陪护椅硌得腰疼，你把外套叠了垫在下面。", effects: { relation: 2, health: -2 } },
+  { id: "p3_013", min: 32, max: 42, require: "partner", text: "住到一起头一年，对方打呼噜，你失眠了半个月。后来你买了耳塞，对方买了鼻贴，两边都在偷偷努力。" },
+  { id: "p3_014", min: 35, max: 50, require: "partner", text: "过年去谁家，两边都打电话来问了。日历摊在桌上，你们拿铅笔在格子里排班。",
+    choices: [
+      { label: "一家一半天，路上过年", effects: { relation: 2, money: -2, health: -1 }, echo: "三十晚上在这家，初二一早赶去那家。在车上补的觉，比在床上睡得还沉。" },
+      { label: "轮流来，一年一家", effects: { relation: 1, freedom: 1 }, echo: "没轮到的那家，你们提前一周回去住几天，补上。" },
+    ] },
+  { id: "p3_015", min: 40, max: 56, require: "partner", text: "你们有个固定的周末安排：菜市场、公园、在家做一顿复杂的菜。复杂指的是四个菜以上。" },
+  { id: "p3_016", min: 38, max: 55, require: "partner", text: "对方手机里存着你打盹的照片，一共十几张，角度都很不客气。你说要删，对方把手机举得老高。" },
+  { id: "p3_017", min: 44, max: 58, require: "partner", text: "对方单位效益不好，工资降了一截。晚饭桌上对方说得很平静，你往对方碗里夹了块肉。",
+    choices: [
+      { label: "家里开支一起紧一紧", effects: { money: 2, relation: 2 }, echo: "订阅退了三个，外卖改成一周一次。日子紧了点，没散。" },
+      { label: "你多接点活，补上缺口", effects: { money: 3, health: -3, freedom: -2 }, echo: "你忙起来，对方就把家里的事全包了。谁也没说什么，都记着呢。" },
+    ] },
+  { id: "p3_018", min: 33, max: 46, require: "partner", when: { stat: "money", lt: 30 }, text: "月底钱紧，你们把外卖软件都卸了。对方翻出菜谱做了个西红柿鸡蛋面，盐放多了，对视一眼，都笑了。", effects: { relation: 1, money: 1 } },
+  { id: "p3_019", min: 45, max: 58, require: "partner", text: "你们俩的体检报告是一起到的。对方的指标比你好，还得意了一下。你说下个月一起晨练，看谁先起不来。", effects: { health: 2, relation: 1 } },
+  { id: "p3_020", min: 34, max: 48, require: "partner", text: "你们为纪念日吵了一架：对方说你忘了，你说没忘。查完聊天记录才发现，日期两边都记错了。" },
+  { id: "p3_021", min: 36, max: 52, require: "partner", text: "对方学了个新爱好，水平很差，兴致很高。你陪着去了几次，后来发现自己也能上手两下子了。" },
+  { id: "p3_022", min: 42, max: 58, require: "partner", text: "你们把结婚时的照片翻出来看。对方说你那时候头发真多，你说对方那时候真敢穿。" },
+  { id: "p3_023", min: 32, max: 40, require: "partner", text: "第一次一起出远门旅行，行李是对方收的，攻略是你做的。第三天吵了一架，为要不要早起看日出。", effects: { relation: 1, money: -2, freedom: 1 } },
+  { id: "p3_024", min: 40, max: 57, require: "partner", text: "看了套大一点的房子，采光好，就是月供要多还四千。你们在售楼处的沙盘前站了很久。",
+    choices: [
+      { label: "换，日子往宽敞里过", effects: { money: -5, freedom: -2, relation: 1 }, echo: "搬家那天累得不行。晚上在新家阳台喝了罐啤酒，觉得值。" },
+      { label: "不换了，小房子先住着", effects: { money: 2, freedom: 1 }, echo: "回家的路上你们买了盆绿植，摆在旧房子的窗台上。" },
+    ] },
+  { id: "p3_025", min: 50, max: 58, require: "partner", text: "对方开始念叨退休以后去哪儿住，拿个本子记了几个城市，附上房价和天气。你在本子最后添了一行：冬天别太冷。" },
+
+  // ================= require:"single_ok"（12 条） =================
+  { id: "p3_026", min: 32, max: 45, require: "single_ok", text: "过年饭桌上，二姨问你对象找得怎么样了。你说还没有，她说眼光别太高。你夹了块排骨，这个话题就过去了。", effects: { relation: -1, freedom: 1 } },
+  { id: "p3_027", min: 33, max: 48, require: "single_ok", text: "亲戚介绍了一个，见面吃了顿饭。话不投机，AA 结的账。回去路上你买了束花，插在家里。" },
+  { id: "p3_028", min: 32, max: 50, require: "single_ok", text: "你一个人去旅行，住青旅被问了三次是不是学生。行程没人商量，想多睡一天就多睡一天。", effects: { freedom: 2, money: -2 } },
+  { id: "p3_029", min: 34, max: 52, require: "single_ok", text: "家里灯泡坏了、水管漏了，你都自己修。工具箱一样样添置，现在比不少装修师傅的还全。", effects: { growth: 2 } },
+  { id: "p3_030", min: 36, max: 55, require: "single_ok", text: "半夜发烧到三十九度，你自己打车去的急诊。输液的时候睡着了，护士轻轻把你的手机充上了电。",
+    choices: [
+      { label: "给老朋友发了条消息", effects: { relation: 2 }, echo: "朋友天亮赶来，带了粥。你说没事，对方说，有事就得说。" },
+      { label: "谁也没说，出院自己回家", effects: { freedom: 1, health: -1 }, echo: "回家躺了两天。冰箱里还有速冻饺子，够吃。" },
+    ] },
+  { id: "p3_031", min: 38, max: 56, require: "single_ok", text: "你养了只猫。名字是随便起的，叫了三天它就认了。下班开门，它在门口等你——多半是等饭。" },
+  { id: "p3_032", min: 40, max: 58, require: "single_ok", text: "同学聚会，有人问你一个人不孤单吗。你说忙着呢。回家路上想了想，确实忙：工作、阳台的菜、周末的课。", effects: { freedom: 1, growth: 1 } },
+  { id: "p3_033", min: 35, max: 50, require: "single_ok", text: "你看上一套小房子，一室一厅，够住。家里人问，一个人买什么房。你说，一个人更要买。",
+    choices: [
+      { label: "买了，户型小点没关系", effects: { money: -5, freedom: 2 }, echo: "搬家那天朋友来帮忙，一共六个箱子。晚上你在新家地板上喝了罐啤酒。" },
+      { label: "再等等，看看价格", effects: { money: 2 }, echo: "你把这事记在备忘录里，隔几个月看一次行情。" },
+    ] },
+  { id: "p3_034", min: 45, max: 58, require: "single_ok", text: "母亲在电话里叹气，问你这辈子可怎么办。你说，妈，我过得挺好，工资卡里有钱，冰箱里有菜。", effects: { relation: 1 } },
+  { id: "p3_035", min: 42, max: 58, require: "single_ok", text: "你给自己定了个规矩：每年学一样新东西。今年是游泳，呛了十几口水，学会了换气。", effects: { growth: 2, health: 1 } },
+  { id: "p3_036", min: 48, max: 58, require: "single_ok", text: "你把养老的事提前想了：保险买足，体检年年做。老同学里处得好的几个，也说好了互相照应。",
+    choices: [
+      { label: "和老朋友们组个局，定期聚", effects: { relation: 2, money: -1 }, echo: "局定了下来，每月一聚，谁缺席要在群里报备。" },
+      { label: "先把钱和保险安排好再说", effects: { money: 2 }, echo: "你列了张清单，一项一项打钩。打完最后一个钩，心里踏实了些。" },
+    ] },
+  { id: "p3_037", min: 33, max: 47, require: "single_ok", text: "下雨天你窝在家里看电影，投影是去年双十一买的。外卖点了两份菜，一份留着明天热一热当午饭。" },
+
+  // ================= require:"slow_love"（8 条） =================
+  { id: "p3_038", min: 32, max: 40, require: "slow_love", chain: "p3_040", text: "介绍认识的那个人，不冷不热地联系着。有时候一周聊几句，有时候一个月没消息。你也说不上来这算什么。",
+    choices: [
+      { label: "主动约对方出来，把话说清", effects: { relation: 2, freedom: -1 }, set: "together", echo: "对方想了几天，答应认真处处看。从那周起，你们周末固定见面。" },
+      { label: "顺其自然，散了就散了", effects: { freedom: 2 }, set: "faded", echo: "联系慢慢就断了。想起来没什么遗憾，就是有点可惜那家好吃的面馆。" },
+    ] },
+  { id: "p3_039", min: 33, max: 44, require: "slow_love", text: "你们还是没定下名分，但对方生病时你去送了药，你搬家时对方来出了力气。邻居都以为你们是一对。", effects: { relation: 1 } },
+  { id: "p3_040", min: 34, max: 46, require: "together", text: "定下来之后头一件事，是删掉手机里那些相亲软件。对方在旁边看着，说：我早就删了。", effects: { relation: 2 } },
+  { id: "p3_041", min: 32, max: 42, require: "slow_love", text: "对方去外地出差三个月，临走前一起吃了顿饭。没拥抱，没承诺，就是说了句：回来联系。" },
+  { id: "p3_042", min: 34, max: 48, require: "faded", text: "又有人给你介绍，你去见了。条件都不差，聊着聊着，你想起上次常去的那家面馆，换了招牌。", effects: { freedom: 1 } },
+  { id: "p3_043", min: 36, max: 50, require: "slow_love", chain: "p3_044", text: "处了很久的那个人，家里催得紧。你们在江边走了很久，最后说到结婚，两个人都沉默了一段。",
+    choices: [
+      { label: "结吧，日子是过出来的", effects: { relation: 3, money: -2 }, set: "together", echo: "婚礼办得简单。你们过日子的样子和处对象时差不多，就是多了本证。" },
+      { label: "还是算了，别互相耽误", effects: { freedom: 2, relation: -1 }, set: "faded", echo: "分开那天把东西都结清了。很体面，也很安静。" },
+    ] },
+  { id: "p3_044", min: 38, max: 52, require: "together", text: "在一起久了，你们说话越来越像：口头禅互相传染，笑话也只讲给对方听，外人听不懂。" },
+  { id: "p3_045", min: 40, max: 55, require: "slow_love", text: "当年慢慢处着的人，后来成了朋友。逢年过节群里打个招呼，谁有事喊一声，也还到场。" },
+
+  // ================= require:"has_kid"（25 条） =================
+  { id: "p3_046", min: 39, max: 43, require: "has_kid", text: "孩子出生那天，你在产房外坐了六个小时。护士抱出来让你看，你手都不知道往哪儿放，先摸了摸自己的口袋。", effects: { relation: 2, health: -2 } },
+  { id: "p3_047", min: 39, max: 44, require: "has_kid", text: "夜里喂奶的闹钟定在三点。你闭着眼都能完成冲奶、试温、拍嗝这一套，灯都不用开。", effects: { health: -2, freedom: -2 } },
+  { id: "p3_048", min: 39, max: 43, require: "has_kid", text: "假期眼看休完，孩子谁带，两家人开了个小会。老人想来搭手，月嫂的报价也摊在了桌上。",
+    choices: [
+      { label: "请老人来搭把手", effects: { relation: 1, money: 1 }, echo: "老人来了，家里的饭有人做了，新规矩和老习惯也一起进了门。" },
+      { label: "请月嫂，钱花了省心", effects: { money: -4, freedom: 1 }, echo: "月嫂走的那天，孩子冲她笑了一下。你们站在门口，有点舍不得。" },
+    ] },
+  { id: "p3_049", min: 39, max: 45, require: "has_kid", text: "孩子第一次发烧，半夜冲去医院。排队时孩子在你怀里睡着了，烧退了一点，你悬着的心也跟着退了一点。", effects: { health: -1, money: -1 } },
+  { id: "p3_050", min: 39, max: 44, require: "has_kid", text: "孩子学走路那阵子，你弯着腰跟在后面，一天下来腰不是自己的。孩子自己站稳的那三秒，你比孩子还激动。" },
+  { id: "p3_051", min: 39, max: 45, require: "has_kid", text: "早教班的顾问把课程表铺了满桌，从感统说到双语。价格你听了一半，另一半在心里算月供。",
+    choices: [
+      { label: "报个近的，先试一学期", effects: { money: -3, growth: 1 }, echo: "孩子去了就哭，第三周开始往里跑。顾问说，这是适应了。" },
+      { label: "算了，周末带孩子去公园", effects: { freedom: 1, money: 1 }, echo: "公园的滑梯玩了一年。孩子在滑梯上认识了两个朋友。" },
+    ] },
+  { id: "p3_052", min: 43, max: 48, require: "has_kid", text: "幼儿园入园第一天，孩子没哭，你在门口站了十分钟。老师发来照片：已经在玩积木了，头都没抬。" },
+  { id: "p3_053", min: 45, max: 51, require: "has_kid", text: "小学家长会，你坐在孩子的小椅子上，腿伸不直。老师说孩子上课爱画小人，你回家翻了作业本，画得还真不错。" },
+  { id: "p3_054", min: 47, max: 53, require: "has_kid", chain: "p3_055", text: "升学的事摆上桌：奥数、英语、编程，邻居家孩子报了三样。你和对方先争了一轮，一个主报，一个主放。",
+    choices: [
+      { label: "跟着报，总不能输在起跑线", effects: { money: -4, freedom: -2 }, set: "tutor_hard", echo: "周末开始在三个培训班之间赶场。孩子在车后座睡着的次数，比在床上还多。" },
+      { label: "只报一样，剩下时间玩", effects: { freedom: 2, growth: 1 }, set: "let_go", echo: "孩子选了画画。画得怎么样先不说，周末总算有个下午是空着的。" },
+    ] },
+  { id: "p3_055", min: 48, max: 55, require: "tutor_hard", text: "补习班续费又涨了。孩子说，班里一半人都在底下偷偷看小说。你听完，回家和对方商量了很久。", effects: { money: -2 } },
+  { id: "p3_056", min: 48, max: 55, require: "let_go", text: "孩子画画拿了个校级奖，奖状贴在冰箱上。对方说，幸好当年没逼着去挤奥数班。你说，是孩子自己争气。", effects: { relation: 1, growth: 1 } },
+  { id: "p3_057", min: 46, max: 53, require: "has_kid", text: "孩子迷上游戏，你定的规矩是周末一小时。执行到第三周，变成你们一起打双人模式。规矩还在，就是松动了。" },
+  { id: "p3_058", min: 47, max: 54, require: "has_kid", text: "孩子肺炎住院，你陪了五天。白天上班晚上陪护，回家洗澡时看见镜子里的自己，吓了一跳。",
+    choices: [
+      { label: "请长假，全程陪着", effects: { health: -3, money: -2, relation: 2 }, echo: "出院那天孩子要吃冰淇淋，医生说可以。你买了支最小的。" },
+      { label: "和对方轮班，一人一夜", effects: { health: -1, relation: 1 }, echo: "轮班表贴在病房门后。来接班的人进门时，带着热饭。" },
+    ] },
+  { id: "p3_059", min: 51, max: 57, require: "has_kid", text: "孩子到了青春期，回家就关房门。你敲门送水果，里面应了一声，不开门。你在门口站了会儿，把果盘放下了。", effects: { relation: -1 } },
+  { id: "p3_060", min: 52, max: 57, require: "has_kid", text: "孩子和同学闹了别扭，回家摔了书包。你想问，又怕问多了孩子更烦。",
+    choices: [
+      { label: "等孩子自己开口，先做饭", effects: { relation: 2 }, echo: "饭吃到一半，孩子自己说了。你听完没评理，就说了句：那确实挺气人的。" },
+      { label: "直接问，问到底", effects: { relation: -2, growth: 1 }, echo: "孩子说你不懂，门又关上了。你在客厅坐了半天，也没想明白哪句说错了。" },
+    ] },
+  { id: "p3_061", min: 50, max: 57, require: "has_kid", text: "孩子第一次自己做饭，厨房像被打劫了。菜是咸的，你们都说好吃，第二碗就吃得慢了。" },
+  { id: "p3_062", min: 55, max: 58, require: "has_kid", text: "填志愿那几天，孩子的分数够得着两个城市：一个远、学校好，一个近、一般。表格摊在餐桌上，全家围着看。",
+    choices: [
+      { label: "听孩子的，往远了报", effects: { relation: 1, freedom: 1 }, echo: "录取通知到那天，孩子拍了张照发朋友圈，只写了两个字：走了。" },
+      { label: "劝孩子报近的，照应方便", effects: { relation: -1, money: 1 }, echo: "孩子最后报了近的。开学送到校门口，孩子说：行了，你们回去吧。" },
+    ] },
+  { id: "p3_063", min: 56, max: 58, require: "has_kid", text: "孩子离家去外地上学，行李收了两个箱子。送到车站，孩子说别送了。你往回走，家里一下子安静得不习惯。", effects: { relation: 1, freedom: 2 } },
+  { id: "p3_064", min: 42, max: 49, require: "has_kid", text: "孩子把手工课做的贺卡塞给你，上面歪歪扭扭写着你的名字。你把贺卡压在办公桌的玻璃板下面，压了三年。" },
+  { id: "p3_065", min: 44, max: 52, require: "has_kid", text: "孩子学了两年的琴，说不想学了。琴在客厅角落落了灰。你和对方商量，要不要再坚持一年。",
+    choices: [
+      { label: "停了吧，不喜欢硬撑没意思", effects: { freedom: 1, money: 1 }, echo: "琴后来卖了。孩子说，等以后想弹了再说。" },
+      { label: "再坚持一年，看看", effects: { money: -2, relation: -1 }, echo: "孩子不情不愿又学了一年。考级过了，琴还是那架琴，灰还是那层灰。" },
+    ] },
+  { id: "p3_066", min: 39, max: 44, require: "has_kid", text: "带孩子去打疫苗，孩子哭，你也跟着紧张。打完针孩子抽抽搭搭，你买了根棒棒糖，想了想，又收了起来。" },
+  { id: "p3_067", min: 46, max: 54, require: "has_kid", when: { stat: "freedom", lt: 25 }, text: "你算了算，上次和朋友单独吃饭，还是孩子出生以前。朋友在群里约局，你回了句：下次一定。", effects: { freedom: 1, relation: 1 } },
+  { id: "p3_068", min: 50, max: 58, require: "has_kid", text: "孩子开始教你用新软件，语气像你当年教孩子用筷子。你学得慢，孩子叹了口气，倒也没走开。", effects: { growth: 1, relation: 1 } },
+  { id: "p3_069", min: 41, max: 49, require: "has_kid", text: "家里老人问，趁年轻要不要再添一个。饭桌上这话一出来，你和对方对视了一眼，谁也没先开口。",
+    choices: [
+      { label: "一个就够了，养好这个", effects: { freedom: 1, money: 1 }, echo: "后来老人没再提。孩子问过为什么没有弟弟妹妹，你们糊弄过去了。" },
+      { label: "再想想，不把话说死", effects: { relation: 1 }, echo: "这事拖了两年，最后也就不了了之。日子照过。" },
+    ] },
+  { id: "p3_070", min: 56, max: 58, require: "has_kid", text: "孩子放假回家，行李往门口一扔，先去厨房翻冰箱。你说刚买的排骨在下层。孩子说，还是家里的好吃。" },
+
+  // ================= require:"no_kid"（8 条） =================
+  { id: "p3_071", min: 39, max: 48, require: "no_kid", text: "聚会上有人问你们怎么不要孩子。你说，还没这个打算。对方在桌子底下碰了碰你的脚，示意你别多解释。", effects: { relation: 1 } },
+  { id: "p3_072", min: 40, max: 52, require: "no_kid", text: "朋友带娃来家里做客，客厅半小时就成了游乐场。送走之后你们收拾了半天，然后瘫在沙发上一人泡了杯茶。" },
+  { id: "p3_073", min: 41, max: 55, require: "no_kid", text: "攒下的钱原本没什么名目。你们商量着列了个清单：换车、长途旅行、提前还一点贷。",
+    choices: [
+      { label: "先去旅行，远的先走", effects: { money: -4, freedom: 3 }, echo: "那趟走了二十天。回来晒黑了一圈，照片洗了一本。" },
+      { label: "先还贷，心里轻快", effects: { money: 3, freedom: 1 }, echo: "还完那笔，月供少了小一千。你们用省下来的钱吃了顿好的。" },
+    ] },
+  { id: "p3_074", min: 44, max: 56, require: "no_kid", text: "你们养了条狗。每天遛狗的时间雷打不动，邻居先认得狗，后认得你们。", effects: { health: 1, relation: 1 } },
+  { id: "p3_075", min: 45, max: 58, require: "no_kid", text: "逢年过节给两边的小辈发红包，你们是亲戚里手面最大方的。小辈们见了你们，比见谁都亲。", effects: { money: -2, relation: 2 } },
+  { id: "p3_076", min: 47, max: 58, require: "no_kid", text: "你们把养老的事摆上桌谈了一次。结论是钱慢慢存，保险配齐，真到动不了那天，就请人，或者住养老院。",
+    choices: [
+      { label: "从现在起单开个养老账户", effects: { money: 3, freedom: -1 }, echo: "账户名字就叫养老。每个月雷打不动转一笔进去。" },
+      { label: "先过好眼下，老了再说", effects: { freedom: 2, health: 1 }, echo: "谈完你们去吃了顿火锅。眼下的日子，先热气腾腾着。" },
+    ] },
+  { id: "p3_077", min: 39, max: 50, require: "no_kid", text: "周末睡到自然醒，是你们雷打不动的安排。朋友在群里晒娃早起，你们默默把手机扣过去，又睡了个回笼觉。", effects: { freedom: 2, health: 1 } },
+  { id: "p3_078", min: 50, max: 58, require: "no_kid", text: "你们把次卧改成了书房兼茶室。朋友来说，这屋子空着也是空着。你们笑笑，给朋友续了杯茶。" },
+
+  // ================= 通用家庭（7 条，无 require） =================
+  { id: "p3_079", min: 26, max: 50, text: "家族群里，姑姑发的养生链接一天三条。你把群设成了免打扰，但过年抢红包时手速一点不慢。" },
+  { id: "p3_080", min: 28, max: 52, text: "过年回老家，年夜饭谁掌勺在家庭群里排了班。你排到的是洗碗，从初一洗到初三。",
+    choices: [
+      { label: "认了，洗碗不用动脑子", effects: { relation: 1 }, echo: "洗到第三天，你的速度全家第一。母亲说，明年还你。" },
+      { label: "申请换岗，今年露一手", effects: { relation: 2, growth: 1, money: -1 }, echo: "你做的鱼卖相不行，味道还成。父亲多吃了一碗饭。" },
+    ] },
+  { id: "p3_081", min: 30, max: 55, text: "兄弟姐妹里有人借钱周转，数额不大。你转过去，备注写了句：不急。对方第二个月就还了，还多发了个红包。", effects: { money: -1, relation: 2 } },
+  { id: "p3_082", min: 32, max: 56, text: "老家有亲戚进城看病，在你家客厅住了一周。你陪着跑了两趟医院，临走亲戚塞给你一篮土鸡蛋，你没推掉。", effects: { relation: 2, freedom: -1 } },
+  { id: "p3_083", min: 35, max: 58, text: "老家的老房子漏雨，兄弟姐妹在群里商量凑钱修。一人一份，你那份先转了过去。",
+    choices: [
+      { label: "按商量好的出，不多言", effects: { money: -2, relation: 1 }, echo: "屋顶修好那天，大姐在群里发了照片：新瓦，亮堂堂的。" },
+      { label: "多出一份，替手头紧的垫上", effects: { money: -4, relation: 3 }, echo: "这事你没声张。过年吃饭，弟弟给你倒了杯酒，什么都没说。" },
+    ] },
+  { id: "p3_084", min: 26, max: 45, text: "表弟结婚，你随了份子，还被拉去当接亲的主力。堵门的问题答不上来，你塞了三个红包才进去。", effects: { money: -2, relation: 1 } },
+  { id: "p3_085", min: 40, max: 58, text: "父母换了新手机，视频通话的按钮总按错。你写了张操作说明，字放大，贴在了冰箱上。", effects: { relation: 1, growth: 1 } },
+]);
