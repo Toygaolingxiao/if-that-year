@@ -106,24 +106,29 @@
         ${saved ? `<button class="primary big" id="resume">继续上次的人生（${saved.age} 岁 · ${esc(saved.route.name)}）</button>` : ""}
         <div class="choices">${D.routes.map((r, i) => `<button class="choice" data-i="${i}"><b>${esc(r.name)}</b><small>${esc(r.desc)}</small></button>`).join("")}</div>
         <div class="setblock">
-          <p class="setlab">出生年代 · 替哪一代人重走一遍</p>
-          <div class="segpicks" id="erapick">${ERAS.map((e) => `<button type="button" class="segbtn${e.id === "c2000" ? " sel" : ""}" data-era="${e.id}" data-birth="${e.birth}"><b>${e.label}</b><small>${e.desc}</small></button>`).join("")}</div>
+          <p class="setlab">出生年代</p>
+          <div class="segpicks" id="erapick">${ERAS.map((e) => `<button type="button" class="segbtn${e.id === "c2000" ? " sel" : ""}" data-era="${e.id}" data-birth="${e.birth}"><b>${e.label}</b></button>`).join("")}</div>
           <p class="setlab">这一局走到几岁</p>
           <div class="segpicks" id="spanpick">${[60, 65, 70, 75, 80].map((a) => `<button type="button" class="segbtn${a === 65 ? " sel" : ""}" data-end="${a}">${a} 岁</button>`).join("")}</div>
+          <p class="hint" id="setsummary"></p>
         </div>
         <div class="seedrow">
           <input id="seedin" type="text" placeholder="种子码（不填就是随机）">
           <button class="ghost" id="seedgo">用这个种子</button>
           <button class="ghost" id="daily">今日种子</button>
         </div>
-        <p class="hint">种子管的是「运气」：不填，每局随机，各不相同；填了，运气就定下来——同一种子，同样的运气，不同的选择，正好跟朋友比。今日种子是拿当天日期当种子，今天点开的人都是同一局。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam || endParam ? "，年代与跨度也按对方那局选好了" : ""}，点任意一条路就开始同一局。` : ""}</p>
+        <p class="hint">不填随机。填了，运气定下来，跟朋友比同一局就用它。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam || endParam ? "，年代与跨度也按对方那局选好了" : ""}，点任意一条路就开始同一局。` : ""}</p>
       </section>`;
     if (saved) el("resume").addEventListener("click", () => { S = saved; S.usedRare = S.usedRare || []; S.era = S.era || "c2000"; S.birthYear = S.birthYear || 2000; S.endAge = S.endAge || 65; RNG.a = saved.rngA || seedFromString(saved.seedStr); step(); });
     const pickSeg = (id) => { const box = el(id); if (!box) return; box.querySelectorAll(".segbtn").forEach((b) => b.addEventListener("click", () => { box.querySelectorAll(".segbtn").forEach((o) => o.classList.remove("sel")); b.classList.add("sel"); })); };
     pickSeg("erapick"); pickSeg("spanpick");
     const preSel = (id, attr, val) => { const box = el(id); if (!box || !val) return; const btns = box.querySelectorAll(".segbtn"); btns.forEach((o) => { if (o.dataset[attr] === val) { btns.forEach((p) => p.classList.remove("sel")); o.classList.add("sel"); } }); };
     preSel("erapick", "era", eraParam); preSel("spanpick", "end", endParam);
-    el("daily").addEventListener("click", () => { const d = new Date(); el("seedin").value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; el("daily").textContent = "今日种子已填好，选一条路开始"; });
+    const updSummary = () => { const eb = document.querySelector("#erapick .segbtn.sel"); const sb = document.querySelector("#spanpick .segbtn.sel"); const sv = (el("seedin").value || "").trim(); const birth = eb ? +eb.dataset.birth : 2000; el("setsummary").textContent = `这一局：${eb ? eb.textContent.trim() : "2000 年生"} · ${birth + 22} 年 22 岁 · 走到 ${sb ? sb.dataset.end : 65} 岁 · ${sv ? `种子「${sv}」` : "随机种子"}`; };
+    document.querySelectorAll(".segbtn").forEach((b) => b.addEventListener("click", updSummary));
+    el("seedin").addEventListener("input", updSummary);
+    updSummary();
+    el("daily").addEventListener("click", () => { const d = new Date(); el("seedin").value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; el("daily").textContent = "今日种子已填好，选一条路开始"; updSummary(); });
     document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {
       const chosen = D.routes[Number(b.dataset.i)];
       const seedStr = (el("seedin").value || "").trim() || seedParam || String(Math.floor(Math.random() * 1e6));

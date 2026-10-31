@@ -1,11 +1,11 @@
 :root{--paper:#FAF8F4;--ink:#23211C;--accent:#2F4A3C;--line:#DDD6C9;--card:#FFFDF8;--gold:#B08D3E;--mut:#6E6A5E;--serif:Georgia,"Songti SC","Noto Serif SC",serif}
 *{box-sizing:border-box}
-body{margin:0;color:var(--ink);font-family:"Hiragino Sans","Noto Sans SC",system-ui,sans-serif;line-height:1.75;background-color:var(--paper);background-image:radial-gradient(rgba(47,74,60,.05) 1px,transparent 1.1px);background-size:22px 22px}
+body{margin:0;color:var(--ink);font-family:"Hiragino Sans","Noto Sans SC",system-ui,sans-serif;line-height:1.75;background-color:var(--paper)}
 .wrap{max-width:660px;margin:0 auto;padding:26px 18px 60px}
 h1{font-family:var(--serif);font-weight:600;font-size:29px;line-height:1.4;margin:2px 0 10px}
 h2{font-family:var(--serif);font-weight:600;font-size:22px;line-height:1.5;margin:4px 0 8px}
 h3{font-family:var(--serif);font-size:17px;margin:20px 0 6px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px 24px 20px;margin-top:14px;box-shadow:0 14px 32px rgba(35,33,28,.07),0 2px 6px rgba(35,33,28,.05);animation:rise .35s ease both}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px 24px 20px;margin-top:14px;box-shadow:0 4px 14px rgba(35,33,28,.05);animation:rise .35s ease both}
 @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .road{display:block;margin:0 0 6px}
 .stats{margin:8px 0 2px}
