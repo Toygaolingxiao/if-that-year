@@ -7,7 +7,7 @@
 "use strict";
 const fs = require("fs"), vm = require("vm"), path = require("path");
 const ROOT = path.join(__dirname, "..");
-const PACK_ORDER = ["pack1","pack2","pack3","pack4","pack5","pack6","pack9","pack10","pack11","pack12","pack13","pack14","pack15","pack16","pack17","pack18","pack19","pack20","pack21","pack22","pack23","pack24","pack25","pack26","pack27","pack28","pack29","pack30","era1955","era1965","era1978"];
+const PACK_ORDER = ["pack1","pack2","pack3","pack4","pack5","pack6","pack9","pack10","pack11","pack12","pack13","pack14","pack15","pack16","pack17","pack18","pack19","pack20","pack21","pack22","pack23","pack24","pack25","pack26","pack27","pack28","pack29","pack30","pack33","pack31","pack32","era1955","era1965","era1978"];
 const ld = (rel, key) => { const s = { window: {} }; vm.createContext(s); vm.runInContext(fs.readFileSync(path.join(ROOT, rel), "utf8"), s, { filename: rel }); return s.window[key]; };
 const errors = [], warnings = [];
 const err = (m) => errors.push(m), warn = (m) => warnings.push(m);
@@ -32,7 +32,12 @@ for (const [dom, def] of Object.entries(DOMAINS)) for (const e of def.edges || [
 const seenSetters = new Map(); // flag -> Set(itemId)
 const seenCarriers = new Map(); // edgeKey -> Set(itemId)
 const stateRefs = new Set(); // "dom=value" 正向要求出现过
-function scan(item, itemId) {
+// 载体 from 推断（v0.13.0 口径补强，docs/STATE-MATRIX.md §7）：setState 的 from 优先按条目自身（含从父事件继承）的正向 state/stateAll 门控推断；
+// 无门控的分岔条目按此表声明前态——分岔是一次性年龄节点，前态由结构保证（fork31 在 31 岁触发，此前无任何条目能写 spouse；fork38 同理于 kids）。
+const UNGATED_FORK_FROM = { fork31: { spouse: "none" }, fork38: { kids: "undecided" } };
+function scan(item, itemId, inhGate) {
+  const effGate = Object.assign({}, inhGate);
+  for (const fld of ["state", "stateAll"]) if (item[fld]) for (const [dom, v] of Object.entries(item[fld])) effGate[dom] = asArr(v);
   for (const fld of ["require", "forbid", "all", "any"]) for (const f of asArr(item[fld])) {
     if (DOMAIN_FLAGS.has(f)) err(`${itemId}: 域旗 ${f} 仍出现在 ${fld}（v0.12 起改用 state/stateNot）`);
     else if (!(f in MILESTONES)) err(`${itemId}: ${fld} 引用未登记旗标 ${f}`);
@@ -62,10 +67,11 @@ function scan(item, itemId) {
   }
   if (item.setState) for (const [dom, to] of Object.entries(item.setState)) {
     if (!DOMAINS[dom]) { err(`${itemId}: setState 引用未登记域 ${dom}`); continue; }
-    // 该条目可能从多个 from 出发（载体只声明边，from 由运行时当前状态定）；登记为所有指向 to 的已声明边的载体出现
+    // 载体 from 推断：有正向门控（含继承）只登记 from∈门控值的边；无门控分岔按 UNGATED_FORK_FROM；其余无门控条目登记为所有指向 to 的已启用边的载体出现
+    const froms = effGate[dom] || (UNGATED_FORK_FROM[itemId] && UNGATED_FORK_FROM[itemId][dom] ? [UNGATED_FORK_FROM[itemId][dom]] : null);
     let matched = false;
-    for (const [k, e] of declaredEdges) if (e.dom === dom && e.to === to && (e.by || []).length) { matched = true; if (!seenCarriers.has(k)) seenCarriers.set(k, new Set()); seenCarriers.get(k).add(itemId); }
-    if (!matched) err(`${itemId}: setState ${dom}→${to} 无已启用的声明边（未登记或 reserved 边）`);
+    for (const [k, e] of declaredEdges) if (e.dom === dom && e.to === to && (e.by || []).length && (!froms || froms.includes(e.from))) { matched = true; if (!seenCarriers.has(k)) seenCarriers.set(k, new Set()); seenCarriers.get(k).add(itemId); }
+    if (!matched) err(`${itemId}: setState ${dom}→${to} 无已启用的声明边（未登记或 reserved 边，或门控 from 与声明边不符）`);
     // 终态自门控：进入 terminal 状态的条目必须自带前态门（state 正向=前态，或 chain 指向进入前态的载体且 stateNot 排除终态）
     const term = DOMAINS[dom].terminal || [];
     if (term.includes(to)) {
@@ -81,9 +87,13 @@ function scan(item, itemId) {
     }
   }
   if (item.chain && !byId.has(item.chain)) err(`${itemId}: chain 指向不存在的 ${item.chain}`);
-  for (const c of (item.choices || [])) scan(c, itemId);
+  for (const c of (item.choices || [])) scan(c, itemId, effGate);
 }
 for (const e of events) scan(e, e.id);
+// 出身牌（v0.13.0）：牌是钩子旗的 setter 本体，一并实扫（id 与事件不得撞名）
+const CARDS = ld("src/cards.js", "GAME_CARDS");
+let cardCount = 0;
+if (CARDS && CARDS.byId) for (const c of Object.values(CARDS.byId)) { cardCount++; if (byId.has(c.id)) err(`重复 id: 牌 ${c.id} 与事件撞名`); scan(c, c.id); }
 for (const f of D.forks) for (const c of f.choices) scan(c, `fork${f.age}`);
 for (const [k, c] of Object.entries(D.crisis || {})) for (const ch of c.choices) scan(ch, `crisis_${k}`);
 
@@ -114,7 +124,7 @@ for (const [dom, def] of Object.entries(DOMAINS)) {
   for (const s of def.states) if (s !== def.initial && ![...declaredEdges.values()].some((e) => e.dom === dom && e.to === s)) warn(`域 ${dom} 状态 ${s} 无任何入边声明`);
 }
 
-console.log(`validate-state: 条目 ${events.length}（含核心/扩展/协同/稀有/结局）| 域 ${Object.keys(DOMAINS).length} | 里程碑 ${Object.keys(MILESTONES).length}`);
+console.log(`validate-state: 条目 ${events.length}（含核心/扩展/协同/稀有/结局）+ 出身牌 ${cardCount} | 域 ${Object.keys(DOMAINS).length} | 里程碑 ${Object.keys(MILESTONES).length}`);
 console.log(`错误 ${errors.length} 条:`); errors.forEach((m) => console.log("  ERROR", m));
 console.log(`警告 ${warnings.length} 条:`); warnings.forEach((m) => console.log("  WARN", m));
 console.log(errors.length ? "RESULT: FAIL" : "RESULT: PASS");

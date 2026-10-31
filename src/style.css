@@ -41,6 +41,20 @@ button.big{width:100%;margin-bottom:14px}
 .segbtn b{display:block;font-size:14.5px}
 .segbtn small{display:block;color:var(--mut);font-size:12px}
 .segbtn.sel{border-color:var(--accent);background:#EAF0EA;box-shadow:inset 0 0 0 1px var(--accent)}
+/* 出身牌（v0.13.0）：三行九张、每行预选第一张；静态呈现，无翻牌动效；窄屏纵列 */
+.carddeck{margin-top:16px}
+.cardrow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:6px 0 4px}
+.cardpick{background:#fff;border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:13.5px;cursor:pointer;color:var(--ink);text-align:left;line-height:1.55;min-height:44px}
+.cardpick b{display:block;font-size:14.5px;margin-bottom:2px}
+.cardpick span{display:block}
+.cardpick small{display:block;color:var(--mut);font-size:12px;margin-top:4px}
+.cardpick.sel{border-color:var(--accent);background:#EAF0EA;box-shadow:inset 0 0 0 1px var(--accent)}
+.cardpick:active{background:#F6F3EC}
+.livesnew{color:var(--accent)}
+.liverow{display:flex;justify-content:space-between;gap:12px;margin:6px 0}
+.liverow span{color:var(--mut);font-size:12.5px;white-space:nowrap}
+.clue{color:var(--mut);margin:6px 0}
+@media (max-width:640px){.cardrow{grid-template-columns:1fr}}
 .refl-label{display:block;margin:14px 0;font-size:14px}
 .refl-label input[type="text"]{display:block;width:100%;font-size:16px;padding:10px;margin-top:6px;border:1px solid var(--line);border-radius:8px;background:#fff}
 .refl{font-family:var(--serif);font-size:15px}

@@ -1,11 +1,11 @@
-/* 《如果那年》状态矩阵注册表（v0.12.0）——单一事实源。
+/* 《如果那年》状态矩阵注册表（v0.13.0）——单一事实源。
    域（domains）：域内互斥 / 流转不可逆的人生状态。引擎只执行此处声明的边（edges）；
    by = 载体条目 id（分岔记 fork<年龄>）；reserved 边已设计但暂无载体，不可达警告属预期。
    里程碑（milestones）：普通叙事旗标，setters 为全部立旗条目 id；
    新增/改动旗标必须同步登记，tools/validate-state.js 会逐项核对，未登记即报错。
    详细口径见 docs/STATE-MATRIX.md。 */
 window.GAME_REGISTRY = {
- "version": "0.12.0",
+ "version": "0.13.0",
  "domains": {
   "spouse": {
    "label": "配偶",
@@ -57,16 +57,18 @@ window.GAME_REGISTRY = {
     {
      "from": "divorced",
      "to": "partnered",
-     "by": [],
-     "reserved": true,
-     "note": "再结伴边：已设计，存量无合格载体（p27_006 止于一杯咖啡、p28_006 文本回绝），登记为内容缺口，待内容轮补载体后启用"
+     "by": [
+      "p31_003"
+     ],
+     "note": "再结伴边（v0.13.0 启用）：载体 pack31 三环（相识 p31_001→相处 p31_002→落点 p31_003），仅终环选项级 setState 流转，中途「算了」不惩罚"
     },
     {
      "from": "widowed",
      "to": "partnered",
-     "by": [],
-     "reserved": true,
-     "note": "再结伴边：同上"
+     "by": [
+      "p32_003"
+     ],
+     "note": "再结伴边（v0.13.0 启用）：载体 pack32 三环（相识 p32_001→相处 p32_002→落点 p32_003），同上"
     }
    ]
   },
@@ -527,6 +529,66 @@ window.GAME_REGISTRY = {
     "p10_009",
     "p22_009"
    ]
+  },
+  "hook_books": {
+   "setters": [
+    "cf_02"
+   ],
+   "note": "出身牌钩子（v0.13.0）：setter 为牌 id，消费事件 pack33"
+  },
+  "re_div_start": {
+   "setters": [
+    "p31_001"
+   ],
+   "note": "再结伴·离异线起步（v0.13.0）：相识环选项立旗，相处/落点以此为 require 门"
+  },
+  "re_wid_start": {
+   "setters": [
+    "p32_001"
+   ],
+   "note": "再结伴·丧偶线起步（v0.13.0）：同上"
+  },
+  "hook_counter": {
+   "setters": [
+    "cf_01"
+   ],
+   "note": "出身牌钩子（v0.13.0）：setter 为牌 id，消费事件 pack33"
+  },
+  "hook_frail": {
+   "setters": [
+    "ct_13"
+   ],
+   "note": "出身牌钩子（v0.13.0）：setter 为牌 id，消费事件 pack33"
+  },
+  "hook_grandma": {
+   "setters": [
+    "cf_07"
+   ],
+   "note": "出身牌钩子（v0.13.0）：setter 为牌 id，消费事件 pack33"
+  },
+  "hook_moved_kid": {
+   "setters": [
+    "cf_08"
+   ],
+   "note": "出身牌钩子（v0.13.0）：setter 为牌 id，消费事件 pack33"
+  },
+  "hook_siblings": {
+   "setters": [
+    "cf_06"
+   ],
+   "note": "出身牌钩子（v0.13.0）：setter 为牌 id，消费事件 pack33"
+  },
+  "hook_sporty": {
+   "setters": [
+    "ct_01"
+   ],
+   "note": "出身牌钩子（v0.13.0）：setter 为牌 id，消费事件 pack33"
+  },
+  "hook_stage": {
+   "setters": [
+    "ct_11"
+   ],
+   "note": "出身牌钩子（v0.13.0）：setter 为牌 id，消费事件 pack33"
   },
   "house_contract_kept": {
    "setters": [
