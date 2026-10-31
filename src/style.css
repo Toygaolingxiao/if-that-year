@@ -82,3 +82,5 @@ canvas.card-img{max-width:100%;height:auto}
 .autodot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin:0 4px 1px 8px;animation:autoblink 1.1s ease-in-out infinite}
 @keyframes autoblink{0%,100%{opacity:.25}50%{opacity:1}}
 .autolive{color:var(--accent)}
+
+.hint.ver { text-align: right; opacity: .65; margin-bottom: 2px; }
