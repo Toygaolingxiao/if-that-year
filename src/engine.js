@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.16.1 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.17.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 (function () {
   "use strict";
@@ -15,6 +15,9 @@
     D.endings = window.GAME_SYNERGY.endings || [];
   }
   const CARDS = window.GAME_CARDS || null; // 出身牌（v0.13.0，src/cards.js；设计 docs/DESIGN-V013.md §A）
+  const PRO = window.GAME_PROLOGUE || null; // 序章（v0.17.0，src/prologue.js；试点年代 c2000 的开局：来历→童年→少年→16 岁分岔→17–21 段→22 岁汇入）
+  const RHYTHM = window.GAME_RHYTHM || null; // 节奏档案与温度（v0.17.0，src/rhythm.js；派生公式单一来源）
+  const PROLOGUE_ERA = "c2000"; // 本轮试点年代：只有它走序章开局，其余年代序章随各自施工轮铺（地基第五章第二步）
   const ANA = window.GAME_ANALYTICS || { track() {}, flush() {} }; // 匿名埋点（v0.13.1，src/analytics.js；默认关闭、关闭时无操作，口径见 docs/ANALYTICS.md）
   // --- 状态矩阵（v0.12.0，docs/STATE-MATRIX.md）：域内互斥/不可逆的人生状态收进 S.state，
   // 流转只能走注册表（src/registry.js）声明的边；普通叙事旗标仍留在 S.flags（里程碑）。
@@ -92,7 +95,7 @@
   const SPEED_STYLE = { slow: "细读", mid: "通读", fast: "扫读" };
   const AUTO_BASE_MS = 800, AUTO_CAP_MS = 20000;
   const AUTO_MODES = [["off", "关"], ["plain", "平年"], ["full", "全程"]];
-  const DEFAULT_AUTO_MODE = "full"; // 由无头模拟的停顿次数口径决定；模拟明细见 docs/MORTALITY-MODEL.md 与 DEVLOG v0.7.0
+  const DEFAULT_AUTO_MODE = "off"; // v0.17.0 定案（地基 v2.1）：新玩家默认关——第一局先手动过完；老玩家已存的偏好不动（loadPrefs 优先读存档值）。完局后结算页提示一次可开平年自动。
 
   // --- 可序列化的种子随机 (状态可存档) ---
   const RNG = { a: 0 };
@@ -121,11 +124,17 @@
       usedEvents: [], flags: {}, state: initialState(), crisisUsed: {}, microUsed: [], usedRare: [], cards: [],
       glimpsesSeen: 0, glimpsesSkipped: 0, lastDelta: "",
       healthCrisisSeen: false, death: null, pendingFork: null,
+      // v0.17.0 地基字段：阶段机 phase/stage（origin/child/teen/youth/adult/late）、温度 temp（0–100）与节奏型 rhythm（只管质地，不做玩家可见数值）、
+      // 童年记号 marks、fork38 立约 covenant、序章运行态 prologue、平年合并 flatCarry 与温度平淡年计数 flatYears
+      phase: "adult", stage: "adult", temp: null, rhythm: null,
+      marks: [], covenant: null, prologue: null, flatCarry: null, flatYears: 0,
       autoMode: DEFAULT_AUTO_MODE, speed: "mid", // 推进设定在本局的副本；权威来源是 localStorage 的 ify-prefs
     };
   }
   function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify({ ...S, rngA: RNG.a })); } catch (e) { /* 存不了不阻塞游玩 */ } }
-  function loadSave() { try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); return s && s.route ? s : null; } catch (e) { return null; } }
+  // 存档判活（v0.17.0 改为按阶段判）：成年段存档有 route；序章段存档没有 route（路线 22 岁才定），凭 phase=prologue + prologue 运行态判活。
+  // 旧版（v0.15/v0.16）存档恒有 route，走原判活路径；坏档仍按 null 处理。
+  function loadSave() { try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); return s && (s.route || (s.phase === "prologue" && s.prologue)) ? s : null; } catch (e) { return null; } }
   function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
   // ---------- 「活过的人生」记录：读/写 ify-lives-v1 ----------
   let livesCache = null;
@@ -209,9 +218,9 @@
   function loadPrefs() {
     try {
       const p = JSON.parse(localStorage.getItem(PREFS_KEY));
-      if (p && AUTO_MODES.some(([k]) => k === p.mode) && SPEED_CPS[p.speed]) return { mode: p.mode, speed: p.speed };
+      if (p && AUTO_MODES.some(([k]) => k === p.mode) && SPEED_CPS[p.speed]) return { mode: p.mode, speed: p.speed, autoHintSeen: !!p.autoHintSeen };
     } catch (e) { /* 旧结构或损坏数据不报错，按新默认走 */ }
-    return { mode: DEFAULT_AUTO_MODE, speed: "mid" };
+    return { mode: DEFAULT_AUTO_MODE, speed: "mid", autoHintSeen: false };
   }
   function savePrefs() {
     try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch (e) { /* 存不了不阻塞 */ }
@@ -357,6 +366,21 @@
     }
   });
 
+  // ---------- 节奏与温度（v0.17.0）：派生只走 src/rhythm.js 的 derive()，本文件不另算公式 ----------
+  // 红线：温度只影响年份质地（平淡年出口），不进入 rollDeath / specialEnding / pickRare 的任何条件；界面不渲染温度数字。
+  function rhythmOf(s) {
+    if (!RHYTHM || !s || typeof s.temp !== "number") return { flatShare: 0, density: 1, volatility: 1 };
+    return RHYTHM.derive(s.temp, s.rhythm);
+  }
+  function rhythmBase(kind, id) { // 轨道/路线基线（旧存档回填与开局赋值用）
+    if (!RHYTHM) return null;
+    const t = RHYTHM.profiles[kind];
+    return (t && t[id]) || null;
+  }
+  function applyTempDelta(d) { // 分岔选项的 temp 增减：只改这一生的质地字段，不耗随机流、同种子确定
+    if (!d || !S || typeof S.temp !== "number") return;
+    S.temp = Math.max(0, Math.min(100, S.temp + d));
+  }
   function applyEffects(ef) {
     if (!ef) { S.lastDelta = ""; return; }
     const parts = [];
@@ -423,7 +447,7 @@
   }
   function mountStream() {
     const sec = app().querySelector("section.card");
-    if (!sec || !S || !S.route || S.death || S.age >= MAX_AGE) return;
+    if (!sec || !S || (!S.route && S.phase !== "prologue") || S.death || S.age >= MAX_AGE) return; // v0.17.0：序章段无 route 也挂流水账（童年的平年行要看得见）
     const html = streamHtml();
     if (!html) return;
     if (window.matchMedia && window.matchMedia("(min-width: 1024px)").matches) {
@@ -514,14 +538,25 @@
     const cardBtn = (id, i, cat) => { const c = CARDS.byId[id]; const fx = cardFx(c); return `<button type="button" class="cardpick${picked[cat] === i ? " sel" : ""}" data-cat="${cat}" data-i="${i}"><b>${esc(c.name)}</b><span>${esc(c.text)}</span>${fx ? `<small>${esc(fx)}</small>` : ""}</button>`; };
     const deckHtml = () => [["family", "家底"], ["temper", "性子"], ["era", "时代"]].map(([cat, lab]) => `<p class="setlab">${lab}</p><div class="cardrow" data-cat="${cat}">${dealt[cat].map((id, i) => cardBtn(id, i, cat)).join("")}</div>`).join("");
     // 旧同局链接可能带 end 参数：从本版起忽略，不报错。
+    const savedLabel = saved ? (saved.route ? saved.route.name : (STAGE_LABEL[saved.stage] || "序章")) : "";
     app().innerHTML = `
       <section class="card">
-        <h1>22 岁，宿舍要退了。</h1>
+        <h1 id="starttitle">22 岁，宿舍要退了。</h1>
+        <div id="intro-old">
         <p>行李收好，站在宿舍门口。往后的路要自己选。一局大约十分钟。走哪一代人的路，下面能自己定。</p>
         <p>选一条路开始。其他的路也不会消失——它们会变成你的「另一条路」，在你 30、40、50 岁的时候，远远地看你一眼。</p>
+        </div>
+        <div id="intro-pro" hidden>
+        <p>这一生从小时候讲起。先选年代——在哪儿长大、家里什么样，不是你挑的，是发到你手里的。童年、少年一路走过来，16 岁分一次道，22 岁再自己选往后的路。一局大约十分钟。</p>
+        <p>没选的那些路也不会消失。它们会变成你的「另一条路」，在你 30、40、50 岁的时候，远远地看你一眼。</p>
+        </div>
         ${CARDS_ON ? `<div class="carddeck" id="carddeck">${deckHtml()}</div>` : ""}
-        <div class="choices">${D.routes.map((r, i) => `<button class="choice" data-i="${i}"><b>${esc(r.name)}</b><small>${esc(r.desc)}</small></button>`).join("")}</div>
-        ${saved ? `<button class="ghost resume-link" id="resume">继续上次的人生（${saved.age} 岁 · ${esc(saved.route.name)}）</button>` : ""}
+        <div class="choices" id="routechoices">${D.routes.map((r, i) => `<button class="choice" data-i="${i}"><b>${esc(r.name)}</b><small>${esc(r.desc)}</small></button>`).join("")}</div>
+        <div id="prostart" hidden>
+          <button class="primary" id="prologuego">从童年开始这一生</button>
+          <p class="hint">先过完小时候。家里什么样、能不能顺顺当当上学，是发到手里的，换种子才是换一局——没有重抽。</p>
+        </div>
+        ${saved ? `<button class="ghost resume-link" id="resume">继续上次的人生（${saved.age} 岁 · ${esc(savedLabel)}）</button>` : ""}
         <div class="setblock">
           <p class="setlab">出生年代</p>
           <div class="segpicks" id="erapick">${ERAS.map((e) => `<button type="button" class="segbtn${e.id === "c2000" ? " sel" : ""}" data-era="${e.id}" data-birth="${e.birth}"><b>${e.label}</b></button>`).join("")}</div>
@@ -544,8 +579,8 @@
         <p class="hint" id="dailyline"></p>
         ${sLine ? `<p class="hint">${sLine}</p>` : ""}
         ${lLine ? `<p class="hint">${lLine}</p>` : ""}
-        <p class="hint">明天一局：${tomDaily.era.label} · ${esc(tomDaily.route.name)}。</p>
-        <p class="hint ver">v0.16.1</p>
+        <p class="hint">明天一局：${tomDaily.era.label} · ${tomDaily.era.id === PROLOGUE_ERA ? "从小时候开始" : esc(tomDaily.route.name)}。</p>
+        <p class="hint ver">v0.17.0</p>
         <p class="hint">不填随机。填了，运气定下来，跟朋友比同一局就用它。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam ? "，年代也按对方那局选好了" : ""}${cardsParam ? "，出身牌也按对方选过的对齐了" : ""}，点任意一条路就开始同一局。` : ""}</p>      </section>`;
     el("liveslink").addEventListener("click", () => { ANA.track("lives_view", {}); renderLives(); });
     if (saved) el("resume").addEventListener("click", () => {
@@ -563,6 +598,11 @@
       for (const [k, , init] of STAT_META) if (typeof S.stats[k] !== "number") S.stats[k] = init; // 新维度迁移：旧存档缺的维度按初值补齐（如 v0.9.0 新增的智慧），不清档不报错
       if (!S.state || typeof S.state !== "object") S.state = deriveStateFromLegacy(saved); // v0.12.0：旧存档无 state，由旧 flags 推导（docs/STATE-MATRIX.md §5）
       else for (const [dom, def] of Object.entries(REG.domains || {})) if (!(dom in S.state)) S.state[dom] = def.initial;
+      // v0.17.0 回填：旧存档（v0.15/v0.16）没有阶段/温度/记号等字段——阶段按有无 route 定（老玩家恒成年段），温度按路线基线回填，序章态为空
+      S.phase = S.phase || "adult"; S.stage = S.stage || "adult";
+      S.marks = S.marks || []; if (!("covenant" in S)) S.covenant = null; if (!("prologue" in S)) S.prologue = null;
+      if (!("flatCarry" in S)) S.flatCarry = null; S.flatYears = S.flatYears || 0;
+      if (typeof S.temp !== "number") { const b = S.route ? rhythmBase("route", S.route.id) : null; S.temp = b ? b.temp : null; S.rhythm = b ? b.rhythm : null; }
       S.autoMode = prefs.mode; S.speed = prefs.speed;
       RNG.a = typeof saved.rngA === "number" ? saved.rngA : seedFromString(saved.seedStr);
       prevStats = null; resumeMark = true; // §6.2 续玩第一屏给一句定位
@@ -573,7 +613,7 @@
     const preSel = (id, attr, val) => { const box = el(id); if (!box || !val) return; const btns = box.querySelectorAll(".segbtn"); btns.forEach((o) => { if (o.dataset[attr] === val) { btns.forEach((p) => p.classList.remove("sel")); o.classList.add("sel"); } }); };
     preSel("erapick", "era", eraParam);
     const autoSummary = () => prefs.mode === "off" ? "手动推进" : `自动推进 ${AUTO_MODES.find(([k]) => k === prefs.mode)[1]} · ${SPEED_LABEL[prefs.speed]}（${SPEED_STYLE[prefs.speed]}）`;
-    const updSummary = () => { const eb = document.querySelector("#erapick .segbtn.sel"); const sv = (el("seedin").value || "").trim(); const birth = eb ? +eb.dataset.birth : 2000; const cn = CARDS_ON && dealt ? ` · 出身 ${[dealt.family[picked.family], dealt.temper[picked.temper], dealt.era[picked.era]].map((id) => CARDS.byId[id].name).join("/")}` : ""; el("setsummary").textContent = `这一局：${eb ? eb.textContent.trim() : "2000 年生"} · ${birth + 22} 年 22 岁 · ${sv ? `种子「${sv}」` : "随机种子"} · ${autoSummary()}${cn}`; };
+    const updSummary = () => { const eb = document.querySelector("#erapick .segbtn.sel"); const sv = (el("seedin").value || "").trim(); const birth = eb ? +eb.dataset.birth : 2000; const pro = PRO && selEra() === PROLOGUE_ERA; const cn = !pro && CARDS_ON && dealt ? ` · 出身 ${[dealt.family[picked.family], dealt.temper[picked.temper], dealt.era[picked.era]].map((id) => CARDS.byId[id].name).join("/")}` : ""; el("setsummary").textContent = `这一局：${eb ? eb.textContent.trim() : "2000 年生"} · ${pro ? "从小时候讲起" : `${birth + 22} 年 22 岁`} · ${sv ? `种子「${sv}」` : "随机种子"} · ${autoSummary()}${cn}`; };
     // 出身牌接线：点选改选（每行恒有一张预选=所发第一张，选路不拦截）；改年代只重发时代行；种子变更重发三行（所选位置重置为第一张）
     const effSeed = () => (el("seedin").value || "").trim() || seedParam || candSeed;
     const selEra = () => { const eb = document.querySelector("#erapick .segbtn.sel"); return eb ? eb.dataset.era : "c2000"; };
@@ -596,6 +636,18 @@
     document.querySelectorAll("#autopick .segbtn").forEach((b) => b.addEventListener("click", () => { prefs.mode = b.dataset.mode; savePrefs(); syncAutoPick(); updSummary(); }));
     document.querySelectorAll("#speedpick .segbtn").forEach((b) => b.addEventListener("click", () => { prefs.speed = b.dataset.speed; savePrefs(); syncAutoPick(); updSummary(); }));
     syncAutoPick();
+    // 年代分流（v0.17.0）：试点年代走序章开局——藏牌面与路线、亮序章入口；其余年代照旧。切换只改呈现，开局函数在点击时按年代走
+    const eraToggle = () => {
+      const pro = !!(PRO && selEra() === PROLOGUE_ERA);
+      const t = el("starttitle"); if (t) t.textContent = pro ? "这一生，从小时候讲起。" : "22 岁，宿舍要退了。";
+      const io = el("intro-old"); if (io) io.hidden = pro;
+      const ip = el("intro-pro"); if (ip) ip.hidden = !pro;
+      const dk = el("carddeck"); if (dk) dk.hidden = pro;
+      const rc = el("routechoices"); if (rc) rc.hidden = pro;
+      const ps = el("prostart"); if (ps) ps.hidden = !pro;
+    };
+    document.querySelectorAll("#erapick .segbtn").forEach((b) => b.addEventListener("click", eraToggle));
+    eraToggle();
     document.querySelectorAll(".segbtn").forEach((b) => b.addEventListener("click", updSummary));
     el("seedin").addEventListener("input", () => { redealAll(); updSummary(); }); // 种子一变手牌即重发：屏幕上的手牌恒等于开局将用的手牌
     updSummary();
@@ -605,9 +657,21 @@
       const eb = document.querySelector(`#erapick .segbtn[data-era="${dd.era.id}"]`);
       if (eb) eb.click(); // 年代走既有接线（重发时代牌 + 刷新小结）
       redealAll(); updSummary();
-      document.querySelectorAll(".choice").forEach((o) => o.classList.toggle("dailymark", D.routes[Number(o.dataset.i)].id === dd.route.id));
-      el("dailyline").textContent = `今日一局：${dd.era.label}，走「${dd.route.name}」那条路。种子和年代都替你定好了，点标出来的那条路就开始；选别的路也行，那就是普通的一局了。`;
+      if (PRO && dd.era.id === PROLOGUE_ERA) {
+        el("dailyline").textContent = `今日一局：${dd.era.label}，从小时候开始。种子和年代都替你定好了，点「从童年开始这一生」就行。`;
+      } else {
+        document.querySelectorAll(".choice").forEach((o) => o.classList.toggle("dailymark", D.routes[Number(o.dataset.i)].id === dd.route.id));
+        el("dailyline").textContent = `今日一局：${dd.era.label}，走「${dd.route.name}」那条路。种子和年代都替你定好了，点标出来的那条路就开始；选别的路也行，那就是普通的一局了。`;
+      }
       el("daily").textContent = "今日一局已备好";
+    });
+    if (el("prologuego")) el("prologuego").addEventListener("click", () => {
+      if (startLock) return;
+      startLock = true;
+      el("prologuego").disabled = true;
+      const seedStr = (el("seedin").value || "").trim() || seedParam || candSeed;
+      const eb = document.querySelector("#erapick .segbtn.sel");
+      newGamePrologue(seedStr, eb ? eb.dataset.era : PROLOGUE_ERA, eb ? +eb.dataset.birth : 2000);
     });
     let startLock = false; // §6.1 防连点：双击不能在同一帧触发两次开局
     document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {
@@ -640,6 +704,7 @@
     if (opts) { S.era = opts.era; S.birthYear = opts.birth; }
     S.autoMode = prefs.mode; S.speed = prefs.speed;
     S.route = route;
+    { const base = rhythmBase("route", route.id); if (base) { S.temp = base.temp; S.rhythm = base.rhythm; } } // 温度基线（v0.17.0）：路线定基线，之后由分岔改温
     ANA.track("game_start", { era: S.era, route: route.id });
     S.unchosen = D.routes.filter((r) => r.id !== route.id).map((r) => ({ kind: "route", label: r.name, id: r.id }));
     // 出身层（v0.13.0，§A2.1）：叠加顺序 初值 → 牌面修正（数值+钩子旗同一拍） → 路线 stats；出身行记在出发之前
@@ -657,9 +722,111 @@
     step();
   }
 
+  // ---------- 序章（v0.17.0，试点年代 c2000）：独立推进循环，汇入点在 22 岁 ----------
+  const STAGE_LABEL = { origin: "来历", child: "童年", teen: "少年", youth: "少年", adult: "成年", late: "晚年" };
+  function newGamePrologue(seedStr, eraId, birth) {
+    S = freshState(seedStr);
+    prevStats = null; resumeMark = false;
+    streamFollow = true; streamSeen = 0; streamTop = 0;
+    RNG.a = seedFromString(seedStr);
+    if (eraId) { S.era = eraId; S.birthYear = birth; }
+    S.autoMode = prefs.mode; S.speed = prefs.speed;
+    PRO.start(S, seedStr); // 处境发放与童年基线在此落定（序章独立流，主 RNG 一格不动）
+    save();
+    step();
+  }
+  function prologueHead(age, stage) {
+    const yr = S.birthYear ? ` · 公元 ${S.birthYear + age} 年` : "";
+    return `<p class="meta">${age} 岁${yr} · ${STAGE_LABEL[stage] || ""} · 种子 ${esc(S.seedStr)}</p>`;
+  }
+  function renderPrologue() {
+    curKind = "prologue";
+    if (!PRO || !S.prologue) { S.phase = "adult"; step(); return; } // 序章模块缺失时不卡死（结构上不会发生）
+    if (S.prologue.done) { renderRouteMerge(); return; }
+    const view = PRO.present(S);
+    if (!view) { renderRouteMerge(); return; }
+    if (view.pendingState) { applyState({ setState: view.pendingState }); S.prologue.pendingState = null; } // 处境落定走状态边（pr_origin → schooling）
+    save();
+    app().innerHTML = `<section class="card">${prologueHead(view.age, view.stage)}
+      ${view.title ? `<h2>${esc(view.title)}</h2>` : ""}
+      ${view.text.split("\n").map((p) => `<p class="body">${esc(p)}</p>`).join("")}
+      <div id="echo"></div>
+      ${view.choices ? `<div class="choices">${view.choices.map((c, i) => `<button class="choice" data-i="${i}">${esc(c.label)}</button>`).join("")}</div>`
+                     : `<button class="primary" id="cont">${view.id === "pr_y21" ? "到 22 岁" : "继续"}</button>`}
+      </section>`;
+    finishRender();
+    if (!view.choices) {
+      el("cont").addEventListener("click", () => {
+        const r = PRO.choose(S, -1);
+        if (r.gapFx && Object.keys(r.gapFx).length) applyEffects(r.gapFx); else S.lastDelta = "";
+        save();
+        step();
+      });
+      armAuto(view.text);
+      return;
+    }
+    document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {
+      const i = Number(b.dataset.i);
+      const c = view.choices[i];
+      choiceBeat(b, () => {
+        applyEffects(c.effects);
+        if (c.set) S.flags[c.set] = true;
+        applyState(c);
+        if (view.isFork) view.choices.forEach((o, j) => { if (j !== i) S.unchosen.push({ kind: "track", age: 16, label: o.label }); });
+        const r = PRO.choose(S, i);
+        if (r.gapFx && Object.keys(r.gapFx).length) applyEffects(r.gapFx);
+        const box = document.querySelector(".choices");
+        if (box) box.remove();
+        el("echo").innerHTML = `${deltaLine()}<p class="pickednote">已选「${esc(c.label)}」</p>${c.echo ? `<p class="echo">${esc(c.echo)}</p>` : ""}<button class="primary" id="cont">继续</button>`;
+        save(); el("cont").addEventListener("click", () => step());
+      });
+    }));
+  }
+  // 22 岁汇入：五路线在这里选；出身（家底+性子+时代）同一拍结算，叠加顺序与旧开局一致（初值 → 出身 → 路线）
+  function renderRouteMerge() {
+    curKind = "fork";
+    const trackName = { study: "念书", work: "打工", craft: "学手艺", home: "守家里" }[S.state.track] || "";
+    app().innerHTML = `<section class="card">${prologueHead(START_AGE, "adult")}
+      <h2>22 岁 · 往后的路</h2>
+      <p>${trackName ? `这几年，你是${trackName}过来的。` : ""}到了 22 岁，路一下子宽了。往哪边走，这一回你自己定。没选的那几条也不会消失——它们会在你 30、40、50 岁的时候，远远地看你一眼。</p>
+      <div class="choices">${D.routes.map((r, i) => `<button class="choice" data-i="${i}"><b>${esc(r.name)}</b><small>${esc(r.desc)}</small></button>`).join("")}</div>
+      </section>`;
+    finishRender();
+    document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {
+      const route = D.routes[Number(b.dataset.i)];
+      choiceBeat(b, () => mergeIntoRoute(route));
+    }));
+  }
+  function mergeIntoRoute(route) {
+    const P = S.prologue;
+    S.phase = "adult"; S.stage = "adult"; S.age = START_AGE;
+    S.route = route;
+    S.unchosen = (S.unchosen || []).filter((u) => u.kind !== "route");
+    for (const r of D.routes) if (r.id !== route.id) S.unchosen.push({ kind: "route", label: r.name, id: r.id });
+    const cardIds = [P.family, P.temperPick, P.eraCard].filter(Boolean);
+    S.cards = cardIds;
+    if (CARDS && cardIds.length) {
+      const ef = {};
+      for (const id of cardIds) { const c = CARDS.byId[id]; if (!c) continue; for (const [k, v] of Object.entries(c.effects || {})) ef[k] = (ef[k] || 0) + v; if (c.set) S.flags[c.set] = true; }
+      applyEffects(ef);
+      const names = cardIds.map((id) => (CARDS.byId[id] || {}).name || "").filter(Boolean);
+      if (names.length) S.log.push(`22 岁 · 出身：${names.join(" · ")}`);
+      const temperIdx = P.temperPick ? P.temper.indexOf(P.temperPick) : -1;
+      if (temperIdx >= 0) ANA.track("card_pick", { cat: "temper", pick: temperIdx, changed: temperIdx !== 0 }); // 序章里只有性子是真选择，埋点照口径只报这一类（家底是发放、时代是自动绑定）
+    }
+    ANA.track("game_start", { era: S.era, route: route.id });
+    const base = rhythmBase("route", route.id); // 进成年段，温度基线换成路线基线（轨道基线已在 16 岁写入）；之后由分岔改温
+    if (base) { S.temp = base.temp; S.rhythm = base.rhythm; }
+    applyEffects(route.stats); S.lastDelta = "";
+    S.log.push(`22 岁 · 出发：${route.name}`);
+    save();
+    step();
+  }
+
   // ---------- 主推进 ----------
   function step() {
     clearAutoContext(); // 每进一个新画面，先清掉上一个画面的自动上下文，防串局
+    if (S.phase === "prologue") { renderPrologue(); return mountStream(); } // 序章段有自己的推进循环（v0.17.0）
     if (S.death) return renderDeath();
     if (S.age >= MAX_AGE) return renderEnd();
     save();
@@ -673,6 +840,28 @@
     if (crisis) { renderCrisis(crisis); return mountStream(); }
     renderEventYear();
     mountStream();
+  }
+  // ---------- 结算事实过滤（v0.17.0，F1/F2）：片段与结局声明的预设事实逐项核对本局事实，对不上不出 ----------
+  function factOk(needs) {
+    if (!needs) return true;
+    if (needs.flag && !S.flags[needs.flag]) return false;
+    if (needs.notFlag && S.flags[needs.notFlag]) return false;
+    if (needs.anyFlag && !needs.anyFlag.some((f) => S.flags[f])) return false;
+    if (needs.state) for (const [dom, vals] of Object.entries(needs.state)) if (!vals.includes(S.state[dom])) return false;
+    return true;
+  }
+  function evidenceCount(e) { // F4 证据点：evidence 组内任一备选命中算一点（备选 = 事件/稀有/旗标 id 或 {stat} 数值门）
+    if (!e.evidence) return 99; // 未声明证据组的条目按满证据（现行 17 条结局已全部声明）
+    let n = 0;
+    for (const group of e.evidence) {
+      const hit = group.some((alt) => {
+        if (typeof alt === "string") return !!S.flags[alt] || S.usedEvents.includes(alt) || (S.usedRare || []).includes(alt);
+        if (alt && alt.stat) return alt.stat.gt !== undefined ? S.stats[alt.stat.k] > alt.stat.gt : S.stats[alt.stat.k] < alt.stat.lt;
+        return false;
+      });
+      if (hit) n++;
+    }
+    return n;
   }
   // --- 统一条件求值：路线/标记组合/数值形状/前置链 ---
   function met(e) {
@@ -706,6 +895,7 @@
   }
   function renderRare(r) {
     curKind = "rare";
+    S.flatCarry = null; // 稀有年不是平年：挂起的平年只留在流水账里
     S.usedRare.push(r.id);
     if (r.set) S.flags[r.set] = true; // 呈现即立旗（v0.11.0 起覆盖有选项事件：去世旗等必立旗靠它保证）
     applyState(r); // v0.12.0：状态流转与立旗同一时机
@@ -776,9 +966,28 @@
     if (sp === "dating" && m.dating) return m.dating;
     return m.solo || orig;
   }
+  // fork38 立约（v0.17.0，§4.3 样例）：选择登记为持续状态（S.covenant + cov38_* 旗），后续由年度流事件读账、
+  // 到期点在 45 岁分岔（wait 支）与结算行呈现。只记约与旗，kids 的 setState 路径与价格结构一概不动。
+  function registerCovenant(c) {
+    const kind = c.set === "cov38_has" ? "has" : c.set === "cov38_none" ? "none" : "wait";
+    S.covenant = { kind, since: 38, due: kind === "wait" ? 45 : null };
+    const line = kind === "has" ? "立约：孩子的事定了，要。往后的日子，按这个安排走。"
+      : kind === "none" ? "立约：孩子的事定了，不要。往后的安排，照这个来。"
+      : "立约：再等等。这份账先挂着，45 岁到期，再对一回。";
+    S.log.push(`38 岁 · ${line}`);
+  }
+  function covenantSettleLine() {
+    if (!S.covenant) return "";
+    const kids = S.state ? S.state.kids : "undecided";
+    if (kids === "has") return S.covenant.kind === "wait" ? "38 岁挂起的那份账，后来等来了孩子。" : "38 岁立的约，后来有了孩子，那几年围着孩子转，约算是走完了。";
+    if (kids === "none") return S.covenant.kind === "wait" ? "38 岁挂起的那份账，后来定下来了：不要。两个人把日子照旧过。" : "38 岁立的约，后来就照着过了，安排没再改。";
+    return "38 岁挂起的那份账，到这一生走完，也没正式对完。";
+  }
   function renderFork(fork) {
     curKind = "fork";
-    app().innerHTML = `<section class="card">${head()}<h2>${esc(fork.title)}</h2><p>${esc(fork.text)}</p>
+    S.flatCarry = null; // 分岔年不是平年：挂起的平年只留在流水账里（22–38 合并纪律）
+    const covPrefix = fork.age === 45 && S.covenant && S.covenant.kind === "wait" ? `<p>七年前在 38 岁挂起的那份账，今天到期。</p>` : ""; // 立约到期点呈现
+    app().innerHTML = `<section class="card">${head()}<h2>${esc(fork.title)}</h2>${covPrefix}<p>${esc(fork.text)}</p>
       <div class="choices">${fork.choices.map((c, i) => `<button class="choice" data-i="${i}">${esc(spouseText(c, "label"))}</button>`).join("")}</div></section>`;
     finishRender();
     document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {
@@ -787,6 +996,8 @@
         applyEffects(c.effects);
         if (c.set) S.flags[c.set] = true;
         applyState(c);
+        applyTempDelta(c.temp); // 温度接点（v0.17.0）：选项可带 temp 增减，只改质地字段
+        if (fork.age === 38) registerCovenant(c);
         fork.choices.forEach((o) => { if (o !== c) S.unchosen.push({ kind: "fork", age: fork.age, label: spouseText(o, "label") }); });
         S.log.push(`${fork.age} 岁 · ${fork.title.split("·")[1].trim()}：${spouseText(c, "label")}`);
         S.pendingFork = { age: fork.age, label: spouseText(c, "label"), echo: spouseText(c, "echo") || null }; // §3.3 复述拍：先存下，续玩回到这一拍而不是重选
@@ -814,6 +1025,7 @@
   }
   function renderCrisis(c) {
     curKind = "crisis";
+    S.flatCarry = null; // 危机年不是平年：挂起的平年只留在流水账里
     if (c.key === "health") { S.healthCrisisSeen = true; save(); }
     app().innerHTML = `<section class="card crisis">${head("身体和日子，都得当回事")}<h2>${S.age} 岁 · ${esc(c.title)}</h2><p>${esc(c.text)}</p>
       <div class="choices">${c.choices.map((ch, i) => `<button class="choice" data-i="${i}">${esc(ch.label)}</button>`).join("")}</div><div id="echo"></div></section>`;
@@ -844,19 +1056,54 @@
   }
   function renderEventYear() {
     curKind = "year";
+    // 温度平淡年出口（v0.17.0）：派生平淡年占比 >0 才掷这一骰——现有路线基线派生为 0，不掷、主随机流零平移，
+    // 只有温度被分岔改低的年份才可能落到这里。平淡年不抽事件卡：流水账记一行带具体细节的平淡，数值至多 ±1；
+    // 死亡判定仍在 advance() 里逐年走，温度不碰死亡率（红线）。
+    const flatShare = rhythmOf(S).flatShare;
+    if (RHYTHM && flatShare > 0 && rng() < flatShare) {
+      const f = RHYTHM.flatAdult[Math.floor(rng() * RHYTHM.flatAdult.length)];
+      S.flatYears = (S.flatYears || 0) + 1;
+      S.flatCarry = null;
+      applyEffects(f.effects);
+      S.log.push(`${S.age} 岁 · ${f.text}`);
+      app().innerHTML = `<section class="card">${head()}<p class="body">${esc(f.text)}</p>${deltaLine()}<button class="primary" id="cont">过一年</button></section>`;
+      finishRender();
+      save(); el("cont").addEventListener("click", advance);
+      armAuto(f.text);
+      return;
+    }
     const e = pickEvent();
     if (!e) {
       // 平年微文本：年份不再被静默跳过
       const fresh = D.micro.filter((_, i) => !S.microUsed.includes(i));
       const idx = fresh.length ? D.micro.indexOf(fresh[Math.floor(rng() * fresh.length)]) : Math.floor(rng() * D.micro.length);
       if (!S.microUsed.includes(idx)) S.microUsed.push(idx);
-      S.log.push(`${S.age} 岁 · ${D.micro[idx]}`);
-      app().innerHTML = `<section class="card">${head()}<p class="body">${esc(D.micro[idx])}</p><button class="primary" id="cont">过一年</button></section>`;
+      const microText = D.micro[idx];
+      S.log.push(`${S.age} 岁 · ${microText}`);
+      // 22–38 相邻平年合并（v0.17.0）：前一年先挂起（只入流水账），下一年同为平年则两行同卡呈现，省一屏；
+      // 合并只动呈现——抽取、随机流、死亡判定全不变（模拟口径与旧版一致），总时长不涨。
+      if (S.flatCarry) {
+        const carryText = S.flatCarry.text;
+        S.flatCarry = null;
+        app().innerHTML = `<section class="card">${head()}<p class="body">${esc(carryText)}</p><p class="body">${esc(microText)}</p><p class="hint">这两年都没什么大事，一并记在这里。</p><button class="primary" id="cont">过一年</button></section>`;
+        finishRender();
+        save(); el("cont").addEventListener("click", advance);
+        armAuto(microText);
+        return;
+      }
+      if (S.age >= START_AGE && S.age <= 37) {
+        S.flatCarry = { age: S.age, text: microText };
+        save();
+        advance(); // 挂起本年直接进下一年：下一年是平年合并呈现，不是平年则本年只留在流水账里
+        return;
+      }
+      app().innerHTML = `<section class="card">${head()}<p class="body">${esc(microText)}</p><button class="primary" id="cont">过一年</button></section>`;
       finishRender();
       save(); el("cont").addEventListener("click", advance);
-      armAuto(D.micro[idx]);
+      armAuto(microText);
       return;
     }
+    S.flatCarry = null; // 事件年：挂起的平年只留在流水账里
     S.usedEvents.push(e.id);
     if (e.set) S.flags[e.set] = true; // 顶层 set 呈现即立（v0.9.2 补齐普通事件路径；v0.11.0 起覆盖有选项事件：去世旗等必立旗靠它保证）
     applyState(e); // v0.12.0：状态流转与立旗同一时机
@@ -939,6 +1186,7 @@
   }
   function renderGlimpse(stage) {
     curKind = "glimpse";
+    S.flatCarry = null; // 瞥视年不是平年：挂起的平年只留在流水账里
     const sh = shadowRoute();
     const text = shadowStageText(stage); // 先抽定，点不点开都是这一条（但只有点开才显示）
     app().innerHTML = `<section class="card glimpse">${head()}
@@ -953,7 +1201,13 @@
       S.glimpsesSeen += 1; ANA.track("glimpse", { age: S.age, seen: true });
       (S.shadowSeenTexts = S.shadowSeenTexts || []).push(text);
       S.log.push(`${S.age} 岁 · 影子：${text}`);
-      el("detail").innerHTML = `<p class="body">「${esc(text)}」</p>
+      // 童年记号的影子回响（v0.17.0）：每局第一次看瞥视时附一句「两条路上共同的事实」——童年不进影子锚点，只留共同事实
+      let markLine = "";
+      if (PRO && S.prologue && !S.prologue.shadowMarkShown && (S.marks || []).length) {
+        const mk = PRO.marks[S.marks[0].id];
+        if (mk) { markLine = mk.shadow; S.prologue.shadowMarkShown = true; S.log.push(`${S.age} 岁 · ${mk.shadow}`); }
+      }
+      el("detail").innerHTML = `<p class="body">「${esc(text)}」</p>${markLine ? `<p class="body">${esc(markLine)}</p>` : ""}
         <label class="refl-label">给现实里的自己留一句话（会出现在你的结算里）<input id="refl" type="text" maxlength="60" placeholder="一句就好"></label>
         <div class="row"><button class="primary" id="cont">记下，继续</button><button class="ghost" id="cont2">不写了，继续</button></div>`;
       document.querySelector(".row").remove();
@@ -970,8 +1224,17 @@
     // 并列打破（v0.11.0）：同值维度用本局 rng 随机定序，不再按固定键序隐式优先
     const sorted = Object.entries(S.stats).map(([k, v]) => [k, v, rng()]).sort((a, b) => (b[1] - a[1]) || (a[2] - b[2]));
     const top = sorted[0][0], bottom = sorted[sorted.length - 1][0];
-    const pickF = (v) => (Array.isArray(v) ? v[Math.floor(rng() * v.length)] : v);
-    S._verdict = { text: pickF(D.verdictTop[top]) + pickF(D.verdictCost[bottom]), top, bottom };
+    // F1/F2（v0.17.0）：片段先按 needs 对本局事实过滤再抽；过滤后为空回落中性片段（无 needs 者），事实不许将就
+    const pickF = (pool) => {
+      if (!Array.isArray(pool)) return { text: pool, idx: 0 };
+      let cands = pool.map((f, i) => [f, i]).filter(([f]) => factOk(typeof f === "string" ? null : f.needs));
+      if (!cands.length) cands = pool.map((f, i) => [f, i]).filter(([f]) => typeof f === "string" || !f.needs);
+      if (!cands.length) cands = pool.map((f, i) => [f, i]);
+      const [f, i] = cands[Math.floor(rng() * cands.length)];
+      return { text: typeof f === "string" ? f : f.t, idx: i };
+    };
+    const tF = pickF(D.verdictTop[top]), cF = pickF(D.verdictCost[bottom]);
+    S._verdict = { text: tF.text + cF.text, top, bottom, topIdx: tF.idx, costIdx: cF.idx };
     return S._verdict;
   }
   // ---------- 事实标签行（v0.11.0） ----------
@@ -1030,7 +1293,8 @@
   const TIER_ORDER = { legendary: 0, epic: 1, rare: 2 };
   const TIER_LABEL = { legendary: "传说结局", epic: "史诗结局", rare: "稀有结局" };
   function specialEnding() {
-    const hits = (D.endings || []).filter((e) => met(e));
+    // F3/F4（v0.17.0）：met() 条件之外还须凑满 2 个独立证据点（evidence，见 src/synergy.js）；凑不满就不出——一局可以没有特殊结局
+    const hits = (D.endings || []).filter((e) => met(e) && evidenceCount(e) >= 2);
     if (!hits.length) return null;
     hits.sort((a, b) => TIER_ORDER[a.tier] - TIER_ORDER[b.tier]);
     return hits[0];
@@ -1129,6 +1393,10 @@
     const livesNew = recordLives(sp ? sp.id : null, S.usedRare || []); // 活过记录：落盘 + 本局新纪录（§B3）
     recordDayAndLife(); // 留存记录（v0.15.0）：日子表 + 最近一局回看，与活过记录同一落点、互不相干
     const shadowLines = shadowCompareLines();
+    const covLine = covenantSettleLine(); // fork38 立约的结算对账行（v0.17.0）：没有立过约就不出
+    // 自动推进提示（v0.17.0 定案）：默认关的玩家，完局后只在这页提示一次可开平年自动；提示过就落 prefs，不再重复
+    const showAutoHint = prefs.mode === "off" && !prefs.autoHintSeen;
+    if (showAutoHint) { prefs.autoHintSeen = true; savePrefs(); }
     const skippedLine = S.glimpsesSkipped ? `<p>你有 ${S.glimpsesSkipped} 次没有去细看另一条路。这样也好，有些事不知道，更睡得着。</p>` : "";
     const reflHtml = S.reflections.length
       ? `<h3>你留给自己的话</h3>` + S.reflections.map((r) => `<p class="refl">「${esc(r.text)}」（${r.age} 岁）</p>`).join("") : "";
@@ -1142,6 +1410,7 @@
       <p class="lifetags">${esc(lifeTags())}</p>
       <p class="verdict">${esc(v.text)}</p>
       <p>你走了这条路：${esc(S.route.name)}。</p>
+      ${covLine ? `<p>${esc(covLine)}</p>` : ""}
       </div>
       <div class="rev" style="--d:.24s">
       ${livesNew.newEnding ? `<p class="livesnew">这种人生，你第一次活到。</p>` : (livesNew.newRare ? `<p class="livesnew">这件稀罕事，你这回头一次撞上。</p>` : "")}
@@ -1189,6 +1458,7 @@
         <button class="primary" id="again-same">同种子再来一局（换选择）</button>
         <button class="ghost" id="again-new">随机种子新开一局</button>
       </div>
+      ${showAutoHint ? `<p class="hint">这一局是手动过完的。开局页和游戏里都能把「自动推进」设成平年——没有抉择的年份会自己往前走，分岔和要紧事还是会停下来等你。</p>` : ""}
       <p class="hint">种子码：${esc(S.seedStr)}。朋友打开同局链接，就是和你完全相同的运气——他选得不一样，会走成什么样？</p>
     </section>`;
     finishRender();

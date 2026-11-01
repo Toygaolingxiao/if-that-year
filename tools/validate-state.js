@@ -9,7 +9,7 @@
 "use strict";
 const fs = require("fs"), vm = require("vm"), path = require("path");
 const ROOT = path.join(__dirname, "..");
-const PACK_ORDER = ["pack1","pack2","pack3","pack4","pack5","pack6","pack9","pack10","pack11","pack12","pack13","pack14","pack15","pack16","pack17","pack18","pack19","pack20","pack21","pack22","pack23","pack24","pack25","pack26","pack27","pack28","pack29","pack30","pack33","pack31","pack32","pack34","era1955","era1965","era1978"];
+const PACK_ORDER = ["pack1","pack2","pack3","pack4","pack5","pack6","pack9","pack10","pack11","pack12","pack13","pack14","pack15","pack16","pack17","pack18","pack19","pack20","pack21","pack22","pack23","pack24","pack25","pack26","pack27","pack28","pack29","pack30","pack33","pack31","pack32","pack34","pack35","era1955","era1965","era1978"];
 const ld = (rel, key) => { const s = { window: {} }; vm.createContext(s); vm.runInContext(fs.readFileSync(path.join(ROOT, rel), "utf8"), s, { filename: rel }); return s.window[key]; };
 const errors = [], warnings = [];
 const err = (m) => errors.push(m), warn = (m) => warnings.push(m);
@@ -36,7 +36,7 @@ const seenCarriers = new Map(); // edgeKey -> Set(itemId)
 const stateRefs = new Set(); // "dom=value" 正向要求出现过
 // 载体 from 推断（v0.13.0 口径补强，docs/STATE-MATRIX.md §7）：setState 的 from 优先按条目自身（含从父事件继承）的正向 state/stateAll 门控推断；
 // 无门控的分岔条目按此表声明前态——分岔是一次性年龄节点，前态由结构保证（fork31 在 31 岁触发，此前无任何条目能写 spouse；fork38 同理于 kids）。
-const UNGATED_FORK_FROM = { fork31: { spouse: "none" }, fork38: { kids: "undecided" }, fork45: { kids: "undecided" } };
+const UNGATED_FORK_FROM = { fork31: { spouse: "none" }, fork38: { kids: "undecided" }, fork45: { kids: "undecided" }, pr_origin: { schooling: "pre" }, pr_fork16: { track: "pre" } }; // v0.17.0：序章两个结构节点同理（来历幕落定处境、16 岁分岔写入轨道，前态由结构保证）
 function scan(item, itemId, inhGate) {
   const effGate = Object.assign({}, inhGate);
   for (const fld of ["state", "stateAll"]) if (item[fld]) for (const [dom, v] of Object.entries(item[fld])) effGate[dom] = asArr(v);
@@ -98,6 +98,9 @@ let cardCount = 0;
 if (CARDS && CARDS.byId) for (const c of Object.values(CARDS.byId)) { cardCount++; if (byId.has(c.id)) err(`重复 id: 牌 ${c.id} 与事件撞名`); scan(c, c.id); }
 for (const f of D.forks) for (const c of f.choices) scan(c, `fork${f.age}`);
 for (const [k, c] of Object.entries(D.crisis || {})) for (const ch of c.choices) scan(ch, `crisis_${k}`);
+// 序章幕（v0.17.0，src/prologue.js）：与事件同规实扫（顶层 set/setState 与选项递归）
+const PRO = ld("src/prologue.js", "GAME_PROLOGUE");
+if (PRO && PRO.acts) for (const a of PRO.acts) scan(a, a.id);
 
 // ---- 注册表双向一致性 ----
 for (const [flag, def] of Object.entries(MILESTONES)) {
@@ -115,14 +118,21 @@ for (const [k, e] of declaredEdges) {
 }
 
 // ---- 不可逆与可达性 ----
+const reservedInfo = []; // v0.17.0：注册表显式 reserved 登记（域 reservedStates / 边 reserved:true）是「已设计未开放」，单列信息行，不算警告——与意外死内容区分
 for (const [dom, def] of Object.entries(DOMAINS)) {
   for (const t of (def.terminal || [])) for (const e of (def.edges || [])) if (e.from === t) err(`不可逆违规: 域 ${dom} 终态 ${t} 存在出边 →${e.to}`);
   // 可达性 BFS（只走已启用边）
   const reach = new Set([def.initial]);
   let grew = true;
   while (grew) { grew = false; for (const e of (def.edges || [])) if ((e.by || []).length && reach.has(e.from) && !reach.has(e.to)) { reach.add(e.to); grew = true; } }
-  for (const s of def.states) if (!reach.has(s)) warn(`域 ${dom} 状态 ${s} 无已启用可达路径`);
-  for (const e of (def.edges || [])) if (!(e.by || []).length) warn(`域 ${dom} 边 ${e.from}→${e.to} 为 reserved（已设计无载体）：${e.note || ""}`);
+  for (const s of def.states) {
+    if ((def.reservedStates || []).includes(s)) { reservedInfo.push(`域 ${dom} 状态 ${s}（reserved，已登记未开放）`); continue; }
+    if (!reach.has(s)) warn(`域 ${dom} 状态 ${s} 无已启用可达路径`);
+  }
+  for (const e of (def.edges || [])) if (!(e.by || []).length) {
+    if (e.reserved) { reservedInfo.push(`域 ${dom} 边 ${e.from}→${e.to}（reserved：${e.note || ""}）`); continue; }
+    warn(`域 ${dom} 边 ${e.from}→${e.to} 为 reserved（已设计无载体）：${e.note || ""}`);
+  }
   for (const s of def.states) if (s !== def.initial && ![...declaredEdges.values()].some((e) => e.dom === dom && e.to === s)) warn(`域 ${dom} 状态 ${s} 无任何入边声明`);
 }
 
@@ -146,7 +156,8 @@ for (const e of events) { const acc = newAcc(); collectDeps(e, acc); prodItems.s
 for (const f of D.forks) { const acc = newAcc(); for (const c of f.choices) collectDeps(c, acc); prodItems.set(f.id || `fork${f.age}`, acc); }
 for (const [k, c] of Object.entries(D.crisis || {})) { const acc = newAcc(); for (const ch of c.choices) collectDeps(ch, acc); prodItems.set(`crisis_${k}`, acc); }
 if (CARDS && CARDS.byId) for (const c of Object.values(CARDS.byId)) { const acc = newAcc(); collectDeps(c, acc); prodItems.set(c.id, acc); }
-const structural = new Set([...D.forks.map((f) => f.id || `fork${f.age}`), ...Object.keys(D.crisis || {}).map((k) => `crisis_${k}`), ...(CARDS && CARDS.byId ? Object.keys(CARDS.byId) : [])]);
+if (PRO && PRO.acts) for (const a of PRO.acts) { const acc = newAcc(); collectDeps(a, acc); prodItems.set(a.id, acc); }
+const structural = new Set([...D.forks.map((f) => f.id || `fork${f.age}`), ...Object.keys(D.crisis || {}).map((k) => `crisis_${k}`), ...(CARDS && CARDS.byId ? Object.keys(CARDS.byId) : []), ...(PRO && PRO.acts ? PRO.acts.map((a) => a.id) : [])]); // 序章幕是序列驱动的结构节点，与分岔同规
 const presentable = new Set(structural);
 const producible = new Set();
 const attainable = new Map(); for (const [dom, def] of Object.entries(DOMAINS)) attainable.set(dom, new Set([def.initial]));
@@ -209,9 +220,12 @@ function ageAcc(item, min, max) {
 }
 for (const e of events) if (typeof e.min === "number" && typeof e.max === "number") ageItems.set(e.id, ageAcc(e, e.min, e.max));
 for (const f of D.forks) ageItems.set(`fork${f.age}`, ageAcc(f, f.age, f.age));
+if (PRO && PRO.acts) for (const a of PRO.acts) ageItems.set(a.id, ageAcc(a, a.age, a.age)); // 序章幕：单一年龄节点，与分岔同规
 if (CARDS && CARDS.byId) for (const c of Object.values(CARDS.byId)) ageItems.set(c.id, { min: 22, max: 22, gates: new Map(), flags: new Set(), any: new Set(), chain: null, sets: new Set(c.set ? [c.set] : []), setStates: [], eraGate: null, minYear: null });
 const stateEarliest = new Map(); // "dom=value" -> age
-for (const [dom, def] of Object.entries(DOMAINS)) stateEarliest.set(`${dom}=${def.initial}`, 22);
+// 年龄基线（v0.17.0 重建）：人生从 5 岁来历幕起算（旧版按 22 岁开局写死）——域初值在 5 岁即成立；
+// 出身牌的结算点仍是 22 岁（旧年代开局与试点汇入点相同），牌条目自身的 min/max 在下方单独写 22，不随基线动。
+for (const [dom, def] of Object.entries(DOMAINS)) stateEarliest.set(`${dom}=${def.initial}`, 5);
 const flagEarliest = new Map(); // flag -> age
 const itemEarliest = new Map();
 for (const [id, a] of ageItems) itemEarliest.set(id, a.min);
@@ -255,7 +269,7 @@ while (grewA && guardA++ < 500) {
     if (need === Infinity && itemEarliest.get(id) !== Infinity) { itemEarliest.set(id, Infinity); grewA = true; }
   }
 }
-const AGE_STRUCTURAL = new Set([...D.forks.map((f) => `fork${f.age}`), ...(CARDS && CARDS.byId ? Object.keys(CARDS.byId) : [])]);
+const AGE_STRUCTURAL = new Set([...D.forks.map((f) => `fork${f.age}`), ...(CARDS && CARDS.byId ? Object.keys(CARDS.byId) : []), ...(PRO && PRO.acts ? PRO.acts.map((a) => a.id) : [])]);
 for (const [id, a] of ageItems) {
   if (AGE_STRUCTURAL.has(id)) continue; // 分岔/出身牌无窗口可查
   // (A) 窗口终点早于正向状态门要求值的最早年龄
@@ -276,7 +290,8 @@ for (const [id, a] of ageItems) {
   }
 }
 
-console.log(`validate-state: 条目 ${events.length}（含核心/扩展/协同/稀有/结局）+ 出身牌 ${cardCount} | 域 ${Object.keys(DOMAINS).length} | 里程碑 ${Object.keys(MILESTONES).length}`);
+console.log(`validate-state: 条目 ${events.length}（含核心/扩展/协同/稀有/结局）+ 出身牌 ${cardCount} + 序章幕 ${PRO && PRO.acts ? PRO.acts.length : 0} | 域 ${Object.keys(DOMAINS).length} | 里程碑 ${Object.keys(MILESTONES).length}`);
+if (reservedInfo.length) { console.log(`已登记未开放（reserved）${reservedInfo.length} 项:`); reservedInfo.forEach((m) => console.log("  RESERVED", m)); }
 console.log(`错误 ${errors.length} 条:`); errors.forEach((m) => console.log("  ERROR", m));
 console.log(`警告 ${warnings.length} 条:`); warnings.forEach((m) => console.log("  WARN", m));
 console.log(errors.length ? "RESULT: FAIL" : "RESULT: PASS");

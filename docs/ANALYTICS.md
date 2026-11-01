@@ -15,6 +15,16 @@
 - 事件在本地队列攒满 10 条批量发送一次；页面隐藏/关闭时自动冲刷剩余队列。发送失败静默丢弃，绝不影响游戏。
 - 关闭方法：去掉配置或把 `enabled` 改为非 `true`，重新部署即可；代码无需改动。
 
+## 收集端（v0.17.0）
+
+收集端就是仓库里的 `functions/api/collect.js`，同源 Pages Function，路径 `/api/collect`，不引入任何第三方服务。`index.html` 的注入已改为 `enabled: true`、`endpoint: "/api/collect"`。收集端只收 POST，只保留事件表内字段，未知事件直接丢弃，成功统一返回 204；不记录 IP、不种 cookie。
+
+存储要用户在 Cloudflare 后台点一步，代码里配不了：控制台 → Workers & Pages → if-that-year → Settings → Functions → KV namespace bindings → Add binding。先在同页（或 KV 菜单）创建一个 KV namespace，名字自选，如 `ify-analytics`；变量名必须填 `IFY_ANALYTICS_KV`，选好刚建的 namespace 后保存。保存后重新部署才生效，下一次 push 自动部署即可。
+
+验证方法：绑定并部署后，打开站点玩完一局（事件攒满 10 条或关页时自动发送），再到控制台 Storage → KV → 该 namespace 里看，应能看到以当天日期开头的 key，点开 value 是逐行 JSON 事件。
+
+若没绑：站点与游戏一切正常，收集端只收不存、静默丢弃，不会报错。
+
 ## 事件表
 
 | 事件 | 触发点 | 字段（均为游戏内分类量） | 对应 PM-GROWTH 指标 |

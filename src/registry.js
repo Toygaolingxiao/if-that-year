@@ -5,7 +5,7 @@
    新增/改动旗标必须同步登记，tools/validate-state.js 会逐项核对，未登记即报错。
    详细口径见 docs/STATE-MATRIX.md。 */
 window.GAME_REGISTRY = {
- "version": "0.16.1",
+ "version": "0.17.0",
  "domains": {
   "spouse": {
    "label": "配偶",
@@ -210,6 +210,95 @@ window.GAME_REGISTRY = {
      ]
     }
    ]
+  },
+  "schooling": {
+   "label": "入学处境",
+   "initial": "pre",
+   "states": [
+    "pre",
+    "school",
+    "half",
+    "never",
+    "left"
+   ],
+   "reservedStates": [
+    "half",
+    "never",
+    "left"
+   ],
+   "edges": [
+    {
+     "from": "pre",
+     "to": "school",
+     "by": [
+      "pr_origin"
+     ],
+     "note": "处境发放（v0.17.0 试点）：来历幕呈现即落定，发放走序章独立流、不可重掷；本轮仅 c2000 试点走序章，其余年代暂留 pre"
+    },
+    {
+     "from": "pre",
+     "to": "half",
+     "by": [],
+     "reserved": true,
+     "note": "半读处境：第一步（v0.18.0）随 c2000 处境补全开放，载体为序章发放拍"
+    },
+    {
+     "from": "pre",
+     "to": "never",
+     "by": [],
+     "reserved": true,
+     "note": "未入学处境：同上，第一步开放（含后来的识字里程碑线）"
+    },
+    {
+     "from": "school",
+     "to": "left",
+     "by": [],
+     "reserved": true,
+     "note": "读了又离开：第一步随 half 线开放，载体为少年段处境事件"
+    }
+   ]
+  },
+  "track": {
+   "label": "少年轨道",
+   "initial": "pre",
+   "states": [
+    "pre",
+    "study",
+    "work",
+    "craft",
+    "home"
+   ],
+   "edges": [
+    {
+     "from": "pre",
+     "to": "study",
+     "by": [
+      "pr_fork16"
+     ]
+    },
+    {
+     "from": "pre",
+     "to": "work",
+     "by": [
+      "pr_fork16"
+     ]
+    },
+    {
+     "from": "pre",
+     "to": "craft",
+     "by": [
+      "pr_fork16"
+     ]
+    },
+    {
+     "from": "pre",
+     "to": "home",
+     "by": [
+      "pr_fork16"
+     ]
+    }
+   ],
+   "note": "16 岁分岔写入（v0.17.0）；成年段五路线是另一层选择，track 不锁 route。未走序章的年代暂留 pre"
   }
  },
  "milestones": {
@@ -661,6 +750,42 @@ window.GAME_REGISTRY = {
     "fork45"
    ],
    "note": "45 岁分岔主动落定不要（v0.16.0）"
+  },
+  "cov38_has": {
+   "setters": [
+    "fork38"
+   ],
+   "note": "立约·要（v0.17.0）：38 岁分岔选「要」登记的持续之约，年度流 cov_has_flow 读此旗；只记约不碰 kids 状态机"
+  },
+  "cov38_none": {
+   "setters": [
+    "fork38"
+   ],
+   "note": "立约·不要（v0.17.0）：同上，年度流 cov_none_flow"
+  },
+  "cov38_wait": {
+   "setters": [
+    "fork38"
+   ],
+   "note": "立约·再等等（v0.17.0）：悬账之约，年度流 cov_wait_flow，到期点为 45 岁分岔（fork45 前缀行）与 e_kid_settle/final 的既有落定路"
+  },
+  "mark_deskmate": {
+   "setters": [
+    "pr_child1"
+   ],
+   "note": "童年记号（v0.17.0）：开学第一天的半块橡皮；成年回响 echo_deskmate，影子回响见 src/prologue.js MARKS"
+  },
+  "mark_river": {
+   "setters": [
+    "pr_child2"
+   ],
+   "note": "童年记号（v0.17.0）：放学路上的河沟；成年回响 echo_river"
+  },
+  "mark_tree": {
+   "setters": [
+    "pr_child4"
+   ],
+   "note": "童年记号（v0.17.0）：校门口的老梧桐；成年回响 echo_tree"
   },
   "late_tried": {
    "setters": [
