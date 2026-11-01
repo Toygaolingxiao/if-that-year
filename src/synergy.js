@@ -11,9 +11,9 @@ window.GAME_SYNERGY = {
     { id: "cb_care_near", all: ["care_self", "near_family"], stateAll: { dad: "alive" }, min: 53, max: 64, text: "父亲半夜胃不舒服，电话打过来，你开车七分钟就到了。急诊抽血、做心电图，折腾到凌晨三点，医生说先留观。你在走廊的自助机上交了 480，自费部分。他看见缴费单，先说的是：把你折腾起来了。你说，没事，我住得近。", effects: { relation: 3, health: -1 } },
     { id: "cb_dink_plan", stateAll: { spouse: "partnered", kids: "none" }, stats: [{ k: "money", gt: 58 }], min: 44, max: 58, text: "你和对方把养老的账认真算了一遍，列了张表：养老金还要交几年、存款够花几年、现在这套小房子的月供还剩多少。算完你们去吃了顿火锅，两个人 178。计划表压在茶几玻璃板下面，压了两年，一直没动过。", effects: { money: 1, freedom: 2 } },
     { id: "cb_old_couple", all: ["retired_full"], stateAll: { spouse: "partnered" }, min: 59, max: 64, text: "退休后第一个长假，你和对方报了个慢团，六天，一个人 4200，全程没赶过景点，中午还回酒店睡午觉。团里另一对老夫妻跟你们拼了四次饭，散团那天互相加了微信，约好明年还走这一条线。", effects: { relation: 2, health: 2, money: -2 } },
-    { id: "cb_sandwich", all: ["care_self"], stateAll: { kids: "has", dad: "alive" }, min: 53, max: 60, text: "这一天你两头跑：上午请了半天假，去学校坐最后一排开家长会；下午赶到医院，父亲的复查号是提前一周在手机上抢的，取报告、排队缴费，来回打车 63。晚上回家，你把成绩单和复查单夹进同一个文件夹，放在抽屉第二层。", effects: { relation: 2, health: -2 } },
-    { id: "cb_rent_free", all: ["renting", "less_work"], stats: [{ k: "freedom", gt: 63 }], min: 45, max: 60, text: "房东在微信上问：续三年就不涨租，续一年要涨 100。你回：先续一年吧。签完你把合同塞进抽屉，抽屉里还有前两年的合同，三份叠在一起，租金那一栏一年比一年高一点。你给阳台那几盆花浇了水，明年住哪，到时候再说。", effects: { freedom: 2, wisdom: 5 } },
-    { id: "cb_hop_viral_base", all: ["job_hop", "side_start"], min: 30, max: 45, text: "跳槽面试聊到一半，面试官把手机转过来：这个账号也是你做的？那是你下班更新的小账号，粉丝不多，置顶那条有两万多播放。后面又聊了四十分钟，聊的全是它，岗位本身只占了十分钟。临走对方说，账号别停更。", effects: { growth: 2, relation: 1 } },
+    { id: "cb_sandwich", all: ["care_self"], stateAll: { kids: "has", dad: "alive" }, min: 53, max: 60, minYear: 2013, text: "这一天你两头跑：上午请了半天假，去学校坐最后一排开家长会；下午赶到医院，父亲的复查号是提前一周在手机上抢的，取报告、排队缴费，来回打车 63。晚上回家，你把成绩单和复查单夹进同一个文件夹，放在抽屉第二层。", effects: { relation: 2, health: -2 } },
+    { id: "cb_rent_free", all: ["renting", "less_work"], stats: [{ k: "freedom", gt: 63 }], min: 45, max: 60, minYear: 2012, text: "房东在微信上问：续三年就不涨租，续一年要涨 100。你回：先续一年吧。签完你把合同塞进抽屉，抽屉里还有前两年的合同，三份叠在一起，租金那一栏一年比一年高一点。你给阳台那几盆花浇了水，明年住哪，到时候再说。", effects: { freedom: 2, wisdom: 5 } },
+    { id: "cb_hop_viral_base", all: ["job_hop", "side_start"], min: 30, max: 45, minYear: 2016, text: "跳槽面试聊到一半，面试官把手机转过来：这个账号也是你做的？那是你下班更新的小账号，粉丝不多，置顶那条有两万多播放。后面又聊了四十分钟，聊的全是它，岗位本身只占了十分钟。临走对方说，账号别停更。", effects: { growth: 2, relation: 1 } },
   ],
   rare: [
     // —— 创业轨迹链：side_start + side_job 凑齐 build，三环骰子相乘 ——
@@ -44,7 +44,7 @@ window.GAME_SYNERGY = {
     { id: "r_school2", label: "站上开学典礼台下", clue: "推了两次没推掉，站到台下看一操场学生的人。", min: 34, max: 50, chain: "r_school1", stats: [{ k: "relation", gt: 54 }], chance: 0.019, text: "学校让你当教导主任。你推了两次没推掉。开学典礼上你站在台下，看着一操场的学生，忽然想起自己报到那天。", effects: { relation: 3, growth: 2 }, set: "traj_vp" },
     // —— 写作 / 流量轨迹 ——
     { id: "r_book", label: "编辑找上门", clue: "合同薄薄几页，在家里看了三遍的人。", min: 33, max: 55, all: ["side_start"], stats: [{ k: "growth", gt: 65 }], chance: 0.008, text: "出版社的编辑找到你，说你陆续写的那些东西，想结集出本书。合同寄到家里，薄薄几页，你看了三遍。", effects: { growth: 3, money: 2 }, set: "traj_book" },
-    { id: "r_viral", label: "一夜六个零", clue: "早上醒来，手机烫得像块铁的人。", min: 30, max: 50, all: ["side_start", "side_job"], chance: 0.012, text: "你随手发的一条视频，第二天早上醒来，播放量后面跟了六个零。手机烫得像块铁，一整天都在震。", effects: { money: 6, relation: 2, health: -2 }, set: "traj_viral" },
+    { id: "r_viral", label: "一夜六个零", clue: "早上醒来，手机烫得像块铁的人。", min: 30, max: 50, minYear: 2016, all: ["side_start", "side_job"], chance: 0.012, text: "你随手发的一条视频，第二天早上醒来，播放量后面跟了六个零。手机烫得像块铁，一整天都在震。", effects: { money: 6, relation: 2, health: -2 }, set: "traj_viral" },
     // —— 学术荣誉 ——
     { id: "r_award", label: "提名名单上有你", clue: "横幅拉起来，路过时放慢脚步的人。", min: 46, max: 62, stats: [{ k: "growth", gt: 84 }], chance: 0.02, text: "提名名单公布，你的名字在里面。单位拉了条横幅，你有点不好意思，但路过的时候，还是放慢脚步看了一眼。", effects: { growth: 3, relation: 2 }, set: "traj_award" },
     // —— 独立稀有点 ——
@@ -52,7 +52,7 @@ window.GAME_SYNERGY = {
     { id: "r_patent", label: "小专利卖了个好价", clue: "捣鼓了两年的方案，被人找上门来买的人。", min: 32, max: 55, stats: [{ k: "growth", gt: 71 }], chance: 0.015, text: "你业余捣鼓出来的一个小专利，被一家公司看上了，开价比你想的高得多。签约的时候对方说：我们找这个方案找了两年。", effects: { money: 14, growth: 2 }, set: "traj_patent" },
     { id: "r_oldhouse", label: "老房子补偿款", clue: "锁上老屋门之前，在门口拍了张照的人。", min: 40, max: 60, any: ["near_family"], routeIn: ["home", "corp", "abroad", "study", "gap"], chance: 0.015, text: "老家那片要改造了。老房子的补偿款打下来，比你想的多。你站在老屋门口拍了张照，才锁上门。", effects: { money: 12 }, set: "traj_windfall" },
     { id: "r_marathon", label: "年龄组第一名", clue: "冲线时计时员愣了一下，又看了一眼号码布的人。", min: 52, max: 64, stats: [{ k: "health", gt: 74 }], chance: 0.05, text: "城市马拉松，你拿了年龄组的第一名。冲线的时候计时员愣了一下，看了看你的号码布，又看了看你。", effects: { health: 3, freedom: 2 }, set: "traj_champ" },
-    { id: "r_rescue", label: "河边救起一个人", clue: "救完人发现鞋掉了一只，母亲把新闻存进手机的人。", min: 28, max: 55, chance: 0.002, text: "河边有人落水，你跳下去了。人救上来的时候你才发现自己鞋掉了一只。本地新闻播了四十秒，母亲把那段视频存在手机里，给亲戚挨个看。", effects: { relation: 5, health: -2 }, set: "traj_hero" },
+    { id: "r_rescue", label: "河边救起一个人", clue: "救完人发现鞋掉了一只，母亲把新闻存进手机的人。", min: 28, max: 55, minYear: 2008, chance: 0.002, text: "河边有人落水，你跳下去了。人救上来的时候你才发现自己鞋掉了一只。本地新闻播了四十秒，母亲把那段视频存在手机里，给亲戚挨个看。", effects: { relation: 5, health: -2 }, set: "traj_hero" },
     { id: "r_antique", label: "旧瓷瓶擦不得", clue: "被告知『别擦了，这个擦不得』之后，把房顶修了的人。", min: 35, max: 60, chance: 0.003, text: "清理老柜子时翻出个旧瓷瓶，拿去给懂行的人看了一眼。对方戴上眼镜看了很久，说：别擦了，这个擦不得。后来它拍出去的钱，正好够把老房的房顶修了。", effects: { money: 8 }, set: "traj_antique" },
     // —— v0.11.0 新增：五条轨迹链（各挂一个新结局，立旗事件本身都带代价）——
     { id: "r_teacher_students", label: "学生回来当同事", clue: "把磨毛了边角的备课本，借给三个后辈传看的人。", min: 44, max: 55, chain: "r_school1", chance: 0.03, text: "教了二十多年书，你带过的一届学生里，有三个考回了县里当老师，其中一个就分在你隔壁办公室。期中考试前，三个人抱着教案来问你那道压轴题怎么讲。你把当年的备课本找出来，本子边角都磨毛了，借给他们传看。开学到现在，你自己掏钱给班里印卷子，已经垫了 600 多。", effects: { relation: 4, growth: 2, money: -3, health: -1 }, set: "traj_taoli" },
@@ -61,26 +61,26 @@ window.GAME_SYNERGY = {
         { label: "收下。废件的料钱从我这儿出", effects: { money: -2, relation: 3, health: -2, growth: 2 }, set: "traj_craft", echo: "头三个月他出的活你件件复查，慢是慢了点。可你下班时，工具箱头一次有人帮你收拾好了。" },
         { label: "不收。自己干惯了", effects: { freedom: 2, money: 1 }, echo: "年轻人后来跟了别的师傅。你照旧一个人开工，一个人收工。" },
       ] },
-    { id: "r_village_doc", label: "卫生院那通电话", clue: "摸了摸白大褂口袋里的处方笺，没当场答复的人。", min: 36, max: 52, route: "home", chance: 0.010, text: "你在乡镇卫生院当了几年医生，门诊一天最多看四十多个人，输液室的椅子常年坐满。这天县医院来电话，说有个进修之后留院的名额，问你去不去。你把白大褂口袋里的处方笺摸了摸，没当场答复。",
+    { id: "r_village_doc", label: "卫生院那通电话", clue: "摸了摸白大褂口袋里的处方笺，没当场答复的人。", min: 36, max: 52, route: "home", ctx: { flag: "med_work" }, chance: 0.010, text: "你在乡镇卫生院当了几年医生，门诊一天最多看四十多个人，输液室的椅子常年坐满。这天县医院来电话，说有个进修之后留院的名额，问你去不去。你把白大褂口袋里的处方笺摸了摸，没当场答复。",
       choices: [
         { label: "留下。这一摊离不开人", effects: { money: -3, relation: 4, health: -2 }, set: "traj_village_doc", echo: "你回了电话，说不去了。当晚有个老人骑电动车来敲门，说家里孩子发烧，先找你看看再说。" },
         { label: "去。往大医院走", effects: { money: 3, growth: 2, relation: -1 }, echo: "交接那天，输液室的人挨个跟你道别。你走的时候，药房的窗户还开着。" },
       ] },
     { id: "r_captain_final", label: "最后一场球", clue: "喷了两次止痛喷雾，被年轻人抬起来先喊腰的人。", min: 53, max: 62, all: ["team_captain"], chance: 0.04, text: "这支业余球队你张罗了十来年。这场是联赛最后一场，你的膝盖热身时就开始疼，喷了两次止痛喷雾，还是顶完了全场。终场哨响，你们赢了一个球。年轻人把你抬起来的时候，你先喊的是：慢点，我的腰。", effects: { relation: 4, health: -3, growth: 1, wisdom: 2 }, set: "traj_captain" },
-    { id: "r_trucker_route", label: "九百公里长途线", clue: "里程表跳得飞快，一个月瘦了六斤的人。", min: 35, max: 46, chance: 0.012, text: "运输公司新开了一条跨省长途线，单程 900 多公里，跑一趟歇一天，工资比市内短途多出一截。调度问你愿不愿意固定跑这条线。你的驾照年限够，就是夜里赶路、白天补觉，日子要整个翻过来。",
+    { id: "r_trucker_route", label: "九百公里长途线", clue: "里程表跳得飞快，一个月瘦了六斤的人。", min: 35, max: 46, ctx: { flag: "truck_work" }, chance: 0.012, text: "运输公司新开了一条跨省长途线，单程 900 多公里，跑一趟歇一天，工资比市内短途多出一截。调度问你愿不愿意固定跑这条线。你的驾照年限够，就是夜里赶路、白天补觉，日子要整个翻过来。",
       choices: [
         { label: "接。固定跑长途", effects: { money: 5, health: -4, relation: -2 }, set: "traj_trucker", echo: "第一个月你跑了九趟。服务区的泡面吃了四种口味，里程表跳得飞快，人瘦了六斤。" },
         { label: "不接。还是跑短途", effects: { money: 2, freedom: 1 }, echo: "你照旧每天能回家吃饭。就是工资条上那个数，一直没怎么动。" },
       ] },
     // —— v0.11.0 新增：苦味/负面/两难（稀有≠幸运）——
-    { id: "r_scam_big", label: "投资群第五个月", clue: "利息准时到了四个月，第五个月群里全在问同一句话的人。", min: 38, max: 52, stats: [{ k: "money", gt: 54 }], chance: 0.008, w: 2, text: "熟人拉你进了一个投资群，说是熟人项目，保本，每月返息。前四个月，利息一分不少打到卡上，你又追加了一笔，前后投进去的，是你存了六年的数。第五个月，群主失联，群里 200 多号人一夜之间全在问同一句话。报警、登记、跑经侦，你跑了七趟，能追回多少，没人敢打包票。", effects: { money: -9, relation: -2, wisdom: 3 } },
+    { id: "r_scam_big", label: "投资群第五个月", clue: "利息准时到了四个月，第五个月群里全在问同一句话的人。", min: 38, max: 52, minYear: 2012, stats: [{ k: "money", gt: 54 }], chance: 0.008, w: 2, text: "熟人拉你进了一个投资群，说是熟人项目，保本，每月返息。前四个月，利息一分不少打到卡上，你又追加了一笔，前后投进去的，是你存了六年的数。第五个月，群主失联，群里 200 多号人一夜之间全在问同一句话。报警、登记、跑经侦，你跑了七趟，能追回多少，没人敢打包票。", effects: { money: -9, relation: -2, wisdom: 3 } },
     { id: "r_industry_overnight", label: "产品线一夜凉了", clue: "公告栏的名单贴出来，名字在第三行的人。", min: 40, max: 55, any: ["stay_put", "steady_job"], chance: 0.009, w: 2, text: "你干了十几年的这条产品线，一夜之间就凉了。新的技术路线出来，客户的订单全转去了别家。厂里贴出通知：这条线的人，要么转岗降一档工资，要么拿补偿走人。名单贴在公告栏上，你的名字在第三行。",
       choices: [
         { label: "转岗。从头学新产线", effects: { money: -5, growth: 3, health: -1 }, echo: "新产线的活你干得比年轻人慢，笔记却记了三大本。工资条矮了一截，饭还得照吃。" },
         { label: "拿补偿。先歇一阵再说", effects: { money: -4, freedom: 2, health: -1, wisdom: 2 }, echo: "补偿款到账那天，你把工牌放进抽屉。歇了半个月，人是缓过来了，下一步还没想好。" },
       ] },
-    { id: "r_oldfriend_gone", label: "同桌的葬礼", clue: "开车两个多小时去邻县，在花圈里找自己那个的人。", min: 42, max: 55, chance: 0.007, w: 2, text: "初中同桌去世的消息，是同学群里转发的。你上次见对方还是五年前同学聚会，散场时约了下次，对方说忙完这阵就约。葬礼在邻县，你请了一天假，开车两个多小时过去，在花圈里找到自己送的那个，站着看了一会儿上面的挽联。", effects: { relation: -2, health: -1, money: -1, wisdom: 4 } },
-    { id: "r_friend_debt", label: "发小那笔借款", clue: "把聊天记录翻到转账那一页，停了一会儿的人。", min: 36, max: 50, stats: [{ k: "money", gt: 50 }], chance: 0.011, w: 2, text: "发小开口借钱周转，说三个月就还。你转过去一笔，是你攒了两年的数。三个月变半年，半年变一年，电话从秒接变成隔天回。最后一次见面在茶馆，两杯茶没喝完，话先说僵了。",
+    { id: "r_oldfriend_gone", label: "同桌的葬礼", clue: "开车两个多小时去邻县，在花圈里找自己那个的人。", min: 42, max: 55, minYear: 2012, chance: 0.007, w: 2, text: "初中同桌去世的消息，是同学群里转发的。你上次见对方还是五年前同学聚会，散场时约了下次，对方说忙完这阵就约。葬礼在邻县，你请了一天假，开车两个多小时过去，在花圈里找到自己送的那个，站着看了一会儿上面的挽联。", effects: { relation: -2, health: -1, money: -1, wisdom: 4 } },
+    { id: "r_friend_debt", label: "发小那笔借款", clue: "把聊天记录翻到转账那一页，停了一会儿的人。", min: 36, max: 50, minYear: 2005, stats: [{ k: "money", gt: 50 }], chance: 0.011, w: 2, text: "发小开口借钱周转，说三个月就还。你转过去一笔，是你攒了两年的数。三个月变半年，半年变一年，电话从秒接变成隔天回。最后一次见面在茶馆，两杯茶没喝完，话先说僵了。",
       choices: [
         { label: "认了。钱不要了，人也断了", effects: { money: -6, relation: -3, wisdom: 3 }, echo: "你把聊天记录翻到转账那一页，停了一会儿，还是退了出来。" },
         { label: "走法律程序，追回多少算多少", effects: { money: -3, relation: -5, wisdom: 2 }, echo: "调解室里坐了一下午，最后签了分期还款的纸。钱回来得很慢，逢年过节的问候先没了。" },
@@ -107,7 +107,7 @@ window.GAME_SYNERGY = {
       text: "你的书一版再版，摆在书店门口的架子上。有读者来信说，是在最难的一年读到它的。你把信收在抽屉里，和当年那份薄薄的合同放在一起。" },
     { id: "end_influencer", clue: "自称『下班后比较忙的人』，灯还是那盏灯的人。", tier: "epic", all: ["traj_viral"], title: "千万粉丝", evidence: [["r_viral"],["side_job"]],
       text: "你的账号慢慢涨到了一千多万粉丝。有人问你现在算不算名人，你说：算个下班后比较忙的人。视频还是在那个小书桌上拍，灯也没换过。" },
-    { id: "end_bigfamily", clue: "六十五岁生日摆了两桌，吹蜡烛时被一屋子人喊、称呼各不相同的人。", tier: "epic", stateAll: { spouse: "partnered", kids: "has" }, stats: [{ k: "relation", gt: 99 }, { k: "health", gt: 58 }], title: "子孙满堂", evidence: [["c_has_kid","cb_family3","lk_born"],["c_partner","cb_old_couple"]],
+    { id: "end_bigfamily", clue: "六十五岁生日摆了两桌，吹蜡烛时被一屋子人喊、称呼各不相同的人。", tier: "epic", stateAll: { spouse: "partnered", kids: "has" }, stats: [{ k: "relation", gt: 99 }, { k: "health", gt: 58 }], title: "子孙满堂", evidence: [["rec:state:kids>has","c_has_kid","cb_family3","lk_born"],["rec:state:spouse>partnered","c_partner","cb_old_couple"]],
       text: "65 岁生日那天，家里摆了两桌。孩子带着孩子，孩子又带着更小的孩子。吹蜡烛的时候一屋子人喊你，称呼各不相同。你眯着眼睛看了一圈，心想：这一屋子，都是从那一年开始的。" },
     { id: "end_traveler", clue: "冰箱上贴满各地磁铁，说『剩下的时间慢慢走回程』的人。", tier: "epic", all: ["retired_full"], stats: [{ k: "freedom", gt: 76 }, { k: "money", gt: 54 }], title: "环游世界", evidence: [["retired_full"],["e_trip",{"stat":{"k":"freedom","gt":76}}]],
       text: "退休金、存款、说走就走的身体，你都凑齐了。护照上的章一个挨一个，冰箱上贴满了各地的磁铁。有人问你还差哪没去，你说：不差了，剩下的时间，慢慢走回程。" },
@@ -123,11 +123,11 @@ window.GAME_SYNERGY = {
       text: "退休那年，你教过的学生凑了三桌给你送行，最早的一届头发都白了一半。有人把你当年借出去的那本备课本还了回来，说传了三届人，本子还在。你没讲什么大道理，就说：都坐下，先吃饭，菜凉了。" },
     { id: "end_craft_legacy", clue: "把用了二十多年的卡尺留给徒弟，盒子上的名字都磨浅了的人。", tier: "epic", all: ["traj_craft"], stats: [{ k: "growth", gt: 64 }, { k: "relation", gt: 54 }], title: "手艺有人接", evidence: [["r_craft_apprentice"],[{"stat":{"k":"growth","gt":64}}]],
       text: "你退休那天，徒弟已经能独立顶下整条线了。你把用了二十多年的那把卡尺留给对方，盒子上刻的名字都磨浅了。后来你路过车间，还能听见机器响，站在门口看一会儿，不进去。" },
-    { id: "end_village_doctor", clue: "在乡镇卫生院的门诊椅子上，坐了一辈子的人。", tier: "epic", all: ["traj_village_doc"], stats: [{ k: "relation", gt: 92 }], title: "一村的医生", evidence: [["r_village_doc"],[{"stat":{"k":"relation","gt":92}}]],
+    { id: "end_village_doctor", clue: "在乡镇卫生院的门诊椅子上，坐了一辈子的人。", tier: "epic", ctx: { flag: "med_work" }, all: ["traj_village_doc"], stats: [{ k: "relation", gt: 92 }], title: "一村的医生", evidence: [["r_village_doc"],[{"stat":{"k":"relation","gt":92}}]],
       text: "你在乡镇卫生院干到退休。辖区里几千口人，谁家的老人吃什么药、谁对什么过敏，你的本子上都记着。退休手续办完那天，输液室坐满了人，不是来看病的，是听说你要走，来送送你。你说：新医生比我强。没人接这句话。" },
     { id: "end_captain", clue: "把队长袖标交出去，之后坐在场边管哨子和记分牌的人。", tier: "rare", all: ["traj_captain"], stats: [{ k: "relation", gt: 59 }], title: "老队长", evidence: [["r_captain_final"],["team_captain"]],
       text: "你踢不动全场那年，把队长袖标交给了队里最年轻的那个。交完你们照常去吃宵夜，啤酒你只喝了一杯——膝盖还疼，回家得冰敷。后来每场比赛你都去，坐在场边，哨子和记分牌还归你管。" },
-    { id: "end_trucker_million", clue: "服务区哪家的盒饭实在、哪段路雨天打滑，闭着眼都说得出来的人。", tier: "rare", all: ["traj_trucker"], stats: [{ k: "money", gt: 59 }], title: "跑满一百万公里", evidence: [["r_trucker_route"],[{"stat":{"k":"money","gt":59}}]],
+    { id: "end_trucker_million", clue: "服务区哪家的盒饭实在、哪段路雨天打滑，闭着眼都说得出来的人。", tier: "rare", ctx: { flag: "truck_veteran" }, all: ["traj_trucker"], stats: [{ k: "money", gt: 59 }], title: "跑满一百万公里", evidence: [["r_trucker_route"],[{"stat":{"k":"money","gt":59}}]],
       text: "你跑长途的第十几年，里程表过了一百万公里，公司给你发了块无事故的牌子，挂在驾驶室里。你的腰落下了毛病，补觉要靠耳塞。可这条线上的服务区，哪家的盒饭实在、哪段路雨天打滑，你闭着眼都说得出来。" },
   ],
 };

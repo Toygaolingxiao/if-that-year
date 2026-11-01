@@ -9,7 +9,7 @@
 "use strict";
 const fs = require("fs"), vm = require("vm"), path = require("path");
 const ROOT = path.join(__dirname, "..");
-const PACK_ORDER = ["pack1","pack2","pack3","pack4","pack5","pack6","pack9","pack10","pack11","pack12","pack13","pack14","pack15","pack16","pack17","pack18","pack19","pack20","pack21","pack22","pack23","pack24","pack25","pack26","pack27","pack28","pack29","pack30","pack33","pack31","pack32","pack34","pack35","era1955","era1965","era1978"];
+const PACK_ORDER = ["pack1","pack2","pack3","pack4","pack5","pack6","pack9","pack10","pack11","pack12","pack13","pack14","pack15","pack16","pack17","pack18","pack19","pack20","pack21","pack22","pack23","pack24","pack25","pack26","pack27","pack28","pack29","pack30","pack33","pack31","pack32","pack34","pack35","pack36","era1955","era1965","era1978"];
 const ld = (rel, key) => { const s = { window: {} }; vm.createContext(s); vm.runInContext(fs.readFileSync(path.join(ROOT, rel), "utf8"), s, { filename: rel }); return s.window[key]; };
 const errors = [], warnings = [];
 const err = (m) => errors.push(m), warn = (m) => warnings.push(m);
@@ -88,6 +88,15 @@ function scan(item, itemId, inhGate) {
       if (!selfGated && !chainGated) err(`${itemId}: 进入终态 ${dom}=${to} 未自门控前态（需 state.${dom}∈{${pres}} 或 chain+stateNot 组合）`);
     }
   }
+  if (item.setStateBySit) for (const variant of Object.values(item.setStateBySit)) { // v0.18.0：来历幕按处境落定（setStateBySit），与 setState 同规实扫
+    for (const [dom, to] of Object.entries(variant || {})) {
+      if (!DOMAINS[dom]) { err(`${itemId}: setStateBySit 引用未登记域 ${dom}`); continue; }
+      if (!DOMAINS[dom].states.includes(to)) { err(`${itemId}: setStateBySit 引用域 ${dom} 的未登记状态 ${to}`); continue; }
+      let matched = false;
+      for (const [k, e] of declaredEdges) if (e.dom === dom && e.to === to && (e.by || []).includes(itemId)) { matched = true; if (!seenCarriers.has(k)) seenCarriers.set(k, new Set()); seenCarriers.get(k).add(itemId); }
+      if (!matched) err(`${itemId}: setStateBySit ${dom}→${to} 无已启用的声明边（未登记或 by 未含本条目）`);
+    }
+  }
   if (item.chain && !byId.has(item.chain)) err(`${itemId}: chain 指向不存在的 ${item.chain}`);
   for (const c of (item.choices || [])) scan(c, itemId, effGate);
 }
@@ -96,7 +105,7 @@ for (const e of events) scan(e, e.id);
 const CARDS = ld("src/cards.js", "GAME_CARDS");
 let cardCount = 0;
 if (CARDS && CARDS.byId) for (const c of Object.values(CARDS.byId)) { cardCount++; if (byId.has(c.id)) err(`重复 id: 牌 ${c.id} 与事件撞名`); scan(c, c.id); }
-for (const f of D.forks) for (const c of f.choices) scan(c, `fork${f.age}`);
+for (const f of D.forks) for (const c of f.choices) scan(c, f.id || `fork${f.age}`); // v0.18.0：同龄双分岔（fork28/fork28m）以显式 id 为键
 for (const [k, c] of Object.entries(D.crisis || {})) for (const ch of c.choices) scan(ch, `crisis_${k}`);
 // 序章幕（v0.17.0，src/prologue.js）：与事件同规实扫（顶层 set/setState 与选项递归）
 const PRO = ld("src/prologue.js", "GAME_PROLOGUE");
@@ -150,6 +159,7 @@ function collectDeps(item, acc) {
   for (const fld of ["state", "stateAll"]) if (item[fld]) for (const [dom, v] of Object.entries(item[fld])) { if (!acc.states.has(dom)) acc.states.set(dom, new Set()); for (const val of asArr(v)) acc.states.get(dom).add(val); }
   if (item.set) acc.sets.add(item.set);
   if (item.setState) for (const [dom, to] of Object.entries(item.setState)) acc.setStates.push([dom, to]);
+  if (item.setStateBySit) for (const variant of Object.values(item.setStateBySit)) for (const [dom, to] of Object.entries(variant || {})) acc.setStates.push([dom, to]);
   for (const c of (item.choices || [])) collectDeps(c, acc);
 }
 for (const e of events) { const acc = newAcc(); collectDeps(e, acc); prodItems.set(e.id, acc); }
@@ -213,13 +223,14 @@ function ageAcc(item, min, max) {
     for (const f of asArr(o.any)) a.any.add(f);
     if (o.set) a.sets.add(o.set);
     if (o.setState) for (const [dom, to] of Object.entries(o.setState)) a.setStates.push([dom, to]);
+    if (o.setStateBySit) for (const variant of Object.values(o.setStateBySit)) for (const [dom, to] of Object.entries(variant || {})) a.setStates.push([dom, to]);
     for (const c of (o.choices || [])) walk(c);
   };
   walk(item);
   return a;
 }
 for (const e of events) if (typeof e.min === "number" && typeof e.max === "number") ageItems.set(e.id, ageAcc(e, e.min, e.max));
-for (const f of D.forks) ageItems.set(`fork${f.age}`, ageAcc(f, f.age, f.age));
+for (const f of D.forks) ageItems.set(f.id || `fork${f.age}`, ageAcc(f, f.age, f.age));
 if (PRO && PRO.acts) for (const a of PRO.acts) ageItems.set(a.id, ageAcc(a, a.age, a.age)); // 序章幕：单一年龄节点，与分岔同规
 if (CARDS && CARDS.byId) for (const c of Object.values(CARDS.byId)) ageItems.set(c.id, { min: 22, max: 22, gates: new Map(), flags: new Set(), any: new Set(), chain: null, sets: new Set(c.set ? [c.set] : []), setStates: [], eraGate: null, minYear: null });
 const stateEarliest = new Map(); // "dom=value" -> age
@@ -269,7 +280,7 @@ while (grewA && guardA++ < 500) {
     if (need === Infinity && itemEarliest.get(id) !== Infinity) { itemEarliest.set(id, Infinity); grewA = true; }
   }
 }
-const AGE_STRUCTURAL = new Set([...D.forks.map((f) => `fork${f.age}`), ...(CARDS && CARDS.byId ? Object.keys(CARDS.byId) : []), ...(PRO && PRO.acts ? PRO.acts.map((a) => a.id) : [])]);
+const AGE_STRUCTURAL = new Set([...D.forks.map((f) => f.id || `fork${f.age}`), ...(CARDS && CARDS.byId ? Object.keys(CARDS.byId) : []), ...(PRO && PRO.acts ? PRO.acts.map((a) => a.id) : [])]);
 for (const [id, a] of ageItems) {
   if (AGE_STRUCTURAL.has(id)) continue; // 分岔/出身牌无窗口可查
   // (A) 窗口终点早于正向状态门要求值的最早年龄

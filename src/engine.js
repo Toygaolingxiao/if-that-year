@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.17.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.18.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 (function () {
   "use strict";
@@ -30,7 +30,12 @@
     for (const [dom, to] of Object.entries(item.setState)) {
       const from = S.state[dom];
       if (from === undefined || from === to) continue;
-      if (STATE_EDGES[dom] && STATE_EDGES[dom].has(from + ">" + to)) S.state[dom] = to;
+      if (STATE_EDGES[dom] && STATE_EDGES[dom].has(from + ">" + to)) {
+        S.state[dom] = to;
+        rec("state", dom + ">" + to); // 账本（v0.18.0）：状态流转本身就是事实，结算与证据都可读（如 kids 流转本身计一个证据点）
+        if (dom === "spouse") { if (to === "dating") S.datingSince = S.age; else if (from === "dating") S.datingSince = null; }
+        if (dom === "kids" && to === "has" && !S.kidsAt) S.kidsAt = S.age;
+      }
     }
   }
   function deriveStateFromLegacy(saved) { // v0.11 及更早存档：由旧 flags 推导 state（映射见 docs/STATE-MATRIX.md §5）
@@ -49,6 +54,122 @@
     if (F.cat_gone) st.cat = "gone"; else if (used.includes("p5_043")) st.cat = "home";
     return st;
   }
+  // ---------- 结构化人生账本（v0.18.0，内核一期）：文字流水是显示层，账本是事实层 ----------
+  // 每条记录 { age, kind, id, choice?, set?, fx?, text? }；kind ∈ event/rare/fork/crisis/glimpse/flat/micro/proc/state/route/prologue/death。
+  // 判词与特殊结局的证据、结算九槽、居所轨迹都读账本（与 flags/usedEvents 并读；旧存档无账本时各处回落旧读法）。
+  function rec(kind, id, extra) {
+    if (!S) return;
+    if (!Array.isArray(S.ledger)) S.ledger = [];
+    const e = { age: S.age, kind, id };
+    if (extra) for (const [k, v] of Object.entries(extra)) if (v !== undefined && v !== null && v !== "") e[k] = v;
+    S.ledger.push(e);
+    if (extra && extra.set) { if (!S.flagAges) S.flagAges = {}; if (!(extra.set in S.flagAges)) S.flagAges[extra.set] = S.age; }
+  }
+  function hasRec(id) { return Array.isArray(S.ledger) && S.ledger.some((e) => e.id === id); }
+  function hasFact(id) { return !!S.flags[id] || S.usedEvents.includes(id) || (S.usedRare || []).includes(id) || hasRec(id); }
+  // 职业语境门（v0.18.0，审计急修 B5）：条目声明所需活计形态/关键经历（ctx），抽取层按本局实际状态与账本核对——
+  // 没有从医经历不出村医，没有长途职业线不出「跑满一百万公里」。
+  function ctxOk(ctx) {
+    if (!ctx) return true;
+    if (ctx.flag && !hasFact(ctx.flag)) return false;
+    if (ctx.anyFlag && !ctx.anyFlag.some((f) => hasFact(f))) return false;
+    if (ctx.state) for (const [dom, vals] of Object.entries(ctx.state)) if (!vals.includes(S.state[dom])) return false;
+    return true;
+  }
+  // ---------- 父母进程（v0.18.0，内核一期）：父亲、母亲各一条身体进程 ----------
+  // 出生时父母年龄、父母一代人寿命均值与散布按年代标定（标定说明见 docs/PARENTS-PROCESS.md）；
+  // 需照护、住院、离世由进程越线发作成动静（pack36 的 proc_* 条目），不再等事件抽中。主角自身死亡曲线不在此列，一字未动。
+  const PARENT_CAL = {
+    c1955: { dadAge: [27, 35], momAge: [25, 33], dadLife: [66, 9], momLife: [71, 9] },
+    c1965: { dadAge: [27, 35], momAge: [25, 33], dadLife: [69, 9], momLife: [74, 9] },
+    c1978: { dadAge: [26, 34], momAge: [24, 32], dadLife: [73, 9], momLife: [78, 9] },
+    c2000: { dadAge: [25, 33], momAge: [23, 31], dadLife: [79, 10], momLife: [85, 10] },
+  };
+  function triW() { return (rngW() + rngW() + rngW() - 1.5) / 1.5; } // [-1,1] 近正态扰动（进程流）
+  function initParents() {
+    if (S.parents || !S.route) return;
+    const cal = PARENT_CAL[S.era] || PARENT_CAL.c2000;
+    const one = (ageBand, lifeBand) => {
+      const age0 = ageBand[0] + Math.floor(rngW() * (ageBand[1] - ageBand[0] + 1));
+      const life = Math.round(lifeBand[0] + triW() * lifeBand[1]);
+      const deathAge = Math.max(26, life - age0); // 换算成主角年龄口径的离世点；下限保证此事不出在童年段（序章不处理）
+      const careAge = Math.max(24, deathAge - (2 + Math.floor(rngW() * 4))); // 需照护段起点：离世前 2–5 年
+      const hospAge = deathAge - careAge >= 2 ? careAge + 1 + Math.floor(rngW() * (deathAge - careAge - 1)) : null;
+      return { age0, deathAge, careAge, hospAge, stage: "well" }; // stage: well → care → hosp → dead
+    };
+    S.parents = { dad: one(cal.dadAge, cal.dadLife), mom: one(cal.momAge, cal.momLife) };
+  }
+  // 本年到期的进程动静（每岁至多一件：离世 > 住院 > 照护，父先于母）；已被事件写过世的父母不再发作
+  function parentsDue() {
+    if (!S.parents) return null;
+    const due = [];
+    for (const who of ["dad", "mom"]) {
+      const P = S.parents[who];
+      if (!P || S.state[who] !== "alive") continue;
+      if (S.age >= P.deathAge) due.push({ pr: 0, item: "proc_" + who + "_dead", who, beat: "dead" });
+      else if (P.hospAge !== null && S.age >= P.hospAge && P.stage === "hosp") { /* 已呈现 */ }
+      else if (P.hospAge !== null && S.age >= P.hospAge && P.stage === "care") due.push({ pr: 1, item: "proc_" + who + "_hosp", who, beat: "hosp" });
+      else if (S.age >= P.careAge && P.stage === "well") due.push({ pr: 2, item: "proc_" + who + "_care", who, beat: "care" });
+    }
+    if (!due.length) return null;
+    due.sort((a, b) => a.pr - b.pr);
+    return due[0];
+  }
+  // 伴侣状态闭环（v0.18.0，审计急修 B6）：dating 超过 6 年必须走向定下来或分手，不许冻结几十年
+  function datingDue() {
+    return !!(S.state && S.state.spouse === "dating" && typeof S.datingSince === "number" && S.age - S.datingSince >= 7);
+  }
+  // 进程条目呈现（pack36 的 proc_* 条目）：与事件年同形，但过完回到本年 step（进程拍不独占这一年，年内的分岔/瞥视照常）
+  function renderProcItem(item, who, beat) {
+    curKind = "proc";
+    S.flatCarry = null; // 进程年不是平年
+    if (beat && S.parents && S.parents[who]) { // 节拍呈现即推进父母进程段位（离世的状态流转走条目自身的 setState）
+      S.parents[who].stage = beat === "dead" ? "dead" : beat === "hosp" ? "hosp" : "care";
+      if (beat === "care") S.flags.care_stage = true;
+    }
+    if (item.set) S.flags[item.set] = true;
+    applyState(item);
+    if (!item.choices) { applyEffects(item.effects); } else S.lastDelta = "";
+    rec("proc", item.id, { set: item.set || null, fx: !item.choices ? S.lastDelta : null });
+    S.log.push(`${S.age} 岁 · ${item.text}`);
+    const visChoices = item.choices ? item.choices.map((c, i) => [c, i]).filter(([c]) => !(c.deferDating && (S.datingDefers || 0) >= 2)) : null; // dating 推迟两次后不再给推迟选项
+    app().innerHTML = `<section class="card">${head()}<p class="body">${esc(item.text)}</p>${deltaLine()}
+      ${visChoices ? `<div class="choices">${visChoices.map(([c, i]) => `<button class="choice" data-i="${i}">${esc(c.label)}</button>`).join("")}</div><div id="echo"></div>`
+                  : `<button class="primary" id="cont">继续</button>`}</section>`;
+    finishRender();
+    if (!visChoices) { save(); el("cont").addEventListener("click", () => step()); return; }
+    document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {
+      const c = item.choices[Number(b.dataset.i)];
+      choiceBeat(b, () => {
+        applyEffects(c.effects);
+        if (c.set) S.flags[c.set] = true;
+        applyState(c);
+        if (c.deferDating) { S.datingSince = S.age - 3; S.datingDefers = (S.datingDefers || 0) + 1; } // 推迟：时钟回拨，下次到期在约 4 年后
+        rec("proc", item.id, { choice: c.label, set: c.set || null, fx: S.lastDelta });
+        document.querySelector(".choices").remove();
+        el("echo").innerHTML = `${deltaLine()}<p class="pickednote">已选「${esc(c.label)}」</p>${c.echo ? `<p class="echo">${esc(c.echo)}</p>` : ""}<button class="primary" id="cont">继续</button>`;
+        save(); el("cont").addEventListener("click", () => step());
+      });
+    }));
+  }
+  // 居所轨迹（v0.18.0，审计急修 B7）：读账本里的路线起点与迁徙记录，数出各居所住过的年数与终点；
+  // 结算标签与「终老在异国」类句子据此写。旧存档无账本时轨迹为空，按路线回落（起点即终点）。
+  function residenceTrail() {
+    const spans = { home: 0, city: 0, abroad: 0 };
+    let place = null, since = START_AGE;
+    const endA = finalAge();
+    const move = (age, p) => { if (place && p !== place) { spans[place] += Math.max(0, age - since); place = p; since = age; } else if (!place) { place = p; since = age; } };
+    const led = Array.isArray(S.ledger) ? S.ledger : [];
+    for (const e of led) {
+      if (e.kind === "route") move(e.age, e.id === "abroad" ? "abroad" : (e.id === "home" || e.id === "gap") ? "home" : "city");
+      else if (e.set === "back_home_stay" || e.set === "near_family" || e.set === "saw_home") move(e.age, "home");
+      else if (e.set === "moved_city" || e.set === "stayed_city" || e.set === "often_back") move(e.age, "city");
+    }
+    if (!place) place = !S.route ? "home" : S.route.id === "abroad" ? "abroad" : (S.route.id === "home" || S.route.id === "gap") ? "home" : "city";
+    spans[place] += Math.max(0, endA - since);
+    return { final: place, spans };
+  }
+
   const START_AGE = 22, MAX_AGE = 80;
   // 死亡模型 v2（年龄×健康风险）：公式与校准实测见 docs/MORTALITY-MODEL.md
   const MORTALITY = { accident: 0.00015, healthA: 0.0010, healthG: 1.04, hfNum: 115, hfDen: 55, hfLo: 0.3, hfHi: 2.2 };
@@ -97,14 +218,22 @@
   const AUTO_MODES = [["off", "关"], ["plain", "平年"], ["full", "全程"]];
   const DEFAULT_AUTO_MODE = "off"; // v0.17.0 定案（地基 v2.1）：新玩家默认关——第一局先手动过完；老玩家已存的偏好不动（loadPrefs 优先读存档值）。完局后结算页提示一次可开平年自动。
 
-  // --- 可序列化的种子随机 (状态可存档) ---
-  const RNG = { a: 0 };
-  function rng() {
-    RNG.a |= 0; RNG.a = (RNG.a + 0x6D2B79F5) | 0;
-    let t = Math.imul(RNG.a ^ (RNG.a >>> 15), 1 | RNG.a);
+  // --- 可序列化的种子随机（状态可存档） ---
+  // v0.18.0 随机流分家（内核一期）：主种子派生三股流，各走各的计数器——叙事流 RNG（判词/瞥视/呈现层抽取，即旧 rng()）、
+  // 进程流 RNGW（主角死亡判定与父母进程等世界进程）、环境流 RNGA（事件/稀有/平淡年的环境抽取）。
+  // 序章流（种子+"#prologue"，prologue.js 内）并入此体系，为第四股。种子语义自 v0.18 起按此口径：
+  // 同一种子在新口径下是一局新的人生；旧分享链接打开同一种子但不保证同一局（兼容策略见 DEVLOG v0.18.0 条目）；新链接带 k=3 版本位。
+  const RNG = { a: 0 }, RNGW = { a: 0 }, RNGA = { a: 0 };
+  function mulberry(st) {
+    st.a |= 0; st.a = (st.a + 0x6D2B79F5) | 0;
+    let t = Math.imul(st.a ^ (st.a >>> 15), 1 | st.a);
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   }
+  function rng() { return mulberry(RNG); }
+  function rngW() { return mulberry(RNGW); }
+  function rngA() { return mulberry(RNGA); }
+  function seedStreams(seedStr) { RNG.a = seedFromString(seedStr); RNGW.a = seedFromString(seedStr + "#world"); RNGA.a = seedFromString(seedStr + "#ambient"); }
   function seedFromString(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
   const clamp = (v) => Math.max(0, Math.min(100, v));
   const esc = (s) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -128,10 +257,12 @@
       // 童年记号 marks、fork38 立约 covenant、序章运行态 prologue、平年合并 flatCarry 与温度平淡年计数 flatYears
       phase: "adult", stage: "adult", temp: null, rhythm: null,
       marks: [], covenant: null, prologue: null, flatCarry: null, flatYears: 0,
+      // v0.18.0 内核一期：结构化账本 ledger、父母进程 parents、dating 起点 datingSince 与推迟计数 datingDefers、旗标落点年龄 flagAges、子女落点 kidsAt
+      ledger: [], parents: null, datingSince: null, datingDefers: 0, flagAges: {}, kidsAt: null,
       autoMode: DEFAULT_AUTO_MODE, speed: "mid", // 推进设定在本局的副本；权威来源是 localStorage 的 ify-prefs
     };
   }
-  function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify({ ...S, rngA: RNG.a })); } catch (e) { /* 存不了不阻塞游玩 */ } }
+  function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify({ ...S, rngA: RNG.a, rngW: RNGW.a, rngAmb: RNGA.a })); } catch (e) { /* 存不了不阻塞游玩 */ } }
   // 存档判活（v0.17.0 改为按阶段判）：成年段存档有 route；序章段存档没有 route（路线 22 岁才定），凭 phase=prologue + prologue 运行态判活。
   // 旧版（v0.15/v0.16）存档恒有 route，走原判活路径；坏档仍按 null 处理。
   function loadSave() { try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); return s && (s.route || (s.phase === "prologue" && s.prologue)) ? s : null; } catch (e) { return null; } }
@@ -580,7 +711,7 @@
         ${sLine ? `<p class="hint">${sLine}</p>` : ""}
         ${lLine ? `<p class="hint">${lLine}</p>` : ""}
         <p class="hint">明天一局：${tomDaily.era.label} · ${tomDaily.era.id === PROLOGUE_ERA ? "从小时候开始" : esc(tomDaily.route.name)}。</p>
-        <p class="hint ver">v0.17.0</p>
+        <p class="hint ver">v0.18.0</p>
         <p class="hint">不填随机。填了，运气定下来，跟朋友比同一局就用它。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam ? "，年代也按对方那局选好了" : ""}${cardsParam ? "，出身牌也按对方选过的对齐了" : ""}，点任意一条路就开始同一局。` : ""}</p>      </section>`;
     el("liveslink").addEventListener("click", () => { ANA.track("lives_view", {}); renderLives(); });
     if (saved) el("resume").addEventListener("click", () => {
@@ -603,8 +734,15 @@
       S.marks = S.marks || []; if (!("covenant" in S)) S.covenant = null; if (!("prologue" in S)) S.prologue = null;
       if (!("flatCarry" in S)) S.flatCarry = null; S.flatYears = S.flatYears || 0;
       if (typeof S.temp !== "number") { const b = S.route ? rhythmBase("route", S.route.id) : null; S.temp = b ? b.temp : null; S.rhythm = b ? b.rhythm : null; }
+      // v0.18.0 回填：旧存档无账本/父母进程/dating 起点——账本从空起（读账本处都有旧读法回落），父母进程在下一步 step 时按当前年龄惰性初始化，dating 中的按已处 3 年计
+      S.ledger = Array.isArray(S.ledger) ? S.ledger : [];
+      if (!("parents" in S)) S.parents = null;
+      if (!("datingSince" in S)) S.datingSince = S.state && S.state.spouse === "dating" ? Math.max(START_AGE, S.age - 3) : null;
+      S.datingDefers = S.datingDefers || 0; S.flagAges = S.flagAges || {}; if (!("kidsAt" in S)) S.kidsAt = null;
       S.autoMode = prefs.mode; S.speed = prefs.speed;
       RNG.a = typeof saved.rngA === "number" ? saved.rngA : seedFromString(saved.seedStr);
+      RNGW.a = typeof saved.rngW === "number" ? saved.rngW : seedFromString(String(saved.rngA) + "#world-legacy"); // 旧存档无进程/环境流存档值：由旧随机态派生续玩（不承诺与旧口径同一局，见 DEVLOG）
+      RNGA.a = typeof saved.rngAmb === "number" ? saved.rngAmb : seedFromString(String(saved.rngA) + "#ambient-legacy");
       prevStats = null; resumeMark = true; // §6.2 续玩第一屏给一句定位
       if (S.death) renderDeath(); else step();
     });
@@ -700,7 +838,7 @@
     S = freshState(seedStr);
     prevStats = null; resumeMark = false;
     streamFollow = true; streamSeen = 0; streamTop = 0;
-    RNG.a = seedFromString(seedStr);
+    seedStreams(seedStr); // v0.18.0：三股流由主种子派生
     if (opts) { S.era = opts.era; S.birthYear = opts.birth; }
     S.autoMode = prefs.mode; S.speed = prefs.speed;
     S.route = route;
@@ -717,6 +855,7 @@
       if (names.length) S.log.push(`22 岁 · 出身：${names.join(" · ")}`);
     }
     applyEffects(route.stats); S.lastDelta = "";
+    rec("route", route.id);
     S.log.push(`22 岁 · 出发：${route.name}`);
     save();
     step();
@@ -728,10 +867,11 @@
     S = freshState(seedStr);
     prevStats = null; resumeMark = false;
     streamFollow = true; streamSeen = 0; streamTop = 0;
-    RNG.a = seedFromString(seedStr);
+    seedStreams(seedStr); // v0.18.0：三股流由主种子派生
     if (eraId) { S.era = eraId; S.birthYear = birth; }
     S.autoMode = prefs.mode; S.speed = prefs.speed;
     PRO.start(S, seedStr); // 处境发放与童年基线在此落定（序章独立流，主 RNG 一格不动）
+    rec("prologue", "sit_" + (S.prologue ? S.prologue.situation : "school")); // 处境发放进账本（v0.18.0）
     save();
     step();
   }
@@ -757,6 +897,7 @@
     finishRender();
     if (!view.choices) {
       el("cont").addEventListener("click", () => {
+        rec("prologue", view.id);
         const r = PRO.choose(S, -1);
         if (r.gapFx && Object.keys(r.gapFx).length) applyEffects(r.gapFx); else S.lastDelta = "";
         save();
@@ -772,6 +913,7 @@
         applyEffects(c.effects);
         if (c.set) S.flags[c.set] = true;
         applyState(c);
+        rec("prologue", view.id, { choice: c.label, set: c.set || null });
         if (view.isFork) view.choices.forEach((o, j) => { if (j !== i) S.unchosen.push({ kind: "track", age: 16, label: o.label }); });
         const r = PRO.choose(S, i);
         if (r.gapFx && Object.keys(r.gapFx).length) applyEffects(r.gapFx);
@@ -818,6 +960,7 @@
     const base = rhythmBase("route", route.id); // 进成年段，温度基线换成路线基线（轨道基线已在 16 岁写入）；之后由分岔改温
     if (base) { S.temp = base.temp; S.rhythm = base.rhythm; }
     applyEffects(route.stats); S.lastDelta = "";
+    rec("route", route.id);
     S.log.push(`22 岁 · 出发：${route.name}`);
     save();
     step();
@@ -831,7 +974,12 @@
     if (S.age >= MAX_AGE) return renderEnd();
     save();
     if (S.pendingFork && S.pendingFork.age === S.age) { renderForkEcho(); return mountStream(); } // 分岔复述拍未走时，续玩/重入都回到复述拍
-    const fork = D.forks.find((f) => f.age === S.age && (!f.state || met(f))); // v0.16.0：分岔可带状态门（如 fork45 只给 kids 未定且有伴侣的人）；无门分岔行为不变
+    // 进程拍（v0.18.0，内核一期）：父母进程到期与 dating 到期结算排在分岔/瞥视之前，呈现完仍回到本年（不独占年份）
+    if (S.route) initParents();
+    const pdue = parentsDue();
+    if (pdue) { const pit = D.events.find((e) => e.id === pdue.item); if (pit) { renderProcItem(pit, pdue.who, pdue.beat); return mountStream(); } }
+    if (datingDue()) { const dit = D.events.find((e) => e.id === "proc_dating"); if (dit) { renderProcItem(dit); return mountStream(); } }
+    const fork = D.forks.find((f) => f.age === S.age && (!f.route || f.route === S.route.id) && (!f.forbidRoute || f.forbidRoute !== S.route.id) && (!f.forbid || !S.flags[f.forbid]) && (!f.anyParentAlive || S.state.dad === "alive" || S.state.mom === "alive") && (!f.state || met(f))); // v0.18.0 审计急修：分岔门接线补齐 route/forbidRoute/forbid/anyParentAlive（fork28 镜像、fork33 已购房不出、fork52 双亲已不在不出）；原 v0.16.0 口径只认 state 门 // v0.16.0：分岔可带状态门（如 fork45 只给 kids 未定且有伴侣的人）；无门分岔行为不变
     if (fork) { renderFork(fork); return mountStream(); }
     if (S.age in GLIMPSE_AGES) { renderGlimpse(GLIMPSE_AGES[S.age]); return mountStream(); }
     const rare = pickRare();
@@ -848,6 +996,8 @@
     if (needs.notFlag && S.flags[needs.notFlag]) return false;
     if (needs.anyFlag && !needs.anyFlag.some((f) => S.flags[f])) return false;
     if (needs.state) for (const [dom, vals] of Object.entries(needs.state)) if (!vals.includes(S.state[dom])) return false;
+    if (needs.stateNot) for (const [dom, vals] of Object.entries(needs.stateNot)) if (vals.includes(S.state[dom])) return false;
+    if (needs.eraIn && !needs.eraIn.includes(S.era)) return false;
     return true;
   }
   function evidenceCount(e) { // F4 证据点：evidence 组内任一备选命中算一点（备选 = 事件/稀有/旗标 id 或 {stat} 数值门）
@@ -855,8 +1005,10 @@
     let n = 0;
     for (const group of e.evidence) {
       const hit = group.some((alt) => {
-        if (typeof alt === "string") return !!S.flags[alt] || S.usedEvents.includes(alt) || (S.usedRare || []).includes(alt);
+        if (typeof alt === "string") return hasFact(alt); // v0.18.0：证据点改读账本并读（flags/usedEvents/usedRare/ledger 同一口径）
         if (alt && alt.stat) return alt.stat.gt !== undefined ? S.stats[alt.stat.k] > alt.stat.gt : S.stats[alt.stat.k] < alt.stat.lt;
+        if (alt && alt.state) return Object.entries(alt.state).every(([dom, v]) => S.state[dom] === v);
+        if (alt && alt.rec) return hasRec(alt.rec);
         return false;
       });
       if (hit) n++;
@@ -865,6 +1017,10 @@
   }
   // --- 统一条件求值：路线/标记组合/数值形状/前置链 ---
   function met(e) {
+    if (e.procOnly) return false; // 进程条目只由进程呈现，不进普通抽取池（v0.18.0）
+    if (e.ctx && !ctxOk(e.ctx)) return false; // 职业语境门（v0.18.0）
+    if (e.anyParentAlive && S.state.dad !== "alive" && S.state.mom !== "alive") return false;
+    if (e.kidMin != null && (S.kidsAt == null || S.age - S.kidsAt < e.kidMin)) return false; // v0.18.0：孩子年龄门（按 kids 落定年龄推孩子岁数，挡「孩子 9 岁脱产备考」类错位） // 与父母进程对齐（fork52：父母都不在了不出此岔）
     if (e.route && e.route !== S.route.id) return false;
     if (e.routeIn && !e.routeIn.includes(S.route.id)) return false;
     if (e.forbidRoute && e.forbidRoute === S.route.id) return false;
@@ -889,7 +1045,7 @@
       if ((S.usedRare || []).includes(r.id)) continue;
       if (S.age < r.min || S.age > r.max) continue;
       if (!met(r)) continue;
-      if (rng() < (r.chance !== undefined ? r.chance : 0.1)) return r;
+      if (rngA() < (r.chance !== undefined ? r.chance : 0.1)) return r;
     }
     return null;
   }
@@ -897,6 +1053,7 @@
     curKind = "rare";
     S.flatCarry = null; // 稀有年不是平年：挂起的平年只留在流水账里
     S.usedRare.push(r.id);
+    rec("rare", r.id, { set: r.set || null });
     if (r.set) S.flags[r.set] = true; // 呈现即立旗（v0.11.0 起覆盖有选项事件：去世旗等必立旗靠它保证）
     applyState(r); // v0.12.0：状态流转与立旗同一时机
     if (!r.choices) { applyEffects(r.effects); } else S.lastDelta = "";
@@ -913,6 +1070,7 @@
         applyEffects(c.effects);
         if (c.set) S.flags[c.set] = true;
         applyState(c);
+        rec("rare", r.id, { choice: c.label, set: c.set || null, fx: S.lastDelta });
         document.querySelector(".choices").remove();
         el("echo").innerHTML = `${deltaLine()}<p class="pickednote">已选「${esc(c.label)}」</p><p class="echo">${esc(c.echo)}</p><button class="primary" id="cont">过一年</button>`;
         save(); el("cont").addEventListener("click", advance);
@@ -923,15 +1081,16 @@
     const health = S.stats.health;
     let type = null;
     // v2：意外线独立先掷（30 岁前豁免）；健康线 λ(age,H) = a × g^(age−40) × hf(H)，40 岁前为 0
-    if (S.age >= 30 && rng() < MORTALITY.accident) type = "accident";
+    if (S.age >= 30 && rngW() < MORTALITY.accident) type = "accident";
     else if (S.age >= 40) {
       const hf = Math.max(MORTALITY.hfLo, Math.min(MORTALITY.hfHi, (MORTALITY.hfNum - health) / MORTALITY.hfDen));
-      if (rng() < MORTALITY.healthA * Math.pow(MORTALITY.healthG, S.age - 40) * hf) type = "health";
+      if (rngW() < MORTALITY.healthA * Math.pow(MORTALITY.healthG, S.age - 40) * hf) type = "health";
     }
     if (!type) return false;
     const pool = DEATH_CAUSES[type];
-    const text = pool[Math.floor(rng() * pool.length)];
+    const text = pool[Math.floor(rngW() * pool.length)];
     S.death = { age: S.age, type, text };
+    rec("death", type);
     S.log.push(`${S.age} 岁 · 这一生停在这里：${text}`);
     return true;
   }
@@ -987,8 +1146,13 @@
     curKind = "fork";
     S.flatCarry = null; // 分岔年不是平年：挂起的平年只留在流水账里（22–38 合并纪律）
     const covPrefix = fork.age === 45 && S.covenant && S.covenant.kind === "wait" ? `<p>七年前在 38 岁挂起的那份账，今天到期。</p>` : ""; // 立约到期点呈现
-    app().innerHTML = `<section class="card">${head()}<h2>${esc(fork.title)}</h2>${covPrefix}<p>${esc(fork.text)}</p>
-      <div class="choices">${fork.choices.map((c, i) => `<button class="choice" data-i="${i}">${esc(spouseText(c, "label"))}</button>`).join("")}</div></section>`;
+    const careNow = S.parents ? ((S.parents.dad.stage === "care" && S.state.dad === "alive") || (S.parents.mom.stage === "care" && S.state.mom === "alive")) : !!S.flags.care_stage;
+    const forkText = fork.age === 52 && careNow && fork.textCare ? fork.textCare : fork.text; // v0.18.0 审计急修：textCare 只认「正在照护且父母尚在」——旧 care_stage 旗在父母离世后仍留着，不能让 52 岁分岔对孤儿说「你已经在照护里了」 // fork52 与父母进程对齐（v0.18.0）：进程已到照护段时文本随动
+    const GATE_KEYS = ["require", "forbid", "all", "any", "state", "stateAll", "stateNot", "era", "eraIn", "minYear", "route", "routeIn", "forbidRoute", "chain"];
+    let vis = fork.choices.map((c, i) => [c, i]).filter(([c]) => !GATE_KEYS.some((k) => k in c) || met(c)); // 选项级门（v0.18.0）：带门的选项按本局事实显隐（如 fork52 排班选项只给有兄弟姐妹的人）
+    if (!vis.length) vis = fork.choices.map((c, i) => [c, i]);
+    app().innerHTML = `<section class="card">${head()}<h2>${esc(fork.title)}</h2>${covPrefix}<p>${esc(forkText)}</p>
+      <div class="choices">${vis.map(([c, i]) => `<button class="choice" data-i="${i}">${esc(spouseText(c, "label"))}</button>`).join("")}</div></section>`;
     finishRender();
     document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {
       const c = fork.choices[Number(b.dataset.i)];
@@ -1000,6 +1164,7 @@
         if (fork.age === 38) registerCovenant(c);
         fork.choices.forEach((o) => { if (o !== c) S.unchosen.push({ kind: "fork", age: fork.age, label: spouseText(o, "label") }); });
         S.log.push(`${fork.age} 岁 · ${fork.title.split("·")[1].trim()}：${spouseText(c, "label")}`);
+        rec("fork", fork.id || ("fork" + fork.age), { choice: spouseText(c, "label"), set: c.set || null, fx: S.lastDelta });
         S.pendingFork = { age: fork.age, label: spouseText(c, "label"), echo: spouseText(c, "echo") || null }; // §3.3 复述拍：先存下，续玩回到这一拍而不是重选
         save();
         renderForkEcho();
@@ -1036,6 +1201,7 @@
         applyEffects(ch.effects); S.crisisUsed[c.key] = true;
         if (ch.set) S.flags[ch.set] = true; applyState(ch); // v0.12.0：与其它选项路径统一（现行危机数据未用 set/setState，防未来内容轮）
         S.log.push(`${S.age} 岁 · ${c.title}：${ch.label}`);
+        rec("crisis", c.key, { choice: ch.label, set: ch.set || null, fx: S.lastDelta });
         document.querySelector(".choices").remove();
         el("echo").innerHTML = `${deltaLine()}<p class="pickednote">已选「${esc(ch.label)}」</p><p class="echo">${esc(ch.echo)}</p><button class="primary" id="cont">过一年</button>`;
         save(); el("cont").addEventListener("click", advance);
@@ -1050,9 +1216,9 @@
     // 回响事件（require 命中）与本年代事件权重更高：早年的选择更容易被「想起来」，年代质感不能被大池稀释
     // chain 后继关窗保底（v0.14.0）：后继只剩最后两年窗口且当年可抽时，先以 1/2 概率在后继中等概率直抽——深链后继的合格局本就少，错过窗口整链就沉了（定参见 DEVLOG v0.14.0 条目⑤）
     const closing = pool.filter((e) => e.chain && S.age >= e.max - 1);
-    if (closing.length && rng() < 0.5) return closing[Math.floor(rng() * closing.length)];
+    if (closing.length && rngA() < 0.5) return closing[Math.floor(rngA() * closing.length)];
     const weighted = pool.flatMap((e) => { let n = 1; if (e.require || e.state) n = 3; if (e.era && e.era === S.era) n = Math.max(n, 3); if (e.w) n *= e.w; if (e.chain) n *= CHAIN_BOOST; return Array(n).fill(e); }); // e.w 数据权重倍数（v0.11.0：中段苦味事件 w:2）；v0.12.0 状态门事件与 require 同权重；v0.14.0 chain 后继再乘 CHAIN_BOOST
-    return weighted[Math.floor(rng() * weighted.length)];
+    return weighted[Math.floor(rngA() * weighted.length)];
   }
   function renderEventYear() {
     curKind = "year";
@@ -1061,11 +1227,12 @@
     // 死亡判定仍在 advance() 里逐年走，温度不碰死亡率（红线）。
     const flatShare = rhythmOf(S).flatShare;
     if (RHYTHM && flatShare > 0 && rng() < flatShare) {
-      const f = RHYTHM.flatAdult[Math.floor(rng() * RHYTHM.flatAdult.length)];
+      const f = RHYTHM.flatAdult[Math.floor(rngA() * RHYTHM.flatAdult.length)];
       S.flatYears = (S.flatYears || 0) + 1;
       S.flatCarry = null;
       applyEffects(f.effects);
       S.log.push(`${S.age} 岁 · ${f.text}`);
+      rec("flat", "flat_adult", { text: f.text });
       app().innerHTML = `<section class="card">${head()}<p class="body">${esc(f.text)}</p>${deltaLine()}<button class="primary" id="cont">过一年</button></section>`;
       finishRender();
       save(); el("cont").addEventListener("click", advance);
@@ -1076,10 +1243,11 @@
     if (!e) {
       // 平年微文本：年份不再被静默跳过
       const fresh = D.micro.filter((_, i) => !S.microUsed.includes(i));
-      const idx = fresh.length ? D.micro.indexOf(fresh[Math.floor(rng() * fresh.length)]) : Math.floor(rng() * D.micro.length);
+      const idx = fresh.length ? D.micro.indexOf(fresh[Math.floor(rngA() * fresh.length)]) : Math.floor(rngA() * D.micro.length);
       if (!S.microUsed.includes(idx)) S.microUsed.push(idx);
       const microText = D.micro[idx];
       S.log.push(`${S.age} 岁 · ${microText}`);
+      rec("micro", "micro", { text: microText });
       // 22–38 相邻平年合并（v0.17.0）：前一年先挂起（只入流水账），下一年同为平年则两行同卡呈现，省一屏；
       // 合并只动呈现——抽取、随机流、死亡判定全不变（模拟口径与旧版一致），总时长不涨。
       if (S.flatCarry) {
@@ -1108,6 +1276,7 @@
     if (e.set) S.flags[e.set] = true; // 顶层 set 呈现即立（v0.9.2 补齐普通事件路径；v0.11.0 起覆盖有选项事件：去世旗等必立旗靠它保证）
     applyState(e); // v0.12.0：状态流转与立旗同一时机
     if (!e.choices) { applyEffects(e.effects); } else S.lastDelta = "";
+    rec("event", e.id, { set: e.set || null, fx: !e.choices ? S.lastDelta : null });
     S.log.push(`${S.age} 岁 · ${e.text}`);
     app().innerHTML = `<section class="card">${head()}<p class="body">${esc(e.text)}</p>${deltaLine()}
       ${e.choices ? `<div class="choices">${e.choices.map((c, i) => `<button class="choice" data-i="${i}">${esc(c.label)}</button>`).join("")}</div><div id="echo"></div>`
@@ -1119,6 +1288,7 @@
       applyEffects(c.effects);
       if (c.set) S.flags[c.set] = true;
       applyState(c);
+      rec("event", e.id, { choice: c.label, set: c.set || null, fx: S.lastDelta });
       if (autoSelected) S.log.push(`${S.age} 岁 · 自动选：${c.label}`);
       document.querySelector(".choices").remove();
       el("echo").innerHTML = `${deltaLine()}${autoSelected ? `<p class="autonote">自动推进 · 已选「${esc(c.label)}」</p>` : `<p class="pickednote">已选「${esc(c.label)}」</p>`}<p class="echo">${esc(c.echo)}</p><button class="primary" id="cont">过一年</button>`;
@@ -1196,10 +1366,11 @@
       <div class="row"><button class="primary" id="look">看细节</button><button class="ghost" id="skip">不看，继续过日子</button></div>
       <div id="detail"></div></section>`;
     finishRender();
-    el("skip").addEventListener("click", () => { S.glimpsesSkipped += 1; ANA.track("glimpse", { age: S.age, seen: false }); S.log.push(`${S.age} 岁 · 没有去看另一条路`); advance(); });
+    el("skip").addEventListener("click", () => { S.glimpsesSkipped += 1; ANA.track("glimpse", { age: S.age, seen: false }); S.log.push(`${S.age} 岁 · 没有去看另一条路`); rec("glimpse", "skip"); advance(); });
     el("look").addEventListener("click", () => {
       S.glimpsesSeen += 1; ANA.track("glimpse", { age: S.age, seen: true });
       (S.shadowSeenTexts = S.shadowSeenTexts || []).push(text);
+      rec("glimpse", "seen", { text });
       S.log.push(`${S.age} 岁 · 影子：${text}`);
       // 童年记号的影子回响（v0.17.0）：每局第一次看瞥视时附一句「两条路上共同的事实」——童年不进影子锚点，只留共同事实
       let markLine = "";
@@ -1242,8 +1413,10 @@
   // 无稀有度、无档位；不复述特殊结局名；纯函数（不耗 rng），同局在结算页与分享卡恒一致。
   function lifeTags() {
     const F = S.flags, used = S.usedEvents, out = [];
+    const trail = residenceTrail(); // v0.18.0：形状段改读实际居所轨迹（账本里的路线起点与迁徙记录），不再只凭路线与旗标
     let shape = "";
-    if (F.back_home_stay) shape = "最后回了老家";
+    if (trail.final === "home" && trail.spans.city + trail.spans.abroad >= 5) shape = "最后回了老家";
+    else if (F.back_home_stay) shape = "最后回了老家";
     else if (F.stayed_city) shape = "在异乡扎下根";
     else if (F.moved_city) shape = "换过城市生活";
     else if (F.near_family) shape = "守在家人近处";
@@ -1275,7 +1448,7 @@
     if (!t2 && S.state && S.state.dog !== "none") t2 = "养过一条狗"; // v0.12.0：旗标时代 dog_home 立后不清（在养/已离世都算养过），状态读法等价取 ≠none
     if (!t2 && F.bought_house) t2 = "供过一套房";
     if (t2) out.push(t2);
-    const res = (F.back_home_stay || S.route.id === "home" || F.near_family) ? "家乡" : (S.route.id === "abroad" ? "异国" : (F.stayed_city || F.moved_city || S.route.id === "corp" ? "异乡" : "住了大半辈子的地方"));
+    const res = trail.final === "home" ? "家乡" : trail.final === "abroad" ? "异国" : "异乡"; // v0.18.0：「终老在异国」只在居所轨迹终点确为异国时才写
     let close = "";
     const ST = S.state || {}; // v0.12.0：收尾段改读状态矩阵（原旗标读法在离异/丧偶后因旗不清会误判，现按当前状态）
     if (ST.spouse === "widowed") close = "老伴先走，最后一段自己过";
@@ -1381,6 +1554,75 @@
       renderLives();
     });
   }
+
+  // ---------- 结算九槽（v0.18.0，地基 §4.6/§4.7）：九个槽位全读状态与账本拼装 ----------
+  // 落脚/陪伴/钱/手艺事业/子女线/父母线/没办完的事/影子代价/认领句；认领句（玩家在瞥视时留下的话）原样入槽；
+  // 判词退为九槽之后的收尾一行。平淡轨（没撞上什么大事的一生）在认领槽有「平淡而完整」的写法。
+  function settlementSlots() {
+    const F = S.flags, ST = S.state || {};
+    const trail = residenceTrail();
+    const slots = [];
+    let s1;
+    if (trail.final === "home" && trail.spans.city + trail.spans.abroad >= 5) s1 = `在外头住了${trail.spans.city + trail.spans.abroad}年，最后还是回了老家落脚。`;
+    else if (trail.final === "abroad") s1 = `最后落脚在异国，在那边住了${trail.spans.abroad}年。`;
+    else if (trail.final === "city" && S.route && S.route.id === "home") s1 = `后来出了家乡，在外头落了脚，一住${trail.spans.city}年。`;
+    else if (trail.final === "home") s1 = "最后落脚在老家这边，住的还是熟门熟路的地方。";
+    else s1 = "最后落脚在住惯了的这座城，没再挪窝。";
+    slots.push(["落脚", s1]);
+    let s2;
+    if (ST.spouse === "partnered") s2 = "另一半陪着走到了最后。吵过，也和好过，饭还是一起吃。";
+    else if (ST.spouse === "widowed") s2 = "另一半先走了一步。最后一段路，是自己走完的。";
+    else if (ST.spouse === "divorced") s2 = "中间那段婚姻散了。后来的几十年，各过各的。";
+    else if (ST.spouse === "dating") s2 = "身边一直有个人，没领证，也没散，就这么处到了老。";
+    else if (ST.spouse === "single") s2 = "这一生没和谁凑成一对。日子自己过，饭自己吃，也过来了。";
+    else s2 = "没遇上要凑成一对的人。一个人，也把日子过完了。";
+    slots.push(["陪伴", s2]);
+    const m = S.stats.money;
+    let s3;
+    if (F.bought_house) s3 = m >= 60 ? "房子的尾款早结清了，手里还留着余钱，够花。" : "供下了一套房，尾款结清那年存折上没剩多少，日子紧巴巴地过。";
+    else if (m >= 70) s3 = "没买房，手里的钱倒是攒下了，够用，还有富余。";
+    else if (m >= 40) s3 = "钱不多不少，够日常开销。遇上大事帮不上，小日子能过。";
+    else if (m >= 20) s3 = "手头一直紧。钱这事，操心了一辈子。";
+    else s3 = "到最后也没攒下什么。好在饭还吃得上，觉还睡得着。";
+    slots.push(["钱", s3]);
+    const g = S.stats.growth;
+    let s4;
+    if (F.traj_ipo || F.traj_funded) s4 = "事业做到过上市那一步，锣声听过，名字也上过报。";
+    else if (F.side_business || F.side_job || F.side_start) s4 = g >= 60 ? "正职之外还干出过一份副业，后来成了日子里的一块。" : "正职之外试过副业，成没成另说，手没闲着。";
+    else if (g >= 75) s4 = "手里的活儿干到了顶。行里的人碰上难事，会来问你。";
+    else if (g >= 50) s4 = "一辈子就干这一行。活儿拿得出手，饭吃得安稳。";
+    else if (g >= 30) s4 = "活儿干得不算出色，胜在没出过大错。一天一天，也就过来了。";
+    else s4 = "没在活儿上争过什么高低。日子过得平，活儿也干得平。";
+    slots.push(["手艺事业", s4]);
+    let s5;
+    if (F.late_parent) s5 = "孩子来得晚。别人抱孙辈的年纪，你还在给孩子开家长会。";
+    else if (ST.kids === "has") s5 = F.kid_abroad ? "孩子大了，去了远方。逢年过节，电话那头热闹。" : "孩子在跟前长大，老了也还在跟前。";
+    else if (ST.kids === "none") s5 = S.covenant && S.covenant.kind === "none" ? "孩子的事，38 岁那年就定下了：不要。后来照着这个安排过。" : "这一生没要孩子。屋里清静，日子是另一种过法。";
+    else s5 = "孩子的事一直没正式定下来。拖着拖着，就到了这岁数。";
+    slots.push(["子女", s5]);
+    const dadD = ST.dad === "dead", momD = ST.mom === "dead";
+    let s6;
+    if (dadD && momD) s6 = F.care_self ? "爸妈都送走了。需要人那几年，你回去陪过一阵。" : F.care_hired ? "爸妈都送走了。走之前请了人照护，你管钱，也管事。" : "爸妈都送走了。最后那一程，赶上了。";
+    else if (dadD) s6 = "爸先走了，妈还在。逢年过节，先给妈打电话。";
+    else if (momD) s6 = "妈先走了，爸还在。老两口剩一个，屋里空了一半。";
+    else s6 = "到这一生走完，爸妈都还健在。这样的情形，不多。";
+    slots.push(["父母", s6]);
+    let s7;
+    if (S.covenant && S.covenant.kind === "wait" && ST.kids === "undecided") s7 = "38 岁挂起的那份账，到最后也没正式对完。";
+    else if (F.late_tried && !F.late_parent) s7 = "想要孩子那几年，试过，也跑过医院，最后没等来。这事放下了，就是偶尔还想起。";
+    else if ((S.glimpsesSkipped || 0) >= 2) s7 = "另一条路有几回摆在眼前，你都没去细看。不知道的，就让它不知道下去。";
+    else if (F.renting && !F.bought_house) s7 = "买房的事提过几回，最后没办成，租着住到了老。";
+    else s7 = "没什么悬着的大事。该办的办了，办不了的，也放下了。";
+    slots.push(["没办完的事", s7]);
+    const mainU = (S.unchosen || []).find((u) => u.kind === "route");
+    const sh = mainU && D.shadows ? D.shadows[mainU.id] : null;
+    const cost = sh ? shadowCostText(sh).replace(/^代价也清楚：/, "") : "";
+    slots.push(["另一条路", cost ? `没走的那条路，代价在那边：${cost}` : "没走的那几条路，各有各的走法，没法放在一起称。"]);
+    const refl = S.reflections && S.reflections.length ? S.reflections[S.reflections.length - 1].text : "";
+    const flatLife = !(S.usedRare || []).length && (Array.isArray(S.ledger) ? S.ledger.filter((e) => e.kind === "event").length : 99) < 30;
+    slots.push(["你留的话", refl ? `「${refl}」` : flatLife ? "这一生没留下认领的话。平淡是平淡，可一年一年都是真的——平淡，也是完整的一生。" : "这一生没留下认领的话。就这么走完了。"]);
+    return slots;
+  }
   function renderEnd() {
     curKind = "end";
     clearAutoContext();
@@ -1408,6 +1650,7 @@
       </div>
       <div class="rev" style="--d:.12s">
       <p class="lifetags">${esc(lifeTags())}</p>
+      ${settlementSlots().map(([k, t]) => `<p class="slotline"><span class="slotk">${esc(k)}</span>${esc(t)}</p>`).join("")}
       <p class="verdict">${esc(v.text)}</p>
       <p>你走了这条路：${esc(S.route.name)}。</p>
       ${covLine ? `<p>${esc(covLine)}</p>` : ""}
@@ -1531,7 +1774,8 @@
   function sameSeedUrl() {
     let u = location.origin + location.pathname
       + "?seed=" + encodeURIComponent(S.seedStr)
-      + "&era=" + encodeURIComponent(S.era || "c2000");
+      + "&era=" + encodeURIComponent(S.era || "c2000")
+      + "&k=3"; // 内核版本位（v0.18.0）：k=3 为三股流新口径；无此位的旧链接按新口径打开同一种子，不保证同一局（策略见 DEVLOG v0.18.0 条目）
     if (S.cards && S.cards.length) u += "&cards=" + encodeURIComponent(S.cards.join(","));
     return u;
   }

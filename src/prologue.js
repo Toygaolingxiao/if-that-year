@@ -12,9 +12,11 @@
   function prng(S) { const P = S.prologue; P.a |= 0; P.a = (P.a + 0x6D2B79F5) | 0; let t = Math.imul(P.a ^ (P.a >>> 15), 1 | P.a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
   function stageFor(age) { return age < 6 ? "origin" : age <= 12 ? "child" : age <= 16 ? "teen" : age <= 21 ? "youth" : age <= 64 ? "adult" : "late"; }
 
-  // 处境发放权重（[处境, 权重]）：本轮只开 school；half / never 的完整权重在第一步按年代标定后开放。
+  // 处境发放权重（[处境, 权重]）：v0.17.0 试点只开 school；v0.18.0 第一步把 c2000 补齐——
+  // school 88（义务教育普及年代的绝大多数）、half 9（帮工 + 初中流失的小格）、never 3（登记小权重：只剩重病、极端贫困、家庭变故这类特殊情形，并带识字线）。
+  // 其余年代仍只开 school，各年代的处境权重在第二步按各自年代的入学数据分别标定。
   const SITUATION_W = {
-    c2000: [["school", 100], ["half", 0], ["never", 0]],
+    c2000: [["school", 88], ["half", 9], ["never", 3]],
     c1978: [["school", 100], ["half", 0], ["never", 0]],
     c1965: [["school", 100], ["half", 0], ["never", 0]],
     c1955: [["school", 100], ["half", 0], ["never", 0]],
@@ -39,7 +41,8 @@
   };
   const ACTS = [
     { id: "pr_origin", age: 5, log: "家里是这样开始的", setState: { schooling: "school" },
-      text: "" }, // 文本在 present 时物化：开场白（独立流二选一）+ 家底牌原话。无选项、无数值、无影子（地基红线）。
+      setStateBySit: { half: { schooling: "half" }, never: { schooling: "never" } },
+      text: "" }, // 文本在 present 时物化：开场白（独立流二选一）+ 家底牌原话。无选项、无数值、无影子（地基红线）。处境落定按发放结果选 setStateBySit。
     { id: "pr_child1", age: 7, log: "开学第一天", set: "mark_deskmate", mark: "mark_deskmate",
       text: "开学第一天，你背着新书包站在教室门口，手心全是汗。老师按个子排座，你的同桌来得比你早，桌上摆着一块新橡皮，已经切成两半，推给你一半。",
       choices: [
@@ -123,7 +126,51 @@
       },
       choices: null }, // 无选项：看完点「到 22 岁」，汇入五路线
   ];
-  // 间隔年只在 child/teen/youth 段出现（act 年龄表）：5→7→9→11→12→13→15→16→17→18→20→21，空档为 6/8/10/14/19。
+  // 处境专属幕（v0.18.0 第一步）：half 线（半读半帮工 → 读了又离开/补课）、never 线（没进校门 → 夜校识字线 → 认字之后）。
+  // 留守不是处境值，是家底底色（见 start 的 leftBehind）：只改来历幕与童年幕的质地，不占幕序。
+  const SIT_ACTS = {
+    half: [
+      { id: "pr_half1", age: 10, log: "半天学校半天家", sit: "half",
+        text: "你家里的活多。上半天学，下半天回家帮工：喂猪、晒谷、农忙时下地。老师知道你家的情况，作业晚交一两天，也不说你。",
+        choices: [
+          { label: "书包里揣着课本，路上也在背", effects: { growth: 1 }, echo: "课文背得磕磕绊绊，可放下书包之前，总能顺下来了。" },
+          { label: "先紧着家里的活，书有空再看", effects: { relation: 1 }, echo: "家里的活你干得利索。大人说起你，都讲懂事。" },
+        ] },
+      { id: "pr_half2", age: 14, log: "读了又离开", sit: "half", title: "14 岁 · 还读不读",
+        text: "初二念完，家里的意思越来越明确：地里缺人手，学费也是一笔。这个书，还读不读，你自己也得拿个主意了。",
+        choices: [
+          { label: "咬咬牙，继续读下去", effects: { growth: 2, money: -1 }, echo: "你接着读了。家里的活没少干，觉睡得更少了。" },
+          { label: "就读到这儿，回家帮工", setState: { schooling: "left" }, effects: { relation: 1, money: 1 }, echo: "退学那天，你把课本摞好，放在柜子顶上。往后，就是全天帮工的人了。" },
+        ] },
+      { id: "pr_half3", age: 19, log: "半大的手艺", sit: "half",
+        text: "这些年，书读得不全，手上的活倒是齐全了。家里家外的事，你都能顶上去。",
+        choices: [
+          { label: "农闲去镇上补课，把落下的认回来", set: "half_grown", effects: { growth: 2 }, echo: "补课班上多是半大孩子，你坐在最后一排，也不觉得臊。落下的，一点一点往回捡。" },
+          { label: "手艺活接着干，日子先过稳", effects: { money: 1, health: 1 }, echo: "你把手上的活干得更细了。找你干活的人，慢慢多起来。" },
+        ] },
+    ],
+    never: [
+      { id: "pr_never1", age: 8, log: "没进过校门", sit: "never",
+        text: "村里的小学在山那边。你家的情况，报名的那几天，没人顾得上送你去。开学那天，你站在村口，看背书包的孩子一拨一拨往山那边走。",
+        choices: [
+          { label: "回家帮着放羊，心里把这条路记下", effects: { freedom: 1 }, echo: "羊吃草的时候，你坐在坡上看山那边的学校，旗升起来，又落下去。" },
+          { label: "跟放羊的老人认了几个字，写在地上", effects: { growth: 1 }, echo: "老人用树枝在地上划，你的名字，就是先这么学会写的。" },
+        ] },
+      { id: "pr_never2", age: 15, log: "夜校的灯", sit: "never", title: "15 岁 · 夜校开课",
+        text: "村里办了个夜校，说是扫盲班，晚上开课，认字不要钱。去的多是上了年纪的，你是里头最小的一个。",
+        choices: [
+          { label: "去。一晚上认十个字，回来写在灶台墙上", set: "literacy_gain", effects: { growth: 2 }, echo: "半年下来，墙上的字连成了一片。你头一回自己读完了一整张报纸的标题。" },
+          { label: "没去成，家里的活离不开人；可买回来的账本，你试着自己记", set: "home_ledger", effects: { growth: 1 }, echo: "账记得歪歪扭扭，数目倒从没错过。字认得不多，够用了。" },
+        ] },
+      { id: "pr_never3", age: 20, log: "认字之后", sit: "never",
+        text: "这两年，招工告示贴出来，你能自己一字一句看完。去镇上办事，表格拿到手里，心里不慌了。",
+        choices: [
+          { label: "照着告示去应聘，先挑认字少的活干稳", effects: { money: 1, growth: 1 }, echo: "面试的人问了几句，就让你第二天来上工。你把告示折好，收进了口袋。" },
+          { label: "接着认字，晚上就着灯看借来的书", effects: { growth: 2 }, echo: "书是借的，还的时候你把折角都展平了。里头的世界，比村子大得多。" },
+        ] },
+    ],
+  };
+  // 间隔年只在 child/teen/youth 段出现（act 年龄表）：5→7→9→11→12→13→15→16→17→18→20→21，空档为 6/8/10/14/19。处境幕并入后，落在处境幕年龄上的平年不再重复出现。
 
   function cards() { return window.GAME_CARDS || null; }
   function rhythmProfiles() { return (window.GAME_RHYTHM && window.GAME_RHYTHM.profiles) || null; }
@@ -139,6 +186,7 @@
       eraCard: dealt ? dealt.era[0] : null,
       situation: null, itch: null, done: false,
       pendingState: null, curText: null, curChoices: null, shadowMarkShown: false,
+      seq: null, leftBehind: false,
     };
     // 处境发放（年代 × 家底的权重表按种子抽一次；本轮 school 权重 100，其余登记未开放）——发放即定，不重掷
     const table = SITUATION_W[S.era] || SITUATION_W.c2000;
@@ -146,6 +194,11 @@
     let roll = prng(S) * total, sit = table[0][0];
     for (const [name, w] of table) { if (roll < w) { sit = name; break; } roll -= w; }
     S.prologue.situation = sit;
+    // 留守是家底底色（地基 v2.1），不占处境值：父母不在身边长大的孩子各处境都有，half 最多。只改质地（来历幕/童年幕文本），不发数值。
+    const LB = { school: 0.18, half: 0.45, never: 0.30 };
+    S.prologue.leftBehind = prng(S) < (LB[sit] || 0);
+    // 处境幕并入幕序（按年龄交错，同龄时主幕在前）：本处境的专属幕只在本局出现
+    S.prologue.seq = ACTS.concat(SIT_ACTS[sit] || []).slice().sort((a, b) => a.age - b.age);
     const prof = rhythmProfiles();
     const base = prof ? prof.childhood : { temp: 45, rhythm: "日常型" };
     S.temp = base.temp; S.rhythm = base.rhythm;
@@ -156,19 +209,22 @@
   function present(S) {
     const P = S.prologue;
     if (!P || P.done) return null;
-    const act = ACTS[P.idx];
+    if (!P.seq) P.seq = ACTS; // v0.17 旧存档无幕序字段：按主幕表续玩（处境恒 school，与旧局一致）
+    if (P.leftBehind === undefined) P.leftBehind = false;
+    const act = P.seq[P.idx];
     if (!act) return null;
     if (P.presented !== P.idx) {
       P.presented = P.idx;
       if (act.set) S.flags[act.set] = true;
       if (act.mark) S.marks.push({ id: act.mark, age: act.age });
-      P.pendingState = act.setState || null;
+      P.pendingState = act.setStateBySit ? (act.setStateBySit[P.situation] || act.setState || null) : (act.setState || null);
       S.log.push(`${act.age} 岁 · ${act.log}`);
       const C = cards();
       if (act.id === "pr_origin") {
         const open = ORIGIN_OPEN[Math.floor(prng(S) * ORIGIN_OPEN.length)];
         const fam = P.family && C && C.byId[P.family] ? C.byId[P.family].text : "";
-        P.curText = fam ? open + "\n" + fam : open;
+        const lb = P.leftBehind ? "\n你爸妈去了外地打工，你跟着爷爷奶奶过。电话一礼拜打一回，声音从听筒里出来，有点远。" : "";
+        P.curText = (fam ? open + "\n" + fam : open) + lb;
         P.curChoices = null;
       } else if (act.temperPick) {
         P.curText = act.text;
@@ -185,6 +241,7 @@
         P.curChoices = act.choices || null;
       } else {
         let t = act.text;
+        if (act.id === "pr_child2" && P.leftBehind) t = "放学路上有一条河沟，水浅的时候能蹚过去。你和几个孩子在桥洞底下摸螺蛳，裤腿湿到膝盖，回家挨了爷爷两句，也没耽误第二天再去。";
         if (act.id === "pr_fork16" && P.itch === "out") t += "\n十五岁那年你跟家里提过的那件事，今天要定下来了。";
         P.curText = t;
         P.curChoices = act.choices || null;
@@ -197,7 +254,8 @@
   // 本函数负责：性子/念头/轨道基线（温度与节奏型）记账、幕次推进、间隔平年落账。返回 { done, gapFx }（gapFx 待调用方 applyEffects）。
   function choose(S, i) {
     const P = S.prologue;
-    const act = ACTS[P.idx];
+    if (!P.seq) P.seq = ACTS;
+    const act = P.seq[P.idx];
     const ch = (P.curChoices || [])[i] || null;
     if (ch) {
       if (ch.card) P.temperPick = ch.card;
@@ -210,7 +268,7 @@
     }
     P.idx += 1;
     P.presented = -1; P.pendingState = null; P.curText = null; P.curChoices = null;
-    const nextAge = P.idx < ACTS.length ? ACTS[P.idx].age : 22;
+    const nextAge = P.idx < P.seq.length ? P.seq[P.idx].age : 22;
     const gapFx = {};
     const RH = window.GAME_RHYTHM;
     const flatMute = RH && typeof S.temp === "number" ? RH.derive(S.temp, S.rhythm).volatility < 0.95 : false;
@@ -222,9 +280,9 @@
     }
     S.age = nextAge;
     S.stage = stageFor(nextAge);
-    if (P.idx >= ACTS.length) P.done = true;
+    if (P.idx >= P.seq.length) P.done = true;
     return { done: P.done, gapFx };
   }
 
-  window.GAME_PROLOGUE = { acts: ACTS, marks: MARKS, flatsByAge: FLATS_BY_AGE, situationW: SITUATION_W, start, present, choose, stageFor, prng };
+  window.GAME_PROLOGUE = { acts: ACTS.concat(SIT_ACTS.half, SIT_ACTS.never), sitActs: SIT_ACTS, marks: MARKS, flatsByAge: FLATS_BY_AGE, situationW: SITUATION_W, start, present, choose, stageFor, prng };
 })();

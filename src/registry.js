@@ -5,7 +5,7 @@
    新增/改动旗标必须同步登记，tools/validate-state.js 会逐项核对，未登记即报错。
    详细口径见 docs/STATE-MATRIX.md。 */
 window.GAME_REGISTRY = {
- "version": "0.17.0",
+ "version": "0.18.0",
  "domains": {
   "spouse": {
    "label": "配偶",
@@ -75,9 +75,18 @@ window.GAME_REGISTRY = {
      "to": "partnered",
      "by": [
       "p3_043",
-      "e55_017"
+      "e55_017",
+      "proc_dating"
      ],
-     "note": "慢线成婚边（v0.13.1 启用）：p3_043「结吧」选项级 setState（慢线 dating 的叙事出口）；e55_017 为 c1955 年代婚事事件，呈现即成婚（事件级 setState，门控 stateAll 限 dating/partnered）"
+     "note": "慢线成婚边（v0.13.1 启用）：p3_043「结吧」选项级 setState（慢线 dating 的叙事出口）；e55_017 为 c1955 年代婚事事件，呈现即成婚（事件级 setState，门控 stateAll 限 dating/partnered）；proc_dating 为 v0.18.0 dating 到期结算拍"
+    },
+    {
+     "from": "dating",
+     "to": "single",
+     "by": [
+      "proc_dating"
+     ],
+     "note": "dating 到期结算边（v0.18.0 启用）：处满 7 年未定，进程拍 proc_dating 给定下来/好聚好散/再处处看三条路，选散即走此边"
     }
    ]
   },
@@ -129,8 +138,10 @@ window.GAME_REGISTRY = {
      "from": "alive",
      "to": "dead",
      "by": [
-      "p4_015"
-     ]
+      "p4_015",
+      "proc_dad_dead"
+     ],
+     "note": "v0.18.0 起主载体为父亲进程节拍 proc_dad_dead（进程越线发作）；p4_015 为旧事件载体，仍可先行"
     }
    ]
   },
@@ -149,8 +160,10 @@ window.GAME_REGISTRY = {
      "from": "alive",
      "to": "dead",
      "by": [
-      "p4_086"
-     ]
+      "p4_086",
+      "proc_mom_dead"
+     ],
+     "note": "v0.18.0 起主载体为母亲进程节拍 proc_mom_dead；p4_086 为旧事件载体，仍可先行"
     }
    ]
   },
@@ -221,11 +234,7 @@ window.GAME_REGISTRY = {
     "never",
     "left"
    ],
-   "reservedStates": [
-    "half",
-    "never",
-    "left"
-   ],
+   "reservedStates": [],
    "edges": [
     {
      "from": "pre",
@@ -238,23 +247,33 @@ window.GAME_REGISTRY = {
     {
      "from": "pre",
      "to": "half",
-     "by": [],
-     "reserved": true,
-     "note": "半读处境：第一步（v0.18.0）随 c2000 处境补全开放，载体为序章发放拍"
+     "by": [
+      "pr_origin"
+     ],
+     "note": "半读处境（v0.18.0 开放）：c2000 以登记权重发放，载体为序章发放拍（setStateBySit）；留守是家底底色，不占处境值"
     },
     {
      "from": "pre",
      "to": "never",
-     "by": [],
-     "reserved": true,
-     "note": "未入学处境：同上，第一步开放（含后来的识字里程碑线）"
+     "by": [
+      "pr_origin"
+     ],
+     "note": "未入学处境（v0.18.0 开放）：c2000 以登记小权重发放，含后来的识字线（夜校/自学，载体 pr_never2）"
+    },
+    {
+     "from": "half",
+     "to": "left",
+     "by": [
+      "pr_half2"
+     ],
+     "note": "读了又离开（v0.18.0 开放）：half 线 14 岁拍的选择——读到这儿就回家帮工"
     },
     {
      "from": "school",
      "to": "left",
      "by": [],
      "reserved": true,
-     "note": "读了又离开：第一步随 half 线开放，载体为少年段处境事件"
+     "note": "school 直转 left 未开放：现行口径下流失统一走 half 线（处境在发放时已按帮工+流失小格标定）"
     }
    ]
   },
@@ -395,7 +414,11 @@ window.GAME_REGISTRY = {
     "p21_055",
     "p24_006",
     "p24_024",
-    "p25_009"
+    "p25_009",
+    "proc_dad_care",
+    "proc_dad_hosp",
+    "proc_mom_care",
+    "proc_mom_hosp"
    ]
   },
   "care_rotate": {
@@ -411,7 +434,9 @@ window.GAME_REGISTRY = {
    "setters": [
     "fork52",
     "p24_006",
-    "p24_042"
+    "p24_042",
+    "proc_dad_care",
+    "proc_mom_care"
    ]
   },
   "care_ss_gap": {
@@ -856,6 +881,7 @@ window.GAME_REGISTRY = {
   },
   "moved_city": {
    "setters": [
+    "fork28m",
     "p11_035",
     "p15_006",
     "p15_009",
@@ -876,6 +902,7 @@ window.GAME_REGISTRY = {
   },
   "near_family": {
    "setters": [
+    "fork28m",
     "fork33",
     "p17_054"
    ]
@@ -1264,6 +1291,42 @@ window.GAME_REGISTRY = {
    "setters": [
     "e65_011"
    ]
+  },
+  "med_work": {
+   "setters": [
+    "e_med_start"
+   ],
+   "note": "从医经历（v0.18.0，职业语境门）：卫生院入行拍立旗，村医类稀有与结局以此为门"
+  },
+  "truck_work": {
+   "setters": [
+    "e_truck_start"
+   ],
+   "note": "长途职业线入行（v0.18.0，职业语境门）：跟车入行拍立旗"
+  },
+  "truck_veteran": {
+   "setters": [
+    "e_truck_years"
+   ],
+   "note": "长途跑满十来年（v0.18.0）：入行链后继立旗，「跑满一百万公里」结局以此为门"
+  },
+  "literacy_gain": {
+   "setters": [
+    "pr_never2"
+   ],
+   "note": "识字线（v0.18.0）：never 处境 15 岁夜校拍立旗，成年段有回响事件"
+  },
+  "home_ledger": {
+   "setters": [
+    "pr_never2"
+   ],
+   "note": "在家记账认字（v0.18.0）：never 处境夜校拍的另一条路"
+  },
+  "half_grown": {
+   "setters": [
+    "pr_half3"
+   ],
+   "note": "半读出身补课（v0.18.0）：half 线 19 岁拍立旗，成年段有回响事件"
   }
  }
 };
