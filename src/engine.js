@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.13.1 —— 版本号规则见 docs/DEVLOG.md 卷首
+// 《如果那年》引擎 v0.13.2 —— 版本号规则见 docs/DEVLOG.md 卷首
 // 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 (function () {
@@ -55,11 +55,17 @@
       "身体早几年就给过信儿。那天夜里胸口闷得睡不着，送到医院时已经晚了。",
       "复查拖了又拖。最后一次倒下是在家门口，邻居帮忙叫了车，人没能再醒过来。",
       "爬楼越来越吃力。那天下午在楼梯间坐下，就没再站起来。家里人赶到时，医生已经出来了。",
+      "冬天那次感冒拖成了肺炎。输液的第三天夜里，监护仪先响，人没能再睁开眼。",
+      "血压的药断过几天。早上洗脸时眼前一黑，摔在卫生间，送到医院时已经没有自主呼吸。",
+      "体检单上圈出的那一项，你说过节后再查。节后第一周，病床上的管子比人还多，没撑过那一晚。",
     ],
     accident: [
       "雨天路滑，路口一辆车失控撞过来。救护车赶到时，已经晚了。",
       "夜里那趟车在高速上出了事故。同行的人活了下来，这边没能回来。",
       "河边护栏外的一块地面塌了，人掉了下去。等找到时，已经晚了。",
+      "工地外边的脚手架有一截没固定好，掉下来的钢管砸在经过的人身上。救护来时，现场已经围了人。",
+      "夜里厨房煤气胶管老化漏气。邻居闻到味儿砸开门时，人已经没有了气息。",
+      "过马路时有人闯红灯。刹车声比喇叭更刺耳，人被撞出了人行道外。",
     ],
   };
   // 维度定义表：[键, 名, 初始值]。所有渲染（游玩数值条、分享卡）都从这张表生成，不写死根数——加新维度只改这里与数据。
@@ -426,6 +432,7 @@
     const saved = loadSave();
     const seedParam = new URLSearchParams(location.search).get("seed");
     const eraParam = new URLSearchParams(location.search).get("era");
+    const cardsParam = new URLSearchParams(location.search).get("cards"); // v0.13.2：同局链接可带三张已选牌 id
     // ---------- 出身牌（v0.13.0，docs/DESIGN-V013.md §A）：候选种子在开局页渲染时即生成并据此发牌（§A3.2）；
     // 发牌走 cards.js 的独立派生流，主 RNG 不动；屏幕上的手牌恒等于开局将用的手牌（种子输入即重发）。
     const CARDS_ON = !!CARDS;
@@ -433,6 +440,15 @@
     const startEra = eraParam && ERAS.some((e) => e.id === eraParam) ? eraParam : "c2000";
     let dealt = CARDS_ON ? CARDS.deal(seedParam || candSeed, startEra) : null;
     const picked = { family: 0, temper: 0, era: 0 };
+    // 同局链接带来的牌面：在已发的三选一里对齐选中下标；不在手牌中则忽略（防篡改/旧链）
+    if (CARDS_ON && dealt && cardsParam) {
+      const ids = cardsParam.split(",").map((s) => s.trim()).filter(Boolean);
+      const cats = ["family", "temper", "era"];
+      ids.forEach((id, i) => {
+        const cat = cats[i]; if (!cat || !dealt[cat]) return;
+        const idx = dealt[cat].indexOf(id); if (idx >= 0) picked[cat] = idx;
+      });
+    }
     const cardFx = (c) => { const parts = []; for (const [k, label] of STAT_META) if (c.effects && c.effects[k]) parts.push(`${label} ${c.effects[k] > 0 ? "+" : ""}${c.effects[k]}`); return parts.join(" · "); };
     const cardBtn = (id, i, cat) => { const c = CARDS.byId[id]; const fx = cardFx(c); return `<button type="button" class="cardpick${picked[cat] === i ? " sel" : ""}" data-cat="${cat}" data-i="${i}"><b>${esc(c.name)}</b><span>${esc(c.text)}</span>${fx ? `<small>${esc(fx)}</small>` : ""}</button>`; };
     const deckHtml = () => [["family", "家底"], ["temper", "性子"], ["era", "时代"]].map(([cat, lab]) => `<p class="setlab">${lab}</p><div class="cardrow" data-cat="${cat}">${dealt[cat].map((id, i) => cardBtn(id, i, cat)).join("")}</div>`).join("");
@@ -464,12 +480,15 @@
           <button class="ghost" id="seedgo">用这个种子</button>
           <button class="ghost" id="daily">今日种子</button>
         </div>
-        <p class="hint ver">v0.13.1</p>
-        <p class="hint">不填随机。填了，运气定下来，跟朋友比同一局就用它。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam ? "，年代也按对方那局选好了" : ""}，点任意一条路就开始同一局。` : ""}</p>
+        <p class="hint ver">v0.13.2</p>
+        <p class="hint">不填随机。填了，运气定下来，跟朋友比同一局就用它。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam ? "，年代也按对方那局选好了" : ""}${cardsParam ? "，出身牌也按对方选过的对齐了" : ""}，点任意一条路就开始同一局。` : ""}</p>
       </section>`;
     el("liveslink").addEventListener("click", () => { ANA.track("lives_view", {}); renderLives(); });
     if (saved) el("resume").addEventListener("click", () => {
+      // v0.13.2：缺 seedStr 且无合法 rngA 的残档会在 seedFromString 处炸——按坏档清掉回开局，不抛错
+      if (!saved.seedStr && typeof saved.rngA !== "number") { clearSave(); renderStart(); return; }
       S = saved;
+      S.seedStr = S.seedStr || String(saved.rngA); // 仅有 rngA 的旧残档：用数字串兜底展示，RNG 仍走 rngA
       S.usedRare = S.usedRare || []; S.era = S.era || "c2000"; S.birthYear = S.birthYear || 2000;
       S.cards = S.cards || []; // v0.13.0：旧存档（无牌局）续玩不补发、不追溯改数值，出身行不出（§A3.3）
       S.healthCrisisSeen = !!S.healthCrisisSeen || !!(S.crisisUsed && S.crisisUsed.health);
@@ -481,7 +500,7 @@
       if (!S.state || typeof S.state !== "object") S.state = deriveStateFromLegacy(saved); // v0.12.0：旧存档无 state，由旧 flags 推导（docs/STATE-MATRIX.md §5）
       else for (const [dom, def] of Object.entries(REG.domains || {})) if (!(dom in S.state)) S.state[dom] = def.initial;
       S.autoMode = prefs.mode; S.speed = prefs.speed;
-      RNG.a = saved.rngA || seedFromString(saved.seedStr);
+      RNG.a = typeof saved.rngA === "number" ? saved.rngA : seedFromString(saved.seedStr);
       prevStats = null; resumeMark = true; // §6.2 续玩第一屏给一句定位
       if (S.death) renderDeath(); else step();
     });
@@ -1161,11 +1180,13 @@
   const SANS = "'Hiragino Sans', 'Noto Sans SC', sans-serif";
   let currentCanvas = null; // 分享台当前预览的 canvas，分享/保存都用它
 
-  // 同局链接：种子之外必须带年代与跨度，否则朋友点开不是同一道题
+  // 同局链接：种子 + 年代 + 出身牌所选（v0.13.2：改过牌面后朋友打开须同牌，否则「完全相同的运气」不成立）
   function sameSeedUrl() {
-    return location.origin + location.pathname
+    let u = location.origin + location.pathname
       + "?seed=" + encodeURIComponent(S.seedStr)
       + "&era=" + encodeURIComponent(S.era || "c2000");
+    if (S.cards && S.cards.length) u += "&cards=" + encodeURIComponent(S.cards.join(","));
+    return u;
   }
   // 勾选了「印到卡上」才取感想输入框的当前文字（预填的是第一句 reflection，可改）
   function cardReflText() {
