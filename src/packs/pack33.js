@@ -12,9 +12,9 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
 {"id":"p33_009","min":23,"max":33,"require":"hook_moved_kid","text":"刚换的新单位，别人要一个月才认全人，你一周就摸清了谁跟谁不对付、食堂哪个窗口快。你从小换地方换惯了，进新门先看人。","effects":{"growth":2,"relation":1}},
 {"id":"p33_010","min":30,"max":45,"require":"hook_moved_kid","text":"失联多年的小学同学通过老班长联系上你。你们在电话里对了半天座位表，才想起彼此坐过前后桌。约好见面，临了又各自忙，拖了半年还没见上。","effects":{}},
 {"id":"p33_011","min":23,"max":35,"require":"hook_sporty","text":"单位运动会缺人，主管挨个问，你报了个一千五。跑完第三名，奖品是一提抽纸。年轻同事递水过来，问你平常藏哪练的，你把水瓶拧开先喝了一口。","effects":{"health":2,"freedom":1}},
-{"id":"p33_012","min":30,"max":45,"require":"hook_sporty","text":"公司团建去爬山，年轻人走一半就坐在台阶上。你把多余的水分出去，又折回去接最后那个。到山顶时你的膝盖先提醒你：岁数到了。","effects":{"relation":2,"health":-1}},
+{"id":"p33_012","forbidRoute":"abroad","min":30,"max":45,"require":"hook_sporty","text":"公司团建去爬山，年轻人走一半就坐在台阶上。你把多余的水分出去，又折回去接最后那个。到山顶时你的膝盖先提醒你：岁数到了。","effects":{"relation":2,"health":-1}},
 {"id":"p33_013","min":24,"max":40,"require":"hook_stage","text":"部门汇报前，主讲的同事嗓子哑了，领导让你顶上。你对着镜子顺了两遍词，上台没卡壳。散会有人拍拍你肩，问你是不是干过这行，你摇摇头，去倒了杯水。","effects":{"growth":2,"relation":1}},
 {"id":"p33_014","min":30,"max":45,"require":"hook_stage","text":"朋友婚礼上司仪临时闹肚子，新郎找到你：你上台不怵，帮着圆一下。你接过话筒把流程顺下来了，就是把新娘的名字念错了一个字，台下笑了整场。","choices":[{"label":"结束后挨桌赔不是","effects":{"relation":2,"health":-1},"echo":"新娘说没事，那个字她妈也常念错。你端着杯子，还是把一圈走完了。"},{"label":"装没这回事，赶紧撤","effects":{"freedom":1,"relation":-1},"echo":"你提前走了。后来照片发到群里，你那张正好闭着眼。"}]},
-{"id":"p33_015","min":25,"max":40,"require":"hook_frail","text":"同事的父亲住院，你陪着去办手续。挂号、医保窗口、检查单怎么排，你门儿清。同事在缴费窗口忙成一团，你把取号条按顺序夹好递过去。","effects":{"relation":2,"health":-1}},
+{"id":"p33_015","forbidRoute":"abroad","min":25,"max":40,"require":"hook_frail","text":"同事的父亲住院，你陪着去办手续。挂号、医保窗口、检查单怎么排，你门儿清。同事在缴费窗口忙成一团，你把取号条按顺序夹好递过去。","effects":{"relation":2,"health":-1}},
 {"id":"p33_016","min":32,"max":45,"require":"hook_frail","text":"体检报告你看得比别人仔细，有个指标压着线，你没拖着，挂了个专家号复查。结论是虚惊一场，可这半年你把熬夜的习惯改了，早饭也正经吃了。","choices":[{"label":"顺势把作息立起来","effects":{"health":2,"money":-2},"echo":"专家号和检查费花了小两千。换来的是你头一回把体检报告从头看到尾。"},{"label":"没事就好，日子照旧","effects":{"wisdom":1,"money":-2},"echo":"报告塞进抽屉。你还是知道了那条线在哪，心里有了数。"}]}
 ]);

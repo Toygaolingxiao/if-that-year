@@ -15,7 +15,7 @@ window.GAME_DATA = {
   ],
   // 分岔：choice.set 写入状态标记，后续回响事件按标记触发
   forks: [
-    { age: 25, title: "25 岁 · 第一份工作的第三年", text: "新鲜劲过去了，每天做的事开始重复。你站在一个小分岔口。",
+    { age: 25, title: "25 岁 · 新鲜劲过去了", text: "新鲜劲过去了，每天做的事开始重复。你站在一个小分岔口。",
       choices: [
         { label: "跳槽，换个活法", effects: { growth: 6, money: 4, freedom: 2, relation: -2 }, set: "job_hop", echo: "新单位入职第一天，你提前二十分钟到，坐在空会议室里把流程表看了一遍又一遍。" },
         { label: "留下，把手头的事做深", effects: { growth: 4, money: 2, health: -2 }, set: "stay_put", echo: "你慢慢成了组里的老人，新来的同事有问题先来敲你的桌子，问那套老系统怎么查。" },
@@ -133,7 +133,7 @@ window.GAME_DATA = {
         { label: "把行程排满，一个不落", effects: { freedom: 2, health: -2, money: -2 }, echo: "回来你跟朋友说：都去了。也确实，都去了。" },
       ] },
     { id: "e_bonus", min: 26, max: 45, text: "年终奖发下来，比预想的多一点。你请自己吃了顿好的，剩下的存了起来。", effects: { money: 4, health: 1 } },
-    { id: "e_refund", min: 28, max: 55, text: "个税汇算，退回来一笔不大不小的钱。像在旧外套口袋里摸到的零钱，只是数额像样些。", effects: { money: 2 } },
+    { id: "e_refund", min: 28, max: 55, forbidRoute: "abroad", text: "个税汇算，退回来一笔不大不小的钱。像在旧外套口袋里摸到的零钱，只是数额像样些。", effects: { money: 2 } },
     { id: "r_corp_launch", route: "corp", min: 23, max: 40, text: "项目上线那晚你睡在公司。凌晨四点数据跑通，你趴在桌上睡了两个小时，脖子落了枕。", effects: { growth: 3, money: 2, health: -3 } },
     { id: "r_corp_talk", route: "corp", min: 30, max: 48, minYear: 2011, text: "行业会上让你讲二十分钟。讲完有人来加微信，说：你们那套打法，我们学不来。", effects: { growth: 3, relation: 1 } },
     { id: "r_home_renovate", route: "home", min: 28, max: 45, text: "老家房子翻修，你请假回去盯了半个月。工人是熟人介绍的，活干得不快，茶倒是没断过。", effects: { relation: 2, money: -3, health: -1 } },

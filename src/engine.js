@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.16.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.16.1 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 (function () {
   "use strict";
@@ -84,9 +84,13 @@
   const SAVE_KEY = "ify-save-v2";
   const LIVES_KEY = "ify-lives-v1"; // 「活过的人生」本地记录（v0.13.0，docs/DESIGN-V013.md §B）：只存 id + 首次活到的本地日期，无次数、无上传
   const PREFS_KEY = "ify-prefs";
-  const SPEED_BASE = { slow: 2800, mid: 1600, fast: 800 }; // 速度三档的基础停留时长 (ms)
+  // 停留按刚显示的文字长度算（v0.16.1）：基础 0.8 秒 + 字数 ÷ 每秒字数。三档是读法——
+  // 慢·细读约 9 字/秒、中·通读约 16 字/秒、快·扫读约 25 字/秒；单屏上限 20 秒（慢档约 173 字触顶）。
+  // 纯界面计时：只喂 setTimeout 与倒计时细线，不碰 RNG、不入游戏状态，同种子复现不受影响。
+  const SPEED_CPS = { slow: 9, mid: 16, fast: 25 }; // 每秒字数（细读 / 通读 / 扫读）
   const SPEED_LABEL = { slow: "慢", mid: "中", fast: "快" };
-  const SPEED_SECONDS = { slow: "2.8", mid: "1.6", fast: "0.8" };
+  const SPEED_STYLE = { slow: "细读", mid: "通读", fast: "扫读" };
+  const AUTO_BASE_MS = 800, AUTO_CAP_MS = 20000;
   const AUTO_MODES = [["off", "关"], ["plain", "平年"], ["full", "全程"]];
   const DEFAULT_AUTO_MODE = "full"; // 由无头模拟的停顿次数口径决定；模拟明细见 docs/MORTALITY-MODEL.md 与 DEVLOG v0.7.0
 
@@ -205,7 +209,7 @@
   function loadPrefs() {
     try {
       const p = JSON.parse(localStorage.getItem(PREFS_KEY));
-      if (p && AUTO_MODES.some(([k]) => k === p.mode) && SPEED_BASE[p.speed]) return { mode: p.mode, speed: p.speed };
+      if (p && AUTO_MODES.some(([k]) => k === p.mode) && SPEED_CPS[p.speed]) return { mode: p.mode, speed: p.speed };
     } catch (e) { /* 旧结构或损坏数据不报错，按新默认走 */ }
     return { mode: DEFAULT_AUTO_MODE, speed: "mid" };
   }
@@ -267,8 +271,8 @@
   }
   function clearAutoContext() { clearAuto(); autoText = null; autoAction = null; autoKind = null; }
   function autoDelay(text) {
-    const base = autoKind === "choice" ? SPEED_BASE.mid : (SPEED_BASE[prefs.speed] || SPEED_BASE.mid);
-    return base + Math.min(1800, (text ? text.length : 0) * 12); // 正文越长留得越久，上限再加 1800ms
+    const cps = SPEED_CPS[prefs.speed] || SPEED_CPS.mid;
+    return Math.min(AUTO_CAP_MS, Math.round(AUTO_BASE_MS + ((text ? text.length : 0) * 1000) / cps));
   }
   function startAuto(ms) {
     if (autoTimer !== null) clearTimeout(autoTimer);
@@ -302,7 +306,7 @@
   document.addEventListener("visibilitychange", () => { if (document.hidden) pauseAuto(); else resumeAuto(); });
   window.addEventListener("blur", pauseAuto);
   window.addEventListener("focus", resumeAuto);
-  function speedButtonLabel(k) { return `${SPEED_LABEL[k]} · 约${SPEED_SECONDS[k]}秒`; }
+  function speedButtonLabel(k) { return `${SPEED_LABEL[k]} · ${SPEED_STYLE[k]}`; }
   function autoRowHtml() {
     const counting = autoEligible();
     const modes = AUTO_MODES.map(([k, label]) => `<button type="button" class="automode${prefs.mode === k ? " on" : ""}" data-automode="${k}">${label}</button>`).join("");
@@ -343,7 +347,7 @@
       setAutoMode(mode.getAttribute("data-automode"));
     } else if (spd) {
       const k = spd.getAttribute("data-autospeed");
-      if (SPEED_BASE[k] && k !== prefs.speed) {
+      if (SPEED_CPS[k] && k !== prefs.speed) {
         prefs.speed = k;
         savePrefs();
         scheduleAuto();
@@ -541,7 +545,7 @@
         ${sLine ? `<p class="hint">${sLine}</p>` : ""}
         ${lLine ? `<p class="hint">${lLine}</p>` : ""}
         <p class="hint">明天一局：${tomDaily.era.label} · ${esc(tomDaily.route.name)}。</p>
-        <p class="hint ver">v0.16.0</p>
+        <p class="hint ver">v0.16.1</p>
         <p class="hint">不填随机。填了，运气定下来，跟朋友比同一局就用它。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam ? "，年代也按对方那局选好了" : ""}${cardsParam ? "，出身牌也按对方选过的对齐了" : ""}，点任意一条路就开始同一局。` : ""}</p>      </section>`;
     el("liveslink").addEventListener("click", () => { ANA.track("lives_view", {}); renderLives(); });
     if (saved) el("resume").addEventListener("click", () => {
@@ -568,7 +572,7 @@
     pickSeg("erapick");
     const preSel = (id, attr, val) => { const box = el(id); if (!box || !val) return; const btns = box.querySelectorAll(".segbtn"); btns.forEach((o) => { if (o.dataset[attr] === val) { btns.forEach((p) => p.classList.remove("sel")); o.classList.add("sel"); } }); };
     preSel("erapick", "era", eraParam);
-    const autoSummary = () => prefs.mode === "off" ? "手动推进" : `自动推进 ${AUTO_MODES.find(([k]) => k === prefs.mode)[1]} · ${SPEED_LABEL[prefs.speed]}（约${SPEED_SECONDS[prefs.speed]}秒）`;
+    const autoSummary = () => prefs.mode === "off" ? "手动推进" : `自动推进 ${AUTO_MODES.find(([k]) => k === prefs.mode)[1]} · ${SPEED_LABEL[prefs.speed]}（${SPEED_STYLE[prefs.speed]}）`;
     const updSummary = () => { const eb = document.querySelector("#erapick .segbtn.sel"); const sv = (el("seedin").value || "").trim(); const birth = eb ? +eb.dataset.birth : 2000; const cn = CARDS_ON && dealt ? ` · 出身 ${[dealt.family[picked.family], dealt.temper[picked.temper], dealt.era[picked.era]].map((id) => CARDS.byId[id].name).join("/")}` : ""; el("setsummary").textContent = `这一局：${eb ? eb.textContent.trim() : "2000 年生"} · ${birth + 22} 年 22 岁 · ${sv ? `种子「${sv}」` : "随机种子"} · ${autoSummary()}${cn}`; };
     // 出身牌接线：点选改选（每行恒有一张预选=所发第一张，选路不拦截）；改年代只重发时代行；种子变更重发三行（所选位置重置为第一张）
     const effSeed = () => (el("seedin").value || "").trim() || seedParam || candSeed;
