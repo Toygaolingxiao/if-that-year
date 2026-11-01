@@ -5,7 +5,7 @@
    新增/改动旗标必须同步登记，tools/validate-state.js 会逐项核对，未登记即报错。
    详细口径见 docs/STATE-MATRIX.md。 */
 window.GAME_REGISTRY = {
- "version": "0.13.1",
+ "version": "0.13.2",
  "domains": {
   "spouse": {
    "label": "配偶",
@@ -93,17 +93,21 @@ window.GAME_REGISTRY = {
     {
      "from": "undecided",
      "to": "has",
-     "by": [
-      "fork38"
-     ]
-    },
-    {
-     "from": "undecided",
-     "to": "none",
-     "by": [
-      "fork38"
-     ]
-    }
+      "by": [
+       "fork38",
+       "e_kid_settle",
+       "e_kid_final"
+      ]
+     },
+     {
+      "from": "undecided",
+      "to": "none",
+      "by": [
+       "fork38",
+       "e_kid_settle",
+       "e_kid_final"
+      ]
+     }
    ]
   },
   "dad": {
