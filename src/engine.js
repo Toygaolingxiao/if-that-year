@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.15.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.16.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 (function () {
   "use strict";
@@ -392,7 +392,8 @@
     const W = 640, pad = 14, end = finalAge();
     const X = (a) => pad + ((a - START_AGE) / (end - START_AGE)) * (W - pad * 2);
     let s = "";
-    (D.forks || []).filter((f) => f.age < end).forEach((f) => {
+    const forkFired = (f) => S.log.some((l) => l.startsWith(`${f.age} 岁 · `) && f.choices.some((c) => l.endsWith(`：${c.label}`)));
+    (D.forks || []).filter((f) => f.age < end && !(f.state && S.age > f.age && !forkFired(f))).forEach((f) => { // v0.16.0：带门分岔没轮到这位玩家时不画（未到龄仍照常淡显）
       const on = S.age >= f.age, col = on ? "#2F4A3C" : "#C4BCA9";
       s += `<line x1="${X(f.age)}" y1="30" x2="${X(f.age) + 13}" y2="13" stroke="${col}" stroke-width="1.6" stroke-dasharray="3 3"/><circle cx="${X(f.age)}" cy="30" r="3" fill="${col}"/>`;
     });
@@ -540,7 +541,7 @@
         ${sLine ? `<p class="hint">${sLine}</p>` : ""}
         ${lLine ? `<p class="hint">${lLine}</p>` : ""}
         <p class="hint">明天一局：${tomDaily.era.label} · ${esc(tomDaily.route.name)}。</p>
-        <p class="hint ver">v0.15.0</p>
+        <p class="hint ver">v0.16.0</p>
         <p class="hint">不填随机。填了，运气定下来，跟朋友比同一局就用它。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam ? "，年代也按对方那局选好了" : ""}${cardsParam ? "，出身牌也按对方选过的对齐了" : ""}，点任意一条路就开始同一局。` : ""}</p>      </section>`;
     el("liveslink").addEventListener("click", () => { ANA.track("lives_view", {}); renderLives(); });
     if (saved) el("resume").addEventListener("click", () => {
@@ -659,7 +660,7 @@
     if (S.age >= MAX_AGE) return renderEnd();
     save();
     if (S.pendingFork && S.pendingFork.age === S.age) { renderForkEcho(); return mountStream(); } // 分岔复述拍未走时，续玩/重入都回到复述拍
-    const fork = D.forks.find((f) => f.age === S.age);
+    const fork = D.forks.find((f) => f.age === S.age && (!f.state || met(f))); // v0.16.0：分岔可带状态门（如 fork45 只给 kids 未定且有伴侣的人）；无门分岔行为不变
     if (fork) { renderFork(fork); return mountStream(); }
     if (S.age in GLIMPSE_AGES) { renderGlimpse(GLIMPSE_AGES[S.age]); return mountStream(); }
     const rare = pickRare();
@@ -1048,11 +1049,11 @@
       while (s.length && units(s + "…") > maxU) s = s.slice(0, -1);
       return s + "…";
     };
-    const faced = (D.forks || []).filter((f) => !S.death || f.age < S.death.age);
     const chosenOf = (f) => {
       const line = S.log.find((l) => l.startsWith(`${f.age} 岁 · `) && f.choices.some((c) => l.endsWith(`：${c.label}`)));
       return line ? line.slice(line.lastIndexOf("：") + 1) : "";
     };
+    const faced = (D.forks || []).filter((f) => (!S.death || f.age < S.death.age) && (!f.state || chosenOf(f))); // v0.16.0：带门分岔没触发过的，不进结算对照（无门分岔照旧）
     let g = `<line x1="${cx}" y1="${Y(START_AGE)}" x2="${cx}" y2="${Y(MAX_AGE)}" stroke="#DDD6C9" stroke-width="1.5"/>`;
     g += `<path class="mapspine" style="--gd:${GROW_DELAY}s" pathLength="100" d="M ${cx} ${Y(START_AGE)} L ${cx} ${Y(end)}" fill="none" stroke="#2F4A3C" stroke-width="3" stroke-linecap="round"/>`;
     const labels = [];

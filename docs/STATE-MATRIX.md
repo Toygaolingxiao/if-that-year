@@ -19,7 +19,7 @@ v0.12 起分两层（混合架构，不全量推倒）：
 | 域 | 初始 | 状态 | 已启用流转边（载体） | 终态 |
 |---|---|---|---|---|
 | spouse 配偶 | none | none / single / dating / partnered / divorced / widowed | none→partnered（fork31）、none→single（fork31）、none→dating（fork31）、partnered→divorced（p27_001）、partnered→widowed（p28_001） | divorced、widowed（见 §4 再结伴） |
-| kids 子女 | undecided | undecided / has / none | undecided→has（fork38）、undecided→none（fork38） | —（has/none 互斥，无出边） |
+| kids 子女 | undecided | undecided / has / none | undecided→has（fork38、e_kid_settle、e_kid_final、lk_born）、undecided→none（fork38、e_kid_settle、e_kid_final、fork45、lk_none、lk_fade） | —（has/none 互斥，无出边） |
 | dad 父亲 | alive | alive / dead | alive→dead（p4_015） | dead |
 | mom 母亲 | alive | alive / dead | alive→dead（p4_086） | dead |
 | dog 宠物狗 | none | none / home / gone | none→home（p11_049 选项）、home→gone（p11_054） | gone |
@@ -38,6 +38,7 @@ v0.12 起分两层（混合架构，不全量推倒）：
 | 居所组（moved_city / stayed_city / back_home_stay / near_family / often_back / saw_home / renting / bought_house） | 留里程碑 | 它们是正交累积事实：买了房可以又回老家、租房与买房在不同人生阶段都真；无互斥、无不可逆。人生形状标签按优先序消费它们，是呈现层的事。 |
 | 职业组（laid_off / rehire / retired_full / side_job / xiahai / steady_job 等） | 留里程碑 | 下岗可再就业、退休可返聘、副业与正职并行——可循环、可叠加，不是状态机形状。 |
 | kid2 / kid_abroad | 留里程碑 | 子女域的附加事实（二孩、在外），与 has 兼容并存，非互斥。 |
+| late_try / late_parent / late_tried / late_settle（v0.16.0 新增） | 留里程碑 | 晚育线的叙事阶段标记：fork45 立 late_try（再试）或 late_settle（落定），链终点立 late_parent（得子，载体 lk_born 与 e_kid_settle / e_kid_final 的「要」）或 late_tried（试过而没有，载体 lk_none / lk_fade）。四者与 kids 域并行：kids 只经注册载体流转，本组只作门控与回顾。下游保护口径：晚育者孩子出生于玩家 42–58 岁，凡 has 门控条目隐含孩子年龄大于「条目 min − 58」的（成年、成家、孙辈、升学阶段等；58 是全部晚育队列的最晚出生岁——e_kid_final 的终局得子，一律按最坏情形取值），一律以 `forbid: ["late_parent"]` 排除本旗持有者；kid_abroad 全链经其唯一 setter e65_040 的 forbid 传递保护。处置清单见 v0.16.0 轮报告。 |
 | together / faded / long_dist / two_cities | 留里程碑 | dating/partnered 线内的关系进程标记，同一玩家可先后经历（先异地、后安定），不构成互斥分区。 |
 
 ## 4. 再结伴边（v0.13.0 已启用）

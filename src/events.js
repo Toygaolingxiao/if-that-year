@@ -63,19 +63,26 @@ window.GAME_DATA = {
         { label: "返聘几年，慢慢交棒", effects: { money: 5, growth: 2, freedom: -3 }, set: "rehire", echo: "返聘合同签的是短期的，你的工位没动，只是桌上的日历换成了自己买的那种大格子的。" },
         { label: "半退，去做点不挣钱但喜欢的事", effects: { freedom: 5, relation: 3, growth: 2 }, set: "slow_life", echo: "你一周只去两天社区教室，剩下的时间去学木工，头一件成品是个歪歪扭扭的小板凳。" },
       ] },
+    // v0.16.0：迟到分岔——38 岁选了「再等等」、到 45 还没定且身边有人的，最后问一次（state 门：kids 未定 + 有伴侣；solo 不弹，仍走 e_kid_settle/final 的路）
+    { age: 45, title: "45 岁 · 孩子的事，最后问一次", text: "这事拖了七年，拖到两个人都很少再提。那晚收拾抽屉，翻出当年的检查单，日期还看得清。对方把单子放回原处，说：你想怎么办，这回听你的。",
+      state: { kids: "undecided", spouse: ["partnered", "dating"] },
+      choices: [
+        { label: "再试一回，这次正经去治", effects: { money: -3, health: -1, relation: 2 }, set: "late_try", echo: "你把那家医院的名字搜出来，收藏了页面。对方说，陪你去，一次不落。" },
+        { label: "就这样定下来，两个人好好过", effects: { freedom: 3, money: 2, relation: 1 }, setState: { kids: "none" }, set: "late_settle", echo: "单子没有扔，压在抽屉最底下。话说开了，那晚的觉比平时沉。" },
+      ] },
   ],
   // 年度事件：可选 route（路线专属）/ require（需持有标记）/ forbid（持有标记则不出现）/ choices（小选择+回响）
   events: [
     // v0.13.2：fork38「再等等」的两级落定——中年再问一次（可再拖），五十出头终局二选一（结构上不再终生 undecided）
-    { id: "e_kid_settle", min: 42, max: 50, w: 4, state: { kids: "undecided" }, text: "当年那张写着日期的纸还压在文件夹最上面，边角已经毛了。亲戚少问了，可体检单和存款账本一摊开，这个问题又坐回了饭桌中间。",
+    { id: "e_kid_settle", min: 42, max: 50, w: 4, state: { kids: "undecided" }, forbid: ["late_try"], text: "当年那张写着日期的纸还压在文件夹最上面，边角已经毛了。亲戚少问了，可体检单和存款账本一摊开，这个问题又坐回了饭桌中间。",
       choices: [
-        { label: "定了，要。把那张纸换成产检预约单", effects: { relation: 4, money: -4, freedom: -3, health: -1 }, setState: { kids: "has" }, echo: "预约单夹进同一本文件夹。你把婴儿床的尺寸又量了一遍，桌角的软条还在原处。" },
+        { label: "定了，要。把那张纸换成产检预约单", effects: { relation: 4, money: -4, freedom: -3, health: -1 }, setState: { kids: "has" }, set: "late_parent", echo: "预约单夹进同一本文件夹。你把婴儿床的尺寸又量了一遍，桌角的软条还在原处。" },
         { label: "定了，不要。把那张纸收进抽屉底层", effects: { freedom: 3, money: 2, wisdom: 1 }, setState: { kids: "none" }, echo: "纸折好塞进底层。往后有人再问，你只说想清楚了，桌上多出来的位子用来放旅行手册。" },
         { label: "还是再等等，先把病假和存款再核一遍", effects: { health: -1, money: 1, wisdom: 1 }, echo: "你在纸背面又写了一个日期。文件夹合上，问题没消失，只是又往后挪了一格。" },
       ] },
-    { id: "e_kid_final", min: 52, max: 58, w: 4, state: { kids: "undecided" }, text: "体检医生把年龄和那张旧纸一块摊在桌上。文件夹边角又磨了一截，纸上的日期已经过了两轮。这件事再拖，就不是拖，是默认了。",
+    { id: "e_kid_final", min: 52, max: 58, w: 4, state: { kids: "undecided" }, forbid: ["late_try"], text: "体检医生把年龄和那张旧纸一块摊在桌上。文件夹边角又磨了一截，纸上的日期已经过了两轮。这件事再拖，就不是拖，是默认了。",
       choices: [
-        { label: "要。去妇幼保健院挂上号", effects: { relation: 3, money: -3, freedom: -2 }, setState: { kids: "has" }, echo: "挂号条夹进文件夹最上面。你把那张旧纸翻到背面，写上今天的日期，算作交代。" },
+        { label: "要。去妇幼保健院挂上号", effects: { relation: 3, money: -3, freedom: -2 }, setState: { kids: "has" }, set: "late_parent", echo: "挂号条夹进文件夹最上面。你把那张旧纸翻到背面，写上今天的日期，算作交代。" },
         { label: "不要。把旧纸撕了，空位留给旅行", effects: { freedom: 2, money: 1, wisdom: 1 }, setState: { kids: "none" }, echo: "纸撕成两半，进了碎纸机。桌上多出来的位子后来放旅行手册，封面还是新的。" },
       ] },
     { id: "e_dish", min: 23, max: 34, forbidRoute: "home", text: "你在异乡的超市里学会做家乡菜。盐放多了，凑合吃，也算一顿。", effects: { health: 2, relation: 1 } },
@@ -140,7 +147,7 @@ window.GAME_DATA = {
     { id: "c_saw_home", require: "saw_home", min: 31, max: 45, minYear: 2012, text: "当年你认真打听过的那个岗位，后来被老同学的妹妹考上了。她朋友圈里的县城生活，慢，但也齐全。你看了两眼，关掉了。", effects: { relation: 1, growth: 1 } },
     { id: "c_stayed", require: "stayed_city", min: 33, max: 50, text: "末班地铁上，你认出了刚来这座城市时住的那一站。窗外广告牌换了十几轮，你还在车上。", effects: { freedom: 1, growth: 1 } },
     { id: "c_often_back", require: "often_back", min: 32, max: 52, text: "售票员都眼熟你了。这一年你回了四趟家，最短的一趟只待了一个晚上，陪母亲去复查。", effects: { relation: 2, money: -2, health: -1 } },
-    { id: "c_has_kid", state: { kids: "has" }, min: 45, max: 60, text: "孩子第一次自己出远门。你把注意事项打了个清单，临出门又删了一半——剩下的，让路上教吧。", effects: { relation: 3, freedom: 1, wisdom: 5 } },
+    { id: "c_has_kid", forbid: ["late_parent"], state: { kids: "has" }, min: 45, max: 60, text: "孩子第一次自己出远门。你把注意事项打了个清单，临出门又删了一半——剩下的，让路上教吧。", effects: { relation: 3, freedom: 1, wisdom: 5 } },
     { id: "c_no_kid", state: { spouse: "partnered", kids: "none" }, min: 45, max: 60, text: "朋友们忙着给孩子张罗的时候，你和另一半开车去了趟远方。车里放着年轻时的歌单。", effects: { freedom: 3, relation: 1, money: -2 } },
     { id: "c_care_self", require: "care_self", min: 55, max: 64, stateAll: { dad: "alive" }, text: "陪护那阵子过去之后，你和父亲的关系变了。他开始跟你说他年轻时候的事，有些你从没听过。", effects: { relation: 3, health: -1, wisdom: 5 } },
     { id: "c_care_hired", require: "care_hired", min: 55, max: 64, stateAll: { dad: "alive" }, text: "护工阿姨发来一段视频：父亲今天自己走了一圈。她说，老人家念叨你呢。你把视频看了三遍。", effects: { relation: 2, money: -1 } },
@@ -307,7 +314,7 @@ window.GAME_DATA = {
       "你帮人搬家随叫随到，轮到自己家搬柜子，你一个人踩着凳子弄到天黑，没好意思打电话喊人。",
       "走得近的人就那么几个，新朋友难再交心，聚会散了你常常一个人往家走。",
       "有些亲戚多年没联系，通讯录里的号码还在，过年群发消息你也不知道发不发。",
-      "和另一半有些话说到一半就停了，停了这些年，屋里安静的时候最明显。",
+      "有些话说到一半就停了，停了这些年，屋里安静的时候最明显。",
       "老朋友一个个搬远了，约一次要提前半个月，临时改期就很难再凑齐。",
       "你帮人帮得勤，轮到自己开口求人时，话在嘴边转了几圈还是咽了回去。",
     ],

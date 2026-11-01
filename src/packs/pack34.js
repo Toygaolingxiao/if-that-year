@@ -1,0 +1,16 @@
+// pack34 — v0.16.0 老来得子线：fork45「再试一回」之后的短链（检查→等待）与三向余波
+// lk_check 的 w:60 不是内容权重，是分发保证：它是必达的剧情入口（同族先例是引擎给 chain 后继的 ×48 加权），普通权重下五年只抓到约两成合格者（定标实测），入口漏则整链沉底
+// 链的终点（lk_born / lk_none / lk_fade）是 synergy.js 里的稀有条目，用概率落定，不由玩家选——要不要试是选择，能不能成是运气
+// 余波门控：得子走 late_parent、试而没有走 late_tried、45 岁落定走 late_settle；文本不把孕产安在无性别的「你」身上，出生写两个人的场面
+window.GAME_PACKS = (window.GAME_PACKS || []).concat([
+{"id":"lk_check","min":45,"max":49,"w":60,"require":["late_try"],"text":"挂号、抽血、一项一项查下去。医生把报告摊在桌上，话说得很直：到了这个年纪，先把身体查清楚，能走到哪一步，看指标，也看运气。检查费一回一千多，候诊区坐着的，比你们年轻的多。","choices":[{"label":"该查的都查，按医生说的来","effects":{"money":-3,"health":-1},"echo":"报告分两个袋子装好，一人拎一个。回家的车上，谁也没先开口提结果。"},{"label":"先查最要紧的几项，慢慢来","effects":{"money":-1,"wisdom":1},"echo":"医生在单子上圈了三项，说先看这几个数。剩下的，等结果出来再说。"}]},
+{"id":"lk_wait","min":46,"max":51,"w":8,"require":["late_try"],"chain":"lk_check","text":"药一盒一盒往家拿，复查的日子记在日历上，圈得很整齐。等消息的日子最磨人：每个月总有那么几天，两个人话都不多，电视开着，谁也没在看。","effects":{"money":-3,"health":-2,"relation":1}},
+{"id":"lk_night","min":47,"max":53,"w":3,"require":["late_parent"],"text":"孩子夜里醒三回，你们也跟着醒三回。对方抱起来在屋里慢慢转，你去热奶，配合得不用出声。天蒙蒙亮孩子睡熟了，你俩顶着黑眼圈看对方一眼：谁去补觉，划拳。","effects":{"health":-2,"relation":2}},
+{"id":"lk_school","min":52,"max":58,"w":3,"require":["late_parent"],"text":"家长群的消息一天几百条，接送的队伍排到校门外头。开家长会那天，你坐在孩子的小椅子上，腿伸不直，周围的家长多半比你年轻十来岁。老师念到孩子的名字，你把腰挺了挺。","effects":{"relation":1,"freedom":-1}},
+{"id":"lk_oldparent","min":58,"max":67,"require":["late_parent"],"text":"学校运动会有个亲子跑的项目，名单报上去了。起跑线边站一圈，你看了一眼：同组的差不多都是三十多岁的面孔。你活动了活动脚踝，跑了个中游，孩子在终点那头喊得最响。","effects":{"health":-1,"relation":2}},
+{"id":"lk_retire_kid","min":62,"max":68,"require":["late_parent"],"text":"退休金到账的短信和补习班的缴费提醒，前后脚进来。孩子离自己挣钱还早，你们这笔账，得往后多算几年。对方说，咱俩身体别垮，就是给这个家省钱。","effects":{"money":-2,"wisdom":1}},
+{"id":"lk_stuff","min":48,"max":55,"require":["late_tried"],"text":"备下的东西收了一下午：小床的零件、没拆封的奶瓶、几件叠得整整齐齐的小衣服。对方问怎么处理，你说先装箱，放储藏室最里面。箱子封上，屋里空出一块地，你们在那儿摆了张小茶桌。","effects":{"relation":1}},
+{"id":"lk_talk","min":48,"max":56,"require":["late_tried"],"stateAll":{"spouse":["partnered","dating"]},"text":"那天晚上，两个人把话说开了：这些年跑的医院、花的钱、等过的那些日子，一件一件摆出来，又一件一件放回去。没有谁怪谁。对方说，日子还长着，往后怎么过，慢慢商量。","choices":[{"label":"说开了，这茬往后不再提","effects":{"relation":2,"wisdom":1},"echo":"那晚的茶喝了三泡。睡前对方把储藏室那只箱子往里推了推，门关严了。"},{"label":"有些话，到底没说出口","effects":{"wisdom":1},"echo":"没说出口的那些，也不急。过日子的人都懂，有些事不用说全。"}]},
+{"id":"lk_relatives","min":49,"max":58,"require":["late_tried"],"text":"过年聚餐，又有亲戚问起孩子的事。这回你先把话接了过去：试过了，没等到，往后就我们俩过。桌上静了两秒，话题转到菜价上。那盘菜，你给对方夹了一筷子。","effects":{"relation":1,"freedom":1}},
+{"id":"lk_settle1","min":46,"max":56,"require":["late_settle"],"text":"话定下来之后，头一个变化在饭桌上：商量事情的时候，不再有人把「等孩子」排进计划里。你们把阳台收拾出来，种了两盆对方喜欢的花，又打听了老年大学的预科班。日子往下走，一天是一天。","effects":{"freedom":2,"relation":1}},
+]);

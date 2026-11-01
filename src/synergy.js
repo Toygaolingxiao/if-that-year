@@ -39,9 +39,9 @@ window.GAME_SYNERGY = {
         { label: "留下教书，先把课讲好", effects: { relation: 3, growth: 2 }, set: "traj_school", echo: "你的第一堂课，紧张得粉笔都拿反了。最后一排的男生憋着笑，憋得很辛苦。" },
         { label: "先干着，以后再说调动", effects: { growth: 1 }, echo: "调动的事后来没人再提。课倒是越讲越顺。" },
       ] },
-    { id: "r_school2", label: "站上开学典礼台下", clue: "推了两次没推掉，站到台下看一操场学生的人。", min: 34, max: 50, chain: "r_school1", stats: [{ k: "relation", gt: 54 }], chance: 0.022, text: "学校让你当教导主任。你推了两次没推掉。开学典礼上你站在台下，看着一操场的学生，忽然想起自己报到那天。", effects: { relation: 3, growth: 2 }, set: "traj_vp" },
+    { id: "r_school2", label: "站上开学典礼台下", clue: "推了两次没推掉，站到台下看一操场学生的人。", min: 34, max: 50, chain: "r_school1", stats: [{ k: "relation", gt: 54 }], chance: 0.019, text: "学校让你当教导主任。你推了两次没推掉。开学典礼上你站在台下，看着一操场的学生，忽然想起自己报到那天。", effects: { relation: 3, growth: 2 }, set: "traj_vp" },
     // —— 写作 / 流量轨迹 ——
-    { id: "r_book", label: "编辑找上门", clue: "合同薄薄几页，在家里看了三遍的人。", min: 33, max: 55, all: ["side_start"], stats: [{ k: "growth", gt: 65 }], chance: 0.010, text: "出版社的编辑找到你，说你陆续写的那些东西，想结集出本书。合同寄到家里，薄薄几页，你看了三遍。", effects: { growth: 3, money: 2 }, set: "traj_book" },
+    { id: "r_book", label: "编辑找上门", clue: "合同薄薄几页，在家里看了三遍的人。", min: 33, max: 55, all: ["side_start"], stats: [{ k: "growth", gt: 65 }], chance: 0.008, text: "出版社的编辑找到你，说你陆续写的那些东西，想结集出本书。合同寄到家里，薄薄几页，你看了三遍。", effects: { growth: 3, money: 2 }, set: "traj_book" },
     { id: "r_viral", label: "一夜六个零", clue: "早上醒来，手机烫得像块铁的人。", min: 30, max: 50, all: ["side_start", "side_job"], chance: 0.012, text: "你随手发的一条视频，第二天早上醒来，播放量后面跟了六个零。手机烫得像块铁，一整天都在震。", effects: { money: 6, relation: 2, health: -2 }, set: "traj_viral" },
     // —— 学术荣誉 ——
     { id: "r_award", label: "提名名单上有你", clue: "横幅拉起来，路过时放慢脚步的人。", min: 46, max: 62, stats: [{ k: "growth", gt: 84 }], chance: 0.02, text: "提名名单公布，你的名字在里面。单位拉了条横幅，你有点不好意思，但路过的时候，还是放慢脚步看了一眼。", effects: { growth: 3, relation: 2 }, set: "traj_award" },
@@ -86,6 +86,11 @@ window.GAME_SYNERGY = {
     { id: "r_health_operation", label: "报告上圈出的指标", clue: "扶着走廊扶手走了一圈，比术前慢了一半的人。", min: 35, max: 55, stats: [{ k: "health", lt: 60 }], chance: 0.007, w: 2, text: "体检报告上圈出一个指标，复查、增强 CT、主任会诊，前后跑了五趟医院。结论是得做手术，不算大，但要在家歇一个月。手术费自费部分刷了你大半年的结余，出院那天，你扶着走廊的扶手走了一圈，比术前慢了一半。", effects: { health: -4, money: -6, wisdom: 2 } },
     { id: "r_guarantee_trap", label: "担保签的那个字", clue: "催告函寄到家里那年，年夜饭没在一张桌子上吃的人。", min: 39, max: 54, stats: [{ k: "relation", gt: 54 }], chance: 0.005, w: 2, text: "亲戚买房差首付，求你做贷款担保，说就签个字，周转开就还上。你签了。两年后银行的催告函寄到你家：对方断供四个月，担保人要先行代偿。你替对方还了大半年的月供，两家人的年夜饭，那年没在一张桌子上吃。", effects: { money: -8, relation: -3, wisdom: 2 } },
     { id: "r_old_neighbor", label: "巷口站着聊的那次", clue: "在小卖部门口站着聊了四十多分钟，请对方吃了碗十四块钱面的人。", min: 47, max: 58, chance: 0.005, text: "搬走十几年的老邻居回老街办事，在巷口碰见你。你们在小卖部门口站着聊了四十多分钟：谁谁搬去了哪，巷口那棵树是哪年砍的。临走互相留了新号码，你请对方吃了碗面，14 块。之后谁也没再联系谁，号码就躺在通讯录里。", effects: { relation: 1, money: -1 } },
+    // v0.16.0 老来得子链的终点：不由玩家选，由概率落定。窗口错开——lk_born 先独占 48–50 的掷骰，lk_none 51–53 收尾，lk_fade 52–55 兜底（没走完治疗的人慢慢停下）
+    // 定标：走完治疗的人里约四分之一等来孩子。chance 0.13 是按实测漏斗定的——lk_wait 完成得晚，多数人只剩 2–3 次掷骰（0.09 实测只得 17.5%，0.13 折算约四分之一）；现实中 45 岁以上两年累计活产率约一到两成，游戏略宽，文案只写概率低、不许诺
+    { id: "lk_born", label: "这一回，等到了", clue: "快五十岁那年，把婴儿床拼了两个晚上的人。", min: 48, max: 51, require: ["late_try"], chain: "lk_wait", state: { kids: "undecided" }, chance: 0.13, text: "消息是对方先看到的，验孕棒举在手里，半天没说出话。后面几个月，复查一次不落，报告都说平稳。孩子出生那天，你在产房外站了很久，护士抱出来，你先看对方——对方朝你点点头，你才伸手。", effects: { relation: 4, health: -2, money: -3 }, set: "late_parent", setState: { kids: "has" } },
+    { id: "lk_none", label: "最后一次复查", clue: "把没用完的药对着单子点了一遍，又放回抽屉的人。", min: 51, max: 53, require: ["late_try"], chain: "lk_wait", state: { kids: "undecided" }, chance: 0.55, text: "最后一次复查，医生把能说的都说了：该试的办法都试了，再往下，身体先受不了。回家路上你们在面馆停了一次，一人一碗，谁也没剩下。日子还得往下过，这话谁也没说出口，可两个人都懂。", effects: { wisdom: 2, health: -1 }, set: "late_tried", setState: { kids: "none" } },
+    { id: "lk_fade", label: "慢慢就不提了", clue: "把医院的就诊卡收进钱包最里层，三年没再动过的人。", min: 52, max: 57, require: ["late_try"], state: { kids: "undecided" }, chance: 0.5, text: "也没有哪一天正式说过停。就是复查的闹钟删了，药没有再续，就诊卡收进钱包最里面。这事从饭桌上慢慢退到了抽屉里。偶尔亲戚问起，你们笑笑，把话岔开。", effects: { wisdom: 2, freedom: 1 }, set: "late_tried", setState: { kids: "none" } },
   ],
   endings: [
     { id: "end_richest", clue: "把副业干成大公司，最后站在锣声里的人。", tier: "legendary", all: ["traj_ipo"], stats: [{ k: "money", gt: 69 }], title: "世界首富",

@@ -5,7 +5,7 @@
    新增/改动旗标必须同步登记，tools/validate-state.js 会逐项核对，未登记即报错。
    详细口径见 docs/STATE-MATRIX.md。 */
 window.GAME_REGISTRY = {
- "version": "0.15.0",
+ "version": "0.16.0",
  "domains": {
   "spouse": {
    "label": "配偶",
@@ -96,7 +96,8 @@ window.GAME_REGISTRY = {
       "by": [
        "fork38",
        "e_kid_settle",
-       "e_kid_final"
+       "e_kid_final",
+       "lk_born"
       ]
      },
      {
@@ -105,7 +106,10 @@ window.GAME_REGISTRY = {
       "by": [
        "fork38",
        "e_kid_settle",
-       "e_kid_final"
+       "e_kid_final",
+       "fork45",
+       "lk_none",
+       "lk_fade"
       ]
      }
    ]
@@ -643,6 +647,33 @@ window.GAME_REGISTRY = {
     "p15_025",
     "p2_012"
    ]
+  },
+  "late_parent": {
+   "setters": [
+    "lk_born",
+    "e_kid_settle",
+    "e_kid_final"
+   ],
+   "note": "晚育标记（v0.16.0）：中年以后得子（fork45 再试链 lk_born，或 e_kid_settle 42–50 / e_kid_final 52–58 选「要」）。隐含孩子已成年的 has 门控事件以 forbid 排除本旗持有者，清单与口径见 STATE-MATRIX §2 与本轮报告"
+  },
+  "late_settle": {
+   "setters": [
+    "fork45"
+   ],
+   "note": "45 岁分岔主动落定不要（v0.16.0）"
+  },
+  "late_tried": {
+   "setters": [
+    "lk_none",
+    "lk_fade"
+   ],
+   "note": "认真试过而没有（v0.16.0）：治疗走完（lk_none）或断续试到停下（lk_fade）"
+  },
+  "late_try": {
+   "setters": [
+    "fork45"
+   ],
+   "note": "45 岁分岔选「再认真试一回」（v0.16.0），开启 pack34 链与 synergy 晚育稀有"
   },
   "league_team": {
    "setters": [
