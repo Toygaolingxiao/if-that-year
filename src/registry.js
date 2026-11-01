@@ -5,7 +5,7 @@
    新增/改动旗标必须同步登记，tools/validate-state.js 会逐项核对，未登记即报错。
    详细口径见 docs/STATE-MATRIX.md。 */
 window.GAME_REGISTRY = {
- "version": "0.13.2",
+ "version": "0.15.0",
  "domains": {
   "spouse": {
    "label": "配偶",

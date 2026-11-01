@@ -4,7 +4,7 @@
 
 ## 如何开启
 
-部署方在 `index.html` 加载 `src/analytics.js` **之前**注入配置（或用一段内联脚本置于其前）：
+部署方在 `index.html` 加载 `src/analytics.js` **之前**注入配置（或用一段内联脚本置于其前）。`index.html` 已预留注入位置（v0.15.0，`analytics.js` 之前一段，缺省 `enabled: false`）。**收集端随 Cloudflare 接入时开启**：接入前不填任何地址、保持关闭；接入时把真实收集端地址填进注入位置并置 `enabled: true` 即可，代码无需改动。
 
 ```html
 <script>window.IFY_ANALYTICS = { enabled: true, endpoint: "https://你的收集端地址" };</script>

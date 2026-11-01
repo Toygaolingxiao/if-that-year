@@ -1,5 +1,4 @@
-// 《如果那年》引擎 v0.13.2 —— 版本号规则见 docs/DEVLOG.md 卷首
-// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.15.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 (function () {
   "use strict";
@@ -50,6 +49,7 @@
   const START_AGE = 22, MAX_AGE = 80;
   // 死亡模型 v2（年龄×健康风险）：公式与校准实测见 docs/MORTALITY-MODEL.md
   const MORTALITY = { accident: 0.00015, healthA: 0.0010, healthG: 1.04, hfNum: 115, hfDen: 55, hfLo: 0.3, hfHi: 2.2 };
+  const CHAIN_BOOST = 48; // chain 后继权重倍数（v0.14.0，16000 局模拟定参，见 DEVLOG v0.14.0 条目⑤）
   const DEATH_CAUSES = {
     health: [
       "身体早几年就给过信儿。那天夜里胸口闷得睡不着，送到医院时已经晚了。",
@@ -141,6 +141,61 @@
     for (const id of rareIds || []) if (!rec.rares[id]) { rec.rares[id] = t; newRare = true; }
     if (newEnding || newRare) { try { localStorage.setItem(LIVES_KEY, JSON.stringify(rec)); } catch (e) { /* 存不了不阻塞结算 */ } }
     return { newEnding, newRare };
+  }
+
+  // ---------- 留存记录（v0.15.0）：只记录，不奖励、不催促，断了不指责 ----------
+  // ify-streak-v1：{ v:1, days:["YYYY-MM-DD", ...] } —— 有「完成一局」的日子（结算时落盘，升序去重，只留最近 400 天）。
+  // ify-lastlife-v1：{ v:1, date, era, route, endAge, tags, verdictLine } —— 最近完成的一局，供开局屏回看。
+  // 两键与进行中存档（ify-save-v2）、「活过的人生」（ify-lives-v1）互不相干；旧档没有这两键，按空记录走。
+  const STREAK_KEY = "ify-streak-v1";
+  const LASTLIFE_KEY = "ify-lastlife-v1";
+  function loadStreak() {
+    try { const v = JSON.parse(localStorage.getItem(STREAK_KEY)); if (v && Array.isArray(v.days)) return v; } catch (e) { /* 损坏数据按空记录走 */ }
+    return { v: 1, days: [] };
+  }
+  function loadLastLife() {
+    try { const v = JSON.parse(localStorage.getItem(LASTLIFE_KEY)); if (v && v.date && v.route) return v; } catch (e) { /* 同上 */ }
+    return null;
+  }
+  function dateStrOf(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+  function shiftedDateStr(n) { const d = new Date(); d.setDate(d.getDate() + n); return dateStrOf(d); }
+  // 结算时落盘：今天记进日子表，最近一局整条存下；同一天重复结算幂等。
+  function recordDayAndLife() {
+    const t = todayStr();
+    const rec = loadStreak();
+    if (!rec.days.includes(t)) {
+      rec.days.push(t); rec.days.sort();
+      if (rec.days.length > 400) rec.days = rec.days.slice(-400);
+      try { localStorage.setItem(STREAK_KEY, JSON.stringify(rec)); } catch (e) { /* 存不了不阻塞结算 */ }
+    }
+    const v = verdict();
+    const last = { v: 1, date: t, era: S.era, route: S.route.name, endAge: finalAge(), tags: lifeTags(), verdictLine: v.text.split("。")[0] + "。" };
+    try { localStorage.setItem(LASTLIFE_KEY, JSON.stringify(last)); } catch (e) { /* 同上 */ }
+  }
+  // 开局屏的记录行：总天数 + 最近连续天数；连续只在 ≥2 天时提，断档时只报总数、只字不提断不断。
+  function streakLine() {
+    const days = loadStreak().days;
+    if (!days.length) return "";
+    let streak = 0;
+    const d = new Date();
+    if (!days.includes(dateStrOf(d))) d.setDate(d.getDate() - 1); // 今天还没玩，就从昨天往前数
+    while (days.includes(dateStrOf(d))) { streak++; d.setDate(d.getDate() - 1); }
+    return `活完过一生的日子，到今天一共 ${days.length} 天${streak >= 2 ? `，最近连着 ${streak} 天` : ""}。`;
+  }
+  // 开局屏的回看行：最近一局是昨天或今天才出现，就是一句事实回放。
+  function lastLifeLine() {
+    const last = loadLastLife();
+    if (!last) return "";
+    const when = last.date === todayStr() ? "今天" : last.date === shiftedDateStr(-1) ? "昨天" : null;
+    if (!when) return "";
+    const era = ERAS.find((e) => e.id === last.era);
+    return `${when}那一生：${era ? era.label : ""}，${esc(last.route)}，活到 ${last.endAge} 岁。${esc(last.verdictLine)}`;
+  }
+  // 每日一局（v0.15.0）：种子就是日期本身（与旧「今日种子」按钮行为一致）；年代与路线由日期字符串哈希派生，
+  // 人人同日同题。派生只读日期，不碰主 RNG，普通局的种子复现不受影响。
+  function dailyFor(dateStr) {
+    const h = seedFromString("ify-daily-" + dateStr);
+    return { seed: dateStr, era: ERAS[h % ERAS.length], route: D.routes[Math.floor(h / ERAS.length) % D.routes.length] };
   }
 
   // ---------- 自动推进：偏好 (ify-prefs 为权威) + 单一全局计时器 ----------
@@ -430,6 +485,7 @@
     app().classList.remove("playwrap");
     clearSave0();
     const saved = loadSave();
+    const sLine = streakLine(), lLine = lastLifeLine(), tomDaily = dailyFor(shiftedDateStr(1)); // 留存三行（v0.15.0）：记录/回看/明日预告，无数据则不出
     const seedParam = new URLSearchParams(location.search).get("seed");
     const eraParam = new URLSearchParams(location.search).get("era");
     const cardsParam = new URLSearchParams(location.search).get("cards"); // v0.13.2：同局链接可带三张已选牌 id
@@ -478,11 +534,14 @@
         <div class="seedrow">
           <input id="seedin" type="text" placeholder="种子码（不填就是随机）">
           <button class="ghost" id="seedgo">用这个种子</button>
-          <button class="ghost" id="daily">今日种子</button>
+          <button class="ghost" id="daily">今日一局</button>
         </div>
-        <p class="hint ver">v0.13.2</p>
-        <p class="hint">不填随机。填了，运气定下来，跟朋友比同一局就用它。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam ? "，年代也按对方那局选好了" : ""}${cardsParam ? "，出身牌也按对方选过的对齐了" : ""}，点任意一条路就开始同一局。` : ""}</p>
-      </section>`;
+        <p class="hint" id="dailyline"></p>
+        ${sLine ? `<p class="hint">${sLine}</p>` : ""}
+        ${lLine ? `<p class="hint">${lLine}</p>` : ""}
+        <p class="hint">明天一局：${tomDaily.era.label} · ${esc(tomDaily.route.name)}。</p>
+        <p class="hint ver">v0.15.0</p>
+        <p class="hint">不填随机。填了，运气定下来，跟朋友比同一局就用它。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam ? "，年代也按对方那局选好了" : ""}${cardsParam ? "，出身牌也按对方选过的对齐了" : ""}，点任意一条路就开始同一局。` : ""}</p>      </section>`;
     el("liveslink").addEventListener("click", () => { ANA.track("lives_view", {}); renderLives(); });
     if (saved) el("resume").addEventListener("click", () => {
       // v0.13.2：缺 seedStr 且无合法 rngA 的残档会在 seedFromString 处炸——按坏档清掉回开局，不抛错
@@ -535,7 +594,16 @@
     document.querySelectorAll(".segbtn").forEach((b) => b.addEventListener("click", updSummary));
     el("seedin").addEventListener("input", () => { redealAll(); updSummary(); }); // 种子一变手牌即重发：屏幕上的手牌恒等于开局将用的手牌
     updSummary();
-    el("daily").addEventListener("click", () => { const d = new Date(); el("seedin").value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; el("daily").textContent = "今日种子已填好，选一条路开始"; redealAll(); updSummary(); });
+    el("daily").addEventListener("click", () => {
+      const dd = dailyFor(todayStr());
+      el("seedin").value = dd.seed;
+      const eb = document.querySelector(`#erapick .segbtn[data-era="${dd.era.id}"]`);
+      if (eb) eb.click(); // 年代走既有接线（重发时代牌 + 刷新小结）
+      redealAll(); updSummary();
+      document.querySelectorAll(".choice").forEach((o) => o.classList.toggle("dailymark", D.routes[Number(o.dataset.i)].id === dd.route.id));
+      el("dailyline").textContent = `今日一局：${dd.era.label}，走「${dd.route.name}」那条路。种子和年代都替你定好了，点标出来的那条路就开始；选别的路也行，那就是普通的一局了。`;
+      el("daily").textContent = "今日一局已备好";
+    });
     let startLock = false; // §6.1 防连点：双击不能在同一帧触发两次开局
     document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {
       if (startLock) return;
@@ -763,7 +831,10 @@
       S.age >= e.min && S.age <= e.max && !S.usedEvents.includes(e.id) && met(e));
     if (!pool.length) return null;
     // 回响事件（require 命中）与本年代事件权重更高：早年的选择更容易被「想起来」，年代质感不能被大池稀释
-    const weighted = pool.flatMap((e) => { let n = 1; if (e.require || e.state) n = 3; if (e.era && e.era === S.era) n = Math.max(n, 3); if (e.w) n *= e.w; return Array(n).fill(e); }); // e.w 数据权重倍数（v0.11.0：中段苦味事件 w:2）；v0.12.0 状态门事件与 require 同权重
+    // chain 后继关窗保底（v0.14.0）：后继只剩最后两年窗口且当年可抽时，先以 1/2 概率在后继中等概率直抽——深链后继的合格局本就少，错过窗口整链就沉了（定参见 DEVLOG v0.14.0 条目⑤）
+    const closing = pool.filter((e) => e.chain && S.age >= e.max - 1);
+    if (closing.length && rng() < 0.5) return closing[Math.floor(rng() * closing.length)];
+    const weighted = pool.flatMap((e) => { let n = 1; if (e.require || e.state) n = 3; if (e.era && e.era === S.era) n = Math.max(n, 3); if (e.w) n *= e.w; if (e.chain) n *= CHAIN_BOOST; return Array(n).fill(e); }); // e.w 数据权重倍数（v0.11.0：中段苦味事件 w:2）；v0.12.0 状态门事件与 require 同权重；v0.14.0 chain 后继再乘 CHAIN_BOOST
     return weighted[Math.floor(rng() * weighted.length)];
   }
   function renderEventYear() {
@@ -1051,6 +1122,7 @@
     S.special = sp;
     ANA.track("game_complete", { era: S.era, route: S.route.id, endAge: finalAge(), death: !!S.death, ending: sp ? sp.id : "none", tier: sp ? sp.tier : "none" });
     const livesNew = recordLives(sp ? sp.id : null, S.usedRare || []); // 活过记录：落盘 + 本局新纪录（§B3）
+    recordDayAndLife(); // 留存记录（v0.15.0）：日子表 + 最近一局回看，与活过记录同一落点、互不相干
     const shadowLines = shadowCompareLines();
     const skippedLine = S.glimpsesSkipped ? `<p>你有 ${S.glimpsesSkipped} 次没有去细看另一条路。这样也好，有些事不知道，更睡得着。</p>` : "";
     const reflHtml = S.reflections.length

@@ -3,7 +3,8 @@
    用法：node tools/validate-state.js
    检查：注册表为单一事实源——数据里出现的每个旗标/状态/流转都必须在 src/registry.js 登记，
    登记与数据实扫必须双向一致；不可逆边、互斥组合、终态自门控在数据层报错拦截；
-   另含旗标可生产性 fixpoint（v0.13.1 起）：依赖环造成的不可达条目列为错误。
+   另含旗标可生产性 fixpoint（v0.13.1 起）：依赖环造成的不可达条目列为错误；
+   及窗口 × 前置最早可达年龄检查（v0.14.0 起）：窗口终点早于状态门/chain 前置最早可达年龄、或 minYear 在全部允许年代下够不到的条目列为错误（推导口径见 docs/STATE-MATRIX.md §7）。
    退出码：0 = 通过（警告可存在，需在交付说明里交代）；1 = 有错误。 */
 "use strict";
 const fs = require("fs"), vm = require("vm"), path = require("path");
@@ -179,6 +180,100 @@ for (const [id, acc] of prodItems) {
   if (acc.chain && !presentable.has(acc.chain)) why.push(`chain 前置 ${acc.chain} 不可达`);
   for (const [dom, vals] of acc.states) if (![...vals].some((v) => attainable.get(dom).has(v))) why.push(`状态 ${dom}∈{${[...vals].join("/")}} 不可达`);
   err(`不可达条目 ${id}: ${why.join("；") || "依赖链不可达"}`);
+}
+
+// ---- 窗口 × 前置最早可达年龄（v0.14.0 补盲，逻辑学家复审 11 条死事件教训：旧检查只问「状态/旗可达吗」，不问「在窗口内来得及吗」）----
+// 推导方法（口径同步写进 docs/STATE-MATRIX.md §7）：
+//   状态值最早年龄 = 各载体「最早可呈现年龄」的最小值——载体在呈现拍即写出流转（分岔年龄固定；出身牌在开局 22 岁）；
+//   条目最早可呈现年龄 = max(自身 min, 正向状态门各域「候选值最早年龄的最小值」的最大值, chain 前置条目的最早年龄,
+//     require/all 旗标 setter 最早年龄的最大值, any 旗标组 setter 最早年龄的最小值)。自下而上 fixpoint，单调上升必收敛。
+//   只在数学上不可能时报错（宁漏不误）：(A) 条目 max < 其正向状态门某域候选值的最早年龄；
+//   (B) 条目 max < chain 前置条目的最早可呈现年龄；(C) 条目全部允许年代下 birth+max < minYear。
+//   负向门（forbid/stateNot）、数值门（when/stats）、路线门不建模（不产生年龄互斥）；结局无年龄窗不查。
+const ERA_BIRTH = { c1955: 1955, c1965: 1965, c1978: 1978, c2000: 2000 }; // 与 engine.js ERAS 表同步
+const ageItems = new Map(); // id -> {min,max,gates:Map(dom->Set(vals)),flags:Set,any:Set,chain,sets:Set,setStates:[[dom,to]],eraGate:[eras],minYear}
+function ageAcc(item, min, max) {
+  const a = { min, max, gates: new Map(), flags: new Set(), any: new Set(), chain: item.chain || null, sets: new Set(), setStates: [], eraGate: null, minYear: item.minYear || null };
+  if (item.era) a.eraGate = [item.era]; else if (item.eraIn) a.eraGate = asArr(item.eraIn);
+  const walk = (o) => {
+    for (const fld of ["state", "stateAll"]) if (o[fld]) for (const [dom, v] of Object.entries(o[fld])) { if (!a.gates.has(dom)) a.gates.set(dom, new Set()); for (const val of asArr(v)) a.gates.get(dom).add(val); }
+    for (const f of asArr(o.require)) a.flags.add(f);
+    for (const f of asArr(o.all)) a.flags.add(f);
+    for (const f of asArr(o.any)) a.any.add(f);
+    if (o.set) a.sets.add(o.set);
+    if (o.setState) for (const [dom, to] of Object.entries(o.setState)) a.setStates.push([dom, to]);
+    for (const c of (o.choices || [])) walk(c);
+  };
+  walk(item);
+  return a;
+}
+for (const e of events) if (typeof e.min === "number" && typeof e.max === "number") ageItems.set(e.id, ageAcc(e, e.min, e.max));
+for (const f of D.forks) ageItems.set(`fork${f.age}`, ageAcc(f, f.age, f.age));
+if (CARDS && CARDS.byId) for (const c of Object.values(CARDS.byId)) ageItems.set(c.id, { min: 22, max: 22, gates: new Map(), flags: new Set(), any: new Set(), chain: null, sets: new Set(c.set ? [c.set] : []), setStates: [], eraGate: null, minYear: null });
+const stateEarliest = new Map(); // "dom=value" -> age
+for (const [dom, def] of Object.entries(DOMAINS)) stateEarliest.set(`${dom}=${def.initial}`, 22);
+const flagEarliest = new Map(); // flag -> age
+const itemEarliest = new Map();
+for (const [id, a] of ageItems) itemEarliest.set(id, a.min);
+let grewA = true, guardA = 0;
+while (grewA && guardA++ < 500) {
+  grewA = false;
+  // 载体写出：状态值/旗标的最早年龄随载体最早年龄更新（只降不升，取最小）
+  for (const [id, a] of ageItems) {
+    const ea = itemEarliest.get(id);
+    for (const f of a.sets) if (!flagEarliest.has(f) || ea < flagEarliest.get(f)) { flagEarliest.set(f, ea); grewA = true; }
+    for (const [dom, to] of a.setStates) {
+      const k = `${dom}=${to}`;
+      // 写出须同时满足：该边在注册表里就是由本载体承担（by 含本条目 id），且前态在载体年龄时已可达
+      const pres = [...declaredEdges.values()].filter((e) => e.dom === dom && e.to === to && (e.by || []).includes(id));
+      const okPre = pres.some((e) => stateEarliest.has(`${dom}=${e.from}`) && ea >= stateEarliest.get(`${dom}=${e.from}`));
+      if (okPre && (!stateEarliest.has(k) || ea < stateEarliest.get(k))) { stateEarliest.set(k, ea); grewA = true; }
+    }
+  }
+  // 条目最早年龄：随前置最早年龄上升（只升不降，取所需最大值）
+  for (const [id, a] of ageItems) {
+    let need = a.min;
+    for (const [dom, vals] of a.gates) {
+      let best = Infinity;
+      for (const v of vals) { const k = `${dom}=${v}`; if (stateEarliest.has(k)) best = Math.min(best, stateEarliest.get(k)); }
+      if (best === Infinity) { need = Infinity; break; }
+      need = Math.max(need, best);
+    }
+    if (need !== Infinity) {
+      for (const f of a.flags) { if (!flagEarliest.has(f)) { need = Infinity; break; } need = Math.max(need, flagEarliest.get(f)); }
+    }
+    if (need !== Infinity && a.any.size) {
+      let best = Infinity;
+      for (const f of a.any) if (flagEarliest.has(f)) best = Math.min(best, flagEarliest.get(f));
+      if (best === Infinity) need = Infinity; else need = Math.max(need, best);
+    }
+    if (need !== Infinity && a.chain) {
+      if (!itemEarliest.has(a.chain) || itemEarliest.get(a.chain) === Infinity) need = Infinity;
+      else need = Math.max(need, itemEarliest.get(a.chain));
+    }
+    if (need !== Infinity && need > itemEarliest.get(id)) { itemEarliest.set(id, need); grewA = true; }
+    if (need === Infinity && itemEarliest.get(id) !== Infinity) { itemEarliest.set(id, Infinity); grewA = true; }
+  }
+}
+const AGE_STRUCTURAL = new Set([...D.forks.map((f) => `fork${f.age}`), ...(CARDS && CARDS.byId ? Object.keys(CARDS.byId) : [])]);
+for (const [id, a] of ageItems) {
+  if (AGE_STRUCTURAL.has(id)) continue; // 分岔/出身牌无窗口可查
+  // (A) 窗口终点早于正向状态门要求值的最早年龄
+  for (const [dom, vals] of a.gates) {
+    let best = Infinity;
+    for (const v of vals) { const k = `${dom}=${v}`; if (stateEarliest.has(k)) best = Math.min(best, stateEarliest.get(k)); }
+    if (best !== Infinity && a.max < best) err(`窗×前置 ${id}: 窗口终点 ${a.max} 早于状态 ${dom} 候选值最早可达年龄 ${best}（该窗内此门永无可能满足）`);
+  }
+  // (B) 窗口终点早于 chain 前置最早可呈现年龄
+  if (a.chain && itemEarliest.has(a.chain)) {
+    const pe = itemEarliest.get(a.chain);
+    if (pe !== Infinity && a.max < pe) err(`窗×前置 ${id}: 窗口终点 ${a.max} 早于 chain 前置 ${a.chain} 的最早可呈现年龄 ${pe}（后继窗整体早于前置）`);
+  }
+  // (C) minYear × 年代：全部允许年代下公历都够不到
+  if (a.minYear) {
+    const eras = a.eraGate || Object.keys(ERA_BIRTH);
+    if (eras.every((er) => (ERA_BIRTH[er] || 0) + a.max < a.minYear)) err(`窗×前置 ${id}: minYear ${a.minYear} 在全部允许年代下不可达（最晚 ${Math.max(...eras.map((er) => (ERA_BIRTH[er] || 0) + a.max))} < ${a.minYear}）`);
+  }
 }
 
 console.log(`validate-state: 条目 ${events.length}（含核心/扩展/协同/稀有/结局）+ 出身牌 ${cardCount} | 域 ${Object.keys(DOMAINS).length} | 里程碑 ${Object.keys(MILESTONES).length}`);

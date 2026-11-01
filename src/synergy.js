@@ -59,7 +59,7 @@ window.GAME_SYNERGY = {
         { label: "收下。废件的料钱从我这儿出", effects: { money: -2, relation: 3, health: -2, growth: 2 }, set: "traj_craft", echo: "头三个月他出的活你件件复查，慢是慢了点。可你下班时，工具箱头一次有人帮你收拾好了。" },
         { label: "不收。自己干惯了", effects: { freedom: 2, money: 1 }, echo: "年轻人后来跟了别的师傅。你照旧一个人开工，一个人收工。" },
       ] },
-    { id: "r_village_doc", label: "卫生院那通电话", clue: "摸了摸白大褂口袋里的处方笺，没当场答复的人。", min: 36, max: 52, route: "home", chance: 0.014, text: "你在乡镇卫生院当了几年医生，门诊一天最多看四十多个人，输液室的椅子常年坐满。这天县医院来电话，说有个进修之后留院的名额，问你去不去。你把白大褂口袋里的处方笺摸了摸，没当场答复。",
+    { id: "r_village_doc", label: "卫生院那通电话", clue: "摸了摸白大褂口袋里的处方笺，没当场答复的人。", min: 36, max: 52, route: "home", chance: 0.010, text: "你在乡镇卫生院当了几年医生，门诊一天最多看四十多个人，输液室的椅子常年坐满。这天县医院来电话，说有个进修之后留院的名额，问你去不去。你把白大褂口袋里的处方笺摸了摸，没当场答复。",
       choices: [
         { label: "留下。这一摊离不开人", effects: { money: -3, relation: 4, health: -2 }, set: "traj_village_doc", echo: "你回了电话，说不去了。当晚有个老人骑电动车来敲门，说家里孩子发烧，先找你看看再说。" },
         { label: "去。往大医院走", effects: { money: 3, growth: 2, relation: -1 }, echo: "交接那天，输液室的人挨个跟你道别。你走的时候，药房的窗户还开着。" },
