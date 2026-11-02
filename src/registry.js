@@ -3,324 +3,24 @@
    by = 载体条目 id（分岔记 fork<年龄>）；reserved 边已设计但暂无载体，不可达警告属预期。
    里程碑（milestones）：普通叙事旗标，setters 为全部立旗条目 id；
    新增/改动旗标必须同步登记，tools/validate-state.js 会逐项核对，未登记即报错。
-   详细口径见 docs/STATE-MATRIX.md。 */
-window.GAME_REGISTRY = {
- "version": "0.18.0",
- "domains": {
-  "spouse": {
-   "label": "配偶",
-   "initial": "none",
-   "states": [
-    "none",
-    "single",
-    "dating",
-    "partnered",
-    "divorced",
-    "widowed"
-   ],
-   "edges": [
-    {
-     "from": "none",
-     "to": "partnered",
-     "by": [
-      "fork31"
-     ]
-    },
-    {
-     "from": "none",
-     "to": "single",
-     "by": [
-      "fork31"
-     ]
-    },
-    {
-     "from": "none",
-     "to": "dating",
-     "by": [
-      "fork31"
-     ]
-    },
-    {
-     "from": "partnered",
-     "to": "divorced",
-     "by": [
-      "p27_001"
-     ]
-    },
-    {
-     "from": "partnered",
-     "to": "widowed",
-     "by": [
-      "p28_001"
-     ]
-    },
-    {
-     "from": "divorced",
-     "to": "partnered",
-     "by": [
-      "p31_003"
-     ],
-     "note": "再结伴边（v0.13.0 启用）：载体 pack31 三环（相识 p31_001→相处 p31_002→落点 p31_003），仅终环选项级 setState 流转，中途「算了」不惩罚"
-    },
-    {
-     "from": "widowed",
-     "to": "partnered",
-     "by": [
-      "p32_003"
-     ],
-     "note": "再结伴边（v0.13.0 启用）：载体 pack32 三环（相识 p32_001→相处 p32_002→落点 p32_003），同上"
-    },
-    {
-     "from": "dating",
-     "to": "partnered",
-     "by": [
-      "p3_043",
-      "e55_017",
-      "proc_dating"
-     ],
-     "note": "慢线成婚边（v0.13.1 启用）：p3_043「结吧」选项级 setState（慢线 dating 的叙事出口）；e55_017 为 c1955 年代婚事事件，呈现即成婚（事件级 setState，门控 stateAll 限 dating/partnered）；proc_dating 为 v0.18.0 dating 到期结算拍"
-    },
-    {
-     "from": "dating",
-     "to": "single",
-     "by": [
-      "proc_dating"
-     ],
-     "note": "dating 到期结算边（v0.18.0 启用）：处满 7 年未定，进程拍 proc_dating 给定下来/好聚好散/再处处看三条路，选散即走此边"
-    }
-   ]
-  },
-  "kids": {
-   "label": "子女",
-   "initial": "undecided",
-   "states": [
-    "undecided",
-    "has",
-    "none"
-   ],
-   "edges": [
-    {
-     "from": "undecided",
-     "to": "has",
-      "by": [
-       "fork38",
-       "e_kid_settle",
-       "e_kid_final",
-       "lk_born"
-      ]
-     },
-     {
-      "from": "undecided",
-      "to": "none",
-      "by": [
-       "fork38",
-       "e_kid_settle",
-       "e_kid_final",
-       "fork45",
-       "lk_none",
-       "lk_fade"
-      ]
-     }
-   ]
-  },
-  "dad": {
-   "label": "父亲",
-   "initial": "alive",
-   "terminal": [
-    "dead"
-   ],
-   "states": [
-    "alive",
-    "dead"
-   ],
-   "edges": [
-    {
-     "from": "alive",
-     "to": "dead",
-     "by": [
-      "p4_015",
-      "proc_dad_dead"
-     ],
-     "note": "v0.18.0 起主载体为父亲进程节拍 proc_dad_dead（进程越线发作）；p4_015 为旧事件载体，仍可先行"
-    }
-   ]
-  },
-  "mom": {
-   "label": "母亲",
-   "initial": "alive",
-   "terminal": [
-    "dead"
-   ],
-   "states": [
-    "alive",
-    "dead"
-   ],
-   "edges": [
-    {
-     "from": "alive",
-     "to": "dead",
-     "by": [
-      "p4_086",
-      "proc_mom_dead"
-     ],
-     "note": "v0.18.0 起主载体为母亲进程节拍 proc_mom_dead；p4_086 为旧事件载体，仍可先行"
-    }
-   ]
-  },
-  "dog": {
-   "label": "宠物狗",
-   "initial": "none",
-   "terminal": [
-    "gone"
-   ],
-   "states": [
-    "none",
-    "home",
-    "gone"
-   ],
-   "edges": [
-    {
-     "from": "none",
-     "to": "home",
-     "by": [
-      "p11_049"
-     ]
-    },
-    {
-     "from": "home",
-     "to": "gone",
-     "by": [
-      "p11_054"
-     ]
-    }
-   ]
-  },
-  "cat": {
-   "label": "宠物猫",
-   "initial": "none",
-   "terminal": [
-    "gone"
-   ],
-   "states": [
-    "none",
-    "home",
-    "gone"
-   ],
-   "edges": [
-    {
-     "from": "none",
-     "to": "home",
-     "by": [
-      "p5_043"
-     ]
-    },
-    {
-     "from": "home",
-     "to": "gone",
-     "by": [
-      "p5_044",
-      "p13_055"
-     ]
-    }
-   ]
-  },
-  "schooling": {
-   "label": "入学处境",
-   "initial": "pre",
-   "states": [
-    "pre",
-    "school",
-    "half",
-    "never",
-    "left"
-   ],
-   "reservedStates": [],
-   "edges": [
-    {
-     "from": "pre",
-     "to": "school",
-     "by": [
-      "pr_origin"
-     ],
-     "note": "处境发放（v0.17.0 试点）：来历幕呈现即落定，发放走序章独立流、不可重掷；本轮仅 c2000 试点走序章，其余年代暂留 pre"
-    },
-    {
-     "from": "pre",
-     "to": "half",
-     "by": [
-      "pr_origin"
-     ],
-     "note": "半读处境（v0.18.0 开放）：c2000 以登记权重发放，载体为序章发放拍（setStateBySit）；留守是家底底色，不占处境值"
-    },
-    {
-     "from": "pre",
-     "to": "never",
-     "by": [
-      "pr_origin"
-     ],
-     "note": "未入学处境（v0.18.0 开放）：c2000 以登记小权重发放，含后来的识字线（夜校/自学，载体 pr_never2）"
-    },
-    {
-     "from": "half",
-     "to": "left",
-     "by": [
-      "pr_half2"
-     ],
-     "note": "读了又离开（v0.18.0 开放）：half 线 14 岁拍的选择——读到这儿就回家帮工"
-    },
-    {
-     "from": "school",
-     "to": "left",
-     "by": [],
-     "reserved": true,
-     "note": "school 直转 left 未开放：现行口径下流失统一走 half 线（处境在发放时已按帮工+流失小格标定）"
-    }
-   ]
-  },
-  "track": {
-   "label": "少年轨道",
-   "initial": "pre",
-   "states": [
-    "pre",
-    "study",
-    "work",
-    "craft",
-    "home"
-   ],
-   "edges": [
-    {
-     "from": "pre",
-     "to": "study",
-     "by": [
-      "pr_fork16"
-     ]
-    },
-    {
-     "from": "pre",
-     "to": "work",
-     "by": [
-      "pr_fork16"
-     ]
-    },
-    {
-     "from": "pre",
-     "to": "craft",
-     "by": [
-      "pr_fork16"
-     ]
-    },
-    {
-     "from": "pre",
-     "to": "home",
-     "by": [
-      "pr_fork16"
-     ]
-    }
-   ],
-   "note": "16 岁分岔写入（v0.17.0）；成年段五路线是另一层选择，track 不锁 route。未走序章的年代暂留 pre"
-  }
- },
- "milestones": {
+   详细口径见 docs/STATE-MATRIX.md。
+   通用门/变体字段（v0.19.0 三相登记，形状在此备案，校验器逐项核对）：
+   - kidMin / kidMax（条目级，数字）：孩子年龄下限/上限门，kidAge = 当前年龄 − kidsAt，抽取层 met() 求值。
+   - flagAgeWithin（条目级）：{ flag: <已登记里程碑 id>, years: <非负数> }——旗落点后 years 年内才可抽，读引擎 flagAges。
+   - textState（条目级）/ echoState（选项级）：{ 域: { 状态值: 文本 } }——呈现时按本局状态选文本，未命中回落 text / echo。
+   - ctx.form / ctx.notForm（条目级，v0.20.0 M2 登记）：形态值数组（值域 farm/public/self/flex/employee）——
+     抽取层 ctxOk 求值：form 命中任一即过、notForm 命中任一即拦。形态由 work.js formOf() 按规则表派生，不进存档。
+   - ctx.mainLine（条目级，v0.20.0 M2 形态补修第二批登记）：入行旗 id 或其数组（值域 = work.js
+     FORM_OF_FLAG 的键）——抽取层 ctxOk 求值：本局主入行旗（work.js mainEntryOf()，R1 最近入行）
+     命中才可抽，无主入行旗时不过。治「入行旗只进不出」——旧线终身口吻条目只认本线是当下主线
+     时才出。同样是派生量，不进存档；validators 对其形状与值域逐项核对。
+   - textForm（条目级）/ echoForm（选项级，v0.20.0 M2 登记）：{ 形态: 文本 }——呈现时按本局形态选文本
+     （解析点与 textState 同一机制：views/year.js formText/echoText），未命中回落 textState 变体或原文。
+   - labelForm（选项级，v0.20.0 M2 收尾登记）：{ 形态: 文本 }——分岔选项标签的形态变体，解析点 views/year.js
+     labelText（先 spouse 变体、再形态覆盖）；流水账与未选支记录同走此读法，结算 chosenOfFork 按变体集合反查。 */
+/* 拆分说明（v0.20.0）：version 与 domains 已移至 src/world/state.js（须在本文件之前加载）；
+   本文件只登记里程碑（milestones），正文与拆分前一字未动。 */
+window.GAME_REGISTRY.milestones = {
   "ad_first": {
    "setters": [
     "p2_037"
@@ -403,6 +103,13 @@ window.GAME_REGISTRY = {
     "p12_045",
     "p2_081"
    ]
+  },
+  "care_stage": {
+   "setters": [
+    "proc_dad_care",
+    "proc_mom_care"
+   ],
+   "note": "引擎在任一父母进程进入照护段呈现时立（renderProcItem 的 beat=care 分支），表示家里已进入照护期；父母离世后不撤销，读它的条目须自带在世门（v0.19.0 审计急修登记，此前为未登记的引擎内部旗）"
   },
   "care_hired": {
    "setters": [
@@ -762,6 +469,12 @@ window.GAME_REGISTRY = {
     "p2_012"
    ]
   },
+  "spouse_passed": {
+   "setters": [
+    "p28_001"
+   ],
+   "note": "伴侣离世落点（v0.19.0 三相）：p28_001 呈现即立旗，引擎 flagAges 记落点年龄；p28_002 以 flagAgeWithin{flag:spouse_passed,years:2} 只在离世后 2 年内可抽，挡身后手续隔多年重办"
+  },
   "late_parent": {
    "setters": [
     "lk_born",
@@ -798,7 +511,7 @@ window.GAME_REGISTRY = {
    "setters": [
     "pr_child1"
    ],
-   "note": "童年记号（v0.17.0）：开学第一天的半块橡皮；成年回响 echo_deskmate，影子回响见 src/prologue.js MARKS"
+   "note": "童年记号（v0.17.0）：开学第一天的半块橡皮；成年回响 echo_deskmate，影子回响见 src/content/prologue/prologue.js MARKS"
   },
   "mark_river": {
    "setters": [
@@ -1025,7 +738,9 @@ window.GAME_REGISTRY = {
   "rehire": {
    "setters": [
     "fork58",
-    "p15_042"
+    "p15_042",
+    "e_rehire_1",
+    "e_rehire_2"
    ]
   },
   "renting": {
@@ -1045,7 +760,16 @@ window.GAME_REGISTRY = {
   "retired_full": {
    "setters": [
     "fork58"
-   ]
+   ],
+   "note": "58 岁分岔「退」选项专属（v0.19.0 厘清）：退休相位进程（proc_retire_*）只写 workPhase 状态、不立此旗——此旗是 end_traveler 等特殊结局的证据点，生产者集合不变，结局门槛不动"
+  },
+  "retired_begun": {
+   "setters": [
+    "proc_retire_full",
+    "proc_retire_auto",
+    "proc_retire_node"
+   ],
+   "note": "首次进入 retired 的落点旗（v0.19.0 审计急修）：只记首次全退年龄供 flagAgeWithin 读（如 e_retire_firstmonth 的两年窗）；与 retired_full 分工——retired_full 仍为 fork58 专属证据旗，生产者不变"
   },
   "run_marathon": {
    "setters": [
@@ -1083,7 +807,8 @@ window.GAME_REGISTRY = {
   },
   "slow_life": {
    "setters": [
-    "fork58"
+    "fork58",
+    "proc_retire_node"
    ]
   },
   "ss_fixed": {
@@ -1327,6 +1052,132 @@ window.GAME_REGISTRY = {
     "pr_half3"
    ],
    "note": "半读出身补课（v0.18.0）：half 线 19 岁拍立旗，成年段有回响事件"
+  },
+  "factory_work": {
+   "setters": [
+    "p15_071"
+   ],
+   "note": "工厂制造入行（v0.19.0，职业语境门）：招工入行拍立旗，工厂主簇以此为门"
+  },
+  "craft_work": {
+   "setters": [
+    "p20_001",
+    "p20_002",
+    "p20_003",
+    "p20_008"
+   ],
+   "note": "技工入行（v0.19.0）：钳/焊/机修/家电维修学徒拍立旗，技工簇以此为门"
+  },
+  "miner_work": {
+   "setters": [
+    "p20_009"
+   ],
+   "note": "矿工入行（v0.19.0）：矿上招工签约选项立旗，井下簇以此为门"
+  },
+  "fab_work": {
+   "setters": [
+    "p18_032"
+   ],
+   "note": "半导体入行（v0.19.0）：进晶圆厂跟线入行拍立旗，晶圆/封测簇以此为门"
+  },
+  "shop_work": {
+   "setters": [
+    "p19_005",
+    "p19_025",
+    "p19_055"
+   ],
+   "note": "店主入行（v0.19.0）：批发学徒/接手家店/开网店拍立旗，商户簇以此为门"
+  },
+  "gig_work": {
+   "setters": [
+    "p22_071"
+   ],
+   "note": "零工/自由职业入行（v0.19.0）：劳务市场报名接活拍立旗，零工簇以此为门；与 side_job（副业）分家"
+  },
+  "courier_work": {
+   "setters": [
+    "p22_002",
+    "p22_072"
+   ],
+   "note": "快递物流入行（v0.19.0）：转运分拣/站点招工拍立旗，快递簇以此为门"
+  },
+  "farm_work": {
+   "setters": [
+    "p29_001",
+    "p29_002"
+   ],
+   "note": "种地入行（v0.19.0）：分家单过/分地到户拍立旗，种地簇以此为门"
+  },
+  "teach_work": {
+   "setters": [
+    "r_school1"
+   ],
+   "note": "教师入行（v0.19.0）：r_school1 分配到校呈现即立（两选项均为教书），教师簇以此为门；traj_school 仍为轨迹旗"
+  },
+  "acct_work": {
+   "setters": [
+    "p16_016"
+   ],
+   "note": "财会入行（v0.19.0）：第一份出纳活入行拍立旗，出纳簇以此为门"
+  },
+  "care_work": {
+   "setters": [
+    "p21_073"
+   ],
+   "note": "职业陪护入行（v0.19.0）：陪护接活入行拍立旗；与家庭照护旗 care_ss_gap/care_self 分家"
+  },
+  "write_work": {
+   "setters": [
+    "p2_086"
+   ],
+   "note": "写作入行（v0.19.0）：副业写作留用拍立旗，r_book/end_bestseller 以此为证据门"
+  },
+  "nurse_work": {
+   "setters": [
+    "p21_072"
+   ],
+   "note": "医护·病房护士支（v0.19.0）：医院分科拍病房选项立旗"
+  },
+  "med_hosp": {
+   "setters": [
+    "p21_071"
+   ],
+   "note": "医院线入行（v0.19.0）：市医院招工培训拍立旗，影像/病房/药房三支共用此门"
+  },
+  "img_work": {
+   "setters": [
+    "p21_072"
+   ],
+   "note": "医护·影像科支（v0.19.0）：医院分科拍影像选项立旗，影像簇以此为门"
+  },
+  "heavy_work": {
+   "setters": [
+    "p20_004"
+   ],
+   "note": "重工业入行（v0.19.0）：进钢铁厂入行拍立旗，钢铁/油田支以此为门（工厂线支线）"
+  },
+  "dev_work": {
+   "setters": [
+    "p22_073"
+   ],
+   "note": "软件开发入行（v0.19.0）：c2000 软件公司入行拍立旗"
+  },
+  "press_work": {
+   "setters": [
+    "p30_022"
+   ],
+   "note": "报社入行（v0.19.0）：报社招工入行拍立旗（全池仅 p30_012 一条在行）"
+  },
+  "driver_taxi": {
+   "setters": [
+    "p30_021"
+   ],
+   "note": "出租车入行（v0.19.0）：出租车公司招工入行拍立旗"
+  },
+  "fin_work": {
+   "setters": [
+    "p18_021"
+   ],
+   "note": "证券柜台入行（v0.19.0，年代内小线）：营业部柜台留任选项立旗，仅 c1965 两条"
   }
- }
-};
+ };

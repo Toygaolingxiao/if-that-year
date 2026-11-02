@@ -1,0 +1,153 @@
+#!/usr/bin/env node
+/* 《如果那年》统一 storylet 校验器（v0.20.0 M1-B）——用法：node tools/validate-storylet.js
+   装载序照 index.html：events → content 各包（相对顺序）→ cards → synergy → state/registry/rhythm
+   → prologue → storylet（并入 + 挂 sl 在此发生）。断言：
+   1) 并入后全部条目（D.events 含主池/扩展/combos、D.rare、D.forks、序章 acts、D.crisis）都有 sl，
+      且 domain ∈ {process, era, line, rare, pool}、layer ∈ {0,1,2,3,4}、kind ∈ {jump, call}、win 为 [lo,hi] 且 lo<=hi；
+   2) 普通抽取池隔离（按现引擎 scheduler.met/pickEvent 的实际过滤）：D.events 中 procOnly 条目全部
+      kind="jump"，其余全部 kind="call"（met() 对 procOnly 恒 false，pickEvent 只从 D.events 取
+      met 通过者）；D.forks 全部 kind="jump"；
+   3) effects 键（条目级与选项级递归）⊆ {health,money,growth,freedom,relation,wisdom}；
+      选项级与条目级的 set/setState/temp 只许以白名单形状出现（set=字符串旗标名、setState=对象、temp=数字）；
+   4) 全池 id 唯一（events/rare/forks/序章 acts/endings/危机合成 id）；
+   5) 锚点表一致性（v0.20.0 M2，src/anchors.js）：表里有的 forks（年龄+id+route 为键）数据里
+      必须有、数据里的 forks 必须全在表里；procBeats 与 D.events 的 procOnly 集合全等；
+      glimpseAges 恒 [30,40,50]；prologueForks 的 id 必须在序章 acts 里实存。防锚点表与数据漂移。
+   退出码：0 = PASS，1 = FAIL。 */
+"use strict";
+const fs = require("fs"), vm = require("vm"), path = require("path");
+const ROOT = path.join(__dirname, "..");
+const PACK_FILES = ["src/content/pool/pack1.js", "src/content/pool/pack2.js", "src/content/pool/pack3.js", "src/content/pool/pack4.js", "src/content/pool/pack5.js", "src/content/pool/pack6.js", "src/content/pool/pack9.js", "src/content/pool/pack10.js", "src/content/pool/pack11.js", "src/content/pool/pack12.js", "src/content/lines/side-and-steady.js", "src/content/pool/pack14.js", "src/content/pool/pack15.js", "src/content/lines/exam.js", "src/content/pool/pack17.js", "src/content/pool/pack18.js", "src/content/pool/pack19.js", "src/content/pool/pack20.js", "src/content/pool/pack21.js", "src/content/pool/pack22.js", "src/content/pool/pack23.js", "src/content/lines/late-life.js", "src/content/pool/pack25.js", "src/content/pool/pack26.js", "src/content/pool/pack27.js", "src/content/pool/pack28.js", "src/content/pool/pack29.js", "src/content/pool/pack30.js", "src/content/pool/pack33.js", "src/content/pool/pack31.js", "src/content/pool/pack32.js", "src/content/pool/pack34.js", "src/content/lines/covenant.js", "src/content/lines/process-beats.js", "src/content/lines/abroad.js", "src/content/era/era1955.js", "src/content/era/era1965.js", "src/content/era/era1978.js"];
+
+const sandbox = { window: {}, console };
+sandbox.window = sandbox;
+vm.createContext(sandbox);
+const load = (rel) => vm.runInContext(fs.readFileSync(path.join(ROOT, rel), "utf8"), sandbox, { filename: rel });
+load("src/events.js");
+for (const p of PACK_FILES) load(p);
+load("src/content/prologue/cards.js");
+load("src/content/rare/synergy.js");
+load("src/world/state.js"); load("src/registry.js"); load("src/anchors.js"); load("src/rhythm.js");
+load("src/content/prologue/prologue.js");
+load("src/storylet.js");
+
+const D = sandbox.GAME_DATA, PRO = sandbox.GAME_PROLOGUE, ST = sandbox.GAME_STORYLET;
+const errors = [];
+const err = (m) => errors.push(m);
+if (!ST) err("GAME_STORYLET 未导出（storylet.js 未生效）");
+
+const DOMAINS = new Set(["process", "era", "line", "rare", "pool"]);
+const STAT_KEYS = new Set(["health", "money", "growth", "freedom", "relation", "wisdom"]);
+
+const collections = [
+  ["events", D.events || []],
+  ["rare", D.rare || []],
+  ["forks", D.forks || []],
+  ["prologue", (PRO && PRO.acts) || []],
+  ["crisis", Object.values(D.crisis || {})],
+];
+let total = 0;
+const byDomain = {}, byLayer = {}, byKind = {};
+for (const [name, arr] of collections) {
+  for (const e of arr) {
+    total++;
+    const at = `${name}:${e.id || "(无 id)"}`;
+    if (!e.sl) { err(`${at} 缺 sl`); continue; }
+    const { domain, win, layer, kind } = e.sl;
+    if (!DOMAINS.has(domain)) err(`${at} sl.domain 非法: ${domain}`);
+    if (!Number.isInteger(layer) || layer < 0 || layer > 4) err(`${at} sl.layer 非法: ${layer}`);
+    if (kind !== "jump" && kind !== "call") err(`${at} sl.kind 非法: ${kind}`);
+    if (!Array.isArray(win) || win.length !== 2 || typeof win[0] !== "number" || typeof win[1] !== "number" || win[0] > win[1]) err(`${at} sl.win 非法: ${JSON.stringify(win)}`);
+    byDomain[domain] = (byDomain[domain] || 0) + 1;
+    byLayer[layer] = (byLayer[layer] || 0) + 1;
+    byKind[kind] = (byKind[kind] || 0) + 1;
+    // domain 派生复核（与 storylet.js 规则同口径，防挂牌漂移）
+    const wantDomain = e.procOnly ? "process" : (e.era || e.eraIn) ? "era" : (e.chain || e.ctx) ? "line" : null;
+    if (wantDomain && domain !== wantDomain) err(`${at} sl.domain=${domain} 与派生规则不符（应为 ${wantDomain}）`);
+    if (name === "crisis" && layer !== 1) err(`${at} crisis 条目 sl.layer 应为 1，实为 ${layer}`);
+    if ((name === "rare") && !e.chain && layer !== 2) err(`${at} rare 条目 sl.layer 应为 2，实为 ${layer}`);
+  }
+}
+
+// ---- 抽取池隔离：procOnly ⇔ jump（仅 D.events 内），普通池条目全 call，forks 全 jump ----
+for (const e of D.events || []) {
+  if (e.procOnly && (!e.sl || e.sl.kind !== "jump")) err(`events:${e.id} procOnly 条目 kind 应为 jump`);
+  if (!e.procOnly && e.sl && e.sl.kind !== "call") err(`events:${e.id} 普通池条目 kind 应为 call，实为 ${e.sl.kind}`);
+}
+for (const f of D.forks || []) if (!f.sl || f.sl.kind !== "jump") err(`forks:${f.id || f.age} kind 应为 jump`);
+
+// ---- effects 键与选项级白名单（递归条目与 choices）----
+function checkEffects(item, at) {
+  if (!item || typeof item !== "object") return;
+  if (item.effects) for (const k of Object.keys(item.effects)) if (!STAT_KEYS.has(k)) err(`${at} effects 键越界: ${k}`);
+  if (item.set !== undefined && typeof item.set !== "string") err(`${at} set 形状非法（应为字符串旗标名）`);
+  if (item.setState !== undefined && (typeof item.setState !== "object" || item.setState === null || Array.isArray(item.setState))) err(`${at} setState 形状非法（应为对象）`);
+  if (item.temp !== undefined && typeof item.temp !== "number") err(`${at} temp 形状非法（应为数字）`);
+  // 活计形态字段（v0.20.0 M2）：ctx.form/notForm 值域与 textForm/echoForm 形状，与 validate-state 同口径。
+  const FORM_VALUES = ["farm", "public", "self", "flex", "employee"];
+  if (item.ctx) for (const fld of ["form", "notForm"]) {
+    if (item.ctx[fld] === undefined) continue;
+    const v = item.ctx[fld];
+    if (!Array.isArray(v) || !v.length) err(`${at} ctx.${fld} 应为非空数组`);
+    else for (const fv of v) if (!FORM_VALUES.includes(fv)) err(`${at} ctx.${fld} 含非法形态值 ${fv}`);
+  }
+  // 主线门（v0.20.0 M2 第二批）：ctx.mainLine 形状与 validate-state 同口径（入行旗 id 或其非空数组）。
+  const ENTRY_FLAGS = ["farm_work", "exam_landed", "shop_work", "gig_work", "courier_work", "care_work", "write_work", "factory_work", "fab_work", "craft_work", "heavy_work", "miner_work", "truck_work", "med_hosp", "med_work", "nurse_work", "img_work", "teach_work", "acct_work", "fin_work", "press_work", "dev_work", "driver_taxi"];
+  if (item.ctx && item.ctx.mainLine !== undefined) {
+    const v = item.ctx.mainLine;
+    const arr = Array.isArray(v) ? v : [v];
+    if (!arr.length || arr.some((x) => typeof x !== "string")) err(`${at} ctx.mainLine 应为入行旗 id 或其非空数组`);
+    else for (const fv of arr) if (!ENTRY_FLAGS.includes(fv)) err(`${at} ctx.mainLine 含非入行旗 ${fv}`);
+  }
+  for (const fld of ["textForm", "echoForm", "labelForm"]) {
+    if (!item[fld]) continue;
+    for (const [fv, txt] of Object.entries(item[fld])) {
+      if (!FORM_VALUES.includes(fv)) err(`${at} ${fld} 含非法形态键 ${fv}`);
+      else if (typeof txt !== "string" || !txt) err(`${at} ${fld}.${fv} 不是非空文本`);
+    }
+  }
+  for (const c of item.choices || []) checkEffects(c, at);
+}
+for (const [name, arr] of collections) for (const e of arr) checkEffects(e, `${name}:${e.id || "(无 id)"}`);
+for (const e of D.endings || []) checkEffects(e, `endings:${e.id}`);
+
+// ---- 全池 id 唯一（含 endings 与危机合成 id）----
+const seen = new Map();
+const reg = (id, where) => { if (id == null) return; if (seen.has(id)) err(`重复 id: ${id}（${where} 与 ${seen.get(id)}）`); else seen.set(id, where); };
+for (const e of D.events || []) reg(e.id, "events");
+for (const e of D.rare || []) reg(e.id, "rare");
+for (const f of D.forks || []) reg(f.id || `fork${f.age}`, "forks");
+for (const a of (PRO && PRO.acts) || []) reg(a.id, "prologue");
+for (const e of D.endings || []) reg(e.id, "endings");
+for (const k of Object.keys(D.crisis || {})) reg(`crisis_${k}`, "crisis");
+
+// ---- 锚点表一致性（v0.20.0 M2）：表 ↔ 数据双向对账 ----
+const AN = sandbox.GAME_ANCHORS;
+let anchorNote = "GAME_ANCHORS 未导出";
+if (!AN) err("GAME_ANCHORS 未导出（anchors.js 未生效）");
+else {
+  const fkey = (f) => `${f.age}|${f.id || ""}|${f.route || ""}`;
+  const dataForks = new Set((D.forks || []).map(fkey));
+  const tabForks = new Set((AN.forks || []).map(fkey));
+  for (const k of tabForks) if (!dataForks.has(k)) err(`锚点表分岔 ${k} 数据里不存在`);
+  for (const k of dataForks) if (!tabForks.has(k)) err(`数据分岔 ${k} 未登记进锚点表`);
+  if ((AN.forks || []).length !== tabForks.size) err("锚点表 forks 有重复登记");
+  if (JSON.stringify(AN.glimpseAges) !== JSON.stringify([30, 40, 50])) err(`锚点表 glimpseAges 应为 [30,40,50]，实为 ${JSON.stringify(AN.glimpseAges)}`);
+  const procData = new Set((D.events || []).filter((e) => e.procOnly).map((e) => e.id));
+  const procTab = new Set((AN.procBeats || []).map((b) => b.id));
+  for (const id of procTab) if (!procData.has(id)) err(`锚点表进程拍 ${id} 数据里不存在（非 procOnly 条目）`);
+  for (const id of procData) if (!procTab.has(id)) err(`数据 procOnly 条目 ${id} 未登记进锚点表 procBeats`);
+  for (const pf of AN.prologueForks || []) {
+    if (!((PRO && PRO.acts) || []).some((a) => a.id === pf.id)) err(`锚点表序章分岔 ${pf.id} 在序章 acts 里不存在`);
+  }
+  anchorNote = `forks ${tabForks.size} 双向一致 / procBeats ${procTab.size} 双向一致 / glimpseAges [30,40,50] / prologueForks ${(AN.prologueForks || []).length}`;
+}
+
+console.log(`validate-storylet: 条目 ${total}（events ${(D.events || []).length} / rare ${(D.rare || []).length} / forks ${(D.forks || []).length} / prologue ${((PRO && PRO.acts) || []).length} / crisis ${Object.keys(D.crisis || {}).length}）| id 唯一 ${seen.size}`);
+console.log(`  锚点表一致性: ${anchorNote}`);
+console.log(`  domain 计数: ${JSON.stringify(byDomain)}`);
+console.log(`  layer 计数: ${JSON.stringify(byLayer)} | kind 计数: ${JSON.stringify(byKind)}`);
+console.log(`  manifest: endings ${(ST && ST.manifest.endings.length) || 0} 条只登记 | micro ${(ST && ST.manifest.micro.count) || 0} 条 layer 4 只登记（字符串形态不挂 sl）`);
+console.log(`错误 ${errors.length} 条:`); errors.forEach((m) => console.log("  ERROR", m));
+console.log(errors.length ? "RESULT: FAIL" : "RESULT: PASS");
+process.exit(errors.length ? 1 : 0);

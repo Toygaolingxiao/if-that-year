@@ -9,16 +9,16 @@
 "use strict";
 const fs = require("fs"), vm = require("vm"), path = require("path");
 const ROOT = path.join(__dirname, "..");
-const PACK_ORDER = ["pack1","pack2","pack3","pack4","pack5","pack6","pack9","pack10","pack11","pack12","pack13","pack14","pack15","pack16","pack17","pack18","pack19","pack20","pack21","pack22","pack23","pack24","pack25","pack26","pack27","pack28","pack29","pack30","pack33","pack31","pack32","pack34","pack35","pack36","era1955","era1965","era1978"];
+const PACK_FILES = ["src/content/pool/pack1.js", "src/content/pool/pack2.js", "src/content/pool/pack3.js", "src/content/pool/pack4.js", "src/content/pool/pack5.js", "src/content/pool/pack6.js", "src/content/pool/pack9.js", "src/content/pool/pack10.js", "src/content/pool/pack11.js", "src/content/pool/pack12.js", "src/content/lines/side-and-steady.js", "src/content/pool/pack14.js", "src/content/pool/pack15.js", "src/content/lines/exam.js", "src/content/pool/pack17.js", "src/content/pool/pack18.js", "src/content/pool/pack19.js", "src/content/pool/pack20.js", "src/content/pool/pack21.js", "src/content/pool/pack22.js", "src/content/pool/pack23.js", "src/content/lines/late-life.js", "src/content/pool/pack25.js", "src/content/pool/pack26.js", "src/content/pool/pack27.js", "src/content/pool/pack28.js", "src/content/pool/pack29.js", "src/content/pool/pack30.js", "src/content/pool/pack33.js", "src/content/pool/pack31.js", "src/content/pool/pack32.js", "src/content/pool/pack34.js", "src/content/lines/covenant.js", "src/content/lines/process-beats.js", "src/content/lines/abroad.js", "src/content/era/era1955.js", "src/content/era/era1965.js", "src/content/era/era1978.js"];
 const ld = (rel, key) => { const s = { window: {} }; vm.createContext(s); vm.runInContext(fs.readFileSync(path.join(ROOT, rel), "utf8"), s, { filename: rel }); return s.window[key]; };
 const errors = [], warnings = [];
 const err = (m) => errors.push(m), warn = (m) => warnings.push(m);
 
-const REG = ld("src/registry.js", "GAME_REGISTRY");
+const REG = (() => { const s = { window: {} }; vm.createContext(s); for (const rel of ["src/world/state.js", "src/registry.js"]) vm.runInContext(fs.readFileSync(path.join(ROOT, rel), "utf8"), s, { filename: rel }); return s.window.GAME_REGISTRY; })(); // v0.20.0 拆分：domains 在 src/world/state.js，milestones 在 src/registry.js，须同沙盒顺序载入
 const D = ld("src/events.js", "GAME_DATA");
 let events = [...D.events];
-for (const p of PACK_ORDER) events = events.concat(ld(`src/packs/${p}.js`, "GAME_PACKS") || []);
-const syn = ld("src/synergy.js", "GAME_SYNERGY");
+for (const p of PACK_FILES) events = events.concat(ld(p, "GAME_PACKS") || []); // v0.20.0 M1-B：内容按领域重组至 src/content/，PACK_FILES 为 index.html 相对顺序的完整路径
+const syn = ld("src/content/rare/synergy.js", "GAME_SYNERGY");
 events = events.concat(syn.combos || [], syn.rare || [], syn.endings || []);
 const byId = new Map();
 for (const e of events) { if (byId.has(e.id)) err(`重复 id: ${e.id}`); byId.set(e.id, e); }
@@ -98,17 +98,62 @@ function scan(item, itemId, inhGate) {
     }
   }
   if (item.chain && !byId.has(item.chain)) err(`${itemId}: chain 指向不存在的 ${item.chain}`);
+  // 通用门/变体字段登记核对（v0.19.0 三相）：kidMin/kidMax 须为数字且下限不大于上限；
+  // flagAgeWithin.flag 须为已登记里程碑、years 须为非负数；echoState/textState 须为 { 域: { 状态值: 非空文本 } }，域与状态值须已登记。
+  if (item.kidMin != null && typeof item.kidMin !== "number") err(`${itemId}: kidMin 不是数字`);
+  if (item.kidMax != null && typeof item.kidMax !== "number") err(`${itemId}: kidMax 不是数字`);
+  if (item.kidMin != null && item.kidMax != null && item.kidMin > item.kidMax) err(`${itemId}: kidMin ${item.kidMin} 大于 kidMax ${item.kidMax}`);
+  if (item.flagAgeWithin) {
+    const fw = item.flagAgeWithin;
+    if (!(fw.flag in MILESTONES)) err(`${itemId}: flagAgeWithin.flag 引用未登记里程碑 ${fw.flag}`);
+    else if (typeof fw.years !== "number" || fw.years < 0) err(`${itemId}: flagAgeWithin.years 不是非负数`);
+  }
+  for (const fld of ["echoState", "textState"]) {
+    if (!item[fld]) continue;
+    for (const [dom, variants] of Object.entries(item[fld])) {
+      if (!DOMAINS[dom]) { err(`${itemId}: ${fld} 引用未登记域 ${dom}`); continue; }
+      for (const [val, txt] of Object.entries(variants || {})) {
+        if (!DOMAINS[dom].states.includes(val)) err(`${itemId}: ${fld} 引用域 ${dom} 的未登记状态 ${val}`);
+        else if (typeof txt !== "string" || !txt) err(`${itemId}: ${fld}.${dom}.${val} 不是非空文本`);
+      }
+    }
+  }
+  // 活计形态字段登记核对（v0.20.0 M2）：ctx.form/notForm 须为形态值域（farm/public/self/flex/employee）内的非空数组；
+  // textForm/echoForm 须为 { 形态: 非空文本 }。形态是派生量（work.js formOf 规则表），此处只核形状与值域。
+  const FORM_VALUES = ["farm", "public", "self", "flex", "employee"];
+  if (item.ctx) for (const fld of ["form", "notForm"]) {
+    if (item.ctx[fld] === undefined) continue;
+    const v = item.ctx[fld];
+    if (!Array.isArray(v) || !v.length) err(`${itemId}: ctx.${fld} 应为非空数组`);
+    else for (const fv of v) if (!FORM_VALUES.includes(fv)) err(`${itemId}: ctx.${fld} 含非法形态值 ${fv}`);
+  }
+  // 主线门（v0.20.0 M2 第二批）：ctx.mainLine 须为入行旗 id 或其非空数组，值必须是
+  // work.js FORM_OF_FLAG 的键（与形态派生同一张表）；标量字符串与数组两种形状都认。
+  const ENTRY_FLAGS = ["farm_work", "exam_landed", "shop_work", "gig_work", "courier_work", "care_work", "write_work", "factory_work", "fab_work", "craft_work", "heavy_work", "miner_work", "truck_work", "med_hosp", "med_work", "nurse_work", "img_work", "teach_work", "acct_work", "fin_work", "press_work", "dev_work", "driver_taxi"];
+  if (item.ctx && item.ctx.mainLine !== undefined) {
+    const v = item.ctx.mainLine;
+    const arr = Array.isArray(v) ? v : [v];
+    if (!arr.length || arr.some((x) => typeof x !== "string")) err(`${itemId}: ctx.mainLine 应为入行旗 id 或其非空数组`);
+    else for (const fv of arr) if (!ENTRY_FLAGS.includes(fv)) err(`${itemId}: ctx.mainLine 含非入行旗 ${fv}`);
+  }
+  for (const fld of ["textForm", "echoForm", "labelForm"]) {
+    if (!item[fld]) continue;
+    for (const [fv, txt] of Object.entries(item[fld])) {
+      if (!FORM_VALUES.includes(fv)) err(`${itemId}: ${fld} 含非法形态键 ${fv}`);
+      else if (typeof txt !== "string" || !txt) err(`${itemId}: ${fld}.${fv} 不是非空文本`);
+    }
+  }
   for (const c of (item.choices || [])) scan(c, itemId, effGate);
 }
 for (const e of events) scan(e, e.id);
 // 出身牌（v0.13.0）：牌是钩子旗的 setter 本体，一并实扫（id 与事件不得撞名）
-const CARDS = ld("src/cards.js", "GAME_CARDS");
+const CARDS = ld("src/content/prologue/cards.js", "GAME_CARDS");
 let cardCount = 0;
 if (CARDS && CARDS.byId) for (const c of Object.values(CARDS.byId)) { cardCount++; if (byId.has(c.id)) err(`重复 id: 牌 ${c.id} 与事件撞名`); scan(c, c.id); }
 for (const f of D.forks) for (const c of f.choices) scan(c, f.id || `fork${f.age}`); // v0.18.0：同龄双分岔（fork28/fork28m）以显式 id 为键
 for (const [k, c] of Object.entries(D.crisis || {})) for (const ch of c.choices) scan(ch, `crisis_${k}`);
-// 序章幕（v0.17.0，src/prologue.js）：与事件同规实扫（顶层 set/setState 与选项递归）
-const PRO = ld("src/prologue.js", "GAME_PROLOGUE");
+// 序章幕（v0.17.0，src/content/prologue/prologue.js）：与事件同规实扫（顶层 set/setState 与选项递归）
+const PRO = ld("src/content/prologue/prologue.js", "GAME_PROLOGUE");
 if (PRO && PRO.acts) for (const a of PRO.acts) scan(a, a.id);
 
 // ---- 注册表双向一致性 ----

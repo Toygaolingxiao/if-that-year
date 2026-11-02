@@ -1,0 +1,242 @@
+// [模块]《如果那年》引擎分片：呈现层——分享卡出图。独立模块（包装器 + window.IFY 共享命名空间），加载顺序见 index.html。
+(function (IFY) {
+  "use strict";
+  // ---------- 分享卡出图 (VISUAL-DESIGN §二, A 判词版) ----------
+  function wrapText(ctx, text, x, y, maxW, lh) {
+    let line = "", yy = y;
+    for (const ch of text) { if (ctx.measureText(line + ch).width > maxW && line) { ctx.fillText(line, x, yy); line = ch; yy += lh; } else line += ch; }
+    if (line) ctx.fillText(line, x, yy);
+    return yy + lh;
+  }
+
+  // 同局链接：种子 + 年代 + 出身牌所选（v0.13.2：改过牌面后朋友打开须同牌，否则「完全相同的运气」不成立）
+  function sameSeedUrl() {
+    let u = location.origin + location.pathname
+      + "?seed=" + encodeURIComponent(IFY.S.seedStr)
+      + "&era=" + encodeURIComponent(IFY.S.era || "c2000")
+      + "&k=3"; // 内核版本位（v0.18.0）：k=3 为三股流新口径；无此位的旧链接按新口径打开同一种子，不保证同一局（策略见 DEVLOG v0.18.0 条目）
+    if (IFY.S.cards && IFY.S.cards.length) u += "&cards=" + encodeURIComponent(IFY.S.cards.join(","));
+    return u;
+  }
+
+  // 勾选了「印到卡上」才取感想输入框的当前文字（预填的是第一句 reflection，可改）
+  function cardReflText() {
+    const box = IFY.el("cardrefl"), inp = IFY.el("shareline");
+    if (!box || !box.checked || !inp) return "";
+    return (inp.value || "").trim().slice(0, 40);
+  }
+
+  // 发帖文案：感想（若填）+ 判词 + 主影子 + 其他三条路 + 钩子 + 同局链接
+  function shareCopy() {
+    const line = (IFY.el("shareline") ? IFY.el("shareline").value : "").trim();
+    const parts = [];
+    if (line) parts.push(line);
+    parts.push(IFY.verdict().text);
+    const shadowLines = IFY.shadowCompareLines();
+    if (shadowLines.main) parts.push(shadowLines.main);
+    parts.push(...shadowLines.others);
+    parts.push("同样的运气，你会怎么选？");
+    parts.push(sameSeedUrl());
+    return parts.join("\n");
+  }
+
+  function fitText(ctx, text, maxW) {
+    if (ctx.measureText(text).width <= maxW) return text;
+    let t = text;
+    while (t.length && ctx.measureText(t + "…").width > maxW) t = t.slice(0, -1);
+    return t + "…";
+  }
+
+  function cardBase(x, W, H) {
+    x.fillStyle = "#FAF8F4"; x.fillRect(0, 0, W, H);
+    x.strokeStyle = "#DDD6C9"; x.lineWidth = 3; x.strokeRect(36, 36, W - 72, H - 72);
+    x.textAlign = "left";
+    x.fillStyle = "#2F4A3C"; x.font = "34px " + IFY.SERIF;
+    x.fillText("如果那年 · 另一条路", 90, 130);
+    x.fillStyle = "#8A948C"; x.font = "28px monospace"; x.textAlign = "right";
+    x.fillText("种子 " + IFY.S.seedStr, W - 90, 130); x.textAlign = "left";
+  }
+
+  function cardFooter(x, W, H) {
+    x.fillStyle = "#2F4A3C"; x.font = "34px " + IFY.SERIF;
+    x.fillText("同样的运气，你会怎么选？", 90, H - 140);
+    x.fillStyle = "#8A948C"; x.font = "28px " + IFY.SANS;
+    x.fillText("if-that-year.pages.dev", 90, H - 88);
+  }
+
+  function cardStats(x, y, barW, rowH) {
+    const step = rowH || 50;
+    x.font = "28px " + IFY.SANS;
+    IFY.STAT_META.forEach(([k, label]) => {
+      x.fillStyle = "#23211C"; x.fillText(label, 90, y + 8);
+      x.fillStyle = "#DDD6C9"; x.fillRect(190, y - 8, barW, 14);
+      x.fillStyle = "#2F4A3C"; x.fillRect(190, y - 8, (barW * IFY.S.stats[k]) / 100, 14);
+      x.fillStyle = "#23211C"; x.fillText(String(IFY.S.stats[k]), 190 + barW + 30, y + 8);
+      y += step;
+    });
+    return y;
+  }
+
+  // 分岔路图：松绿实线一生 + 影子灰绿虚线支路（与原判词卡同一画法）
+  function drawRoad(x, gy) {
+    const end = IFY.finalAge();
+    x.strokeStyle = "#2F4A3C"; x.lineWidth = 7; x.beginPath(); x.moveTo(90, gy); x.lineTo(990, gy); x.stroke();
+    x.strokeStyle = "#8A948C"; x.lineWidth = 4; x.setLineDash([14, 12]);
+    IFY.D.forks.filter((f) => f.age < end).forEach((f) => { const fx = 90 + (900 * (f.age - IFY.START_AGE)) / (end - IFY.START_AGE); x.beginPath(); x.moveTo(fx, gy); x.quadraticCurveTo(fx + 60, gy - 90, fx + 150, gy - 110); x.stroke(); });
+    x.setLineDash([]);
+    x.fillStyle = "#2F4A3C"; x.beginPath(); x.arc(990, gy, 12, 0, 7); x.fill();
+  }
+
+  function parseLog() {
+    const entries = [];
+    for (const l of IFY.S.log) {
+      const m = l.match(/^(\d+) 岁 · ([\s\S]*)$/);
+      if (m) entries.push({ age: +m[1], text: m[2] });
+    }
+    return entries;
+  }
+
+  // 流水账卡的关键节点（3–5 个）：第一次分岔选择 / 稀有事件 / 后段分岔 / 特殊结局
+  function logNodes() {
+    const entries = parseLog();
+    const picked = [];
+    const push = (age, title) => { if (age !== null && title && !picked.some((p) => p.age === age)) picked.push({ age, title }); };
+    const forks = entries.filter((e) => e.age > IFY.START_AGE && e.text.includes("：") && !e.text.includes("影子"));
+    if (forks[0]) push(forks[0].age, forks[0].text.split("：")[0]);
+    const rares = entries.filter((e) => e.text.includes("【稀有】"));
+    if (rares[0]) push(rares[0].age, "稀有 · " + rares[0].text.replace("【稀有】", "").slice(0, 10));
+    if (rares[1]) push(rares[1].age, "稀有 · " + rares[1].text.replace("【稀有】", "").slice(0, 10));
+    if (forks.length > 1) push(forks[forks.length - 1].age, forks[forks.length - 1].text.split("：")[0]);
+    picked.sort((a, b) => a.age - b.age);
+    const out = picked.slice(0, 5);
+    if (IFY.S.special && !out.some((p) => p.age === IFY.finalAge())) {
+      if (out.length >= 5) out.pop();
+      out.push({ age: IFY.finalAge(), title: IFY.S.special.title });
+    }
+    return out;
+  }
+
+  // 9:16 流水账卡补的年表节选：带「：」的抉择行与稀有行优先，再等距补足
+  function logHighlights(n) {
+    const entries = parseLog();
+    if (entries.length <= n) return entries;
+    const picks = new Set();
+    entries.forEach((e, i) => { if (e.text.includes("：") || e.text.includes("【稀有】")) picks.add(i); });
+    const stepN = Math.max(1, Math.floor(entries.length / n));
+    for (let i = 0; i < entries.length && picks.size < n; i += stepN) picks.add(i);
+    return [...picks].sort((a, b) => a - b).slice(0, n + 1).map((i) => entries[i]);
+  }
+
+  function buildCard(type, ratio) {
+    const W = 1080, H = ratio === "916" ? 1920 : 1350;
+    const big = H > 1500; // 9:16 用宽松参数，4:5 用紧凑参数防溢出
+    const sh = IFY.shadowRoute(); const v = IFY.verdict();
+    const end = IFY.finalAge();
+    const refl = cardReflText();
+    const c = document.createElement("canvas"); c.width = W; c.height = H;
+    const x = c.getContext("2d");
+    cardBase(x, W, H);
+
+    if (type === "log") {
+      // ===== 流水账卡：公元年轴 + 关键节点 =====
+      x.fillStyle = "#23211C"; x.font = "52px " + IFY.SERIF;
+      x.fillText("这一生 · 流水账", 90, 252);
+      x.fillStyle = "#8A948C"; x.font = "30px " + IFY.SANS;
+      const spanTxt = IFY.S.birthYear
+        ? `公元 ${IFY.S.birthYear + IFY.START_AGE} 年 — ${IFY.S.birthYear + end} 年 · ${IFY.S.route.name}`
+        : `${IFY.START_AGE} 岁 — ${end} 岁 · ${IFY.S.route.name}`;
+      x.fillText(spanTxt, 90, 308);
+      let y = 340;
+      if (IFY.S.special) {
+        x.fillStyle = "#2F4A3C"; x.font = "40px " + IFY.SERIF;
+        y = wrapText(x, "【" + IFY.S.special.title + "】", 90, y + 44, 900, 58);
+      }
+      const gy = y + (IFY.S.special ? 150 : 210); // 年轴：上方留给分岔虚线
+      drawRoad(x, gy);
+      // 轴两端：公元年 · 年龄
+      x.font = "26px " + IFY.SANS; x.fillStyle = "#8A948C";
+      x.fillText(IFY.S.birthYear ? `${IFY.S.birthYear + IFY.START_AGE} 年 · 22 岁` : "22 岁", 90, gy + 148);
+      x.textAlign = "right";
+      x.fillText(IFY.S.birthYear ? `${IFY.S.birthYear + end} 年 · ${end} 岁` : `${end} 岁`, 990, gy + 148);
+      x.textAlign = "left";
+      // 关键节点：圆点 + 竖线 + 公元年/年龄 + 事件短题
+      logNodes().forEach((n) => {
+        const nx = 90 + (900 * (n.age - IFY.START_AGE)) / (end - IFY.START_AGE);
+        x.strokeStyle = "#DDD6C9"; x.lineWidth = 2;
+        x.beginPath(); x.moveTo(nx, gy + 12); x.lineTo(nx, gy + 30); x.stroke();
+        x.fillStyle = "#2F4A3C"; x.beginPath(); x.arc(nx, gy, 9, 0, 7); x.fill();
+        const align = nx < 210 ? "left" : nx > 870 ? "right" : "center";
+        const ax = nx < 210 ? 90 : nx > 870 ? 990 : nx;
+        x.textAlign = align;
+        x.fillStyle = "#8A948C"; x.font = "24px monospace";
+        x.fillText(IFY.S.birthYear ? `${IFY.S.birthYear + n.age} 年 · ${n.age} 岁` : `${n.age} 岁`, ax, gy + 62);
+        x.fillStyle = "#23211C"; x.font = "26px " + IFY.SANS;
+        x.fillText(fitText(x, n.title, 260), ax, gy + 100);
+        x.textAlign = "left";
+      });
+      y = gy + 196;
+      x.fillStyle = "#8A948C"; x.font = "26px " + IFY.SANS;
+      x.fillText("终局判词", 90, y);
+      x.fillStyle = "#23211C"; x.font = "36px " + IFY.SERIF;
+      const excerpt = v.text.split("。")[0] + "。"; // 节选第一句，卡面不贪多
+      y = wrapText(x, excerpt, 90, y + 52, 900, 52);
+      if (refl) { x.fillStyle = "#2F4A3C"; x.font = "34px " + IFY.SERIF; y = wrapText(x, "「" + refl + "」", 90, y + 12, 900, 50); }
+      if (big) {
+        // 9:16 长卡补年表节选，免得下半页空着
+        y += 40;
+        x.fillStyle = "#2F4A3C"; x.font = "32px " + IFY.SERIF;
+        x.fillText("年表节选", 90, y);
+        x.font = "27px " + IFY.SANS; x.fillStyle = "#23211C";
+        for (const h of logHighlights(7)) {
+          y += 46;
+          const line = (IFY.S.birthYear ? `${IFY.S.birthYear + h.age} 年 · ` : "") + `${h.age} 岁 · ${h.text}`;
+          x.fillText(fitText(x, line, 900), 90, y);
+        }
+        y += 8;
+      }
+      cardStats(x, y + 26, 560, 44);
+    } else {
+      // ===== 判词卡（模板 A），视觉元素与旧版一致 =====
+      const titleY = big ? 246 : 232;
+      const tall = big ? (H - 1350) * 0.35 : 0;
+      x.fillStyle = "#23211C";
+      let y;
+      if (IFY.S.special) {
+        x.font = (big ? 58 : 50) + "px " + IFY.SERIF;
+        y = wrapText(x, "【" + IFY.S.special.title + "】", 90, titleY + tall * 0.4, 900, big ? 80 : 72);
+        x.font = "46px " + IFY.SERIF;
+        y = wrapText(x, v.text, 90, y + 6, 900, big ? 66 : 60);
+      } else {
+        x.font = (big ? 58 : 52) + "px " + IFY.SERIF;
+        y = wrapText(x, v.text, 90, titleY + tall * 0.4, 900, big ? 80 : 68);
+      }
+      x.fillStyle = "#8A948C"; x.font = "27px " + IFY.SANS; // 事实标签行（v0.11.0，与结算页同一行）
+      y = wrapText(x, IFY.lifeTags(), 90, y + 4, 900, 40);
+      const gy = y + (big ? 80 : 56) + tall * 0.6;
+      drawRoad(x, gy);
+      x.font = "30px " + IFY.SERIF; x.fillStyle = "#8A948C";
+      x.fillText("22 岁", 90, gy + 54); x.textAlign = "right"; x.fillText(end + " 岁", 990, gy + 54); x.textAlign = "left";
+      const keyFork = IFY.S.log.find((l) => l.includes("回不回老家")) || IFY.S.log.find((l) => l.includes("·") && l.includes("："));
+      y = gy + (big ? 118 : 104);
+      x.fillStyle = "#23211C"; x.font = "34px " + IFY.SANS;
+      if (keyFork) y = wrapText(x, "关键的一岔：" + keyFork.split("· ")[1], 90, y, 900, 50);
+      y = wrapText(x, "这条路：" + IFY.S.route.name + "，你走完了。", 90, y + 6, 900, 50);
+      x.fillStyle = "#8A948C";
+      y = wrapText(x, "另一条路（" + sh.name + "）：" + IFY.shadowCostText(sh), 90, y + 6, 900, big ? 50 : 46);
+      if (refl) { x.fillStyle = "#2F4A3C"; x.font = "34px " + IFY.SERIF; y = wrapText(x, "「" + refl + "」", 90, y + 10, 900, 50); }
+      cardStats(x, y + (big ? 26 : 14), 560, big ? 50 : 42);
+    }
+    cardFooter(x, W, H);
+    return c;
+  }
+
+  function downloadCurrent() {
+    if (!IFY.currentCanvas) return;
+    const a = document.createElement("a");
+    a.download = "if-that-year-" + IFY.S.seedStr + ".png";
+    a.href = IFY.currentCanvas.toDataURL("image/png");
+    a.click();
+  }
+  Object.assign(IFY, { wrapText, sameSeedUrl, cardReflText, shareCopy, fitText, cardBase, cardFooter, cardStats, drawRoad,
+    parseLog, logNodes, logHighlights, buildCard, downloadCurrent });
+})(window.IFY);

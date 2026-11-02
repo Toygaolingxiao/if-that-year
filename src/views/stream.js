@@ -1,0 +1,243 @@
+// [模块]《如果那年》引擎分片：呈现层——自动推进、倒计时细线、数值条与流水呈现。独立模块（包装器 + window.IFY 共享命名空间），加载顺序见 index.html。
+(function (IFY) {
+  "use strict";
+  function linePaint(pct, transitionMs) {
+    const l = IFY.el("autolinefill");
+    if (!l) return;
+    l.style.transition = transitionMs ? `width ${transitionMs}ms linear` : "none";
+    l.style.width = pct + "%";
+  }
+
+  function lineStart(total) {
+    lineReset();
+    if (IFY.reducedMotion() || !total) return; // 减动效下不画细线，只留常亮圆点表示计时中（UX-MOTION §8.1 二选一取此）
+    IFY.lineTotal = total; IFY.lineSegT = Date.now();
+    linePaint(100, 0);
+    const l = IFY.el("autolinefill"); if (l) void l.offsetWidth; // 强制回流，让随后的收尽过渡真正播放
+    linePaint(0, total);
+  }
+
+  function lineFreeze() {
+    if (!IFY.lineSegT || !IFY.lineTotal) return;
+    IFY.lineElapsedBase += Date.now() - IFY.lineSegT; IFY.lineSegT = 0;
+    linePaint(Math.max(0, Math.min(100, (IFY.lineTotal - IFY.lineElapsedBase) / IFY.lineTotal * 100)), 0);
+  }
+
+  function lineResume() {
+    if (!IFY.lineTotal || IFY.reducedMotion()) return;
+    const rem = IFY.lineTotal - IFY.lineElapsedBase;
+    if (rem <= 0) { linePaint(0, 0); return; }
+    linePaint(Math.max(0, Math.min(100, rem / IFY.lineTotal * 100)), 0); // 先无过渡地站到剩余位置（冻结态或未启动态）
+    const l = IFY.el("autolinefill"); if (l) void l.offsetWidth;
+    IFY.lineSegT = Date.now();
+    linePaint(0, rem);
+  }
+
+  function lineReset() { IFY.lineTotal = 0; IFY.lineElapsedBase = 0; IFY.lineSegT = 0; linePaint(0, 0); }
+
+  function autoEligible() {
+    if (!IFY.autoText || !IFY.autoAction || IFY.prefs.mode === "off") return false;
+    return IFY.autoKind === "advance" || (IFY.autoKind === "choice" && IFY.prefs.mode === "full");
+  }
+
+  function clearAuto() {
+    if (IFY.autoTimer !== null) { clearTimeout(IFY.autoTimer); IFY.autoTimer = null; }
+    if (IFY.autoPhase2 !== null) {
+      clearTimeout(IFY.autoPhase2); IFY.autoPhase2 = null;
+      // 预高亮被取消（切档/点正文夺回手动）时复位按钮，否则选项会被锁死在禁用态
+      document.querySelectorAll(".choices .choice").forEach((o) => { o.disabled = false; o.classList.remove("picked", "faded"); });
+    }
+    IFY.autoRemain = 0; lineReset();
+  }
+
+  function clearAutoContext() { clearAuto(); IFY.autoText = null; IFY.autoAction = null; IFY.autoKind = null; }
+
+  function autoDelay(text) {
+    const cps = IFY.SPEED_CPS[IFY.prefs.speed] || IFY.SPEED_CPS.mid;
+    return Math.min(IFY.AUTO_CAP_MS, Math.round(IFY.AUTO_BASE_MS + ((text ? text.length : 0) * 1000) / cps));
+  }
+
+  function startAuto(ms) {
+    if (IFY.autoTimer !== null) clearTimeout(IFY.autoTimer);
+    IFY.autoStamp = Date.now(); IFY.autoRemain = ms;
+    const action = IFY.autoAction;
+    IFY.autoTimer = setTimeout(() => { IFY.autoTimer = null; IFY.autoRemain = 0; if (action) action(); }, ms);
+  }
+
+  function scheduleAuto() {
+    clearAuto();
+    if (autoEligible()) {
+      IFY.autoTotal = autoDelay(IFY.autoText);
+      // choice 模式：主计时在总停留的最后 400ms 之前到点，先预高亮，再由第二段执行选择（§4.3）
+      const wait = IFY.autoKind === "choice" ? Math.max(200, IFY.autoTotal - 400) : IFY.autoTotal;
+      IFY.autoRemain = wait;
+      if (!document.hidden) { startAuto(wait); lineStart(IFY.autoTotal); }
+      else { IFY.lineTotal = IFY.autoTotal; IFY.lineElapsedBase = 0; IFY.lineSegT = 0; } // 后台排程：只记账，回前台由 lineResume 从全长起线
+    }
+    refreshAutoRow();
+  }
+
+  function armAuto(text, action, kind) { // 无抉择画面传 advance；普通事件选项画面只在 full 模式传自动选动作
+    IFY.autoText = text; IFY.autoAction = action || IFY.advance; IFY.autoKind = kind || "advance";
+    scheduleAuto();
+  }
+
+  function pauseAuto() {
+    if (IFY.autoTimer !== null) { clearTimeout(IFY.autoTimer); IFY.autoTimer = null; IFY.autoRemain = Math.max(0, IFY.autoRemain - (Date.now() - IFY.autoStamp)); lineFreeze(); }
+    // 第二段（预高亮后的 400ms）已承诺执行，不在此冻结：窗口极短且 clearAuto 仍可由玩家点击取消
+  }
+
+  function resumeAuto() { // 回到前台且当前画面仍可自动推进、还有剩余时间，才接着走
+    if (autoEligible() && IFY.autoRemain > 0 && IFY.autoTimer === null && IFY.autoPhase2 === null && IFY.S && IFY.S.route && !IFY.S.death && IFY.S.age < IFY.MAX_AGE && !document.hidden) { startAuto(IFY.autoRemain); lineResume(); }
+  }
+
+  function speedButtonLabel(k) { return `${IFY.SPEED_LABEL[k]} · ${IFY.SPEED_STYLE[k]}`; }
+
+  function autoRowHtml() {
+    const counting = autoEligible();
+    const modes = IFY.AUTO_MODES.map(([k, label]) => `<button type="button" class="automode${IFY.prefs.mode === k ? " on" : ""}" data-automode="${k}">${label}</button>`).join("");
+    const spd = ["slow", "mid", "fast"].map((k) => `<button type="button" class="autospd${IFY.prefs.speed === k ? " on" : ""}" data-autospeed="${k}">${speedButtonLabel(k)}</button>`).join("");
+    return `<span class="autoleft">自动推进 ${modes}${counting ? `<span class="autodot" aria-hidden="true"></span><span class="autolive">自动推进中</span>` : ""}</span><span class="autoright">${spd}</span>`;
+  }
+
+  function refreshAutoRow() { const r = IFY.el("autorow"); if (r) r.innerHTML = autoRowHtml(); }
+
+  function setAutoMode(mode) {
+    if (!IFY.AUTO_MODES.some(([k]) => k === mode)) return;
+    IFY.prefs.mode = mode;
+    IFY.savePrefs();
+    scheduleAuto();
+    if (IFY.S && IFY.S.route) IFY.save();
+  }
+
+  function statsBar() {
+    // §2.1：先按上屏快照的旧值出宽，渲染后一帧再写新值，让 .6s 过渡真正播放；§2.3：<30 的维度加临界静态分级
+    return `<div class="stats">${IFY.STAT_META.map(([k, label]) => {
+      const cur = IFY.S.stats[k], old = IFY.prevStats ? IFY.prevStats[k] : cur, crit = cur < 30;
+      return `<div class="stat${crit ? " crit" : ""}"><span>${label}</span><div class="bar"><i style="width:${old}%" data-cur="${cur}"></i></div><b>${cur}</b>${crit ? '<i class="cdot"></i>' : ""}</div>`;
+    }).join("")}</div>`;
+  }
+
+  function animateBars() {
+    document.querySelectorAll("#app .bar i[data-cur]").forEach((bar) => {
+      const cur = bar.getAttribute("data-cur");
+      requestAnimationFrame(() => { bar.style.width = cur + "%"; });
+    });
+    if (IFY.S) IFY.prevStats = { ...IFY.S.stats };
+  }
+
+  // 渲染收尾：§1.1 分级入场（同类画面卡壳不动、只正文淡入）+ 数值条动画
+  function finishRender() {
+    const sec = IFY.app().querySelector("section.card");
+    if (sec && IFY.curKind === IFY.prevKind && (IFY.curKind === "year" || IFY.curKind === "fork")) {
+      sec.classList.add("still");
+      let past = false;
+      [...sec.children].forEach((kid) => {
+        if (past) kid.classList.add("enter");
+        if (kid.classList.contains("autorow") || kid.classList.contains("autoline") || kid.classList.contains("meta")) past = true;
+      });
+    }
+    IFY.prevKind = IFY.curKind;
+    animateBars();
+  }
+
+  function roadSvg() {
+    const W = 640, pad = 14, end = IFY.finalAge();
+    const X = (a) => pad + ((a - IFY.START_AGE) / (end - IFY.START_AGE)) * (W - pad * 2);
+    let s = "";
+    const forkFired = (f) => IFY.S.log.some((l) => l.startsWith(`${f.age} 岁 · `) && f.choices.some((c) => l.endsWith(`：${c.label}`)));
+    (IFY.D.forks || []).filter((f) => f.age < end && !(f.state && IFY.S.age > f.age && !forkFired(f))).forEach((f) => { // v0.16.0：带门分岔没轮到这位玩家时不画（未到龄仍照常淡显）
+      const on = IFY.S.age >= f.age, col = on ? "#2F4A3C" : "#C4BCA9";
+      s += `<line x1="${X(f.age)}" y1="30" x2="${X(f.age) + 13}" y2="13" stroke="${col}" stroke-width="1.6" stroke-dasharray="3 3"/><circle cx="${X(f.age)}" cy="30" r="3" fill="${col}"/>`;
+    });
+    return `<svg class="road" viewBox="0 0 ${W} 52" width="100%" aria-hidden="true"><line x1="${pad}" y1="30" x2="${W - pad}" y2="30" stroke="#D8D2C2" stroke-width="2"/>${s}<line x1="${pad}" y1="30" x2="${X(IFY.S.age)}" y2="30" stroke="#2F4A3C" stroke-width="2.5"/><circle class="nowdot" cx="${X(IFY.S.age)}" cy="30" r="5" fill="#2F4A3C"/><text x="${pad}" y="49" font-size="10" fill="#8A8378">22 岁</text><text x="${W - pad}" y="49" font-size="10" fill="#8A8378" text-anchor="end">${end} 岁</text></svg>`;
+  }
+
+  function head(note, bare) {
+    const yr = IFY.S.birthYear ? ` · 公元 ${IFY.S.birthYear + IFY.S.age} 年` : "";
+    const mark = IFY.resumeMark ? " · （上次玩到这里）" : ""; // §6.2 续玩定位：只出现一次
+    if (IFY.resumeMark) IFY.resumeMark = false;
+    return `${roadSvg()}${statsBar()}<p class="meta">${IFY.S.age} 岁${yr} · ${IFY.esc(IFY.S.route.name)} · 种子 ${IFY.esc(IFY.S.seedStr)}${mark}${note ? " · " + note : ""}</p>${bare ? "" : `<div class="autorow" id="autorow">${autoRowHtml()}</div><div class="autoline"><i id="autolinefill"></i></div>`}`;
+  }
+
+  function streamHtml() {
+    if (!IFY.S || !IFY.S.log.length) return "";
+    const unread = !IFY.streamFollow && IFY.S.log.length > IFY.streamSeen;
+    const rows = IFY.S.log.map((l, i) => {
+      const m = l.match(/^(\d+) 岁 · ([\s\S]*)$/);
+      const age = m ? +m[1] : IFY.S.age, txt = m ? m[2] : l;
+      const yr = IFY.S.birthYear ? `${IFY.S.birthYear + age} · ` : "";
+      const cls = i === IFY.S.log.length - 1 ? " last" : (!IFY.streamFollow && i >= IFY.streamSeen ? " new" : "");
+      return `<div class="srow${cls}"><span class="sage">${yr}${age} 岁</span><span>${IFY.esc(txt)}</span></div>`;
+    }).join("");
+    return `<div class="streamwrap"><p class="streamtitle">这一生 · 流水账<button type="button" class="newhint" id="newhint"${unread ? "" : " hidden"}>有新的一年 ↓</button></p><div class="stream" id="stream">${rows}</div></div>`;
+  }
+
+  function mountStream() {
+    const sec = IFY.app().querySelector("section.card");
+    if (!sec || !IFY.S || (!IFY.S.route && IFY.S.phase !== "prologue") || IFY.S.death || IFY.S.age >= IFY.MAX_AGE) return; // v0.17.0：序章段无 route 也挂流水账（童年的平年行要看得见）
+    const html = streamHtml();
+    if (!html) return;
+    if (window.matchMedia && window.matchMedia("(min-width: 1024px)").matches) {
+      IFY.app().classList.add("playwrap");
+      sec.insertAdjacentHTML("afterend", html);
+    } else {
+      IFY.app().classList.remove("playwrap");
+      sec.insertAdjacentHTML("beforeend", html);
+    }
+    const st = IFY.el("stream");
+    if (!st) return;
+    // §5.1 跟随状态机：距底 <40px 为贴底跟随；上翻后切自由浏览，不再被新行拽回
+    st.addEventListener("scroll", () => {
+      IFY.streamTop = st.scrollTop;
+      if (Date.now() < IFY.streamProgUntil) return; // 程序滚动进行中，不让它误判跟随状态
+      const dist = st.scrollHeight - st.scrollTop - st.clientHeight;
+      const was = IFY.streamFollow;
+      IFY.streamFollow = dist < 40;
+      if (IFY.streamFollow && !was) markStreamRead(st);
+    });
+    const nh = IFY.el("newhint");
+    if (nh) nh.addEventListener("click", () => {
+      IFY.streamFollow = true;
+      markStreamRead(st);
+      IFY.streamProgUntil = Date.now() + 450;
+      st.scrollTo({ top: st.scrollHeight, behavior: IFY.reducedMotion() ? "auto" : "smooth" });
+    });
+    requestAnimationFrame(() => {
+      if (IFY.streamFollow) {
+        // §5.2 先回到上屏的滚动位置，再量剩余距离：贴底跟随平滑滚动；积压超过一屏则瞬时到位；减动效永远瞬时
+        st.scrollTop = Math.min(IFY.streamTop, Math.max(0, st.scrollHeight - st.clientHeight));
+        const dist = st.scrollHeight - st.clientHeight - st.scrollTop;
+        IFY.streamProgUntil = Date.now() + 450;
+        st.scrollTo({ top: st.scrollHeight, behavior: (IFY.reducedMotion() || dist > st.clientHeight) ? "auto" : "smooth" });
+        IFY.streamSeen = IFY.S.log.length;
+      } else {
+        st.scrollTop = Math.min(IFY.streamTop, Math.max(0, st.scrollHeight - st.clientHeight));
+      }
+    });
+  }
+
+  function markStreamRead(st) {
+    IFY.streamSeen = IFY.S.log.length;
+    const nh = IFY.el("newhint"); if (nh) nh.hidden = true;
+    if (st) st.querySelectorAll(".srow.new").forEach((r) => r.classList.remove("new"));
+  }
+
+  function deltaLine() { return IFY.S.lastDelta ? `<p class="delta">${IFY.esc(IFY.S.lastDelta)}</p>` : ""; }
+
+  // §3.2 选择留一拍：被选按钮先置选中态停留 250ms、其余变淡，然后才执行后续（回响/复述拍）
+  function choiceBeat(btn, fn) {
+    clearAuto();
+    const box = btn.closest(".choices");
+    if (box) box.querySelectorAll(".choice").forEach((o) => {
+      o.disabled = true;
+      o.classList.toggle("picked", o === btn);
+      o.classList.toggle("faded", o !== btn);
+    });
+    setTimeout(fn, 250);
+  }
+  Object.assign(IFY, { linePaint, lineStart, lineFreeze, lineResume, lineReset, autoEligible, clearAuto, clearAutoContext,
+    autoDelay, startAuto, scheduleAuto, armAuto, pauseAuto, resumeAuto, speedButtonLabel, autoRowHtml,
+    refreshAutoRow, setAutoMode, statsBar, animateBars, finishRender, roadSvg, head, streamHtml,
+    mountStream, markStreamRead, deltaLine, choiceBeat });
+})(window.IFY);

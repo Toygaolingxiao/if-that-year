@@ -1,0 +1,95 @@
+// [模块]《如果那年》引擎分片：父母进程。独立模块（包装器 + window.IFY 共享命名空间），加载顺序见 index.html。
+// [模块]注：renderProcItem 是进程拍通用渲染（父母/dating/退休/出国等进程条目共用），随本文件存放。
+(function (IFY) {
+  "use strict";
+  // ---------- 父母进程（v0.18.0，内核一期）：父亲、母亲各一条身体进程 ----------
+  // 出生时父母年龄、父母一代人寿命均值与散布按年代标定（标定说明见 docs/PARENTS-PROCESS.md）；
+  // 需照护、住院、离世由进程越线发作成动静（pack36 的 proc_* 条目），不再等事件抽中。主角自身死亡曲线不在此列，一字未动。
+  const PARENT_CAL = {
+    c1955: { dadAge: [27, 35], momAge: [25, 33], dadLife: [66, 9], momLife: [71, 9] },
+    c1965: { dadAge: [27, 35], momAge: [25, 33], dadLife: [69, 9], momLife: [74, 9] },
+    c1978: { dadAge: [26, 34], momAge: [24, 32], dadLife: [73, 9], momLife: [78, 9] },
+    c2000: { dadAge: [25, 33], momAge: [23, 31], dadLife: [79, 10], momLife: [85, 10] },
+  };
+
+  function triW() { return (IFY.rngW() + IFY.rngW() + IFY.rngW() - 1.5) / 1.5; } // [-1,1] 近正态扰动（进程流）
+
+  // 照护预警信号点（v0.20.0 M2 收尾，可见检定）：care 起点前 2–4 年的一个呈现点。
+  // 由已掷出的 careAge/deathAge 确定性派生、不消费进程流——父母各时点（care/hosp/dead）的掷点序列与旧版逐位一致，死亡分布不动。
+  // 旧存档的父母对象没有 signalAge/signalShown 字段：读时现算现补（signalShown 缺省未呈现），口径与新局一致。
+  function signalAgeOf(P) {
+    const a = Math.max(22, P.careAge - (2 + ((P.deathAge + P.careAge) % 3)));
+    return a < P.careAge ? a : P.careAge - 1;
+  }
+
+  function initParents() {
+    if (IFY.S.parents || !IFY.S.route) return;
+    const cal = PARENT_CAL[IFY.S.era] || PARENT_CAL.c2000;
+    const one = (ageBand, lifeBand) => {
+      const age0 = ageBand[0] + Math.floor(IFY.rngW() * (ageBand[1] - ageBand[0] + 1));
+      const life = Math.round(lifeBand[0] + triW() * lifeBand[1]);
+      const deathAge = Math.max(26, life - age0); // 换算成主角年龄口径的离世点；下限保证此事不出在童年段（序章不处理）
+      const careAge = Math.max(24, deathAge - (2 + Math.floor(IFY.rngW() * 4))); // 需照护段起点：离世前 2–5 年
+      const hospAge = deathAge - careAge >= 2 ? careAge + 1 + Math.floor(IFY.rngW() * (deathAge - careAge - 1)) : null;
+      return { age0, deathAge, careAge, hospAge, stage: "well", signalAge: signalAgeOf({ careAge, deathAge }), signalShown: false }; // stage: well → care → hosp → dead；signal 为 care 前的呈现层前置标记（进程内部状态，不进存档状态域、不改 care/hosp/dead 时点）
+    };
+    IFY.S.parents = { dad: one(cal.dadAge, cal.dadLife), mom: one(cal.momAge, cal.momLife) };
+  }
+
+  // 本年到期的进程动静（每岁至多一件：离世 > 住院 > 照护，父先于母）；已被事件写过世的父母不再发作
+  function parentsDue() {
+    if (!IFY.S.parents) return null;
+    const due = [];
+    for (const who of ["dad", "mom"]) {
+      const P = IFY.S.parents[who];
+      if (!P || IFY.S.state[who] !== "alive") continue;
+      if (IFY.S.age >= P.deathAge) due.push({ pr: 0, item: "proc_" + who + "_dead", who, beat: "dead" });
+      else if (P.hospAge !== null && IFY.S.age >= P.hospAge && P.stage === "hosp") { /* 已呈现 */ }
+      else if (P.hospAge !== null && IFY.S.age >= P.hospAge && P.stage === "care") due.push({ pr: 1, item: "proc_" + who + "_hosp", who, beat: "hosp" });
+      else if (IFY.S.age >= P.careAge && P.stage === "well") due.push({ pr: 2, item: "proc_" + who + "_care", who, beat: "care" });
+      else if (P.stage === "well" && !P.signalShown && IFY.S.age >= signalAgeOf(P) && IFY.S.age < P.careAge) due.push({ pr: 3, item: "proc_" + who + "_signal", who, beat: "signal" }); // 预警信号：care 之前、每位父母至多一次，优先级最低
+    }
+    if (!due.length) return null;
+    due.sort((a, b) => a.pr - b.pr);
+    return due[0];
+  }
+
+  // 进程条目呈现（pack36 的 proc_* 条目）：与事件年同形，但过完回到本年 step（进程拍不独占这一年，年内的分岔/瞥视照常）
+  function renderProcItem(item, who, beat) {
+    IFY.curKind = "proc";
+    IFY.S.flatCarry = null; // 进程年不是平年
+    if (beat && IFY.S.parents && IFY.S.parents[who]) { // 节拍呈现即推进父母进程段位（离世的状态流转走条目自身的 setState）
+      if (beat === "signal") { IFY.S.parents[who].signalShown = true; } // 信号拍只记呈现过：不推进段位、不立 care_stage 旗
+      else {
+        IFY.S.parents[who].stage = beat === "dead" ? "dead" : beat === "hosp" ? "hosp" : "care";
+        if (beat === "care") IFY.S.flags.care_stage = true;
+      }
+    }
+    if (item.set) IFY.S.flags[item.set] = true;
+    IFY.applyState(item);
+    if (!item.choices) { IFY.applyEffects(item.effects); } else IFY.S.lastDelta = "";
+    IFY.rec("proc", item.id, { set: item.set || null, fx: !item.choices ? IFY.S.lastDelta : null });
+    IFY.S.log.push(`${IFY.S.age} 岁 · ${IFY.procText(item)}`);
+    const visChoices = item.choices ? item.choices.map((c, i) => [c, i]).filter(([c]) => !(c.deferDating && (IFY.S.datingDefers || 0) >= 2)) : null; // dating 推迟两次后不再给推迟选项
+    IFY.app().innerHTML = `<section class="card">${IFY.head()}<p class="body">${IFY.esc(IFY.procText(item))}</p>${IFY.deltaLine()}
+      ${visChoices ? `<div class="choices">${visChoices.map(([c, i]) => `<button class="choice" data-i="${i}">${IFY.esc(c.label)}</button>`).join("")}</div><div id="echo"></div>`
+                  : `<button class="primary" id="cont">继续</button>`}</section>`;
+    IFY.finishRender();
+    if (!visChoices) { IFY.save(); IFY.el("cont").addEventListener("click", () => IFY.step()); return; }
+    document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {
+      const c = item.choices[Number(b.dataset.i)];
+      IFY.choiceBeat(b, () => {
+        IFY.applyEffects(c.effects);
+        if (c.set) IFY.S.flags[c.set] = true;
+        IFY.applyState(c);
+        if (c.deferDating) { IFY.S.datingSince = IFY.S.age - 3; IFY.S.datingDefers = (IFY.S.datingDefers || 0) + 1; } // 推迟：时钟回拨，下次到期在约 4 年后
+        if (c.deferRetire) { if (IFY.S.retirePlan) IFY.S.retirePlan.nodeAge = IFY.S.age + 3; IFY.S.retireDefers = (IFY.S.retireDefers || 0) + 1; } // 退休节点推迟（v0.19.0）：节点后移 3 年，推迟两次后由 proc_retire_auto 收束
+        IFY.rec("proc", item.id, { choice: c.label, set: c.set || null, fx: IFY.S.lastDelta });
+        document.querySelector(".choices").remove();
+        IFY.el("echo").innerHTML = `${IFY.deltaLine()}<p class="pickednote">已选「${IFY.esc(c.label)}」</p>${IFY.echoText(c) ? `<p class="echo">${IFY.esc(IFY.echoText(c))}</p>` : ""}<button class="primary" id="cont">继续</button>`;
+        IFY.save(); IFY.el("cont").addEventListener("click", () => IFY.step());
+      });
+    }));
+  }
+  Object.assign(IFY, { PARENT_CAL, triW, signalAgeOf, initParents, parentsDue, renderProcItem });
+})(window.IFY);
