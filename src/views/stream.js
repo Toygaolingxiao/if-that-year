@@ -37,6 +37,8 @@
 
   function autoEligible() {
     if (!IFY.autoText || !IFY.autoAction || IFY.prefs.mode === "off") return false;
+    // v0.20.4：序章没有「平年」——每一拍都是内容，平年模式下也不自动推进，停住等玩家点继续（上下文照常登记，局中切全程可立即 arm）
+    if (IFY.S && IFY.S.phase === "prologue" && IFY.prefs.mode === "plain") return false;
     return IFY.autoKind === "advance" || (IFY.autoKind === "choice" && IFY.prefs.mode === "full");
   }
 
@@ -100,7 +102,23 @@
     return `<span class="autoleft">自动推进 ${modes}${counting ? `<span class="autodot" aria-hidden="true"></span><span class="autolive">自动推进中</span>` : ""}</span><span class="autoright">${spd}</span>`;
   }
 
-  function refreshAutoRow() { const r = IFY.el("autorow"); if (r) r.innerHTML = autoRowHtml(); }
+  function refreshAutoRow() { const r = IFY.el("autorow"); if (r) r.innerHTML = autoRowHtml(); refreshAutoPanel(); }
+
+  // v0.20.4 局内推进设置面板：卡内一行小字入口，点开是开局页同款控件（模式 .switchpicks / 速度 .segpicks），
+  // 按钮沿用 data-automode / data-autospeed 走 engine.js 的既有事件委托（setAutoMode / 速度分支 → savePrefs + scheduleAuto 立即生效）。
+  function autoPanelHtml() {
+    const modes = IFY.AUTO_MODES.map(([k, label]) => `<button type="button" class="switchbtn${IFY.prefs.mode === k ? " sel" : ""}" data-automode="${k}"><b>${label}</b></button>`).join("");
+    const spd = ["slow", "mid", "fast"].map((k) => `<button type="button" class="segbtn${IFY.prefs.speed === k ? " sel" : ""}" data-autospeed="${k}">${speedButtonLabel(k)}</button>`).join("");
+    const open = !!IFY.autoPanelOpen;
+    return `<div class="autopanelwrap"><p class="autopanelrow"><button type="button" class="setlink" id="autosetbtn" aria-expanded="${open}">推进设置</button></p><div class="autopanel" id="autopanel"${open ? "" : " hidden"}><p class="picklab">自动推进</p><div class="switchpicks">${modes}</div><p class="picklab">速度</p><div class="segpicks${IFY.prefs.mode === "off" ? " dim" : ""}">${spd}</div></div></div>`;
+  }
+
+  function refreshAutoPanel() {
+    const p = IFY.el("autopanel"); if (!p) return;
+    p.querySelectorAll("[data-automode]").forEach((b) => b.classList.toggle("sel", b.getAttribute("data-automode") === IFY.prefs.mode));
+    p.querySelectorAll("[data-autospeed]").forEach((b) => b.classList.toggle("sel", b.getAttribute("data-autospeed") === IFY.prefs.speed));
+    const sp = p.querySelector(".segpicks"); if (sp) sp.classList.toggle("dim", IFY.prefs.mode === "off");
+  }
 
   function setAutoMode(mode) {
     if (!IFY.AUTO_MODES.some(([k]) => k === mode)) return;
@@ -157,7 +175,7 @@
     const yr = IFY.S.birthYear ? ` · 公元 ${IFY.S.birthYear + IFY.S.age} 年` : "";
     const mark = IFY.resumeMark ? " · （上次玩到这里）" : ""; // §6.2 续玩定位：只出现一次
     if (IFY.resumeMark) IFY.resumeMark = false;
-    return `${roadSvg()}${statsBar()}<p class="meta">${IFY.S.age} 岁${yr} · ${IFY.esc(IFY.S.route.name)} · 种子 ${IFY.esc(IFY.S.seedStr)}${mark}${note ? " · " + note : ""}</p>${bare ? "" : `<div class="autorow" id="autorow">${autoRowHtml()}</div><div class="autoline"><i id="autolinefill"></i></div>`}`;
+    return `${roadSvg()}${statsBar()}<p class="meta">${IFY.S.age} 岁${yr} · ${IFY.esc(IFY.S.route.name)} · 种子 ${IFY.esc(IFY.S.seedStr)}${mark}${note ? " · " + note : ""}</p>${bare ? "" : `<div class="autorow" id="autorow">${autoRowHtml()}</div><div class="autoline"><i id="autolinefill"></i></div>${autoPanelHtml()}`}`;
   }
 
   function streamHtml() {
@@ -238,6 +256,6 @@
   }
   Object.assign(IFY, { linePaint, lineStart, lineFreeze, lineResume, lineReset, autoEligible, clearAuto, clearAutoContext,
     autoDelay, startAuto, scheduleAuto, armAuto, pauseAuto, resumeAuto, speedButtonLabel, autoRowHtml,
-    refreshAutoRow, setAutoMode, statsBar, animateBars, finishRender, roadSvg, head, streamHtml,
+    refreshAutoRow, autoPanelHtml, refreshAutoPanel, setAutoMode, statsBar, animateBars, finishRender, roadSvg, head, streamHtml,
     mountStream, markStreamRead, deltaLine, choiceBeat });
 })(window.IFY);

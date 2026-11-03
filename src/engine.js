@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.20.3 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.20.4 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -250,6 +250,7 @@ window.IFY = window.IFY || {};
   IFY.autoText = null;   // 当前画面若可自动推进，其正文；必停画面恒为 null
   IFY.autoAction = null; // 当前画面可执行的自动动作（advance 或普通事件自动选）
   IFY.autoKind = null;   // "advance" | "choice"
+  IFY.autoPanelOpen = false; // v0.20.4 局内「推进设置」面板展开态（重渲染不自动合上）
   IFY.autoTotal = 0;     // 本屏总停留（细线用，choice 模式含最后 400ms 预高亮段）
   // §4.1 倒计时细线：纯计时账（总时长/已耗），不读布局，暂停冻结、恢复续走、切档由 scheduleAuto 干净重启
   IFY.lineTotal = 0;
@@ -265,7 +266,7 @@ window.IFY = window.IFY || {};
   app().addEventListener("click", (ev) => {
     const t = ev.target;
     if (!t || !t.closest) return;
-    if (!IFY.autoText || t.closest("#autorow")) return;
+    if (!IFY.autoText || t.closest("#autorow, .autopanelwrap")) return; // v0.20.4：推进设置面板内点击不算「夺回手动」
     const turnOff = () => {
       IFY.prefs.mode = "off";
       savePrefs();
@@ -281,6 +282,14 @@ window.IFY = window.IFY || {};
   app().addEventListener("click", (ev) => {
     const t = ev.target;
     if (!t || !t.closest) return;
+    const tog = t.closest("#autosetbtn"); // v0.20.4 局内推进设置面板的展开/收起
+    if (tog) {
+      IFY.autoPanelOpen = !IFY.autoPanelOpen;
+      const p = el("autopanel");
+      if (p) p.hidden = !IFY.autoPanelOpen;
+      tog.setAttribute("aria-expanded", String(IFY.autoPanelOpen));
+      return;
+    }
     const mode = t.closest("[data-automode]");
     const spd = t.closest("[data-autospeed]");
     if (mode) {
@@ -407,7 +416,7 @@ window.IFY = window.IFY || {};
         ${sLine ? `<p class="hint">${sLine}</p>` : ""}
         ${lLine ? `<p class="hint">${lLine}</p>` : ""}
         <p class="hint">不填随机。填了，运气定下来，跟朋友比同一局就用它。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam ? "，年代也按对方那局选好了" : ""}${cardsParam ? "，出身牌也按对方选过的对齐了" : ""}，点下面开始这一生，就是同一局。` : ""}</p>
-        <p class="hint ver">v0.20.3</p>
+        <p class="hint ver">v0.20.4</p>
       </section>`;
     let startLock = false; // §6.1 防连点：双击不能在同一帧触发两次开局（统一挂在 #startgo 上）
     el("liveslink").addEventListener("click", () => { ANA.track("lives_view", {}); IFY.renderLives(); });
@@ -597,7 +606,7 @@ window.IFY = window.IFY || {};
     if (!view) { renderRouteMerge(); return; }
     if (view.pendingState) { IFY.applyState({ setState: view.pendingState }); IFY.S.prologue.pendingState = null; } // 处境落定走状态边（pr_origin → schooling）
     save();
-    app().innerHTML = `<section class="card">${prologueHead(view.age, view.stage)}
+    app().innerHTML = `<section class="card">${prologueHead(view.age, view.stage)}${IFY.autoPanelHtml()}
       ${view.title ? `<h2>${esc(view.title)}</h2>` : ""}
       ${view.text.split("\n").map((p) => `<p class="body">${esc(p)}</p>`).join("")}
       <div id="echo"></div>
@@ -606,14 +615,16 @@ window.IFY = window.IFY || {};
       </section>`;
     IFY.finishRender();
     if (!view.choices) {
-      el("cont").addEventListener("click", () => {
+      const goNext = () => {
         IFY.rec("prologue", view.id);
         const r = PRO.choose(IFY.S, -1);
         if (r.gapFx && Object.keys(r.gapFx).length) applyEffects(r.gapFx); else IFY.S.lastDelta = "";
         save();
         step();
-      });
-      IFY.armAuto(view.text);
+      };
+      el("cont").addEventListener("click", goNext);
+      // v0.20.4：自动推进走序章自己的继续动作（原先用成人段 advance 只涨年龄不推幕次，全程模式会卡在来历屏空转）
+      IFY.armAuto(view.text, goNext);
       return;
     }
     document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {
@@ -639,7 +650,7 @@ window.IFY = window.IFY || {};
   function renderRouteMerge() {
     IFY.curKind = "fork";
     const trackName = { study: "念书", work: "打工", craft: "学手艺", home: "守家里" }[IFY.S.state.track] || "";
-    app().innerHTML = `<section class="card">${prologueHead(START_AGE, "adult")}
+    app().innerHTML = `<section class="card">${prologueHead(START_AGE, "adult")}${IFY.autoPanelHtml()}
       <h2>22 岁 · 往后的路</h2>
       <p>${trackName ? `这几年，你是${trackName}过来的。` : ""}到了 22 岁，路一下子宽了。往哪边走，这一回你自己定。没选的那几条也不会消失——它们会在你 30、40、50 岁的时候，远远地看你一眼。</p>
       <div class="choices">${D.routes.map((r, i) => `<button class="choice" data-i="${i}"><b>${esc(r.name)}</b><small>${esc(r.desc)}</small></button>`).join("")}</div>

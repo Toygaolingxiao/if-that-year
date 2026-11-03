@@ -130,6 +130,15 @@ canvas.card-img{max-width:100%;height:auto}
 
 .hint.ver { text-align: right; margin-bottom: 2px; }
 
+/* v0.20.4：局内推进设置面板——meta 下一行小字入口，展开是开局页同款分段/开关控件 */
+.autopanelwrap{margin:-2px 0 10px}
+.autopanelrow{margin:0;font-size:12px;letter-spacing:.04em}
+.setlink{background:none;border:none;padding:2px 3px;font:inherit;color:var(--mut);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.setlink:active{color:var(--accent)}
+.autopanel{border-top:1.5px dashed var(--line);margin-top:8px;padding:2px 0 4px}
+.autopanel .picklab{margin:10px 0 6px}
+.autopanel .picklab:first-child{margin-top:6px}
+
 /* v0.7.0：续玩降级、自动推进三态与自动选留痕 */
 .autorow{flex-wrap:wrap;gap:4px 10px}
 .autorow .automode.on{color:var(--accent);font-weight:700}
