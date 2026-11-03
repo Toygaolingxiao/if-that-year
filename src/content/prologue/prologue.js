@@ -38,7 +38,7 @@
     mark_river: { shadow: "两条路上都一样的是，放学路上的那条河沟，后来修路填平了一半，你每次路过都要往下看一眼。" },
     mark_hoop: { shadow: "两条路上都一样的是，巷口那块空地和你的铁环，后来空地盖了楼，铁环也不知去向。" },
     mark_corn: { shadow: "两条路上都一样的是，暑假钻过的那片玉米地，后来种上了别的，你路过时还是会往里看一眼。" },
-    mark_icepop: { shadow: "两条路上都一样的是，放学路上那根一毛钱的冰棍，你从来都跟人一人一半，化了也不心疼。" },
+    mark_icepop: { shadow: "两条路上都一样的是，放学路上那根一毛钱的冰棍，你掰成两半，跟同路的那个一人吃一半。" },
     mark_tree: { shadow: "两条路上都一样的是，小学门口那棵梧桐还在，修鞋摊换成了摊主的儿子在守。" },
     mark_shop: { shadow: "两条路上都一样的是，校门口那家小卖部，关门前一天，老板把剩下的糖分给了你们几个。" },
     mark_yearbook: { shadow: "两条路上都一样的是，毕业留言册上那句「勿忘我」，你到现在也没认出是谁写的。" },
@@ -62,11 +62,11 @@
     { id: "pr_child1", age: 7, log: "开学第一天",
       variants: [
         { key: "deskmate", log: "开学第一天", set: "mark_deskmate", mark: "mark_deskmate",
-          text: "开学第一天，你背着新书包站在教室门口。老师按个子排座，同桌来得比你早，桌上有一块新橡皮，切成了两半，推给你一半。你收下，在课本第一页写下名字，描了三遍才站直。" },
+          text: "开学第一天，你背着书包站在教室门口。老师按个子排座，同桌比你先到，桌上一块新橡皮，切成两半，推给你一半。收下，在课本第一页写下名字，一笔一笔，描了三遍才写端正。" },
         { key: "candy", log: "开学第一天", set: "mark_candy", mark: "mark_candy",
           text: "开学第一天，你的同桌是个小胖子，刚坐下就从兜里摸出一颗水果糖塞给你，说是他妈让带的，见者有份。那颗糖你含了一节课，甜味散了，还在含。" },
         { key: "window", log: "开学第一天", set: "mark_window", mark: "mark_window",
-          text: "开学第一天，老师把你安排在靠窗的位置。窗外是操场和旗杆，升旗的时候你总忍不住往外看。那个座位，你一坐就是一年。" },
+          text: "开学第一天，老师把你安排在靠窗的位置。那个座位你一坐就是一年，上课时总忍不住往窗外的操场看，桌角画满了铅笔道子。" },
         { key: "wrongline", log: "开学第一天", set: "mark_wrongline", mark: "mark_wrongline",
           text: "开学第一天放学，你站错了队，跟着隔壁班走出去半条街，才被门卫喊回来。你妈在校门口等急了，见着你，先笑后骂，牵着你的手往家走。" },
       ] },
@@ -80,26 +80,26 @@
         { key: "corn", log: "钻玉米地", set: "mark_corn", mark: "mark_corn",
           text: "暑假，你跟着大孩子钻玉米地，掰人家的玉米棒子，叶子在胳膊上拉出一道道红印。跑出来时一人怀里抱着两个，蹲在沟边啃，又甜又涩。" },
         { key: "icepop", log: "一毛钱的冰棍", set: "mark_icepop", mark: "mark_icepop",
-          text: "放学路上，小卖部门口摆着个捂着棉被的泡沫箱，冰棍一毛钱一根。你掏出一毛钱买了一根，跟同路的那个一人一半咬着吃，化了的水顺着手往下滴。" },
+          text: "放学路上，小卖部门口摆着个捂着棉被的泡沫箱，冰棍一毛钱一根。你把钱攥出汗，买了一根，掰成两半，跟同路的那个一人一半，化了的水顺着手往下滴。" },
       ] },
     { id: "pr_child3", age: 11, log: "性子", temperPick: true,
-      text: "班里要出节目，老师在讲台上点人。点到你之前，你心里先过了一遍自己会怎么应——你从小就是这个应法。这个性子跟了你许多年，往后也还跟着你。",
+      text: "班里要出节目，老师在讲台上点人。点到你之前，你心里先过了一遍自己会怎么接——你打小就是这个脾气，遇事总这么接，往后许多年也没改。",
       choices: [] }, // 选项在 present 时由所发的三张性子牌物化（真选择：选哪张，哪张的钩子与数值在 22 岁汇入时结算）
     { id: "pr_child4", age: 12, log: "校门口的老梧桐",
       variants: [
         { key: "tree", log: "校门口的老梧桐", set: "mark_tree", mark: "mark_tree",
-          text: "小学门口有棵老梧桐，树底下有个修鞋摊。你毕业那年夏天，学校说要拓宽校门，树留不留，议论了好一阵。后来树留下了，修鞋摊挪到树影的另一边。大爷说，摊子在哪我在哪。" },
+          text: "小学门口有棵老梧桐，树底下有个修鞋摊。你毕业那年夏天，学校要拓宽校门，树留不留，议论了一阵。后来树留下了，修鞋摊挪到树影的另一边，大爷说，挪几步没事，照样修鞋。" },
         { key: "shop", log: "校门口的小卖部", set: "mark_shop", mark: "mark_shop",
           text: "校门口小卖部的老板，你读六年级那年不干了。关门前一天，他把剩下的糖挨个分给你们几个常客，说，不卖了，都拿去吃。卷帘门哗啦一声拉到底，上了锁。" },
         { key: "yearbook", log: "毕业留言册", set: "mark_yearbook", mark: "mark_yearbook",
-          text: "毕业前，班里传着一本留言册，轮到你，你给前桌写了「以后常联系」。轮到别人给你写，有人写了「勿忘我」，字迹不熟，你认了半天也没认出是谁。" },
+          text: "毕业前，班里传着留言册，前桌那本递到你手上，你写下「以后常联系」。等册子传回来，里头多了一句「勿忘我」，字迹陌生，你认了半天也没认出是谁。" },
         { key: "classphoto", log: "毕业照", set: "mark_classphoto", mark: "mark_classphoto",
           text: "毕业照在升旗台前拍的。后排的站上台阶，你在最边上的一级，站得脚发酸。校长站在中间，说了句，以后常回来看看。快门响的时候，你正眯着眼。" },
       ] },
     { id: "pr_teen1", age: 13, log: "升初中", eraText: true,
       variants: [
-        { key: "route", text: "升初中那年，学校离家远了，日子一下子铺开。你把上学的路线骑熟了，单程三十五分钟，哪个路口要等灯，闭着眼都知道。" },
-        { key: "bus", text: "升初中那年，你开始自己坐车上学。头一回坐过站，你在终点站下了车，又坐回来，书包带子在肩上勒出两道红印。" },
+        { key: "route", text: "升初中那年，学校离家远了，你每天都得提前半小时出门。你把上学的路线骑熟了，单程三十五分钟，哪个路口要等灯，闭着眼都知道。" },
+        { key: "bus", text: "升初中那年，你开始自己坐车上学。头一回坐车你睡过了头，一睁眼到了终点站，只好再坐回来。" },
       ] },
     { id: "pr_teen2", age: 15, log: "十五岁的念头",
       text: "十五岁那年，你开始想一件事：往后的日子，是接着念书，还是早点出去挣钱。想归想，日子还是一天一天过——作业要交，饭要照吃。",
@@ -122,10 +122,8 @@
         craft: "职校第二年，开始进实训车间。师傅让你先练基本功，同一个件磨了四十遍，手上的茧先起来了。",
         home: "留在家里的第一年，你跟着把一季庄稼从头走到尾。播种的时候腰是弯的，收的时候也是。晒场上的谷子，你翻了不下二十遍。",
       },
-      choices: [
-        { label: "把手头的日子过扎实，不想太远", effects: { health: 1 }, echo: "你把闹钟定得比别人早十分钟，慢慢成了习惯。" },
-        { label: "给自己留个小目标，写在日记本最后一页", effects: { growth: 1 }, echo: "那页纸你后来很少翻，可一直没撕。" },
-      ] },
+      tail: "你把闹钟定得比别人早十分钟，后来慢慢成了习惯。",
+      choices: null }, // v0.21.1 精简：原 ±1 二选一改纯叙述，尾句揉入正文
     { id: "pr_y18", age: 18, log: "十八岁",
       textByTrack: {
         study: "高三这一年，日子是按周过的：周考、月考、模拟。教室后墙贴了张倒计时，数字一天少一个。你的水杯上贴着名字，怕拿错。",
@@ -133,10 +131,8 @@
         craft: "毕业这一年，你开始跟师傅出活。头一回独立干完一件，验收的人点了点头。你回去把那件工具擦了三遍。",
         home: "这一年收成还行。你爸把卖粮的钱数了两遍，分出一份，说给你留着。村里同龄的走了大半，晚饭桌上常听见他们打工地方的名字。",
       },
-      choices: [
-        { label: "成年这天，你给自己煮了碗面，加了个蛋", effects: { freedom: 1 }, echo: "面吃完，你把碗洗了。这一天就这么过去了。" },
-        { label: "你请要好的几个吃了顿饭，一人一瓶汽水", effects: { relation: 1, money: -1 }, echo: "汽水瓶碰在一起，声音很脆。你们说，往后各走各的路，常联系。" },
-      ] },
+      tail: "成年这天，你请要好的几个吃了顿饭，一人一瓶汽水，瓶子碰在一起，声音很脆。",
+      choices: null }, // v0.21.1 精简：原 ±1 二选一改纯叙述，尾句揉入正文
     { id: "pr_y20", age: 20, log: "二十岁",
       textByTrack: {
         study: "大二的课排得满。你开始在一家小公司做兼职文案，一千字三十块，改三遍。第一笔钱到账，你截了图，没发给任何人。",
@@ -163,10 +159,8 @@
     half: [
       { id: "pr_half1", age: 10, log: "半天学校半天家", sit: "half",
         text: "你家里的活多。上半天学，下半天回家帮工：喂猪、晒谷、农忙时下地。老师知道你家的情况，作业晚交一两天，也不说你。",
-        choices: [
-          { label: "书包里揣着课本，路上也在背", effects: { growth: 1 }, echo: "课文背得磕磕绊绊，可放下书包之前，总能顺下来了。" },
-          { label: "先紧着家里的活，书有空再看", effects: { relation: 1 }, echo: "家里的活你干得利索。大人说起你，都讲懂事。" },
-        ] },
+        tail: "课本揣在书包里，路上背得磕磕绊绊，进校门前总算顺下来了。",
+        choices: null }, // v0.21.1 精简：±1 二选一改纯叙述
       { id: "pr_half2", age: 14, log: "读了又离开", sit: "half", title: "14 岁 · 还读不读",
         text: "初二念完，家里的意思越来越明确：地里缺人手，学费也是一笔。这个书，还读不读，你自己也得拿个主意了。",
         choices: [
@@ -183,10 +177,8 @@
     never: [
       { id: "pr_never1", age: 8, log: "没进过校门", sit: "never",
         text: "村里的小学在山那边。你家的情况，报名的那几天，没人顾得上送你去。开学那天，你站在村口，看背书包的孩子一拨一拨往山那边走。",
-        choices: [
-          { label: "回家帮着放羊，心里把这条路记下", effects: { freedom: 1 }, echo: "羊吃草的时候，你坐在坡上看山那边的学校，旗升起来，又落下去。" },
-          { label: "跟放羊的老人认了几个字，写在地上", effects: { growth: 1 }, echo: "老人用树枝在地上划，你的名字，就是先这么学会写的。" },
-        ] },
+        tail: "羊吃草的时候，你坐在坡上，看山那边学校里的旗，升起来，又落下去。",
+        choices: null }, // v0.21.1 精简：±1 二选一改纯叙述
       { id: "pr_never2", age: 15, log: "夜校的灯", sit: "never", title: "15 岁 · 夜校开课",
         text: "村里办了个夜校，说是扫盲班，晚上开课，认字不要钱。去的多是上了年纪的，你是里头最小的一个。",
         choices: [
@@ -195,13 +187,28 @@
         ] },
       { id: "pr_never3", age: 20, log: "认字之后", sit: "never",
         text: "这两年，招工告示贴出来，你能自己一字一句看完。去镇上办事，表格拿到手里，心里不慌了。",
-        choices: [
-          { label: "照着告示去应聘，先挑认字少的活干稳", effects: { money: 1, growth: 1 }, echo: "面试的人问了几句，就让你第二天来上工。你把告示折好，收进了口袋。" },
-          { label: "接着认字，晚上就着灯看借来的书", effects: { growth: 2 }, echo: "书是借的，还的时候你把折角都展平了。里头的世界，比村子大得多。" },
-        ] },
+        tail: "你照着告示，挑了个不用怎么认字的活，先干稳了再说。",
+        choices: null }, // v0.21.1 精简：±数二选一改纯叙述
     ],
   };
   // 间隔年只在 child/teen/youth 段出现（act 年龄表）：5→7→9→11→12→13→15→16→17→18→20→21，空档为 6/8/10/14/19。处境幕并入后，落在处境幕年龄上的平年不再重复出现。
+
+  // 变体发放：只走序章自有流（prng），一格不碰主 RNG。notFamily 粗分在此过滤（如河沟款不发厂区大院家底）。
+  function pickVariants(S) {
+    const P = S.prologue, out = {};
+    for (const act of ACTS) {
+      if (!act.variants) continue;
+      const pool = act.variants.filter((v) => !(v.notFamily && P.family && v.notFamily.includes(P.family)));
+      out[act.id] = pool[Math.floor(prng(S) * pool.length)].key;
+    }
+    return out;
+  }
+  // 查本局定版的变体。P.variants 缺失（旧档中局换到新幕定义等边缘情形）时懒补一次并从此定版。
+  function variantOf(S, act) {
+    const P = S.prologue;
+    if (!P.variants) P.variants = pickVariants(S);
+    return act.variants.find((v) => v.key === P.variants[act.id]) || act.variants[0];
+  }
 
   function cards() { return window.GAME_CARDS || null; }
   function rhythmProfiles() { return (window.GAME_RHYTHM && window.GAME_RHYTHM.profiles) || null; }
@@ -217,7 +224,7 @@
       eraCard: dealt ? dealt.era[0] : null,
       situation: null, itch: null, done: false,
       pendingState: null, curText: null, curChoices: null, shadowMarkShown: false,
-      seq: null, leftBehind: false,
+      seq: null, leftBehind: false, variants: null,
     };
     // 处境发放（年代 × 家底的权重表按种子抽一次；本轮 school 权重 100，其余登记未开放）——发放即定，不重掷
     const table = SITUATION_W[S.era] || SITUATION_W.c2000;
@@ -228,6 +235,8 @@
     // 留守是家底底色（地基 v2.1），不占处境值：父母不在身边长大的孩子各处境都有，half 最多。只改质地（来历幕/童年幕文本），不发数值。
     const LB = { school: 0.18, half: 0.45, never: 0.30 };
     S.prologue.leftBehind = prng(S) < (LB[sit] || 0);
+    // 变体发放（v0.21.1）：带 variants 的幕各抽一款，开局定版写入存档（P.variants），之后只查表不重抽——续玩/读档不换款，同种子新局复现。
+    S.prologue.variants = pickVariants(S);
     // 处境幕并入幕序（按年龄交错，同龄时主幕在前）：本处境的专属幕只在本局出现
     S.prologue.seq = ACTS.concat(SIT_ACTS[sit] || []).slice().sort((a, b) => a.age - b.age);
     const prof = rhythmProfiles();
@@ -248,10 +257,15 @@
       P.presented = P.idx;
       // never 变体（v0.20.1 W6）：没进过校门的人，7 岁那拍不落同桌记号（mark_deskmate 的影子回响写的是开学事实，落了会自相矛盾）；12 岁那拍仍路过校门口，老梧桐记号照落。
       const neverAlt = P.situation === "never" && (act.id === "pr_child1" || act.id === "pr_child4");
-      if (act.set && !(neverAlt && act.id === "pr_child1")) S.flags[act.set] = true;
-      if (act.mark && !(neverAlt && act.id === "pr_child1")) S.marks.push({ id: act.mark, age: act.age });
+      // 变体定版（v0.21.1）：记号/立旗/流水账行按本局抽中的款走；never 的 12 岁覆写文本写的是梧桐那一拍，记号与行强制回 v1 款对齐（W6 口径）。
+      const v = act.variants ? variantOf(S, act) : null;
+      const effV = (neverAlt && act.id === "pr_child4" && act.variants) ? act.variants[0] : v;
+      const effSet = effV ? effV.set : act.set;
+      const effMark = effV ? effV.mark : act.mark;
+      if (effSet && !(neverAlt && act.id === "pr_child1")) S.flags[effSet] = true;
+      if (effMark && !(neverAlt && act.id === "pr_child1")) S.marks.push({ id: effMark, age: act.age });
       P.pendingState = act.setStateBySit ? (act.setStateBySit[P.situation] || act.setState || null) : (act.setState || null);
-      S.log.push(`${act.age} 岁 · ${neverAlt && act.id === "pr_child1" ? "开学那天，你没去" : act.log}`);
+      S.log.push(`${act.age} 岁 · ${neverAlt && act.id === "pr_child1" ? "开学那天，你没去" : (effV && effV.log) || act.log}`);
       const C = cards();
       if (act.id === "pr_origin") {
         const open = ORIGIN_OPEN[Math.floor(prng(S) * ORIGIN_OPEN.length)];
@@ -266,30 +280,26 @@
           return { label: c ? c.name : cid, card: cid, echo: c ? `「${c.name}」——家里人后来提起你，还总这么说。` : "", effects: {} };
         });
       } else if (act.textByTrack) {
-        P.curText = act.textByTrack[S.state.track] || act.textByTrack.study;
+        P.curText = (act.textByTrack[S.state.track] || act.textByTrack.study) + (act.tail || "");
         P.curChoices = act.choices || null;
       } else if (act.eraText) {
         const era = P.eraCard && C && C.byId[P.eraCard] ? C.byId[P.eraCard].text : "";
-        P.curText = era ? act.text + "\n" + era : act.text;
+        const base = v ? v.text : act.text;
+        P.curText = era ? base + "\n" + era : base;
         P.curChoices = act.choices || null;
       } else if (act.id === "pr_child1" && P.situation === "never") {
-        // never 变体（v0.20.1 W6）：7 岁没进校门，与 8 岁专属拍（pr_never1「没进过校门」）对齐
-        P.curText = "开学那天，你没去。家里的事多，没人送你，你自己也知道，这个门这一回进不去了。你站在村口，看背书包的孩子往学校那边走，有个跟你一般大的，书包带子滑下来，又自己拽了上去。你看了一会儿，转身回家帮着干活去了。";
-        P.curChoices = [
-          { label: "把这事记在心里，想着以后再说", effects: { growth: 1 }, echo: "那天晚上，你把家里账本上的字挨个认了一遍，认出了三个。" },
-          { label: "跟家里提了一回，被说回来", effects: { relation: 1 }, echo: "大人说，先把眼前的日子过好。你没再提，可也没忘。" },
-        ];
+        // never 变体（v0.20.1 W6）：7 岁没进校门，与 8 岁专属拍（pr_never1「没进过校门」）对齐；v0.21.1 精简：±1 选项改纯叙述
+        P.curText = "开学那天，你没去。家里的事多，没人送你，你自己也知道，这个门这一回进不去了。你站在村口，看背书包的孩子往学校那边走，有个跟你一般大的，书包带子滑下来，又自己拽了上去。你看了一会儿，转身回家帮着干活去了。你跟家里提过一回，没说通，后来也就没再提。";
+        P.curChoices = null;
       } else if (act.id === "pr_child4" && P.situation === "never") {
-        // never 变体（v0.20.1 W6）：12 岁没有「小学毕业」这回事，写路过校门口的一拍
-        P.curText = "跟你一般大的孩子小学毕业了。毕业照在校门口拍，梧桐树底下站了两排人，你路过的时候看了一眼。你没在里头，你那天是来镇上送东西的，扁担还压在肩上。修鞋摊的大爷倒是还在老地方，见你过来，招手让你坐下歇会儿。";
-        P.curChoices = [
-          { label: "在树底下站了一会儿，才挑起担子走", effects: { relation: 1 }, echo: "照片洗出来贴在学校墙上，你后来路过，还能认出里头几张脸。" },
-          { label: "你更惦记修鞋摊的大爷，问他还来不来", effects: { wisdom: 1 }, echo: "大爷说，来，摊子在哪我在哪。这话你记了很多年。" },
-        ];
+        // never 变体（v0.20.1 W6）：12 岁没有「小学毕业」这回事，写路过校门口的一拍；v0.21.1 精简：±1 选项改纯叙述
+        P.curText = "跟你一般大的孩子小学毕业了。毕业照在校门口拍，梧桐树底下站了两排人，你路过的时候看了一眼。你没在里头，你那天是来镇上送东西的，扁担还压在肩上。修鞋摊的大爷倒是还在老地方，见你过来，招手让你坐下歇会儿。临走，你问大爷往后还来不来，他说，来，摊子挪几步，照样修鞋。";
+        P.curChoices = null;
       } else {
-        let t = act.text;
-        if (act.id === "pr_child2" && P.leftBehind) t = "放学路上有一条河沟，水浅的时候能蹚过去。你和几个孩子在桥洞底下摸螺蛳，裤腿湿到膝盖，回家挨了爷爷两句，也没耽误第二天再去。";
+        let t = v ? v.text : act.text;
+        if (act.id === "pr_child2" && P.leftBehind && v && v.textLB) t = v.textLB;
         if (act.id === "pr_fork16" && P.itch === "out") t += "\n十五岁那年你跟家里提过的那件事，今天要定下来了。";
+        if (act.tail) t += act.tail;
         P.curText = t;
         P.curChoices = act.choices || null;
       }

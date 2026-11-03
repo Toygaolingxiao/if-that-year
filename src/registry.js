@@ -612,6 +612,60 @@ window.GAME_REGISTRY.milestones = {
    ],
    "note": "童年记号（v0.17.0）：校门口的老梧桐；成年回响 echo_tree"
   },
+  "mark_candy": {
+   "setters": [
+    "pr_child1"
+   ],
+   "note": "童年记号（v0.21.1 变体）：开学第一天的水果糖；成年回响 echo_candy，影子回响见 prologue.js MARKS"
+  },
+  "mark_window": {
+   "setters": [
+    "pr_child1"
+   ],
+   "note": "童年记号（v0.21.1 变体）：坐了一年的靠窗座位；成年回响 echo_window，影子回响见 prologue.js MARKS"
+  },
+  "mark_wrongline": {
+   "setters": [
+    "pr_child1"
+   ],
+   "note": "童年记号（v0.21.1 变体）：开学第一天站错队；成年回响 echo_wrongline，影子回响见 prologue.js MARKS"
+  },
+  "mark_hoop": {
+   "setters": [
+    "pr_child2"
+   ],
+   "note": "童年记号（v0.21.1 变体）：巷口滚铁环；成年回响 echo_hoop，影子回响见 prologue.js MARKS"
+  },
+  "mark_corn": {
+   "setters": [
+    "pr_child2"
+   ],
+   "note": "童年记号（v0.21.1 变体）：暑假钻玉米地；成年回响 echo_corn，影子回响见 prologue.js MARKS"
+  },
+  "mark_icepop": {
+   "setters": [
+    "pr_child2"
+   ],
+   "note": "童年记号（v0.21.1 变体）：一毛钱的冰棍；成年回响 echo_icepop，影子回响见 prologue.js MARKS"
+  },
+  "mark_shop": {
+   "setters": [
+    "pr_child4"
+   ],
+   "note": "童年记号（v0.21.1 变体）：校门口小卖部关门；成年回响 echo_shop，影子回响见 prologue.js MARKS"
+  },
+  "mark_yearbook": {
+   "setters": [
+    "pr_child4"
+   ],
+   "note": "童年记号（v0.21.1 变体）：毕业留言册；成年回响 echo_yearbook，影子回响见 prologue.js MARKS"
+  },
+  "mark_classphoto": {
+   "setters": [
+    "pr_child4"
+   ],
+   "note": "童年记号（v0.21.1 变体）：毕业照；成年回响 echo_classphoto，影子回响见 prologue.js MARKS"
+  },
   "late_tried": {
    "setters": [
     "lk_none",
