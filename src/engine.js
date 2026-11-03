@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.20.1 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.20.3 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -366,38 +366,50 @@ window.IFY = window.IFY || {};
         <div id="intro-pro" hidden>
         <p>选一个年代，从小时候活到老。没选的那条路，会在往后的人生里远远看着你。</p>
         </div>
-        ${CARDS_ON ? `<div class="carddeck" id="carddeck">${deckHtml()}</div>` : ""}
-        <div class="choices" id="routechoices">${D.routes.map((r, i) => `<button class="choice" data-i="${i}"><b>${esc(r.name)}</b><small>${esc(r.desc)}</small></button>`).join("")}</div>
-        <div id="prostart" hidden>
-          <button class="primary" id="prologuego">从童年开始这一生</button>
-          <p class="hint">先过完小时候。家里什么样是发到手里的，没有重抽。</p>
-        </div>
-        ${saved ? `<button class="ghost resume-link" id="resume">继续上次的人生（${saved.age} 岁 · ${esc(savedLabel)}）</button>` : ""}
-        <div class="setblock">
-          <p class="setlab">出生年代</p>
+        <div class="setblock" id="erablock">
+          <p class="setlab">年代</p>
           <div class="segpicks" id="erapick">${ERAS.map((e) => `<button type="button" class="segbtn${e.id === "c2000" ? " sel" : ""}" data-era="${e.id}" data-birth="${e.birth}"><b>${e.label}</b></button>`).join("")}</div>
-          <p class="setlab">自动推进</p>
-          <div class="segpicks" id="autopick">
-            ${AUTO_MODES.map(([mode, label]) => `<button type="button" class="segbtn" data-mode="${mode}"><b>${label}</b></button>`).join("")}
+        </div>
+        <div class="setblock" id="routeblock">
+          <p class="setlab">路线 · 22 岁那年要选的路，先看看</p>
+          <div class="choices" id="routechoices">${D.routes.map((r, i) => `<button type="button" class="choice routepick${i === 0 ? " sel" : ""}" data-i="${i}"><b>${esc(r.name)}</b><small>${esc(r.desc)}</small></button>`).join("")}</div>
+          ${CARDS_ON ? `<div class="carddeck" id="carddeck">${deckHtml()}</div>` : ""}
+          <p class="hint" id="prohint" hidden>这一局从小时候开始，路等 22 岁再选。家里什么样是发到手里的，没有重抽。</p>
+        </div>
+        <div class="setblock" id="pushblock">
+          <p class="setlab">推进</p>
+          <p class="picklab">自动推进</p>
+          <div class="switchpicks" id="autopick">
+            ${AUTO_MODES.map(([mode, label]) => `<button type="button" class="switchbtn" data-mode="${mode}"><b>${label}</b></button>`).join("")}
           </div>
-          <p class="setlab">速度</p>
+          <p class="picklab">速度</p>
           <div class="segpicks" id="speedpick">
             ${["slow", "mid", "fast"].map((k) => `<button type="button" class="segbtn" data-speed="${k}">${IFY.speedButtonLabel(k)}</button>`).join("")}
           </div>
-          <p class="hint" id="setsummary"></p>
+        </div>
+        <div class="setblock" id="matchblock">
+          <p class="setlab">对局</p>
+          <p class="picklab">种子码</p>
+          <div class="seedrow">
+            <input id="seedin" type="text" placeholder="种子码（不填就是随机）">
+            <button class="ghost" id="seedgo">用这个种子</button>
+          </div>
+          <div class="dailyrow"><button class="ghost" id="daily">今日一局 · 今天的固定局，点这先备好</button></div>
+          <p class="hint" id="dailyline"></p>
+          <p class="hint tomorrow-note">明天一局：${tomDaily.era.label} · ${tomDaily.era.id === PROLOGUE_ERA ? "从小时候开始" : esc(tomDaily.route.name)}。</p>
+        </div>
+        <p class="hint" id="setsummary"></p>
+        <div class="actions">
+          ${saved ? `<button class="primary" id="resume">继续上次的人生（${saved.age} 岁 · ${esc(savedLabel)}）</button>` : ""}
+          <button id="startgo" class="${saved ? "ghost" : "primary"}">${saved ? "重新开始一局" : "开始这一生"}</button>
         </div>
         <div class="row"><button class="ghost" id="liveslink">活过的人生</button></div>
-        <div class="seedrow">
-          <input id="seedin" type="text" placeholder="种子码（不填就是随机）">
-          <button class="ghost" id="seedgo">用这个种子</button>
-          <button class="ghost" id="daily">今日一局</button>
-        </div>
-        <p class="hint" id="dailyline"></p>
         ${sLine ? `<p class="hint">${sLine}</p>` : ""}
         ${lLine ? `<p class="hint">${lLine}</p>` : ""}
-        <p class="hint">明天一局：${tomDaily.era.label} · ${tomDaily.era.id === PROLOGUE_ERA ? "从小时候开始" : esc(tomDaily.route.name)}。</p>
-        <p class="hint ver">v0.20.1</p>
-        <p class="hint">不填随机。填了，运气定下来，跟朋友比同一局就用它。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam ? "，年代也按对方那局选好了" : ""}${cardsParam ? "，出身牌也按对方选过的对齐了" : ""}，点任意一条路就开始同一局。` : ""}</p>      </section>`;
+        <p class="hint">不填随机。填了，运气定下来，跟朋友比同一局就用它。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam ? "，年代也按对方那局选好了" : ""}${cardsParam ? "，出身牌也按对方选过的对齐了" : ""}，点下面开始这一生，就是同一局。` : ""}</p>
+        <p class="hint ver">v0.20.3</p>
+      </section>`;
+    let startLock = false; // §6.1 防连点：双击不能在同一帧触发两次开局（统一挂在 #startgo 上）
     el("liveslink").addEventListener("click", () => { ANA.track("lives_view", {}); IFY.renderLives(); });
     if (saved) el("resume").addEventListener("click", () => {
       // v0.13.2：缺 seedStr 且无合法 rngA 的残档会在 seedFromString 处炸——按坏档清掉回开局，不抛错
@@ -456,14 +468,15 @@ window.IFY = window.IFY || {};
       document.querySelectorAll("#erapick .segbtn").forEach((b) => b.addEventListener("click", () => { redealEra(); updSummary(); }));
     }
     const syncAutoPick = () => {
-      document.querySelectorAll("#autopick .segbtn").forEach((o) => o.classList.toggle("sel", o.dataset.mode === IFY.prefs.mode));
+      document.querySelectorAll("#autopick .switchbtn").forEach((o) => o.classList.toggle("sel", o.dataset.mode === IFY.prefs.mode));
       document.querySelectorAll("#speedpick .segbtn").forEach((o) => o.classList.toggle("sel", o.dataset.speed === IFY.prefs.speed));
       const sp = el("speedpick"); if (sp) sp.classList.toggle("dim", IFY.prefs.mode === "off");
     };
-    document.querySelectorAll("#autopick .segbtn").forEach((b) => b.addEventListener("click", () => { IFY.prefs.mode = b.dataset.mode; savePrefs(); syncAutoPick(); updSummary(); }));
+    document.querySelectorAll("#autopick .switchbtn").forEach((b) => b.addEventListener("click", () => { IFY.prefs.mode = b.dataset.mode; savePrefs(); syncAutoPick(); updSummary(); }));
     document.querySelectorAll("#speedpick .segbtn").forEach((b) => b.addEventListener("click", () => { IFY.prefs.speed = b.dataset.speed; savePrefs(); syncAutoPick(); updSummary(); }));
     syncAutoPick();
     // 年代分流（v0.17.0）：试点年代走序章开局——藏牌面与路线、亮序章入口；其余年代照旧。切换只改呈现，开局函数在点击时按年代走
+    const startLabel = (pro) => saved ? "重新开始一局" : (pro ? "从童年开始这一生" : "开始这一生"); // 有存档时主按钮让位给续玩：文案恒为重开（存档优先）
     const eraToggle = () => {
       const pro = !!(PRO && selEra() === PROLOGUE_ERA);
       const t = el("starttitle"); if (t) t.textContent = pro ? "这一生，从小时候讲起。" : "22 岁，宿舍要退了。";
@@ -471,7 +484,8 @@ window.IFY = window.IFY || {};
       const ip = el("intro-pro"); if (ip) ip.hidden = !pro;
       const dk = el("carddeck"); if (dk) dk.hidden = pro;
       const rc = el("routechoices"); if (rc) rc.hidden = pro;
-      const ps = el("prostart"); if (ps) ps.hidden = !pro;
+      const ph = el("prohint"); if (ph) ph.hidden = !pro;
+      const sg = el("startgo"); if (sg) sg.textContent = startLabel(pro);
     };
     document.querySelectorAll("#erapick .segbtn").forEach((b) => b.addEventListener("click", eraToggle));
     eraToggle();
@@ -484,40 +498,43 @@ window.IFY = window.IFY || {};
       const eb = document.querySelector(`#erapick .segbtn[data-era="${dd.era.id}"]`);
       if (eb) eb.click(); // 年代走既有接线（重发时代牌 + 刷新小结）
       redealAll(); updSummary();
+      const goLabel = el("startgo") ? el("startgo").textContent : "开始这一生";
       if (PRO && dd.era.id === PROLOGUE_ERA) {
-        el("dailyline").textContent = `今日一局：${dd.era.label}，从小时候开始。种子和年代都替你定好了，点「从童年开始这一生」就行。`;
+        el("dailyline").textContent = `今日一局：${dd.era.label}，从小时候开始。种子和年代都替你备好了，点下面「${goLabel}」就是今日这局。`;
       } else {
-        document.querySelectorAll(".choice").forEach((o) => o.classList.toggle("dailymark", D.routes[Number(o.dataset.i)].id === dd.route.id));
-        el("dailyline").textContent = `今日一局：${dd.era.label}，走「${dd.route.name}」那条路。种子和年代都替你定好了，点标出来的那条路就开始；选别的路也行，那就是普通的一局了。`;
+        document.querySelectorAll(".routepick").forEach((o) => { const on = D.routes[Number(o.dataset.i)].id === dd.route.id; o.classList.toggle("dailymark", on); o.classList.toggle("sel", on); });
+        el("dailyline").textContent = `今日一局：${dd.era.label}，走「${dd.route.name}」那条路。种子、年代和路线都替你备好了，点下面「${goLabel}」就是今日这局；想换条路，先在上面的路线里另选一张。`;
       }
       el("daily").textContent = "今日一局已备好";
     });
-    if (el("prologuego")) el("prologuego").addEventListener("click", () => {
+    // 路线卡＝可选预览（协调者裁定）：点选只切换 .sel（单选），绝不开局；开局统一走 #startgo
+    document.querySelectorAll(".routepick").forEach((b) => b.addEventListener("click", () => {
+      document.querySelectorAll(".routepick").forEach((o) => o.classList.remove("sel"));
+      b.classList.add("sel");
+    }));
+    // 统一开局按钮：序章年代走序章开局，其余年代用当前 .sel 路线卡（默认第一张）开局
+    el("startgo").addEventListener("click", () => {
       if (startLock) return;
       startLock = true;
-      el("prologuego").disabled = true;
-      const seedStr = (el("seedin").value || "").trim() || seedParam || candSeed;
-      const eb = document.querySelector("#erapick .segbtn.sel");
-      newGamePrologue(seedStr, eb ? eb.dataset.era : PROLOGUE_ERA, eb ? +eb.dataset.birth : 2000);
-    });
-    let startLock = false; // §6.1 防连点：双击不能在同一帧触发两次开局
-    document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {
-      if (startLock) return;
-      startLock = true;
-      document.querySelectorAll(".choice").forEach((o) => { o.disabled = true; });
-      const chosen = D.routes[Number(b.dataset.i)];
+      el("startgo").disabled = true;
       const seedStr = (el("seedin").value || "").trim() || seedParam || candSeed; // 随机开局用开局页渲染时已生成的候选种子（牌面据此而发，§A3.2）
       const eb = document.querySelector("#erapick .segbtn.sel");
+      if (PRO && selEra() === PROLOGUE_ERA) {
+        newGamePrologue(seedStr, eb ? eb.dataset.era : PROLOGUE_ERA, eb ? +eb.dataset.birth : 2000);
+        return;
+      }
+      const selCard = document.querySelector(".routepick.sel") || document.querySelector(".routepick");
+      const chosen = D.routes[selCard ? Number(selCard.dataset.i) : 0];
       if (CARDS_ON && dealt) for (const cat of ["family", "temper", "era"]) ANA.track("card_pick", { cat, pick: picked[cat], changed: picked[cat] !== 0 });
       newGame(seedStr, chosen, { era: eb ? eb.dataset.era : "c2000", birth: eb ? +eb.dataset.birth : 2000, cards: CARDS_ON && dealt ? [dealt.family[picked.family], dealt.temper[picked.temper], dealt.era[picked.era]] : [] });
-    }));
+    });
     el("seedgo").addEventListener("click", () => {
       const v = (el("seedin").value || "").trim();
       if (!v) { el("seedin").focus(); return; }
       el("seedin").scrollIntoView({ block: "center" });
       redealAll(); updSummary();
-      // 种子已填好，提示玩家选路即可
-      el("seedgo").textContent = "好，选一条路开始";
+      // 种子已填好，提示玩家点下面主按钮开局即可
+      el("seedgo").textContent = "好，点下面开始这一生";
     });
     IFY.finishRender();
   }

@@ -4,9 +4,9 @@
 // 立约只记旗与账，不碰 kids 状态机：三条的门都读现行 kids 状态，与 fork38/fork45/e_kid_settle 的既有流转并行不悖。
 window.GAME_PACKS = (window.GAME_PACKS || []).concat([
   // —— 立约年度流 ——
-  { id: "cov_has_flow", kidAgeMin: 1, kidAgeMax: 2, min: 39, max: 44, require: "cov38_has", state: { kids: "has" }, stateAll: { spouse: "partnered", mom: "alive" }, text: "孩子一岁多，正是离不了人的时候。夜里醒三回，你和另一半排了班，一人半夜。白天你妈发来消息，问孩子今天吃了多少、睡了多久，你一条一条回。日子被切得很碎，可你想起 38 岁那回的决定，心里是定的。",
+  { id: "cov_has_flow", kidAgeMin: 1, kidAgeMax: 2, min: 39, max: 44, require: "cov38_has", state: { kids: "has" }, stateAll: { spouse: "partnered", mom: "alive" }, text: "孩子一岁多，正是离不了人的时候。夜里醒三回，你和另一半排了班，一人半夜。白天你妈问孩子吃了多少、睡了多久，你一条一条回。日子被切得很碎，可想起 38 岁那回的决定，你心里是定的。",
     effects: { relation: 2, health: -1 } },
-  { id: "cov_none_flow", min: 40, max: 48, require: "cov38_none", state: { kids: "none", spouse: "partnered" }, text: "你们把往后的安排列了张表，贴在书房墙上：钱怎么留，房子怎么处置，老了谁先走、剩下的那个靠什么。表是 38 岁那回定下来之后慢慢补全的。亲戚再问起孩子的事，你们就把话落到表上，说都安排好了。",
+  { id: "cov_none_flow", min: 40, max: 48, require: "cov38_none", state: { kids: "none", spouse: "partnered" }, text: "你们把往后的安排列了张表，贴在书房墙上：钱怎么留，房子怎么处置，老了谁先走、剩下的那个靠什么。表是 38 岁那回定下之后慢慢补全的。亲戚再问孩子的事，你们就指指表，说都安排好了。",
     effects: { wisdom: 2, freedom: 1 } },
   { id: "cov_wait_flow", min: 39, max: 41, require: "cov38_wait", state: { kids: "undecided" }, forbid: ["late_try"], text: "那张写着日期的纸还在文件夹最上面。这一年你又把它拿出来看了一眼，日期底下添了一行小字，是另一半写的：不急，先把身体养好。纸放回去，文件夹合上，这份账还没到期。",
     effects: { wisdom: 1, relation: 1 } },

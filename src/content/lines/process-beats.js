@@ -17,7 +17,7 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
       { label: "先观察一段，周末多回去", effects: { relation: 1, freedom: -1 }, echo: "你把周末的安排改了，能回就回。路上的时间变多了，可有些事，错过就是错过了。" },
     ] },
   // —— 照护预警信号拍（v0.20.0 M2 收尾）：care 之前 2–4 年、每位父母至多一次的轻量提示；触发与时点在父母进程（signalAgeOf），本条目只管文本，不立旗、不动状态 ——
-  { id: "proc_dad_signal", min: 22, max: 80, procOnly: true, text: "这一年，你爸的身体露出点苗头。陪他去体检，报告上有几项被圈了出来，他摆摆手说没事。可回家上楼，他在二楼的平台上歇了一回——这事，他从前没有过。你把复查的日子记在本子上，心里有了个数：往后他这边，怕是得有人搭把手。", textState: { mom: { dead: "这一年，你爸的身体露出点苗头。陪他去体检，报告上有几项被圈了出来，他摆摆手说没事。可回家上楼，他在二楼的平台上歇了一回——这事，他从前没有过。你把复查的日子记在本子上，心里有了个数：往后他这边，怕是得有人搭把手。" } },
+  { id: "proc_dad_signal", min: 22, max: 80, procOnly: true, text: "这一年，你爸的身体露出点苗头。陪他去体检，报告上有几项被圈出来，他摆摆手说没事。回家上楼，他在二楼平台上歇了一回，从前没有过。你把复查的日子记在本子上：他这边，怕是得有人搭把手。", textState: { mom: { dead: "这一年，你爸的身体露出点苗头。陪他去体检，报告上有几项被圈出来，他摆摆手说没事。回家上楼，他在二楼平台上歇了一回，从前没有过。你把复查的日子记在本子上：他这边，怕是得有人搭把手。" } },
     effects: { relation: 1 } },
   { id: "proc_mom_signal", min: 22, max: 80, procOnly: true, text: "这一年，你妈的身体露出点苗头。去买菜，那兜菜她半路歇了两回才提回家，嘴上说天热，腿上是真没劲了。夜里起来，她也要扶着墙站一会儿。你把这事记在心里：往后她这边，怕是得有人搭把手。", textState: { dad: { dead: "这一年，你妈的身体露出点苗头。去买菜，那兜菜她半路歇了两回才提回家，嘴上说天热，腿上是真没劲了。夜里起来，她也要扶着墙站一会儿。你把这事记在心里：往后她这边，怕是得有人搭把手。" } },
     effects: { relation: 1 } },
@@ -52,7 +52,7 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
     effects: { relation: 3, growth: 1 } },
   { id: "e_truck_start", ctx: { entry: true }, min: 22, max: 32, routeIn: ["corp", "gap", "home"], text: "跑长途的师傅缺个搭把手的，问你跟不跟车。跟车先学路，学会了再上手，钱按趟结。这一行熬夜，也熬人。",
     choices: [
-      { label: "跟车，先学起来（往后就是跑长途的人，家要常年不在）", set: "truck_work", effects: { money: 3, health: -2, freedom: 2 }, echo: "头一趟跑下来，你在服务区睡了个整觉。醒来的时候，师傅说：能吃这碗饭。" },
+      { label: "跟车，先学起来（常年不在家）", set: "truck_work", effects: { money: 3, health: -2, freedom: 2 }, echo: "头一趟跑下来，你在服务区睡了个整觉。醒来的时候，师傅说：能吃这碗饭。" },
       { label: "不跟，太熬人", effects: { health: 1 }, echo: "你帮师傅把货码好，目送车出了院子。这条路，你没上去。" },
     ] },
   { id: "e_truck_years", min: 36, max: 55, chain: "e_truck_start", ctx: { flag: "truck_work" }, set: "truck_veteran", text: "长途跑了十来年。哪段路雨天打滑、哪个服务区的饭实在，你闭着眼都说得出来。里程表上的数，一天天攒，攒得老长了。",

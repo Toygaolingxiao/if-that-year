@@ -7,7 +7,7 @@
 //       不玄幻（神药=真实新药研发获批；彩票概率如实极低）；稀有不等于高贵，文案不贬低普通活法。
 window.GAME_SYNERGY = {
   combos: [
-    { id: "cb_family3", kidAgeMin: 3, kidAgeMax: 6, all: ["bought_house"], stateAll: { spouse: "partnered", kids: "has" }, min: 40, max: 55, text: "周六早上，孩子在客厅地板上搭积木，搭到第三层塌了，又从头来。对方在厨房煎蛋，鸡蛋是昨晚超市买的，一盒 12 个，小票上 18 块 9，够吃四天。你在阳台给那盆薄荷浇完水，把水壶放回窗台原处。早饭三个人吃了二十分钟，煎蛋有点糊，谁也没提。", effects: { relation: 3, health: 1 } },
+    { id: "cb_family3", kidAgeMin: 3, kidAgeMax: 6, all: ["bought_house"], stateAll: { spouse: "partnered", kids: "has" }, min: 40, max: 55, text: "周六早上，孩子在客厅地板上搭积木，搭到第三层塌了，又从头来。对方在厨房煎蛋，鸡蛋是昨晚超市买的，一盒12个，小票上18块9，够吃四天。你在阳台给那盆薄荷浇完水，把水壶放回窗台。早饭三个人吃了二十分钟，煎蛋有点糊。", effects: { relation: 3, health: 1 } },
     { id: "cb_solo_free", stateAll: { spouse: "single" }, stats: [{ k: "freedom", gt: 68 }], min: 40, max: 58, text: "你一个人去看了场午夜场电影，会员票 45，座位随便挑，你坐了正中间。散场时整条街都是刚下班的年轻人，你在路边摊买了份炒粉，15 块，加了个蛋，边走边吃，到家十二点四十。", effects: { freedom: 2, health: 1 } },
     { id: "cb_care_near", all: ["care_self", "near_family"], stateAll: { dad: "alive" }, min: 53, max: 64, text: "父亲半夜胃不舒服，电话打过来，你开车七分钟就到了。急诊抽血、做心电图，折腾到凌晨三点，医生说先留观。你在走廊的自助机上交了 480，自费部分。他看见缴费单，先说的是：把你折腾起来了。你说，没事，我住得近。", effects: { relation: 3, health: -1 } },
     { id: "cb_dink_plan", stateAll: { spouse: "partnered", kids: "none" }, stats: [{ k: "money", gt: 58 }], min: 44, max: 58, text: "你和对方把养老的账认真算了一遍，列了张表：养老金还要交几年、存款够花几年、现在这套小房子的月供还剩多少。算完你们去吃了顿火锅，两个人 178。计划表压在茶几玻璃板下面，压了两年，一直没动过。", effects: { money: 1, freedom: 2 } },
@@ -56,7 +56,7 @@ window.GAME_SYNERGY = {
     { id: "r_rescue", label: "河边救起一个人", clue: "救完人发现鞋掉了一只，母亲把新闻存进手机的人。", min: 28, max: 55, minYear: 2008, chance: 0.002, text: "河边有人落水，你跳下去了。人救上来的时候你才发现自己鞋掉了一只。本地新闻播了四十秒，母亲把那段视频存在手机里，给亲戚挨个看。", effects: { relation: 5, health: -2 }, set: "traj_hero" },
     { id: "r_antique", label: "旧瓷瓶擦不得", clue: "被告知『别擦了，这个擦不得』之后，把房顶修了的人。", min: 35, max: 60, chance: 0.003, text: "清理老柜子时翻出个旧瓷瓶，拿去给懂行的人看了一眼。对方戴上眼镜看了很久，说：别擦了，这个擦不得。后来它拍出去的钱，正好够把老房的房顶修了。", effects: { money: 8 }, set: "traj_antique" },
     // —— v0.11.0 新增：五条轨迹链（各挂一个新结局，立旗事件本身都带代价）——
-    { id: "r_teacher_students",ctx: { mainLine: "teach_work" }, label: "学生回来当同事", clue: "把磨毛了边角的备课本，借给三个后辈传看的人。", min: 44, max: 55, chain: "r_school1", require: "traj_school", chance: 0.03, text: "教了二十多年书，你带过的一届学生里，有三个考回了县里当老师，其中一个就分在你隔壁办公室。期中考试前，三个人抱着教案来问你那道压轴题怎么讲。你把当年的备课本找出来，本子边角都磨毛了，借给他们传看。开学到现在，你自己掏钱给班里印卷子，已经垫了 600 多。", effects: { relation: 4, growth: 2, money: -3, health: -1 }, set: "traj_taoli" },
+    { id: "r_teacher_students",ctx: { mainLine: "teach_work" }, label: "学生回来当同事", clue: "把磨毛了边角的备课本，借给三个后辈传看的人。", min: 44, max: 55, chain: "r_school1", require: "traj_school", chance: 0.03, text: "教了二十多年书，你带过的一届学生里，有三个考回县里当老师，一个就分在你隔壁办公室。期中考试前，三个人抱着教案来问你压轴题怎么讲。你把当年的备课本找出来，边角都磨毛了，借给他们传看。你自己掏钱给班里印卷子，已垫了600多。", effects: { relation: 4, growth: 2, money: -3, health: -1 }, set: "traj_taoli" },
     { id: "r_craft_apprentice",ctx: { mainLine: ["craft_work","factory_work"] }, label: "车间里收徒弟", clue: "徒弟车废了工件，站在旁边没吭声的人。", min: 40, max: 55, any: ["took_over_job", "p20_cnc_retrain"], chance: 0.025, text: "你在机床边站了二十多年。这天车间主任领来个刚满十八岁的年轻人，说跟你学手艺。年轻人手有点抖，第一天就把一个工件车废了，站在那儿不敢说话。你看了看废件，没吭声。",
       choices: [
         { label: "收下。废件的料钱从我这儿出", effects: { money: -2, relation: 3, health: -2, growth: 2 }, set: "traj_craft", echo: "头三个月他出的活你件件复查，慢是慢了点。可你下班时，工具箱头一次有人帮你收拾好了。" },
@@ -74,7 +74,7 @@ window.GAME_SYNERGY = {
         { label: "不接。还是跑短途", effects: { money: 2, freedom: 1 }, echo: "你照旧每天能回家吃饭。就是工资条上那个数，一直没怎么动。" },
       ] },
     // —— v0.11.0 新增：苦味/负面/两难（稀有≠幸运）——
-    { id: "r_scam_big", label: "投资群第五个月", clue: "利息准时到了四个月，第五个月群里全在问同一句话的人。", min: 38, max: 52, minYear: 2012, stats: [{ k: "money", gt: 54 }], chance: 0.008, w: 2, text: "熟人拉你进了一个投资群，说是熟人项目，保本，每月返息。前四个月，利息一分不少打到卡上，你又追加了一笔，前后投进去的，是你存了六年的数。第五个月，群主失联，群里 200 多号人一夜之间全在问同一句话。报警、登记、跑经侦，你跑了七趟，能追回多少，没人敢打包票。", effects: { money: -9, relation: -2, wisdom: 3 } },
+    { id: "r_scam_big", label: "投资群第五个月", clue: "利息准时到了四个月，第五个月群里全在问同一句话的人。", min: 38, max: 52, minYear: 2012, stats: [{ k: "money", gt: 54 }], chance: 0.008, w: 2, text: "熟人拉你进了一个投资群，说是熟人项目，保本，每月返息。前四个月利息一分不少打到卡上，你又追加了一笔，前后投进去的是你存了六年的数。第五个月群主失联，群里200多号人都在问同一句话。报警、登记、跑经侦，你跑了七趟。", effects: { money: -9, relation: -2, wisdom: 3 } },
     { id: "r_industry_overnight",ctx: { mainLine: ["factory_work","fab_work"] }, label: "产品线一夜凉了", clue: "公告栏的名单贴出来，名字在第三行的人。", min: 40, max: 55, any: ["stay_put", "steady_job"], chance: 0.009, w: 2, text: "你干了十几年的这条产品线，一夜之间就凉了。新的技术路线出来，客户的订单全转去了别家。厂里贴出通知：这条线的人，要么转岗降一档工资，要么拿补偿走人。名单贴在公告栏上，你的名字在第三行。",
       choices: [
         { label: "转岗。从头学新产线", effects: { money: -5, growth: 3, health: -1 }, echo: "新产线的活你干得比年轻人慢，笔记却记了三大本。工资条矮了一截，饭还得照吃。" },

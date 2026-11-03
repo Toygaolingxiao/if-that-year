@@ -32,20 +32,45 @@ button.big{width:100%;margin-bottom:14px}
 .delta{color:var(--accent);font-size:13px;margin:6px 0 0;font-family:Menlo,Consolas,monospace}
 .echo{border-left:3px solid var(--accent);background:#F6F3EC;border-radius:0 8px 8px 0;padding:10px 14px;color:#4A463C;font-size:15px}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.seedrow{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap}
+.seedrow{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
 .seedrow input{flex:1;min-width:180px;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;font-family:Menlo,Consolas,monospace}
 .seedrow .ghost{margin-top:0}
-.setblock{border-top:1.5px dashed var(--line);margin-top:22px;padding-top:14px}
-.setlab{font-size:12px;letter-spacing:.18em;color:var(--mut);margin:10px 0 8px;font-weight:700}
+.setblock{border-top:1.5px dashed var(--line);margin-top:24px;padding-top:16px}
+.setlab{font-size:12px;letter-spacing:.18em;color:var(--mut);margin:0 0 8px;font-weight:700}
+.picklab{font-size:12px;color:var(--mut);margin:16px 0 8px;font-weight:600}
+.setlab + .picklab{margin-top:0}
 .segpicks{display:flex;gap:8px;flex-wrap:wrap}
-.segbtn{background:#fff;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:14px;cursor:pointer;color:var(--ink);text-align:left;line-height:1.45}
+.segbtn{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px;cursor:pointer;color:var(--ink);text-align:left;line-height:1.45;min-height:44px}
 .segbtn b{display:block;font-size:14.5px}
 .segbtn small{display:block;color:var(--mut);font-size:12px}
-.segbtn.sel{border-color:var(--accent);background:#EAF0EA;box-shadow:inset 0 0 0 1px var(--accent)}
+.segbtn.sel{border-color:var(--accent);background:var(--accent);color:#fff;box-shadow:inset 0 0 0 1px var(--accent)}
+.segbtn.sel b{color:#fff}
+.segbtn.sel small{color:rgba(255,255,255,.82)}
+.segbtn.sel:active{background:var(--accent)}
+/* 自动推进＝开关形态：全圆角轨道＋圆角滑块，与分段控件 .segbtn 轮廓明显不同 */
+.switchpicks{display:inline-flex;gap:4px;flex-wrap:wrap;background:#EAE5D8;border-radius:999px;padding:4px}
+.switchbtn{border:none;background:transparent;color:var(--mut);border-radius:999px;padding:10px 18px;font-size:14px;cursor:pointer;line-height:1.4;min-height:40px}
+.switchbtn b{font-weight:600}
+.switchbtn.sel{background:var(--accent);color:#fff;box-shadow:0 1px 4px rgba(47,74,60,.25)}
+.switchbtn:active{background:#DED8C8}
+.switchbtn.sel:active{background:var(--accent)}
+/* 路线卡＝可选预览：视觉降权（无左 accent 竖条、无 hover 位移），描述行高 ≥1.7，选中为松绿描边＋浅绿底，不做实底 */
+.choice.routepick{border-left:1px solid var(--line);line-height:1.7}
+.choice.routepick small{line-height:1.7}
+.choice.routepick.sel{border-color:var(--accent);background:#EAF0EA;box-shadow:inset 0 0 0 1px var(--accent)}
+@media (hover:hover){.choice.routepick:hover{transform:none;border-left-color:var(--line);box-shadow:none}.choice.routepick.sel:hover{border-left-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}}
+/* 对局区：每日独占一行；明日预告是纯文本（灰字、无边框无底色，不像按钮） */
+.dailyrow{margin-top:16px}
+.dailyrow .ghost{margin-top:0}
+.tomorrow-note{color:var(--mut);background:none;border:none}
+#setsummary{margin-top:24px}
+/* 行动区：吸底常驻，滚动时够得着；有存档时续玩为全宽主按钮、重开降为 ghost */
+.actions{position:sticky;bottom:0;background:var(--paper);border-top:1px solid var(--line);padding:16px 0 8px;margin-top:24px;display:grid;gap:8px;z-index:5}
+.actions .primary,.actions .ghost{width:100%;margin-top:0}
 /* 出身牌（v0.13.0）：三行九张、每行预选第一张；静态呈现，无翻牌动效；窄屏纵列 */
 .carddeck{margin-top:16px}
 .cardrow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:6px 0 4px}
-.cardpick{background:#fff;border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:13.5px;cursor:pointer;color:var(--ink);text-align:left;line-height:1.55;min-height:44px}
+.cardpick{background:#fff;border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:13.5px;cursor:pointer;color:var(--ink);text-align:left;line-height:1.7;min-height:44px}
 .cardpick b{display:block;font-size:14.5px;margin-bottom:2px}
 .cardpick span{display:block}
 .cardpick small{display:block;color:var(--mut);font-size:12px;margin-top:4px}
@@ -106,7 +131,6 @@ canvas.card-img{max-width:100%;height:auto}
 .hint.ver { text-align: right; margin-bottom: 2px; }
 
 /* v0.7.0：续玩降级、自动推进三态与自动选留痕 */
-.resume-link{display:inline-block;margin:14px 0 2px;padding:7px 13px;font-size:13px}
 .autorow{flex-wrap:wrap;gap:4px 10px}
 .autorow .automode.on{color:var(--accent);font-weight:700}
 .autonote{color:var(--accent);font-size:13px;margin:8px 0 0}

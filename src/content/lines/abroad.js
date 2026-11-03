@@ -5,12 +5,12 @@
 // 未落值（含旧存档）由引擎 settleAbroadDefault 补推断。年代口径：主体 c1978/c2000，c1965 少量，c1955 不进本包。
 window.GAME_PACKS = (window.GAME_PACKS || []).concat([
   // —— 入口拍：去向（22–26 岁，route=abroad） ——
-  { id: "proc_abroad_kind", min: 22, max: 26, procOnly: true, route: "abroad", text: "出去的路不止一条。手里能拿到的机会摆在桌上，不是一个去处：有的地方离家远，住下来难，可住下就是长久的；有的地方近，来回方便；有的地方日子慢；还有的是跟着项目走，钱多，干完就撤。这一回，你往哪边去。",
+  { id: "proc_abroad_kind", min: 22, max: 26, procOnly: true, route: "abroad", text: "能去的地方摆在你面前，不止一个。每个地方脾气不一样，往后要过的日子，也就跟着两样。这一回，你往哪边去。",
     choices: [
-      { label: "去离得远、能长住下来的地方", setState: { abroadKind: "anglo" }, effects: { growth: 3, freedom: 2, money: -2 }, echo: "落地的地方离家很远。住下来的路很长，得一年一年攒。头一件事，是把当地话学利索。" },
-      { label: "去离家近的地方，来回方便", setState: { abroadKind: "eastasia" }, effects: { money: 1, relation: 1, growth: 2 }, echo: "离家近，逢年过节回得去。字大半认得，话还得慢慢学，规矩也得慢慢摸。" },
-      { label: "去日子慢、假多的地方", setState: { abroadKind: "europe" }, effects: { freedom: 3, health: 1, money: -1 }, echo: "那边的日子过得慢，税扣得重，假给得足。当地话难学，急不得。" },
-      { label: "跟着项目走，钱多，干完就回", setState: { abroadKind: "dispatch" }, effects: { money: 4, health: -2, freedom: -1 }, echo: "合同签了几年，住处跟着项目走。钱是多，就是哪儿都住不长，行李不敢全拆开。" },
+      { label: "去远的那个地方，住下就不走了", setState: { abroadKind: "anglo" }, effects: { growth: 3, freedom: 2, money: -2 }, echo: "落地的地方离家很远。住下来的路很长，得一年一年攒。头一件事，是把当地话学利索。" },
+      { label: "去离家近的，想回就回", setState: { abroadKind: "eastasia" }, effects: { money: 1, relation: 1, growth: 2 }, echo: "离家近，逢年过节回得去。字大半认得，话还得慢慢学，规矩也得慢慢摸。" },
+      { label: "去日子慢、假期多的地方", setState: { abroadKind: "europe" }, effects: { freedom: 3, health: 1, money: -1 }, echo: "那边的日子过得慢，税扣得重，假给得足。当地话难学，急不得。" },
+      { label: "跟着项目出去挣钱，干完就回来", setState: { abroadKind: "dispatch" }, effects: { money: 4, health: -2, freedom: -1 }, echo: "合同签了几年，住处跟着项目走。钱是多，就是哪儿都住不长，行李不敢全拆开。" },
     ] },
   // —— 早段（22–34）：落地、当地话、第一份活、身份节点 ——
   { id: "ab37_001", w: 2, min: 22, max: 27, route: "abroad", eraIn: ["c1978", "c2000"], text: "落地那天，箱子摊在出租屋的地板上，半箱子药、一包底料、一件厚外套。窗外黑得早，楼下店都关了。你把被子抖开，先睡了一觉，醒来才想起还没给家里报平安。",
@@ -84,6 +84,6 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
     effects: { money: 1, wisdom: 2 } },
   { id: "ab37_027", w: 2, min: 68, max: 80, route: "abroad", eraIn: ["c1978", "c2000"], text: "在这边住了大半辈子，常去的诊所医生换了第二任，超市的收银员见你就打招呼。你过日子用的词，一半是这边的，一半是家里的，混着说，家里人打电话来，有时还得停下来想想。",
     effects: { wisdom: 3, relation: 1 } },
-  { id: "ab37_028", w: 2, min: 66, max: 78, route: "abroad", eraIn: ["c1978", "c2000"], state: { abroadKind: ["anglo", "eastasia", "europe"] }, text: "这一趟回国，你把行李减到最小：换洗衣服、常吃的药、给老同学带的点心。飞机上你睡得少，想着这趟回去要见的人，名单在心里排了一遍，有两个已经见不着了。落地时天刚亮，你站在出口站了会儿，才往外走。",
+  { id: "ab37_028", w: 2, min: 66, max: 78, route: "abroad", eraIn: ["c1978", "c2000"], state: { abroadKind: ["anglo", "eastasia", "europe"] }, text: "这一趟回国，你把行李减到最小：换洗衣服、常吃的药、给老同学带的点心。飞机上你睡得少，想着要见的人，名单在心里排了一遍，有两个已经见不着了。落地时天刚亮，你在出口站了会儿，往外走。",
     effects: { relation: 2, health: -1 } },
 ]);
