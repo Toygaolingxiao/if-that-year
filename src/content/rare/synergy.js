@@ -7,12 +7,12 @@
 //       不玄幻（神药=真实新药研发获批；彩票概率如实极低）；稀有不等于高贵，文案不贬低普通活法。
 window.GAME_SYNERGY = {
   combos: [
-    { id: "cb_family3", all: ["bought_house"], stateAll: { spouse: "partnered", kids: "has" }, min: 40, max: 55, text: "周六早上，孩子在客厅地板上搭积木，搭到第三层塌了，又从头来。对方在厨房煎蛋，鸡蛋是昨晚超市买的，一盒 12 个，小票上 18 块 9，够吃四天。你在阳台给那盆薄荷浇完水，把水壶放回窗台原处。早饭三个人吃了二十分钟，煎蛋有点糊，谁也没提。", effects: { relation: 3, health: 1 } },
+    { id: "cb_family3", kidAgeMin: 3, kidAgeMax: 6, all: ["bought_house"], stateAll: { spouse: "partnered", kids: "has" }, min: 40, max: 55, text: "周六早上，孩子在客厅地板上搭积木，搭到第三层塌了，又从头来。对方在厨房煎蛋，鸡蛋是昨晚超市买的，一盒 12 个，小票上 18 块 9，够吃四天。你在阳台给那盆薄荷浇完水，把水壶放回窗台原处。早饭三个人吃了二十分钟，煎蛋有点糊，谁也没提。", effects: { relation: 3, health: 1 } },
     { id: "cb_solo_free", stateAll: { spouse: "single" }, stats: [{ k: "freedom", gt: 68 }], min: 40, max: 58, text: "你一个人去看了场午夜场电影，会员票 45，座位随便挑，你坐了正中间。散场时整条街都是刚下班的年轻人，你在路边摊买了份炒粉，15 块，加了个蛋，边走边吃，到家十二点四十。", effects: { freedom: 2, health: 1 } },
     { id: "cb_care_near", all: ["care_self", "near_family"], stateAll: { dad: "alive" }, min: 53, max: 64, text: "父亲半夜胃不舒服，电话打过来，你开车七分钟就到了。急诊抽血、做心电图，折腾到凌晨三点，医生说先留观。你在走廊的自助机上交了 480，自费部分。他看见缴费单，先说的是：把你折腾起来了。你说，没事，我住得近。", effects: { relation: 3, health: -1 } },
     { id: "cb_dink_plan", stateAll: { spouse: "partnered", kids: "none" }, stats: [{ k: "money", gt: 58 }], min: 44, max: 58, text: "你和对方把养老的账认真算了一遍，列了张表：养老金还要交几年、存款够花几年、现在这套小房子的月供还剩多少。算完你们去吃了顿火锅，两个人 178。计划表压在茶几玻璃板下面，压了两年，一直没动过。", effects: { money: 1, freedom: 2 } },
     { id: "cb_old_couple", all: ["retired_full"], stateAll: { spouse: "partnered" }, min: 59, max: 64, text: "退休后第一个长假，你和对方报了个慢团，六天，一个人 4200，全程没赶过景点，中午还回酒店睡午觉。团里另一对老夫妻跟你们拼了四次饭，散团那天互相加了微信，约好明年还走这一条线。", effects: { relation: 2, health: 2, money: -2 } },
-    { id: "cb_sandwich", all: ["care_self"], stateAll: { kids: "has", dad: "alive" }, min: 53, max: 60, minYear: 2013, text: "这一天你两头跑：上午请了半天假，去学校坐最后一排开家长会；下午赶到医院，父亲的复查号是提前一周在手机上抢的，取报告、排队缴费，来回打车 63。晚上回家，你把成绩单和复查单夹进同一个文件夹，放在抽屉第二层。", effects: { relation: 2, health: -2 } },
+    { id: "cb_sandwich", kidAgeMin: 6, kidAgeMax: 15, all: ["care_self"], stateAll: { kids: "has", dad: "alive" }, min: 53, max: 60, minYear: 2013, text: "这一天你两头跑：上午请了半天假，去学校坐最后一排开家长会；下午赶到医院，父亲的复查号是提前一周在手机上抢的，取报告、排队缴费，来回打车 63。晚上回家，你把成绩单和复查单夹进同一个文件夹，放在抽屉第二层。", effects: { relation: 2, health: -2 } },
     { id: "cb_rent_free", all: ["renting", "less_work"], stats: [{ k: "freedom", gt: 63 }], min: 45, max: 60, minYear: 2012, text: "房东在微信上问：续三年就不涨租，续一年要涨 100。你回：先续一年吧。签完你把合同塞进抽屉，抽屉里还有前两年的合同，三份叠在一起，租金那一栏一年比一年高一点。你给阳台那几盆花浇了水，明年住哪，到时候再说。", effects: { freedom: 2, wisdom: 5 } },
     { id: "cb_hop_viral_base", all: ["job_hop", "side_start"], min: 30, max: 45, minYear: 2016, text: "跳槽面试聊到一半，面试官把手机转过来：这个账号也是你做的？那是你下班更新的小账号，粉丝不多，置顶那条有两万多播放。后面又聊了四十分钟，聊的全是它，岗位本身只占了十分钟。临走对方说，账号别停更。", effects: { growth: 2, relation: 1 } },
   ],
@@ -30,14 +30,14 @@ window.GAME_SYNERGY = {
       ] },
     { id: "r_ipo", label: "敲钟那天", clue: "西装衬衫是前一天熨好的，锣声里站着不动的人。", min: 45, max: 60, chain: "r_funding", require: "traj_funded", stats: [{ k: "money", gt: 54 }], chance: 0.05, text: "敲钟那天，你西装里的衬衫是对方前一天熨的。锣声一响，身边的人都在喊，你站在原地，想起了书桌前那张白纸。", effects: { money: 25, growth: 3 }, set: "traj_ipo" },
     // —— 神药轨迹链：study 路线 + 高成长 ——
-    { id: "r_drug1", label: "十年起步的课题", clue: "在实验记录本第一页写下日期，说『那就十年』的人。", min: 30, max: 42, route: "study", stats: [{ k: "growth", gt: 61 }], chance: 0.022, text: "你牵头的课题立项了：一种针对罕见病的药。评审专家说，这条路线很难，十年起步。你说，那就十年。",
+    { id: "r_drug1", ctx: { eduGate: true }, label: "十年起步的课题", clue: "在实验记录本第一页写下日期，说『那就十年』的人。", min: 30, max: 42, route: "study", stats: [{ k: "growth", gt: 61 }], chance: 0.022, text: "你牵头的课题立项了：一种针对罕见病的药。评审专家说，这条路线很难，十年起步。你说，那就十年。",
       choices: [
         { label: "接。十年就十年", effects: { growth: 5, money: -2, health: -2 }, set: "traj_drug1", echo: "实验室的灯，那天亮到很晚。你在实验记录本的第一页写了日期。" },
         { label: "换个容易出成果的题目", effects: { growth: 2, money: 2 }, echo: "新题目稳妥得多。只是有时候路过那间实验室，你会慢下来。" },
       ] },
     { id: "r_drug2", label: "二期数据出来那天", clue: "实验室里先没人说话、然后有人哭了的那天，在场的人。", min: 36, max: 52, chain: "r_drug1", require: "traj_drug1", chance: 0.025, text: "临床二期的数据出来那天，实验室里先是没人说话，然后有人哭了。有效。真的有效。你给家里打电话，只说了一句：今晚早点回，有好消息。", effects: { growth: 5, relation: 2 }, set: "traj_drug2" },
     // —— 校长轨迹链：home 路线，早年分到学校 ——
-    { id: "r_school1", label: "分到县一中", clue: "报到那天，被老校长指着操场说话的人。", min: 23, max: 30, route: "home", chance: 0.05, set: "teach_work", text: "分配的时候，你被分到了县一中当老师。报到那天，老校长指着操场说：这学校比你岁数大，好好干。往后的日子，就围着这所学校转了。",
+    { id: "r_school1", ctx: { entry: true }, label: "考进县一中", clue: "报到那天，被老校长指着操场说话的人。", min: 23, max: 30, route: "home", chance: 0.05, set: "teach_work", text: "县一中招老师，你考上了。报到那天，老校长指着操场说：这学校比你岁数大，好好干。往后的日子，就围着这所学校转了。",
       choices: [
         { label: "留下教书，先把课讲好", effects: { relation: 3, growth: 2 }, set: "traj_school", echo: "你的第一堂课，紧张得粉笔都拿反了。最后一排的男生憋着笑，憋得很辛苦。" },
         { label: "先干着，以后再说调动", effects: { growth: 1 }, echo: "调动的事后来没人再提。课倒是越讲越顺。" },

@@ -106,6 +106,22 @@ function checkEffects(item, at) {
       else if (typeof txt !== "string" || !txt) err(`${at} ${fld}.${fv} 不是非空文本`);
     }
   }
+  // 年代变体（v0.20.1 面板急修）：与 validate-state 同口径核形状。
+  const ERA_VALUES = ["c1955", "c1965", "c1978", "c2000"];
+  for (const fld of ["textEra", "echoEra", "labelEra"]) {
+    if (!item[fld]) continue;
+    for (const [ev, txt] of Object.entries(item[fld])) {
+      if (!ERA_VALUES.includes(ev)) err(`${at} ${fld} 含非法年代键 ${ev}`);
+      else if (typeof txt !== "string" || !txt) err(`${at} ${fld}.${ev} 不是非空文本`);
+    }
+  }
+  // 返聘后复退门与退休年数变体（v0.20.1 W7）：与 validate-state 同口径核形状。
+  if (item.rehireAfterRetire !== undefined && typeof item.rehireAfterRetire !== "boolean") err(`${at} rehireAfterRetire 不是布尔`);
+  if (item.textRetireYears !== undefined) {
+    const ry = item.textRetireYears;
+    if (!ry || typeof ry !== "object" || Array.isArray(ry)) err(`${at} textRetireYears 不是对象`);
+    else for (const k of ["mid", "long"]) if (typeof ry[k] !== "string" || !ry[k]) err(`${at} textRetireYears.${k} 不是非空文本`);
+  }
   for (const c of item.choices || []) checkEffects(c, at);
 }
 for (const [name, arr] of collections) for (const e of arr) checkEffects(e, `${name}:${e.id || "(无 id)"}`);

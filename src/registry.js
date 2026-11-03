@@ -6,6 +6,14 @@
    详细口径见 docs/STATE-MATRIX.md。
    通用门/变体字段（v0.19.0 三相登记，形状在此备案，校验器逐项核对）：
    - kidMin / kidMax（条目级，数字）：孩子年龄下限/上限门，kidAge = 当前年龄 − kidsAt，抽取层 met() 求值。
+   - kidAgeMin / kidAgeMax（条目级，数字，v0.20.1）：孩子真实年龄下限/上限门，kidAgeTrue = 当前年龄 − (kidsBornAt ?? kidsAt)
+     ——出生拍（apply.js BORN_BEATS：p3_046 / lk_born / e55_057）落过出生年按出生年算，没落过回落落定年龄；
+     与 kidMin/kidMax 分工：存量 kidMin/kidMax 锚落定年、标定不动，新挂的阶段文本（高考/家长会/入园/孙辈等）锚出生年。
+     形状核对与 kidMin 同口径：须为数字且 kidAgeMin ≤ kidAgeMax（tools/validate-state.js）。
+   - petMin / petMax（条目级，数字，v0.20.1）：宠物真实年龄下限/上限门，petAge = 当前年龄 − (catAt ?? dogAt)，
+     catAt/dogAt 由 apply.js 在 cat/dog 流转到 home（抱回）时落点；物种按条目自身的 state/stateAll/stateNot/
+     setState/chain 推断（chain p5_043=猫、p11_049=狗），分不清物种的条目两边都查、任一满足即过。
+     形状核对同 kidMin 口径（tools/validate-state.js）。
    - flagAgeWithin（条目级）：{ flag: <已登记里程碑 id>, years: <非负数> }——旗落点后 years 年内才可抽，读引擎 flagAges。
    - textState（条目级）/ echoState（选项级）：{ 域: { 状态值: 文本 } }——呈现时按本局状态选文本，未命中回落 text / echo。
    - ctx.form / ctx.notForm（条目级，v0.20.0 M2 登记）：形态值数组（值域 farm/public/self/flex/employee）——
@@ -14,10 +22,41 @@
      FORM_OF_FLAG 的键）——抽取层 ctxOk 求值：本局主入行旗（work.js mainEntryOf()，R1 最近入行）
      命中才可抽，无主入行旗时不过。治「入行旗只进不出」——旧线终身口吻条目只认本线是当下主线
      时才出。同样是派生量，不进存档；validators 对其形状与值域逐项核对。
+   - ctx.entry（条目级，v0.20.1 W6 登记）：true——纯入行拍防叠门：本局已有主入行旗
+     （work.js mainEntryOf 非空）时不可抽；带明确转行/接管叙事的条目与线内分科条目不声明。
+     v0.20.1 W9 扩展（同键同门，不另立键）：home 路线（route=home 或序章轨道 track=home）
+     在考试链未决窗（22–28 岁，未落 exam_passed/exam_landed/exam_failed）内，纯入行拍
+     同样不可抽——路线主线未定之前不许被其他行当抢先落成；链落定或落空（exam_failed
+     或窗已过）后自动放行。求值在 record.js 的 ctxOk，求值口径以彼处注释为准。
+   - ctx.notMainLine（条目级，v0.20.1 W6 登记）：入行旗 id 数组——当前主线命中任一即拦
+     （医护在行期间的公司口径文本用；值域与 ctx.mainLine 同为 FORM_OF_FLAG 的键）。
+   - ctx.eduGate（条目级，v0.20.1 W6 登记）：true——学历门：须 schooling=school 或已立
+     edu_bridge 旗（夜校/自考桥）；schooling=pre（无序章处境判定的年代）恒过。
+   - ctx.anyCareTarget（条目级，v0.20.1 W8 登记）：true——在护对象门：陪床/等喊号/护工排班类
+     文本须有当下还在的在护对象——父母任一在世且处于父母照护情境（care_self/care_hired/
+     care_rotate 任一事实在账），或伴侣在场（partnered/dating）且有伴侣照护事实
+     （care_hired_spouse 在账）；求值在 record.js ctxOk，与 ctx.entry 同为派生量、不进存档；
+     tools/validate-state.js 核对形状（出现时须为 true）。
    - textForm（条目级）/ echoForm（选项级，v0.20.0 M2 登记）：{ 形态: 文本 }——呈现时按本局形态选文本
      （解析点与 textState 同一机制：views/year.js formText/echoText），未命中回落 textState 变体或原文。
    - labelForm（选项级，v0.20.0 M2 收尾登记）：{ 形态: 文本 }——分岔选项标签的形态变体，解析点 views/year.js
-     labelText（先 spouse 变体、再形态覆盖）；流水账与未选支记录同走此读法，结算 chosenOfFork 按变体集合反查。 */
+     labelText（先 spouse 变体、再形态覆盖）；流水账与未选支记录同走此读法，结算 chosenOfFork 按变体集合反查。
+   - rehireAfterRetire（条目级，布尔，v0.20.1 W7 登记）：true——返聘后复退门：账本里首次
+     workPhase>retired 流转之后真有过 retired→part 返聘边才可抽（求值在 scheduler.js met，
+     事实读法在 work.js hasRehireAfterRetire，只读账本不读 rehire 旧旗）。形状核对在
+     tools/validate-state.js（须为布尔）。
+   - textRetireYears（条目级，v0.20.1 W7 登记）：{ mid: 文本, long: 文本 }——退休年数变体：
+     按 S.retiredAt 算出的退休年数分版（≤2 年原文、3–6 年 mid、>6 年 long），解析点
+     views/year.js retireYearsText，把已解析正文首处「没多久」替换为 mid/long 的时间词；
+     形状核对在 tools/validate-state.js（mid/long 须为非空文本，且条目 text 须真含「没多久」）。
+   - textNoUnit（条目级）/ echoNoUnit（选项级，v0.20.1 W2 登记、W7 扩至分岔）：不点名单位
+     变体——本局无当前单位事实（work.js noCurrentUnit）时优先于 textForm/textState，
+     解析点 views/year.js formText/echoText（进程拍另有 work.js applyRetireVariant 通道）。
+   - textEra（条目级）/ echoEra / labelEra（选项级，v0.20.1 面板急修登记）：{ 年代id: 文本 }——
+     年代变体。年代不是状态域（S.era 独立于 S.state，textState 的键装不下年代），故同形另立：
+     解析点 views/year.js eraVariant（formText/echoText/labelText 各叠一层，优先级
+     无单位 > 年代 > 形态 > 状态），未声明本年代时回落原文。键值域 = 四个年代 id
+     （c1955/c1965/c1978/c2000），tools/validate-state.js 与 validate-storylet.js 逐项核形状。 */
 /* 拆分说明（v0.20.0）：version 与 domains 已移至 src/world/state.js（须在本文件之前加载）；
    本文件只登记里程碑（milestones），正文与拆分前一字未动。 */
 window.GAME_REGISTRY.milestones = {
@@ -49,8 +88,11 @@ window.GAME_REGISTRY.milestones = {
   },
   "back_home_stay": {
    "setters": [
-    "p11_040"
-   ]
+    "p11_040",
+    "ab37_023",
+    "ab37_024"
+   ],
+   "note": "回老家落脚（v0.20.1 面板急修补）：ab37_023 派遣项目结束选「回了」与 ab37_024 晚年选「回去在老家过」同立此旗，居所轨迹 residenceTrail 据此把终点写成 home，与 p11_040 同一写法"
   },
   "badminton_captain": {
    "setters": [
@@ -86,6 +128,12 @@ window.GAME_REGISTRY.milestones = {
     "p18_049"
    ]
   },
+  "huiqian_chosen": {
+   "setters": [
+    "p30_003"
+   ],
+   "note": "拆迁回迁线（v0.20.1 W5）：p30_003 选回迁选项立旗，p30_020 回迁房交钥匙以此为 require 门"
+  },
   "bought_renzheng": {
    "setters": [
     "e65_009",
@@ -118,15 +166,21 @@ window.GAME_REGISTRY.milestones = {
     "p17_052",
     "p21_016",
     "p21_021",
-    "p21_055",
-    "p24_006",
-    "p24_024",
-    "p25_009",
     "proc_dad_care",
     "proc_dad_hosp",
     "proc_mom_care",
     "proc_mom_hosp"
-   ]
+   ],
+   "note": "请人照护·父母（v0.20.1 拆分）：自本轮起只由父母照护的 set 点立旗，结算父母槽读它不会再读错人；伴侣/自照护的请人点改立 care_hired_spouse"
+  },
+  "care_hired_spouse": {
+   "setters": [
+    "p21_055",
+    "p24_006",
+    "p24_024",
+    "p25_009"
+   ],
+   "note": "请人照护·伴侣与自照护（v0.20.1 新旗）：另一半住院/出院请人（p24_006、p24_024、p25_009）与孩子给玩家请住家保姆（p21_055）的 set 点；与父母照护的 care_hired 分家，父母槽不读本旗"
   },
   "care_rotate": {
    "setters": [
@@ -143,7 +197,9 @@ window.GAME_REGISTRY.milestones = {
     "p24_006",
     "p24_042",
     "proc_dad_care",
-    "proc_mom_care"
+    "proc_dad_hosp",
+    "proc_mom_care",
+    "proc_mom_hosp"
    ]
   },
   "care_ss_gap": {
@@ -249,8 +305,27 @@ window.GAME_REGISTRY.milestones = {
   },
   "exam_landed": {
    "setters": [
+    "p16_072"
+   ],
+   "note": "体制内上岸落点（v0.20.1 W6 改链）：面试（p16_005）只落 exam_passed，录取（p16_071）→报到（p16_072）链尾才落本旗，后续体制内在行文本以此为据"
+  },
+  "exam_passed": {
+   "setters": [
     "p16_005"
-   ]
+   ],
+   "note": "考试线面试通过（v0.20.1 W6 新旗）：p16_005 面试拍的通过选项立旗，录取拍 p16_071 以 require+chain 承接"
+  },
+  "exam_failed": {
+   "setters": [
+    "p16_007"
+   ],
+   "note": "考试线明确落空（v0.20.1 W9 新旗）：p16_007 第二年再考仍差一点的选项立旗；与 exam_retry（单次未中、仍可再试）分工——本旗只在再试也落空时落下。消费者：record.js 的路线未决门（落空后放行其他行当入行拍）、备考类通用文本的 forbid"
+  },
+  "edu_bridge": {
+   "setters": [
+    "p16_073"
+   ],
+   "note": "学历桥（v0.20.1 W6 新旗）：schooling=never/left 的人 22 岁选 study 后先走夜校/自考桥（p16_073）立旗，大学/专业/课题类文本以 ctx.eduGate 认本旗或 schooling=school"
   },
   "exam_retry": {
    "setters": [
@@ -416,6 +491,12 @@ window.GAME_REGISTRY.milestones = {
    ],
    "note": "出身牌钩子（v0.13.0）：setter 为牌 id，消费事件 pack33"
   },
+  "only_child": {
+   "setters": [
+    "cf_11"
+   ],
+   "note": "出身牌钩子（v0.20.1 W5）：cf_11「家里就你一个」立旗，兄弟姐妹类文本以 forbid 排除独生出身"
+  },
   "hook_sporty": {
    "setters": [
     "ct_01"
@@ -506,6 +587,12 @@ window.GAME_REGISTRY.milestones = {
     "fork38"
    ],
    "note": "立约·再等等（v0.17.0）：悬账之约，年度流 cov_wait_flow，到期点为 45 岁分岔（fork45 前缀行）与 e_kid_settle/final 的既有落定路"
+  },
+  "cov_solo_done": {
+   "setters": [
+    "cov_solo_due"
+   ],
+   "note": "立约单身对账（v0.20.1）：45 岁无伴侣时 cov_solo_due 一个人把约对完立此旗；结算对账行与没办完槽读它给单身版本。W8 补修：选「收了这份约」的选项另带 setState kids→none（边载体已登记），约与孩子一并结账；选「约先对到这儿」不落定，kids 仍走 e_kid_settle/final 单身收养版"
   },
   "mark_deskmate": {
    "setters": [
@@ -771,6 +858,12 @@ window.GAME_REGISTRY.milestones = {
    ],
    "note": "首次进入 retired 的落点旗（v0.19.0 审计急修）：只记首次全退年龄供 flagAgeWithin 读（如 e_retire_firstmonth 的两年窗）；与 retired_full 分工——retired_full 仍为 fork58 专属证据旗，生产者不变"
   },
+  "retire_final_said": {
+   "setters": [
+    "e_retire_firstmonth"
+   ],
+   "note": "退休落定已当众说过（v0.20.1 W2，退休单一事实源之一）：首次全退落定起立、一局只认第一次。数据层 setter 为 e_retire_firstmonth（落定后两年窗内呈现即立）；引擎侧由 work.js 的 syncRetireFinalSaid 在账本首次出现 workPhase>retired 流转时同步立旗并按流转年龄记 flagAges——落定载体（proc_retire_node/full/auto 的 set 位已被 retired_begun 占用、fork58 已被 retired_full 占用）无空位可再立一旗，故以引擎同步补齐，口径与 retired_begun 的首次落点一致。消费者：proc_retire_full 的再退变体选择（workPhaseDue 按账本判）、p14_010 的 require、规划类文本（p10_065 等）的 forbid；呈现任何落定文本前先查此旗"
+  },
   "run_marathon": {
    "setters": [
     "p10_010"
@@ -986,6 +1079,13 @@ window.GAME_REGISTRY.milestones = {
    "setters": [
     "p11_042"
    ]
+  },
+  "rel_strained": {
+   "setters": [
+    "p3_007",
+    "p13_016"
+   ],
+   "note": "关系紧张事实（v0.20.1 W5 立，W8 收紧）：只认「吵完没收尾」的留痕——p3_007 冷战一晚无和好收尾、p13_016 仅「各管各的」选项（立规矩和好的选项不立）。吵完和好/误会查清的事件不立此旗：c_partner（对方先递热水、日子续上）、p3_020（日期两边都记错、查清即收尾）已摘。p27_001 离婚以前情门 any[two_cities, rel_strained] + 当前关系值门（stats relation<70）双认"
   },
   "unit_team": {
    "setters": [

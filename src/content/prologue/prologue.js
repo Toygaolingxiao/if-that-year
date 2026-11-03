@@ -216,10 +216,12 @@
     if (!act) return null;
     if (P.presented !== P.idx) {
       P.presented = P.idx;
-      if (act.set) S.flags[act.set] = true;
-      if (act.mark) S.marks.push({ id: act.mark, age: act.age });
+      // never 变体（v0.20.1 W6）：没进过校门的人，7 岁那拍不落同桌记号（mark_deskmate 的影子回响写的是开学事实，落了会自相矛盾）；12 岁那拍仍路过校门口，老梧桐记号照落。
+      const neverAlt = P.situation === "never" && (act.id === "pr_child1" || act.id === "pr_child4");
+      if (act.set && !(neverAlt && act.id === "pr_child1")) S.flags[act.set] = true;
+      if (act.mark && !(neverAlt && act.id === "pr_child1")) S.marks.push({ id: act.mark, age: act.age });
       P.pendingState = act.setStateBySit ? (act.setStateBySit[P.situation] || act.setState || null) : (act.setState || null);
-      S.log.push(`${act.age} 岁 · ${act.log}`);
+      S.log.push(`${act.age} 岁 · ${neverAlt && act.id === "pr_child1" ? "开学那天，你没去" : act.log}`);
       const C = cards();
       if (act.id === "pr_origin") {
         const open = ORIGIN_OPEN[Math.floor(prng(S) * ORIGIN_OPEN.length)];
@@ -240,6 +242,20 @@
         const era = P.eraCard && C && C.byId[P.eraCard] ? C.byId[P.eraCard].text : "";
         P.curText = era ? act.text + "\n" + era : act.text;
         P.curChoices = act.choices || null;
+      } else if (act.id === "pr_child1" && P.situation === "never") {
+        // never 变体（v0.20.1 W6）：7 岁没进校门，与 8 岁专属拍（pr_never1「没进过校门」）对齐
+        P.curText = "开学那天，你没去。家里的事多，没人送你，你自己也知道，这个门这一回进不去了。你站在村口，看背书包的孩子往学校那边走，有个跟你一般大的，书包带子滑下来，又自己拽了上去。你看了一会儿，转身回家帮着干活去了。";
+        P.curChoices = [
+          { label: "把这事记在心里，想着以后再说", effects: { growth: 1 }, echo: "那天晚上，你把家里账本上的字挨个认了一遍，认出了三个。" },
+          { label: "跟家里提了一回，被说回来", effects: { relation: 1 }, echo: "大人说，先把眼前的日子过好。你没再提，可也没忘。" },
+        ];
+      } else if (act.id === "pr_child4" && P.situation === "never") {
+        // never 变体（v0.20.1 W6）：12 岁没有「小学毕业」这回事，写路过校门口的一拍
+        P.curText = "跟你一般大的孩子小学毕业了。毕业照在校门口拍，梧桐树底下站了两排人，你路过的时候看了一眼。你没在里头，你那天是来镇上送东西的，扁担还压在肩上。修鞋摊的大爷倒是还在老地方，见你过来，招手让你坐下歇会儿。";
+        P.curChoices = [
+          { label: "在树底下站了一会儿，才挑起担子走", effects: { relation: 1 }, echo: "照片洗出来贴在学校墙上，你后来路过，还能认出里头几张脸。" },
+          { label: "你更惦记修鞋摊的大爷，问他还来不来", effects: { wisdom: 1 }, echo: "大爷说，来，摊子在哪我在哪。这话你记了很多年。" },
+        ];
       } else {
         let t = act.text;
         if (act.id === "pr_child2" && P.leftBehind) t = "放学路上有一条河沟，水浅的时候能蹚过去。你和几个孩子在桥洞底下摸螺蛳，裤腿湿到膝盖，回家挨了爷爷两句，也没耽误第二天再去。";

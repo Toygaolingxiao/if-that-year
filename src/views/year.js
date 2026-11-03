@@ -47,13 +47,51 @@
     return map[f] != null ? map[f] : fallback;
   }
 
-  function echoText(c) { return formVariant(c && c.echoForm, stateVariant(c && c.echoState, (c && c.echo) || "")); }
+  // 年代变体（v0.20.1 面板急修）：textEra/echoEra/labelEra 形状 { 年代id: 文本 }——年代不是状态域
+  // （S.era 独立于 S.state，textState 的键只能是注册域，装不下年代），故与 textState/textForm 同形另立一层：
+  // 按本局 S.era 取变体，未声明该年代或未声明变体时回落下一层原文。优先级：无单位变体 > 年代 > 形态 > 状态。
+  function eraVariant(map, fallback) {
+    if (!map) return fallback;
+    const v = map[IFY.S && IFY.S.era];
+    return v != null ? v : fallback;
+  }
+
+  function echoText(c) {
+    // 无当前单位变体（v0.20.1 W7 补 W2 遗留）：选项声明 echoNoUnit 且本局无当前单位事实
+    // （work.js noCurrentUnit：买断离厂后无新入行/返聘事实）时优先于形态/状态变体——
+    // fork58 选「退」的回响靠它（分岔没有进程拍的 applyRetireVariant 通道）。
+    if (c && c.echoNoUnit && typeof IFY.noCurrentUnit === "function" && IFY.noCurrentUnit()) return c.echoNoUnit;
+    return eraVariant(c && c.echoEra, formVariant(c && c.echoForm, stateVariant(c && c.echoState, (c && c.echo) || "")));
+  }
 
   // 选项标签形态变体（v0.20.0 M2 收尾）：labelForm 形状同 echoForm——先按 spouse 变体取标签，
   // 再按本局形态覆盖；无变体回落 spouse 口径。分岔按钮、流水账、未选支记录共用此读法，结算 chosenOfFork 按变体集合反查。
-  function labelText(c) { return formVariant(c && c.labelForm, IFY.spouseText(c, "label")); }
+  // 年代变体（labelEra）叠在形态之上，口径同 echoText。
+  function labelText(c) { return eraVariant(c && c.labelEra, formVariant(c && c.labelForm, IFY.spouseText(c, "label"))); }
 
-  function formText(item) { return formVariant(item && item.textForm, stateVariant(item && item.textState, (item && item.text) || "")); }
+  // 退休年数变体（v0.20.1 W7）：条目声明 textRetireYears { mid, long } 时，按 S.retiredAt
+  // 算出的退休年数分版替换正文首处「没多久」——≤2 年原文（没多久）、3–6 年 mid（几年）、
+  // >6 年 long（好些年）。retiredAt 缺失（旧存档）或年数 ≤2 一律回落原文。形状在
+  // tools/validate-state.js 登记核对（mid/long 须非空且原文须真含「没多久」，防静默失效）。
+  function retireYearsText(item, text) {
+    const map = item && item.textRetireYears;
+    if (!map || typeof text !== "string") return text;
+    const ra = IFY.S && IFY.S.retiredAt;
+    if (typeof ra !== "number") return text;
+    const yrs = IFY.S.age - ra;
+    const rep = yrs <= 2 ? null : yrs <= 6 ? map.mid : map.long;
+    if (!rep) return text;
+    return text.replace("没多久", rep);
+  }
+
+  function formText(item) {
+    // 无当前单位变体（v0.20.1 W7）：条目声明 textNoUnit 且本局无当前单位事实时优先于
+    // 形态/状态变体（fork58 开场靠它；进程拍另有 work.js applyRetireVariant 通道，口径一致）。
+    // 例外：条目带 textAgain 且本局已全退过时，再退变体优先（与 applyRetireVariant 同序）。
+    if (item && item.textNoUnit && typeof IFY.noCurrentUnit === "function" && IFY.noCurrentUnit()
+        && !(item.textAgain && typeof IFY.hasRetiredBefore === "function" && IFY.hasRetiredBefore())) return retireYearsText(item, item.textNoUnit);
+    return retireYearsText(item, eraVariant(item && item.textEra, formVariant(item && item.textForm, stateVariant(item && item.textState, (item && item.text) || ""))));
+  }
 
   function procText(item) { return formText(item); }
 
@@ -179,7 +217,7 @@
     const etext = procText(e); // v0.20.0 M2：呈现走变体解析（textState/textForm），与 sim 记录口径一致
     IFY.S.log.push(`${IFY.S.age} 岁 · ${etext}`);
     IFY.app().innerHTML = `<section class="card">${IFY.head()}<p class="body">${IFY.esc(etext)}</p>${IFY.deltaLine()}
-      ${e.choices ? `<div class="choices">${e.choices.map((c, i) => `<button class="choice" data-i="${i}">${IFY.esc(c.label)}</button>`).join("")}</div><div id="echo"></div>`
+      ${e.choices ? `<div class="choices">${e.choices.map((c, i) => `<button class="choice" data-i="${i}">${IFY.esc(labelText(c))}</button>`).join("")}</div><div id="echo"></div>`
                   : `<button class="primary" id="cont">过一年</button>`}</section>`;
     IFY.finishRender();
     if (!e.choices) { IFY.save(); IFY.el("cont").addEventListener("click", IFY.advance); IFY.armAuto(etext); return; }
@@ -189,9 +227,9 @@
       if (c.set) IFY.S.flags[c.set] = true;
       IFY.applyState(c);
       IFY.rec("event", e.id, { choice: c.label, set: c.set || null, fx: IFY.S.lastDelta });
-      if (autoSelected) IFY.S.log.push(`${IFY.S.age} 岁 · 自动选：${c.label}`);
+      if (autoSelected) IFY.S.log.push(`${IFY.S.age} 岁 · 自动选：${labelText(c)}`);
       document.querySelector(".choices").remove();
-      IFY.el("echo").innerHTML = `${IFY.deltaLine()}${autoSelected ? `<p class="autonote">自动推进 · 已选「${IFY.esc(c.label)}」</p>` : `<p class="pickednote">已选「${IFY.esc(c.label)}」</p>`}<p class="echo">${IFY.esc(echoText(c))}</p><button class="primary" id="cont">过一年</button>`;
+      IFY.el("echo").innerHTML = `${IFY.deltaLine()}${autoSelected ? `<p class="autonote">自动推进 · 已选「${IFY.esc(labelText(c))}」</p>` : `<p class="pickednote">已选「${IFY.esc(labelText(c))}」</p>`}<p class="echo">${IFY.esc(echoText(c))}</p><button class="primary" id="cont">过一年</button>`;
       IFY.save(); IFY.el("cont").addEventListener("click", IFY.advance);
       if (autoSelected) IFY.armAuto(echoText(c) || c.label, IFY.advance, "advance");
     };
@@ -210,6 +248,6 @@
       IFY.autoPhase2 = setTimeout(() => { IFY.autoPhase2 = null; chooseEventChoice(e.choices[idx], true); }, 400);
     }, "choice");
   }
-  Object.assign(IFY, { renderRare, stateVariant, formVariant, formText, echoText, labelText, procText, renderFork, renderForkEcho, renderCrisis,
+  Object.assign(IFY, { renderRare, stateVariant, formVariant, eraVariant, formText, echoText, labelText, procText, renderFork, renderForkEcho, renderCrisis,
     renderEventYear });
 })(window.IFY);

@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.20.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.20.1 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -123,6 +123,8 @@ window.IFY = window.IFY || {};
       marks: [], covenant: null, prologue: null, flatCarry: null, flatYears: 0,
       // v0.18.0 内核一期：结构化账本 ledger、父母进程 parents、dating 起点 datingSince 与推迟计数 datingDefers、旗标落点年龄 flagAges、子女落点 kidsAt
       ledger: [], parents: null, datingSince: null, datingDefers: 0, flagAges: {}, kidsAt: null,
+      // v0.20.1：子女出生年 kidsBornAt（出生拍首次呈现时由 apply.js 落点，缺失时 kidAge 回落 kidsAt）、宠物抱回年 catAt/dogAt（cat/dog 流转到 home 时落点）
+      kidsBornAt: null, catAt: null, dogAt: null,
       // v0.19.0：退休相位运行态 retirePlan（{form, nodeAge}，50 岁后按活计形态定一次）、part 落点 partAt/partYears、退休落点 retiredAt、节点推迟计数 retireDefers
       retirePlan: null, partAt: null, partYears: null, retiredAt: null, retireDefers: 0,
       autoMode: DEFAULT_AUTO_MODE, speed: "mid", // 推进设定在本局的副本；权威来源是 localStorage 的 ify-prefs
@@ -359,18 +361,16 @@ window.IFY = window.IFY || {};
       <section class="card">
         <h1 id="starttitle">22 岁，宿舍要退了。</h1>
         <div id="intro-old">
-        <p>行李收好，站在宿舍门口。往后的路要自己选。一局大约十分钟。走哪一代人的路，下面能自己定。</p>
-        <p>选一条路开始。其他的路也不会消失——它们会变成你的「另一条路」，在你 30、40、50 岁的时候，远远地看你一眼。</p>
+        <p>选一个年代，从二十二岁活到老。没选的那条路，会在往后的人生里远远看着你。</p>
         </div>
         <div id="intro-pro" hidden>
-        <p>这一生从小时候讲起。先选年代——在哪儿长大、家里什么样，不是你挑的，是发到你手里的。童年、少年一路走过来，16 岁分一次道，22 岁再自己选往后的路。一局大约十分钟。</p>
-        <p>没选的那些路也不会消失。它们会变成你的「另一条路」，在你 30、40、50 岁的时候，远远地看你一眼。</p>
+        <p>选一个年代，从小时候活到老。没选的那条路，会在往后的人生里远远看着你。</p>
         </div>
         ${CARDS_ON ? `<div class="carddeck" id="carddeck">${deckHtml()}</div>` : ""}
         <div class="choices" id="routechoices">${D.routes.map((r, i) => `<button class="choice" data-i="${i}"><b>${esc(r.name)}</b><small>${esc(r.desc)}</small></button>`).join("")}</div>
         <div id="prostart" hidden>
           <button class="primary" id="prologuego">从童年开始这一生</button>
-          <p class="hint">先过完小时候。家里什么样、能不能顺顺当当上学，是发到手里的，换种子才是换一局——没有重抽。</p>
+          <p class="hint">先过完小时候。家里什么样是发到手里的，没有重抽。</p>
         </div>
         ${saved ? `<button class="ghost resume-link" id="resume">继续上次的人生（${saved.age} 岁 · ${esc(savedLabel)}）</button>` : ""}
         <div class="setblock">
@@ -396,7 +396,7 @@ window.IFY = window.IFY || {};
         ${sLine ? `<p class="hint">${sLine}</p>` : ""}
         ${lLine ? `<p class="hint">${lLine}</p>` : ""}
         <p class="hint">明天一局：${tomDaily.era.label} · ${tomDaily.era.id === PROLOGUE_ERA ? "从小时候开始" : esc(tomDaily.route.name)}。</p>
-        <p class="hint ver">v0.20.0</p>
+        <p class="hint ver">v0.20.1</p>
         <p class="hint">不填随机。填了，运气定下来，跟朋友比同一局就用它。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam ? "，年代也按对方那局选好了" : ""}${cardsParam ? "，出身牌也按对方选过的对齐了" : ""}，点任意一条路就开始同一局。` : ""}</p>      </section>`;
     el("liveslink").addEventListener("click", () => { ANA.track("lives_view", {}); IFY.renderLives(); });
     if (saved) el("resume").addEventListener("click", () => {
@@ -424,6 +424,8 @@ window.IFY = window.IFY || {};
       if (!("parents" in IFY.S)) IFY.S.parents = null;
       if (!("datingSince" in IFY.S)) IFY.S.datingSince = IFY.S.state && IFY.S.state.spouse === "dating" ? Math.max(START_AGE, IFY.S.age - 3) : null;
       IFY.S.datingDefers = IFY.S.datingDefers || 0; IFY.S.flagAges = IFY.S.flagAges || {}; if (!("kidsAt" in IFY.S)) IFY.S.kidsAt = null;
+      // v0.20.1 回填：旧存档无出生年/抱回年——三字段补 null；kidsBornAt 为 null 时 kidAge 口径回落 kidsAt（scheduler.js 单一口径），catAt/dogAt 为 null 时宠物年龄门不过（旧档宠物岁数无从推断，不猜）
+      if (!("kidsBornAt" in IFY.S)) IFY.S.kidsBornAt = null; if (!("catAt" in IFY.S)) IFY.S.catAt = null; if (!("dogAt" in IFY.S)) IFY.S.dogAt = null;
       // v0.19.0 回填：旧存档无退休运行态——节点计划为空（step 时按当前年龄与活计形态惰性生成），abroadKind/workPhase 缺域已由上方 initialState 补齐（出国线由 settleAbroadDefault 补推断）
       if (!("retirePlan" in IFY.S)) IFY.S.retirePlan = null; if (!("partAt" in IFY.S)) IFY.S.partAt = null; if (!("partYears" in IFY.S)) IFY.S.partYears = null; if (!("retiredAt" in IFY.S)) IFY.S.retiredAt = null; IFY.S.retireDefers = IFY.S.retireDefers || 0;
       IFY.S.autoMode = IFY.prefs.mode; IFY.S.speed = IFY.prefs.speed;
@@ -678,7 +680,8 @@ window.IFY = window.IFY || {};
     if (akd) { const ait = D.events.find((e) => e.id === akd.item); if (ait) { IFY.renderProcItem(ait); return IFY.mountStream(); } }
     const wpd = IFY.workPhaseDue();
     if (wpd) { const wit = D.events.find((e) => e.id === wpd.item); if (wit) { IFY.renderProcItem(wit); return IFY.mountStream(); } }
-    const fork = D.forks.find((f) => f.age === IFY.S.age && (!f.route || f.route === IFY.S.route.id) && (!f.forbidRoute || f.forbidRoute !== IFY.S.route.id) && (!f.forbid || !IFY.S.flags[f.forbid]) && (!f.anyParentAlive || IFY.S.state.dad === "alive" || IFY.S.state.mom === "alive") && (!f.state || IFY.met(f))); // v0.18.0 审计急修：分岔门接线补齐 route/forbidRoute/forbid/anyParentAlive（fork28 镜像、fork52 双亲已不在不出）；原 v0.16.0 口径只认 state 门 // v0.16.0：分岔可带状态门（如 fork45 只给 kids 未定且有伴侣的人）；无门分岔行为不变 // v0.20.0 M2 收尾：fork33 的 bought_house 门由分岔级改选项级（已购房者不再整岔口消失，只隐买/租两项，近家人项保留）
+    let fork = D.forks.find((f) => f.age === IFY.S.age && (!f.route || f.route === IFY.S.route.id) && (!f.forbidRoute || f.forbidRoute !== IFY.S.route.id) && (!f.forbid || !IFY.S.flags[f.forbid]) && (!f.anyParentAlive || IFY.S.state.dad === "alive" || IFY.S.state.mom === "alive") && (!f.state || IFY.met(f))); // v0.18.0 审计急修：分岔门接线补齐 route/forbidRoute/forbid/anyParentAlive（fork28 镜像、fork52 双亲已不在不出）；原 v0.16.0 口径只认 state 门 // v0.16.0：分岔可带状态门（如 fork45 只给 kids 未定且有伴侣的人）；无门分岔行为不变 // v0.20.0 M2 收尾：fork33 的 bought_house 门由分岔级改选项级（已购房者不再整岔口消失，只隐买/租两项，近家人项保留）
+    if (fork && fork.age === 58 && typeof IFY.retireDecidedThisYear === "function" && IFY.retireDecidedThisYear()) fork = null; // v0.20.1 W2 互锁：退休进程拍已在当年落过决定（呈现过 node/full/auto 或 workPhase 当年已流转），58 岁分岔当年不再以未退口吻重问（同一年不许双决）；已全退者另由 fork58 自带 workPhase 状态门挡下
     if (fork) { IFY.renderFork(fork); return IFY.mountStream(); }
     if (IFY.S.age in GLIMPSE_AGES) { IFY.renderGlimpse(GLIMPSE_AGES[IFY.S.age]); return IFY.mountStream(); }
     // 内容时槽五层仲裁（v0.20.0 M2，src/scheduler.js 的 planYear）：L1 危机抢占 → L2 稀有/链推进

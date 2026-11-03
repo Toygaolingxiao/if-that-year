@@ -4,9 +4,31 @@
   // ---------- 影子瞥视：先给标题，点开才看全文；不看的计数从此是真的 ----------
   function shadowRoute() { const first = IFY.S.unchosen.find((u) => u.kind === "route"); return IFY.D.shadows[first.id]; }
 
+  // 阶段标注（v0.20.1 W5）：下列细节按内容认定为「退休/晚年」阶段文本——瞥视发生在 30/40/50 岁，
+  // 目标人生还没走到退休，带退休/晚年语境的细节不出；结算揭晓走 shadowFinalText，不经本函数，照常出现。
+  // 认定清单逐条见 ~/workspace/sim-v0201/logs/w5-presuppose.md 第六部分。
+  const SHADOW_LATE_DETAILS = new Set([
+    "退休前把工位上的书分给了年轻人，自己只带走一个旧水杯。",
+    "社保和公积金都办完了，第一次在工作日上午去公园坐了很久。",
+    "退休后在院里支了张小桌，老同事隔三差五来下棋喝茶。",
+    "退休后把公寓卖了小一号，离华人超市近，买豆腐方便些。",
+    "退休那学期把教案留给了年轻教师，书架空出一大半。",
+    "退休后又背起包走了趟短途，回来把票根压在书桌玻璃下。",
+    "在异乡住了大半辈子，老了常去的那家诊所医生都换了两任。",
+    "办公室窗外有棵银杏，秋天给学生讲最后一课。",
+  ]);
+
   function shadowStageText(stage) {
-    const variants = shadowRoute().stages[stage];
-    return variants[Math.floor(IFY.rng() * variants.length)];
+    const all = shadowRoute().stages[stage];
+    // 年代过滤（v0.20.1 W4）：瞥视目标年份=影子人生所处的日历年（出生年+当前年龄，与 scheduler 公历门口径一致）。
+    // 目标年份 <2000 时剔除带具体金额的细节（如「转了两千」「存下五百块」——1980 年代月工资不足百元，这类数额不成立）；
+    // 剔完为空则回退全池，保证瞥视永远有细节可看。
+    const shadowYear = (IFY.S.birthYear || 1978) + IFY.S.age;
+    const variants = shadowYear < 2000 ? (all.filter((t) => !/两千|五百块/.test(t)).length ? all.filter((t) => !/两千|五百块/.test(t)) : all) : all;
+    // 阶段过滤（v0.20.1 W5）：剔除已标注的退休/晚年细节；剔完为空则回退上一级池。
+    const stageOk = variants.filter((t) => !SHADOW_LATE_DETAILS.has(t));
+    const pool = stageOk.length ? stageOk : variants;
+    return pool[Math.floor(IFY.rng() * pool.length)];
   }
 
   // 影子代价三选一（v0.10.0）：按种子+路线名哈希定值，同一局内结算页与分享卡取同一行；存量字符串原样返回。
@@ -54,8 +76,10 @@
     IFY.S.flatCarry = null; // 瞥视年不是平年：挂起的平年只留在流水账里
     const sh = shadowRoute();
     const text = shadowStageText(stage); // 先抽定，点不点开都是这一条（但只有点开才显示）
+    const firstLook = (IFY.S.glimpsesSeen + IFY.S.glimpsesSkipped) === 0; // v0.20.1 第九项：影子机制的说明不在开局讲，挪到第一次瞥视当口说（只说这一次）
     IFY.app().innerHTML = `<section class="card glimpse">${IFY.head()}
       <h2>${IFY.S.age} 岁 · 另一条路上的你</h2>
+      ${firstLook ? `<p class="body">这就是你 22 岁那年没选的那条路。它过得怎么样，你只能远远看一眼——三十岁、四十岁、五十岁，各来一次。</p>` : ""}
       <p class="teaser">${IFY.esc(sh.name)}，今年：${IFY.esc(sh.teaser[stage])}</p>
       <p class="hint">细节只给你看一眼。看，还是不看，你自己定——不看的那几次，结算时会记着。</p>
       <div class="row"><button class="primary" id="look">看细节</button><button class="ghost" id="skip">不看，继续过日子</button></div>

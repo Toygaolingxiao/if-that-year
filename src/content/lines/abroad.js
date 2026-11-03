@@ -56,7 +56,7 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
     effects: { relation: 3, money: -1 } },
   { id: "ab37_018", w: 2, min: 38, max: 50, route: "abroad", eraIn: ["c1978", "c2000"], text: "这些年活换了几份，住处搬了四回，箱子越搬越少。在这边认识的人，来来去去，有的回了国，有的去了别的城市。你过生日那天，收到七八条消息，人一个没在跟前。你下楼买了块蛋糕，自己吃了两块。",
     effects: { freedom: 1, wisdom: 2 } },
-  { id: "ab37_019", w: 2, min: 36, max: 48, route: "abroad", eraIn: ["c1978", "c2000"], state: { kids: "has" }, text: "孩子到了上学的年纪，这边的学校怎么进、学什么，你和另一半打听了半个月。名单贴出来那天，你在人群里踮着脚找名字，找着了，回家的路上买了个新书包，孩子背着不肯摘。",
+  { id: "ab37_019", kidAgeMin: 5, kidAgeMax: 7, w: 2, min: 36, max: 50, route: "abroad", eraIn: ["c1978", "c2000"], state: { kids: "has" }, text: "孩子到了上学的年纪，这边的学校怎么进、学什么，你和另一半打听了半个月。名单贴出来那天，你在人群里踮着脚找名字，找着了，回家的路上买了个新书包，孩子背着不肯摘。",
     effects: { relation: 2, money: -2 } },
   { id: "ab37_020", w: 2, min: 45, max: 55, route: "abroad", eraIn: ["c1978", "c2000"], text: "留还是回，这一年被问了不下十回。你把两边的账摊在桌上算：这边的住处和活，那边的父母和老同学，孩子往后在哪儿。算到半夜，纸写满了，结论没有。另一半说，先过日子吧，账慢慢算。",
     choices: [
@@ -70,12 +70,12 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
     effects: { health: 1, relation: 1 } },
   { id: "ab37_023", w: 2, min: 55, max: 66, route: "abroad", eraIn: ["c1965", "c1978", "c2000"], state: { abroadKind: "dispatch" }, text: "最后一个项目结了，合同到期，行李还是那两箱，就是人比来时老了。这些年挣的钱，大半在家里：房子修了，孩子的事帮了，存折上还剩一笔。你站在营地门口等车，想着回去先睡个整觉。",
     choices: [
-      { label: "回了，往后就在家过", effects: { health: 2, relation: 2 }, echo: "到家那晚，饭是家里人留的，热了三遍。你说还是家里的床睡得沉。" },
+      { label: "回了，往后就在家过", effects: { health: 2, relation: 2 }, set: "back_home_stay", echo: "到家那晚，饭是家里人留的，热了三遍。你说还是家里的床睡得沉。" },
       { label: "歇半年，看看还有没有短活", effects: { money: 2, health: -1 }, echo: "电话留给了项目上的人。真有电话来时，你犹豫了半天，最后还是没接。" },
     ] },
   { id: "ab37_024", w: 2, min: 60, max: 72, route: "abroad", eraIn: ["c1978", "c2000"], stateAll: { spouse: "partnered" }, text: "回去过晚年的念头，这一年冒出来好几次。这边住惯了，那边人熟。老同学在电话里说，回来吧，院子里的菜给你留着。你把这事跟另一半说了，两个人谁也没先拍板，先把两边的房子都收拾了一遍。",
     choices: [
-      { label: "回去，往后的日子在老家过", effects: { relation: 3, money: -2 }, echo: "走那天，邻居来送，塞给你一包自己种的豆子，说到了那边种上，算个念想。" },
+      { label: "回去，往后的日子在老家过", effects: { relation: 3, money: -2 }, set: "back_home_stay", echo: "走那天，邻居来送，塞给你一包自己种的豆子，说到了那边种上，算个念想。" },
       { label: "还是留下来，这边也是家了", effects: { freedom: 2, wisdom: 2 }, echo: "你把阳台收拾出来，种了两盆家里那边的菜。长出来时，你拍了照片发回去。" },
     ] },
   { id: "ab37_025", w: 2, min: 58, max: 72, route: "abroad", eraIn: ["c1978", "c2000"], text: "老同学建了群，把散在各地的人都拉了进来。过年时群里发老照片，你年轻时站在宿舍门口，瘦得风一吹就倒。你把照片存下来，放大看了很久，才认出旁边那个人是谁。",

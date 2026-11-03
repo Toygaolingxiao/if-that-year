@@ -103,10 +103,29 @@ function scan(item, itemId, inhGate) {
   if (item.kidMin != null && typeof item.kidMin !== "number") err(`${itemId}: kidMin 不是数字`);
   if (item.kidMax != null && typeof item.kidMax !== "number") err(`${itemId}: kidMax 不是数字`);
   if (item.kidMin != null && item.kidMax != null && item.kidMin > item.kidMax) err(`${itemId}: kidMin ${item.kidMin} 大于 kidMax ${item.kidMax}`);
+  // 真实年龄门（v0.20.1，W3）：kidAgeMin/kidAgeMax（锚出生年 kidsBornAt ?? kidsAt）与 petMin/petMax（锚抱回年 catAt/dogAt），
+  // 形状与 kidMin 同口径——须为数字且下限不大于上限；语义与物种推断见 src/registry.js 登记与 src/scheduler.js 的 kidAgeTrue/petAgesTrue。
+  if (item.kidAgeMin != null && typeof item.kidAgeMin !== "number") err(`${itemId}: kidAgeMin 不是数字`);
+  if (item.kidAgeMax != null && typeof item.kidAgeMax !== "number") err(`${itemId}: kidAgeMax 不是数字`);
+  if (item.kidAgeMin != null && item.kidAgeMax != null && item.kidAgeMin > item.kidAgeMax) err(`${itemId}: kidAgeMin ${item.kidAgeMin} 大于 kidAgeMax ${item.kidAgeMax}`);
+  if (item.petMin != null && typeof item.petMin !== "number") err(`${itemId}: petMin 不是数字`);
+  if (item.petMax != null && typeof item.petMax !== "number") err(`${itemId}: petMax 不是数字`);
+  if (item.petMin != null && item.petMax != null && item.petMin > item.petMax) err(`${itemId}: petMin ${item.petMin} 大于 petMax ${item.petMax}`);
   if (item.flagAgeWithin) {
     const fw = item.flagAgeWithin;
     if (!(fw.flag in MILESTONES)) err(`${itemId}: flagAgeWithin.flag 引用未登记里程碑 ${fw.flag}`);
     else if (typeof fw.years !== "number" || fw.years < 0) err(`${itemId}: flagAgeWithin.years 不是非负数`);
+  }
+  // 返聘后复退门与退休年数变体（v0.20.1 W7 登记）：rehireAfterRetire 须为布尔；
+  // textRetireYears 须为 { mid, long 非空文本 }，且条目 text 须真含「没多久」（替换锚点，防变体静默失效）。
+  if (item.rehireAfterRetire !== undefined && typeof item.rehireAfterRetire !== "boolean") err(`${itemId}: rehireAfterRetire 不是布尔`);
+  if (item.textRetireYears !== undefined) {
+    const ry = item.textRetireYears;
+    if (!ry || typeof ry !== "object" || Array.isArray(ry)) err(`${itemId}: textRetireYears 不是对象`);
+    else {
+      for (const k of ["mid", "long"]) if (typeof ry[k] !== "string" || !ry[k]) err(`${itemId}: textRetireYears.${k} 不是非空文本`);
+      if (typeof item.text === "string" && !item.text.includes("没多久")) err(`${itemId}: textRetireYears 已声明但 text 不含「没多久」（变体替换无锚点）`);
+    }
   }
   for (const fld of ["echoState", "textState"]) {
     if (!item[fld]) continue;
@@ -136,11 +155,22 @@ function scan(item, itemId, inhGate) {
     if (!arr.length || arr.some((x) => typeof x !== "string")) err(`${itemId}: ctx.mainLine 应为入行旗 id 或其非空数组`);
     else for (const fv of arr) if (!ENTRY_FLAGS.includes(fv)) err(`${itemId}: ctx.mainLine 含非入行旗 ${fv}`);
   }
+  // 在护对象门（v0.20.1 W8 登记）：ctx.anyCareTarget 出现时须为 true（求值口径见 registry.js 头注释与 record.js ctxOk）
+  if (item.ctx && item.ctx.anyCareTarget !== undefined && item.ctx.anyCareTarget !== true) err(`${itemId}: ctx.anyCareTarget 应为 true`);
   for (const fld of ["textForm", "echoForm", "labelForm"]) {
     if (!item[fld]) continue;
     for (const [fv, txt] of Object.entries(item[fld])) {
       if (!FORM_VALUES.includes(fv)) err(`${itemId}: ${fld} 含非法形态键 ${fv}`);
       else if (typeof txt !== "string" || !txt) err(`${itemId}: ${fld}.${fv} 不是非空文本`);
+    }
+  }
+  // 年代变体（v0.20.1 面板急修登记）：textEra/echoEra/labelEra 须为 { 年代id: 非空文本 }，键值域为四个年代 id。
+  const ERA_VALUES = ["c1955", "c1965", "c1978", "c2000"];
+  for (const fld of ["textEra", "echoEra", "labelEra"]) {
+    if (!item[fld]) continue;
+    for (const [ev, txt] of Object.entries(item[fld])) {
+      if (!ERA_VALUES.includes(ev)) err(`${itemId}: ${fld} 含非法年代键 ${ev}`);
+      else if (typeof txt !== "string" || !txt) err(`${itemId}: ${fld}.${ev} 不是非空文本`);
     }
   }
   for (const c of (item.choices || [])) scan(c, itemId, effGate);

@@ -40,6 +40,42 @@
       const m = typeof IFY.mainEntryOf === "function" ? IFY.mainEntryOf() : null;
       if (!m || ![].concat(ctx.mainLine).includes(m)) return false;
     }
+    // 入行防叠门（v0.20.1 W6）：ctx.entry=true 的纯入行拍只在本局尚无主入行旗时可抽——
+    // 已有当前主线的人不再凭空叠新职业；带明确转行/接管叙事的条目与线内分科条目不声明此门，照旧可走。
+    if (ctx.entry && typeof IFY.mainEntryOf === "function" && IFY.mainEntryOf()) return false;
+    // 路线未决门（v0.20.1 W9，ctx.entry 的路线口径扩展，不另立键）：home 路线（route=home，
+    // 或序章 home 轨道 track=home）在考试链出结果之前（22–28 岁、未落 exam_passed/exam_landed、
+    // 也未落 exam_failed），其他行当的纯入行拍一律不可抽——邀约只能以没落成形态缺席，
+    // 不得抢先落成主入行旗；链落定（exam_passed 起）或明确落空（exam_failed，或 29 岁窗已过）
+    // 后本门自动失效，其他行当照常放行。派生量，只读现算，不进存档。
+    if (ctx.entry) {
+      const S = IFY.S;
+      const onHome = S && S.route && (S.route.id === "home" || (S.state && S.state.track === "home"));
+      if (onHome && S.age >= 22 && S.age <= 28 && !hasFact("exam_passed") && !hasFact("exam_landed") && !hasFact("exam_failed")) return false;
+    }
+    // 反主线门（v0.20.1 W6）：ctx.notMainLine 为入行旗 id 数组——当前主线命中任一即拦
+    // （如医护在行期间不出「回公司开会」口径的公司纹理；形态派生分不出医护与公司同为 employee 时用它）。
+    if (ctx.notMainLine) {
+      const m = typeof IFY.mainEntryOf === "function" ? IFY.mainEntryOf() : null;
+      if (m && [].concat(ctx.notMainLine).includes(m)) return false;
+    }
+    // 学历门（v0.20.1 W6）：ctx.eduGate=true——须 schooling=school，或已走过夜校/自考桥（edu_bridge 旗）。
+    // schooling=pre 的年代没有序章处境判定（未判定不等于未上学），不在此门内，恒过。
+    if (ctx.eduGate) {
+      const sc = IFY.S.state && IFY.S.state.schooling;
+      if (sc && sc !== "school" && sc !== "pre" && !hasFact("edu_bridge")) return false;
+    }
+    // 在护对象门（v0.20.1 W8 登记）：ctx.anyCareTarget=true——陪床/等喊号/护工排班类文本必须有
+    // 「当下还在的在护对象」：父母任一在世且本局处于父母照护情境（care_self/care_hired/care_rotate
+    // 任一事实在账），或伴侣在场（partnered/dating）且有伴侣照护事实（care_hired_spouse 在账）。
+    // 只认旧旗不认人还在不在，正是审计 run-13「父母双亡多年还在陪床」的病根；此门是派生量，不进存档。
+    if (ctx.anyCareTarget) {
+      const st = IFY.S.state || {};
+      const parentTarget = (st.dad === "alive" || st.mom === "alive") &&
+        (hasFact("care_self") || hasFact("care_hired") || hasFact("care_rotate"));
+      const spouseTarget = (st.spouse === "partnered" || st.spouse === "dating") && hasFact("care_hired_spouse");
+      if (!parentTarget && !spouseTarget) return false;
+    }
     return true;
   }
   Object.assign(IFY, { rec, hasRec, hasFact, ctxOk });

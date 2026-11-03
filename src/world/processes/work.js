@@ -6,6 +6,13 @@
   // 体制内路线（route=home）与正式入行旗持有者 55–60；店主/零工/种地/自由形态 63–68；其余 58–63。
   // 到点发节点拍 proc_retire_node（退/part/再干几年）；part 停留期（applyState 流转时定）满后发 proc_retire_full；
   // 推迟两次或拖过 74 岁由 proc_retire_auto 收束；58 岁分岔 fork58 的选项同步写 workPhase。
+  // v0.20.1 W2 退休单一事实源：退休只认 workPhase 状态域 + S.retiredAt/retirePlan + 旗 retire_final_said。
+  // 三套机制互锁（同一年不许双决）：进程拍与 fork58 谁先在当年落账，另一个当年不再响——
+  // 进程拍先响由 engine.js 的 fork58 门读 retireDecidedThisYear() 跳过当年分岔（外加 fork58 自带
+  // workPhase 状态门：已 retired 者永不再出此岔）；fork58 先响由 workPhaseDue 读 forkFiredThisYear() 当年不再发拍。
+  // 「真退了」一局至多一次：proc_retire_full 首次落定用原文，返聘后复退改走条目声明的 textAgain 再退变体
+  // （变体选择只能在本函数做：呈现时 applyState 已先行流转，textState 无可分辨的域——口径见 sim-v0201/logs/w2-retire.md）。
+  // 无当前单位事实者（买断离厂 laid_off 后再无入行/返聘事实）走条目声明的 textNoUnit/echoNoUnit 不点名单位变体。
   // 钱进程接口：未来养老金标定读 S.state.workPhase、S.retiredAt（退休落点年龄）与 S.retirePlan.form（退休前活计形态），定义见 docs/WORK-PHASE.md。
   const WORK_FORMAL_FLAGS = ["factory_work", "fab_work", "craft_work", "heavy_work", "miner_work", "truck_work", "med_hosp", "teach_work", "acct_work", "fin_work", "press_work", "dev_work"];
   const WORK_INFORMAL_FLAGS = ["shop_work", "gig_work", "farm_work", "courier_work", "care_work", "write_work"];
@@ -90,19 +97,96 @@
     IFY.S.retirePlan = { form, nodeAge: band[0] + Math.floor(IFY.rngW() * (band[1] - band[0] + 1)) };
   }
 
+  // ---------- v0.20.1 W2：退休单一事实源的账本读法（只读账本/旗标，不另记一套时点） ----------
+  const RETIRE_BEAT_IDS = ["proc_retire_node", "proc_retire_full", "proc_retire_auto"];
+  function ledgerOf() { return (IFY.S && Array.isArray(IFY.S.ledger)) ? IFY.S.ledger : []; }
+  // 账本里是否已有过 workPhase>retired 流转（= 已全退落定过一次）
+  function hasRetiredBefore() { return ledgerOf().some((e) => e.kind === "state" && e.id === "workPhase>retired"); }
+  // 返聘后复退门（v0.20.1 W7，p14_010 专用口径）：真退之后真有过返聘边——账本里首次
+  // workPhase>retired 流转之后，又出现过 workPhase>part 流转（retired→part 的唯一载体是
+  // e_rehire_1/e_rehire_2 的接活选项；fork58 已被其自身状态门挡在 retired 之外）。
+  // 只认 rehire 旧旗不够：fork58 在 58 岁选返聘立的 rehire 旗落在首次全退之前，那种情形
+  // 本局从没在全退后返聘过，p14_010 的「返聘合同到期」落定永不出（run-13 实锤）。
+  function hasRehireAfterRetire() {
+    const led = ledgerOf();
+    let retiredIdx = -1;
+    for (let i = 0; i < led.length; i++) { const e = led[i]; if (e.kind === "state" && e.id === "workPhase>retired") { retiredIdx = i; break; } }
+    if (retiredIdx < 0) return false;
+    for (let i = retiredIdx + 1; i < led.length; i++) { const e = led[i]; if (e.kind === "state" && e.id === "workPhase>part") return true; }
+    return false;
+  }
+  // retire_final_said 同步：账本首次出现全退流转即立旗（flagAges 记流转年龄，与 retired_begun 同口径）。
+  // 落定载体本身的 set 位已被 retired_begun/retired_full 占满，此同步是该旗的主生产点（登记见 registry 注）。
+  function syncRetireFinalSaid() {
+    const S = IFY.S;
+    if (!S || !S.flags || S.flags.retire_final_said) return;
+    const t = ledgerOf().find((e) => e.kind === "state" && e.id === "workPhase>retired");
+    if (!t) return;
+    S.flags.retire_final_said = true;
+    if (!S.flagAges) S.flagAges = {};
+    if (!("retire_final_said" in S.flagAges)) S.flagAges.retire_final_said = t.age;
+  }
+  // 今年是否已有退休决定落账（进程拍呈现过，或 workPhase 当年发生过流转）——engine.js 的 fork58 当年互锁读它
+  function retireDecidedThisYear() {
+    const S = IFY.S;
+    if (!S) return false;
+    return ledgerOf().some((e) => e.age === S.age && ((e.kind === "proc" && RETIRE_BEAT_IDS.includes(e.id)) || (e.kind === "state" && typeof e.id === "string" && e.id.startsWith("workPhase>"))));
+  }
+  // 今年 fork58 是否已响过（呈现即落账 kind=fork/id=fork58）——进程拍的反向互锁读它
+  function forkFiredThisYear() {
+    const S = IFY.S;
+    if (!S) return false;
+    return ledgerOf().some((e) => e.age === S.age && e.kind === "fork" && e.id === "fork58");
+  }
+  // 无当前单位事实判定（run-14 型）：立过 laid_off（买断离厂），且其后再没有任何入行旗或返聘旗落账。
+  // 先后以 flagAges 为准（两边都有落点年龄时）；缺落点年龄时以账本里 set 记录的先后为准；都读不到按「有单位事实」保守处理（走原文）。
+  function noCurrentUnit() {
+    const S = IFY.S;
+    if (!S || !S.flags || !S.flags.laid_off) return false;
+    const ages = S.flagAges || {};
+    const laidAge = typeof ages.laid_off === "number" ? ages.laid_off : null;
+    const unitFlags = [...Object.keys(FORM_OF_FLAG), "rehire"];
+    if (laidAge !== null) return !unitFlags.some((f) => typeof ages[f] === "number" && ages[f] > laidAge);
+    const led = ledgerOf();
+    let laidIdx = -1;
+    led.forEach((e, i) => { if (e.set === "laid_off") laidIdx = i; });
+    if (laidIdx < 0) return false;
+    return !led.some((e, i) => i > laidIdx && unitFlags.includes(e.set));
+  }
+  // 落定文本变体选择：发拍前按本局事实把条目正文/回响切到声明好的变体（原文存档在条目上，逐次重算、不累积）。
+  // 优先级：再退变体（已全退过又复退）> 不点名单位变体（无当前单位事实）> 原文（首次落定）。
+  const RETIRE_ORIG_TEXT = {}; // id -> { text, echo0 }
+  function applyRetireVariant(id) {
+    const it = (IFY.D.events || []).find((e) => e.id === id);
+    if (!it) return;
+    if (!RETIRE_ORIG_TEXT[id]) RETIRE_ORIG_TEXT[id] = { text: it.text, echo0: it.choices && it.choices[0] ? it.choices[0].echo : null };
+    const orig = RETIRE_ORIG_TEXT[id];
+    if (id === "proc_retire_full" && hasRetiredBefore() && it.textAgain) it.text = it.textAgain;
+    else if (noCurrentUnit() && it.textNoUnit) it.text = it.textNoUnit;
+    else it.text = orig.text;
+    if (id === "proc_retire_node" && it.choices && it.choices[0]) {
+      const c = it.choices[0]; // 「退下来」选项的回响：无单位事实时不走大门/工位口吻
+      if (noCurrentUnit() && c.echoNoUnit) c.echo = c.echoNoUnit;
+      else if (orig.echo0 != null) c.echo = orig.echo0;
+    }
+  }
+
   function workPhaseDue() {
     if (!IFY.S.route || !IFY.S.state || !IFY.S.state.workPhase) return null;
+    syncRetireFinalSaid();
+    if (forkFiredThisYear()) return null; // 反向互锁：fork58 已在当年响过，进程拍当年不再决一次（结构上 fork 从不把人留在 working，此为显式保险）
     ensureRetirePlan();
     const wp = IFY.S.state.workPhase;
-    if (wp === "part" && typeof IFY.S.partAt === "number" && IFY.S.age - IFY.S.partAt >= (IFY.S.partYears || 2)) return IFY.D.events.some((e) => e.id === "proc_retire_full") ? { item: "proc_retire_full" } : null;
+    const due = (id) => { if (!IFY.D.events.some((e) => e.id === id)) return null; applyRetireVariant(id); return { item: id }; };
+    if (wp === "part" && typeof IFY.S.partAt === "number" && IFY.S.age - IFY.S.partAt >= (IFY.S.partYears || 2)) return due("proc_retire_full");
     if (wp === "working") {
-      if (IFY.S.age >= 74) return IFY.D.events.some((e) => e.id === "proc_retire_auto") ? { item: "proc_retire_auto" } : null;
+      if (IFY.S.age >= 74) return due("proc_retire_auto");
       if (IFY.S.retirePlan && IFY.S.age >= IFY.S.retirePlan.nodeAge) {
-        if ((IFY.S.retireDefers || 0) >= 2) return IFY.D.events.some((e) => e.id === "proc_retire_auto") ? { item: "proc_retire_auto" } : null;
-        return IFY.D.events.some((e) => e.id === "proc_retire_node") ? { item: "proc_retire_node" } : null;
+        if ((IFY.S.retireDefers || 0) >= 2) return due("proc_retire_auto");
+        return due("proc_retire_node");
       }
     }
     return null;
   }
-  Object.assign(IFY, { WORK_FORMAL_FLAGS, WORK_INFORMAL_FLAGS, workForm, FORM_VALUES, FORM_OF_FLAG, formOf, mainEntryOf, ensureRetirePlan, workPhaseDue });
+  Object.assign(IFY, { WORK_FORMAL_FLAGS, WORK_INFORMAL_FLAGS, workForm, FORM_VALUES, FORM_OF_FLAG, formOf, mainEntryOf, ensureRetirePlan, workPhaseDue, syncRetireFinalSaid, retireDecidedThisYear, forkFiredThisYear, hasRetiredBefore, hasRehireAfterRetire, noCurrentUnit });
 })(window.IFY);

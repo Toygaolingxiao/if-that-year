@@ -52,6 +52,13 @@ const tail = (out, n) => out.trim().split("\n").slice(-n).join(" / ");
   const r = run("node", ["tools/chain-choice-check.js"], ROOT);
   record("chain-choice-check", r.code === 0 ? "PASS" : "FAIL", tail(r.out, 1), "（控制台）", r.ms);
 }
+{
+  // v0.20.1 常设项：立约对账行与 fork45 真实选择不得冲突（16000 局，冲突数必须为 0）
+  const r = run("node", ["tools/settle-choice-check.js"], ROOT);
+  const m = r.out.match(/runs=(\d+) fork45=(\d+) try=(\d+) settle=(\d+) covSoloDue=(\d+) conflicts=(\d+)/);
+  record("settle-choice-check（立约对账）", r.code === 0 && m && m[6] === "0" ? "PASS" : "FAIL",
+    m ? `runs=${m[1]} fork45=${m[2]} try=${m[3]} settle=${m[4]} covSoloDue=${m[5]} conflicts=${m[6]}` : tail(r.out, 2), "（控制台）", r.ms);
+}
 
 // ---------- 模拟侧 ----------
 {

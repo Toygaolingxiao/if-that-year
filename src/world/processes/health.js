@@ -32,6 +32,23 @@
     ],
   };
 
+  // 死因文本按本局事实过滤（v0.20.1 W5）：只动文案选取，不动死亡率、死因类型判定与年代带。
+  // (a) 居所事实：本局装过电梯（下列既有事件任一发生过，两选项回响均确认装成）→ 健康型「楼梯间」条（下标 2）不出。
+  // (b) 健康事实：终局健康 ≥60 视为长期高位（引擎不存历史健康序列，以终局值代，口径见 w5-presuppose 日志）
+  //     → 「拖延复查」型两条（下标 1 复查拖延、5 体检拖延）不出。意外池不读事实，照旧。
+  const ELEVATOR_EVENT_IDS = ["p11_027", "p16_061", "p14_052", "e55_049", "p24_023"];
+  const STAIR_CAUSE_IDX = 2;
+  const DELAYED_CAUSE_IDX = [1, 5];
+  const HIGH_HEALTH = 60;
+  function deathCausePool(type) {
+    let idx = DEATH_CAUSES[type].map((_, i) => i);
+    if (type === "health") {
+      if (ELEVATOR_EVENT_IDS.some((id) => IFY.hasFact(id))) idx = idx.filter((i) => i !== STAIR_CAUSE_IDX);
+      if ((IFY.S.stats.health || 0) >= HIGH_HEALTH) idx = idx.filter((i) => !DELAYED_CAUSE_IDX.includes(i));
+    }
+    return idx.map((i) => DEATH_CAUSES[type][i]);
+  }
+
   function rollDeath() {
     const health = IFY.S.stats.health;
     let type = null;
@@ -43,12 +60,12 @@
       if (IFY.rngW() < mp.a * Math.pow(mp.g, IFY.S.age - 40) * hf) type = "health";
     }
     if (!type) return false;
-    const pool = DEATH_CAUSES[type];
+    const pool = deathCausePool(type);
     const text = pool[Math.floor(IFY.rngW() * pool.length)];
     IFY.S.death = { age: IFY.S.age, type, text };
     IFY.rec("death", type);
     IFY.S.log.push(`${IFY.S.age} 岁 · 这一生停在这里：${text}`);
     return true;
   }
-  Object.assign(IFY, { MORTALITY, MORTALITY_BY_ERA, DEATH_CAUSES, rollDeath });
+  Object.assign(IFY, { MORTALITY, MORTALITY_BY_ERA, DEATH_CAUSES, rollDeath, deathCausePool });
 })(window.IFY);

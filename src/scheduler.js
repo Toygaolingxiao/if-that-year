@@ -5,7 +5,8 @@
 //   L1 危机抢占：危机到期（pickCrisis 命中）优先于稀有与普通事件占本年内容时槽。
 //   L2 链推进与稀有：稀有保留现行概率门（条件是门票、骰子是第二道门）；普通事件先在
 //      「链后继候选」（chain 前置已发生且 met 过）里分层抽取（层内按现行权重），废除旧
-//      CHAIN_BOOST ×48 权重硬顶——层本身就是保底，不再靠权重堆。
+//      CHAIN_BOOST ×48 权重硬顶——层本身就是保底，不再靠权重堆。考试链头（p16_001）对
+//      home 路线另有同层锚点（v0.20.1 W9，见 planYear 内注），保证 22–25 岁窗内到达。
 //   L3 saliency 抽取：普通事件按具体度分排序分段，最高分段内加权随机（见 saliencyScore）。
 //      温度 derive 的消费也收进本层：平淡年（温度出口）在 L1/L2 落空后、L3 之前按
 //      rhythmOf().flatShare 掷骰决定（公式在 src/rhythm.js，本层只消费、不另算）。
@@ -17,7 +18,7 @@
   const ANCHORS = (typeof window !== "undefined" && window.GAME_ANCHORS) || null; // 加载位在 anchors.js 之后
 
   // 调度计数（诊断/模拟对照用；只增不改游戏状态，存档不带它）
-  const schedStats = { crisis: 0, crisisPreempt: 0, rare: 0, chain: 0, l3: 0, flat: 0, micro: 0, flavorYears: 0 };
+  const schedStats = { crisis: 0, crisisPreempt: 0, rare: 0, chain: 0, examAnchor: 0, l3: 0, flat: 0, micro: 0, flavorYears: 0 };
   IFY.schedStats = schedStats;
 
   // ---------- 结算事实过滤（v0.17.0，F1/F2）：片段与结局声明的预设事实逐项核对本局事实，对不上不出 ----------
@@ -48,6 +49,28 @@
     return n;
   }
 
+  // --- 子女/宠物真实岁数（v0.20.1）：阶段文本按他们自己的岁数读，不按玩家岁数读 ---
+  // kidAgeTrue = 当前年龄 − (kidsBornAt ?? kidsAt)：出生拍（apply.js BORN_BEATS）落过出生年就按
+  // 出生年算；没落过（e_kid_settle/final 无专属出生拍、或出生拍还没轮到呈现）回落落定年龄 kidsAt，
+  // 与 kidMin/kidMax 的既有口径同源——两套门的区别只在锚点：kidMin/kidMax 锚落定年（存量标定不动），
+  // kidAgeMin/kidAgeMax 锚出生年（新挂的阶段文本用它，出生晚几年就整体晚几年，不再错位）。
+  function kidAgeTrue() {
+    const b = IFY.S.kidsBornAt != null ? IFY.S.kidsBornAt : IFY.S.kidsAt;
+    return b == null ? null : IFY.S.age - b;
+  }
+  // petAgesTrue(e)：本条目所指宠物的真实岁数数组。物种按条目自身的门/链/流转推断——
+  // state/stateAll/stateNot/setState 里带 cat 或 dog 的按该物种取；chain 指向抱回拍的
+  // （p5_043=猫、p11_049=狗）按该物种取；分不清物种的条目两边都查，任一满足即可（见 met 的 petMin/petMax）。
+  function petAgesTrue(e) {
+    const S = IFY.S, ages = [];
+    const blob = JSON.stringify([e.state || {}, e.stateAll || {}, e.stateNot || {}, e.setState || {}]);
+    const wantCat = blob.includes("cat") || e.chain === "p5_043" || e.id === "p5_043";
+    const wantDog = blob.includes("dog") || e.chain === "p11_049" || e.id === "p11_049";
+    if ((wantCat || (!wantCat && !wantDog)) && S.catAt != null) ages.push(S.age - S.catAt);
+    if ((wantDog || (!wantCat && !wantDog)) && S.dogAt != null) ages.push(S.age - S.dogAt);
+    return ages;
+  }
+
   // --- 统一条件求值：路线/标记组合/数值形状/前置链 ---
   function met(e) {
     if (e.procOnly) return false; // 进程条目只由进程呈现，不进普通抽取池（v0.18.0）
@@ -55,7 +78,12 @@
     if (e.anyParentAlive && IFY.S.state.dad !== "alive" && IFY.S.state.mom !== "alive") return false;
     if (e.kidMin != null && (IFY.S.kidsAt == null || IFY.S.age - IFY.S.kidsAt < e.kidMin)) return false; // v0.18.0：孩子年龄门（按 kids 落定年龄推孩子岁数，挡「孩子 9 岁脱产备考」类错位） // 与父母进程对齐（fork52：父母都不在了不出此岔）
     if (e.kidMax != null && (IFY.S.kidsAt == null || IFY.S.age - IFY.S.kidsAt > e.kidMax)) return false; // v0.19.0 三相：孩子年龄上限门（与 kidMin 对称，挡「孩子 9 岁入园」类错位；字段形状在 tools/validate-state.js 登记核对）
+    if (e.kidAgeMin != null) { const ka = kidAgeTrue(); if (ka == null || ka < e.kidAgeMin) return false; } // v0.20.1：孩子真实年龄下限门（锚出生年，口径见 kidAgeTrue）
+    if (e.kidAgeMax != null) { const ka = kidAgeTrue(); if (ka == null || ka > e.kidAgeMax) return false; } // v0.20.1：孩子真实年龄上限门（婴儿期文本用它封顶）
+    if (e.petMin != null) { const pa = petAgesTrue(e); if (!pa.length || Math.max(...pa) < e.petMin) return false; } // v0.20.1：宠物真实年龄下限门（老龄文本 ≥9；分不清物种时任一宠物达龄即过）
+    if (e.petMax != null) { const pa = petAgesTrue(e); if (!pa.length || Math.min(...pa) > e.petMax) return false; } // v0.20.1：宠物真实年龄上限门（幼宠文本用；任一宠物够小即过）
     if (e.flagAgeWithin && (IFY.S.flagAges == null || IFY.S.flagAges[e.flagAgeWithin.flag] == null || IFY.S.age - IFY.S.flagAges[e.flagAgeWithin.flag] > e.flagAgeWithin.years)) return false; // v0.19.0 三相：旗标落点时间窗门（通用形状 {flag, years}，读 flagAges 底子；挡身后手续隔多年重办类复发）
+    if (e.rehireAfterRetire && !(typeof IFY.hasRehireAfterRetire === "function" && IFY.hasRehireAfterRetire())) return false; // v0.20.1 W7：返聘后复退门（条目级布尔）——账本里首次全退流转之后真有过 retired→part 返聘边才可抽（work.js hasRehireAfterRetire，读账本不读旧旗）
     if (e.route && e.route !== IFY.S.route.id) return false;
     if (e.routeIn && !e.routeIn.includes(IFY.S.route.id)) return false;
     if (e.forbidRoute && e.forbidRoute === IFY.S.route.id) return false;
@@ -85,7 +113,14 @@
     if (e.anyParentAlive && S.state.dad !== "alive" && S.state.mom !== "alive") out.push({ kind: "parents" });
     if (e.kidMin != null && (S.kidsAt == null || S.age - S.kidsAt < e.kidMin)) out.push({ kind: "kidAge", need: e.kidMin, have: S.kidsAt == null ? null : S.age - S.kidsAt });
     if (e.kidMax != null && (S.kidsAt == null || S.age - S.kidsAt > e.kidMax)) out.push({ kind: "kidAgeMax", need: e.kidMax, have: S.kidsAt == null ? null : S.age - S.kidsAt });
+    { const kb = S.kidsBornAt != null ? S.kidsBornAt : S.kidsAt; const ka = kb == null ? null : S.age - kb;
+      if (e.kidAgeMin != null && (ka == null || ka < e.kidAgeMin)) out.push({ kind: "kidAgeTrue", need: e.kidAgeMin, have: ka });
+      if (e.kidAgeMax != null && (ka == null || ka > e.kidAgeMax)) out.push({ kind: "kidAgeTrueMax", need: e.kidAgeMax, have: ka }); }
+    if (e.petMin != null || e.petMax != null) { const pa = petAgesTrue(e);
+      if (e.petMin != null && (!pa.length || Math.max(...pa) < e.petMin)) out.push({ kind: "petAge", need: e.petMin, have: pa.length ? Math.max(...pa) : null });
+      if (e.petMax != null && (!pa.length || Math.min(...pa) > e.petMax)) out.push({ kind: "petAgeMax", need: e.petMax, have: pa.length ? Math.min(...pa) : null }); }
     if (e.flagAgeWithin && (S.flagAges == null || S.flagAges[e.flagAgeWithin.flag] == null || S.age - S.flagAges[e.flagAgeWithin.flag] > e.flagAgeWithin.years)) out.push({ kind: "flagAge", flag: e.flagAgeWithin.flag });
+    if (e.rehireAfterRetire && !(typeof IFY.hasRehireAfterRetire === "function" && IFY.hasRehireAfterRetire())) out.push({ kind: "rehireAfter" });
     if (e.route && (!S.route || e.route !== S.route.id)) out.push({ kind: "route", need: e.route });
     if (e.routeIn && !(S.route && e.routeIn.includes(S.route.id))) out.push({ kind: "routeIn", need: e.routeIn });
     if (e.forbidRoute && S.route && e.forbidRoute === S.route.id) out.push({ kind: "forbidRoute", need: e.forbidRoute });
@@ -172,7 +207,7 @@
 
   // ---------- L3 saliency（定版公式） ----------
   // 具体度 specificity：条目声明的非默认约束逐项计 1——require/forbid/any/all/state/stateAll/
-  // stateNot/ctx/eraIn/minYear/kidMin/kidMax/flagAgeWithin 各算一，route 类（route/routeIn/
+  // stateNot/ctx/eraIn/minYear/kidMin/kidMax/kidAgeMin/kidAgeMax/petMin/petMax/flagAgeWithin 各算一，route 类（route/routeIn/
   // forbidRoute 任一）合算一，era（单年代）算一。when/stats 数值门不在此列（属阈值形状，不计）。
   // score = specificity
   //       + 本局未见加成（不在 usedEvents 记 1；候选池本已滤掉已用条目，此项恒生效，
@@ -187,7 +222,7 @@
   // 「资格窗口短」的条目（父母状态门的晚年事件、无门窄窗事件：62 条 watchlist 在 4000 局
   // 里命中合计 541 → 1，16000 局零命中净增 33）——段外零权重对这类条目是绝杀，与具体度
   // 分值无关。故分段由硬门改权重梯度：分值公式一字未动，段外不再归零。）
-  const SPEC_KEYS = ["require", "forbid", "any", "all", "state", "stateAll", "stateNot", "ctx", "eraIn", "minYear", "kidMin", "kidMax", "flagAgeWithin"];
+  const SPEC_KEYS = ["require", "forbid", "any", "all", "state", "stateAll", "stateNot", "ctx", "eraIn", "minYear", "kidMin", "kidMax", "kidAgeMin", "kidAgeMax", "petMin", "petMax", "flagAgeWithin", "rehireAfterRetire"];
   function specificity(e) {
     let n = 0;
     for (const k of SPEC_KEYS) if (e[k] !== undefined) n++;
@@ -256,6 +291,17 @@
     const rare = pickRare();
     if (rare) { plan.kind = "rare"; plan.layer = 2; plan.rare = rare; schedStats.rare++; return plan; }
     const pool = eventPool();
+    // L2 考试链头锚（v0.20.1 W9）：home 路线（route=home 或序章 home 轨道 track=home）在
+    // 22–25 岁窗内、岗位表 p16_001 尚未呈现且本年 met 通过时，链头优先占本年内容时槽——
+    // 与 L2 链推进同层（链头落下后，后续拍自走 pickChain 的分层保底）。这是 anchors.js
+    // 「锚点」口径在调度层的落点：锚点不新造抽取层，只在既有 L2 内先认链头。
+    const headAnchor = (IFY.D.events || []).find((e) => e.id === "p16_001");
+    if (headAnchor && IFY.S.age >= 22 && IFY.S.age <= 25 && IFY.S.route &&
+        (IFY.S.route.id === "home" || (IFY.S.state && IFY.S.state.track === "home")) &&
+        !IFY.S.usedEvents.includes("p16_001") && met(headAnchor)) {
+      plan.kind = "event"; plan.layer = 2; plan.event = headAnchor; schedStats.examAnchor++; schedStats.chain++;
+      return plan;
+    }
     // L2 链推进（分层抽取）
     const chained = pickChain(pool);
     if (chained) { plan.kind = "event"; plan.layer = 2; plan.event = chained; schedStats.chain++; return plan; }
@@ -278,7 +324,7 @@
     return plan;
   }
 
-  Object.assign(IFY, { factOk, evidenceCount, met, unmetConditions, pickRare, pickCrisis, pickEvent,
+  Object.assign(IFY, { factOk, evidenceCount, met, unmetConditions, kidAgeTrue, petAgesTrue, pickRare, pickCrisis, pickEvent,
     planYear, saliencyScore, specificity, eventPool, pickChain, pickSaliency, rareEligible,
     anchors: ANCHORS, anchorInfo, schedStats });
 })(window.IFY);

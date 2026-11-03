@@ -23,12 +23,12 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
     effects: { relation: 1 } },
   { id: "proc_dad_hosp", min: 22, max: 80, procOnly: true, text: "你爸住院了。病房里六张床，他靠窗。医生说先住下来观察，该做的检查一样一样做。你在走廊的长椅上坐了一夜，天亮的时候去楼下买了粥。",
     choices: [
-      { label: "在医院陪床，晚上就睡陪护椅", effects: { relation: 3, health: -2, money: -2 }, echo: "陪护椅睡得腰酸。可他半夜醒来，看见你在，心里是定的。" },
+      { label: "在医院陪床，晚上就睡陪护椅", set: "care_self", effects: { relation: 3, health: -2, money: -2 }, echo: "陪护椅睡得腰酸。可他半夜醒来，看见你在，心里是定的。" },
       { label: "请护工帮着，自己每天去看一趟", set: "care_hired", effects: { money: -4, relation: 1 }, echo: "护工白班夜班地换。你每天下班先去病房坐一会儿，把当天的检查结果听完再走。", echoForm: { farm: "护工白班夜班地换。你每天忙完地里的活先去病房坐一会儿，把当天的检查结果听完再走。", self: "护工白班夜班地换。你每天打烊后先去病房坐一会儿，把当天的检查结果听完再走。", flex: "护工白班夜班地换。你每天收工先去病房坐一会儿，把当天的检查结果听完再走。" } },
     ] },
   { id: "proc_mom_hosp", min: 22, max: 80, procOnly: true, text: "你妈住院了。病房里六张床，她靠窗。医生说先住下来观察，该做的检查一样一样做。你在走廊的长椅上坐了一夜，天亮的时候去楼下买了粥。",
     choices: [
-      { label: "在医院陪床，晚上就睡陪护椅", effects: { relation: 3, health: -2, money: -2 }, echo: "陪护椅睡得腰酸。可她半夜醒来，看见你在，心里是定的。" },
+      { label: "在医院陪床，晚上就睡陪护椅", set: "care_self", effects: { relation: 3, health: -2, money: -2 }, echo: "陪护椅睡得腰酸。可她半夜醒来，看见你在，心里是定的。" },
       { label: "请护工帮着，自己每天去看一趟", set: "care_hired", effects: { money: -4, relation: 1 }, echo: "护工白班夜班地换。你每天下班先去病房坐一会儿，把当天的检查结果听完再走。", echoForm: { farm: "护工白班夜班地换。你每天忙完地里的活先去病房坐一会儿，把当天的检查结果听完再走。", self: "护工白班夜班地换。你每天打烊后先去病房坐一会儿，把当天的检查结果听完再走。", flex: "护工白班夜班地换。你每天收工先去病房坐一会儿，把当天的检查结果听完再走。" } },
     ] },
   { id: "proc_dad_dead", min: 22, max: 80, procOnly: true, stateAll: { dad: "alive" }, setState: { dad: "dead" }, text: "你爸走了。走得还算安稳。葬礼办完，亲戚们陆续散了，你一个人把他的屋子收拾了一遍：衣服叠好，工具摆齐，抽屉里有一本记了一辈子的账。",
@@ -43,14 +43,14 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
       { label: "再处处看，不急着定", deferDating: true, effects: { relation: 1 }, echo: "话说开了，反倒松快些。定不定，以后再说——你们先这么处着。" },
     ] },
   // —— 职业入行拍与链后继（B5 语境门的事实来源） ——
-  { id: "e_med_start", min: 24, max: 36, text: "县里卫生院贴出招人启事：招医护辅助，先培训再上岗。去问的人不多，门口没排队。管事的说，这行当熬人，可饭碗稳。",
+  { id: "e_med_start", ctx: { entry: true }, min: 24, max: 36, text: "县里卫生院贴出招人启事：招医护辅助，先培训再上岗。去问的人不多，门口没排队。管事的说，这行当熬人，可饭碗稳。",
     choices: [
       { label: "去，先学起来（往后就是医护这一行的人）", set: "med_work", effects: { growth: 4, money: -1 }, echo: "培训了三个月，你学会了量血压、换药、认常用药名。头一回独立值班，你手心全是汗。" },
       { label: "不去，手头的活先干着", effects: {}, echo: "你把启事看了一眼，又贴了回去。日子照旧过。" },
     ] },
   { id: "e_med_years", min: 34, max: 52, chain: "e_med_start", ctx: { flag: "med_work" }, text: "在卫生院干了这些年，附近几个村谁家老人什么病、吃什么药，你都门儿清。有人半夜来敲门，你披上衣服就走。",
     effects: { relation: 3, growth: 1 } },
-  { id: "e_truck_start", min: 22, max: 32, routeIn: ["corp", "gap", "home"], text: "跑长途的师傅缺个搭把手的，问你跟不跟车。跟车先学路，学会了再上手，钱按趟结。这一行熬夜，也熬人。",
+  { id: "e_truck_start", ctx: { entry: true }, min: 22, max: 32, routeIn: ["corp", "gap", "home"], text: "跑长途的师傅缺个搭把手的，问你跟不跟车。跟车先学路，学会了再上手，钱按趟结。这一行熬夜，也熬人。",
     choices: [
       { label: "跟车，先学起来（往后就是跑长途的人，家要常年不在）", set: "truck_work", effects: { money: 3, health: -2, freedom: 2 }, echo: "头一趟跑下来，你在服务区睡了个整觉。醒来的时候，师傅说：能吃这碗饭。" },
       { label: "不跟，太熬人", effects: { health: 1 }, echo: "你帮师傅把货码好，目送车出了院子。这条路，你没上去。" },
@@ -70,21 +70,25 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
     effects: { money: 1, health: -1 } },
   // —— 退休相位进程拍与落点（v0.19.0，workPhase）：触发规则在引擎 workPhaseDue，口径见 docs/WORK-PHASE.md ——
   { id: "proc_retire_node", min: 55, max: 74, procOnly: true, stateAll: { workPhase: "working" }, text: "这一年，退下来的事正式摆到了桌上。活干了大半辈子，交接的清单列出来，比你想的长。往下怎么走，这一回得有个说法。",
+    textNoUnit: "这一年，退下来的事正式摆到了桌上。活干了大半辈子，年头也差不多够了。往下怎么走，这一回得有个说法。",
     choices: [
-      { label: "退下来，把日子还给自己", setState: { workPhase: "retired" }, set: "retired_begun", effects: { freedom: 5, health: 2, money: -2 }, echo: "手续办完那天，你把私人物品装了一个纸箱。走出大门时回头看了一眼，没再进去。" },
+      { label: "退下来，把日子还给自己", setState: { workPhase: "retired" }, set: "retired_begun", effects: { freedom: 5, health: 2, money: -2 }, echo: "手续办完那天，你把私人物品装了一个纸箱。走出大门时回头看了一眼，没再进去。", echoNoUnit: "手续办完那天，你在街口站了一会儿。往后的日子，不用再赶着哪个点走了。" },
       { label: "先半退，活减一半，慢慢交", setState: { workPhase: "part" }, set: "slow_life", effects: { freedom: 3, money: -1, relation: 1 }, echo: "排班表改了，你一周只去一半的日子。空出来的上午，你先补了个长觉。" },
       { label: "再干几年，身体还行", deferRetire: true, effects: { money: 2, health: -1 }, echo: "话放出去了，就接着干。只是心里清楚，这一拖，也就是几年的事了。" },
     ] },
   { id: "proc_retire_full", min: 56, max: 79, procOnly: true, stateAll: { workPhase: "part" }, setState: { workPhase: "retired" }, set: "retired_begun", text: "这回是真退了。最后一班交完，你把钥匙还回去，剩下的东西装了半箱。回家的路上你去银行查了查，退休的钱已经打进来了。数不多，可往后的日子，算是有了着落。",
+    textAgain: "返聘的这一截，到今天也交完了。这一回退下来，就不回去了。回家的路上你绕到公园坐了一会儿，往后的日子，慢慢过。",
+    textNoUnit: "这回是真退了。手头的活交清，往后不用再赶时间。回家的路上你去银行查了查，退休的钱已经打进来了。数不多，可往后的日子，算是有了着落。",
     effects: { freedom: 3, health: 1 } },
   { id: "proc_retire_auto", min: 66, max: 79, procOnly: true, stateAll: { workPhase: "working" }, setState: { workPhase: "retired" }, set: "retired_begun", text: "年纪到了，这边不再续了。最后一个班上完，年轻人帮你把箱子搬到门口。你站在楼下站了会儿，才慢慢往家走。这事拖了几年，最后是这么定下来的。",
+    textNoUnit: "年纪到了，该办的手续都办了。最后把手头的事了清，你在街口站了会儿，才慢慢往家走。这事拖了几年，最后是这么定下来的。",
     effects: { freedom: 3, health: 1, money: -1 } },
-  { id: "e_retire_firstmonth", min: 56, max: 76, state: { workPhase: "retired" }, flagAgeWithin: { flag: "retired_begun", years: 2 }, text: "退下来头一个月，你还是六点多就醒。醒了没事干，在屋里转两圈，又躺回去。慢慢地，上午买菜、下午走路的点固定下来，日子有了新排法，就是头几天心里空落落的。",
+  { id: "e_retire_firstmonth", min: 56, max: 76, state: { workPhase: "retired" }, flagAgeWithin: { flag: "retired_begun", years: 2 }, set: "retire_final_said", text: "退下来头一个月，你还是六点多就醒。醒了没事干，在屋里转两圈，又躺回去。慢慢地，上午买菜、下午走路的点固定下来，日子有了新排法，就是头几天心里空落落的。",
     effects: { freedom: 2, wisdom: 2 } },
   { id: "e_retire_farewell", min: 55, max: 70, state: { workPhase: "part" }, ctx: { notForm: ["farm", "self", "flex"] }, text: "半退以后，你去的日子少了，新人顶上来大半。有回你去拿落下的东西，工位上已经坐了别人，桌上摆着人家的水杯。你站了一会儿，把自己的旧本子抽出来，走了。",
     effects: { relation: 1, wisdom: 2 } },
   // —— 返聘回流（retired → part）：退了又被请回去做半截活 ——
-  { id: "e_rehire_1",ctx: { form: ["employee","public"] }, min: 58, max: 74, state: { workPhase: "retired" }, text: "退了没多久，老单位来电话：有个岗位缺人，想请你回去做半截，一周去三天，钱按月结。你在家把这事说了，嘴上说想清静，心里有点动。",
+  { id: "e_rehire_1",ctx: { form: ["employee","public"] }, min: 58, max: 74, state: { workPhase: "retired" }, textRetireYears: { mid: "几年", long: "好些年" }, text: "退了没多久，老单位来电话：有个岗位缺人，想请你回去做半截，一周去三天，钱按月结。你在家把这事说了，嘴上说想清静，心里有点动。",
     textForm: { farm: "退下来没多久，合作社的人来家里捎话：收购站上缺个懂行的人，想请你回去帮一阵，一周去三天，钱按月结。你在家把这事说了，嘴上说想清静，心里有点动。", self: "歇下来没多久，从前一起做买卖的老伙计来电话：有个摊子缺个压得住场的人，想请你回去帮半截，一周去三天，钱按月结。你在家把这事说了，嘴上说想清静，心里有点动。", flex: "歇下来没多久，从前跑单时认识的站长来电话：站点上缺个熟手，想请你回去帮半截，一周去三天，钱按月结。你在家把这事说了，嘴上说想清静，心里有点动。" },
     choices: [
       { label: "回去做半截，有个出门的由头", setState: { workPhase: "part" }, set: "rehire", effects: { money: 3, freedom: -2 }, echo: "回去头一天，门卫还认得你，笑着说您这是退了个假休。你把杯子放回原来的位置。", echoForm: { farm: "回去头一天，站上的人还认得你，笑着说您这是退了个假休。你把茶缸放回了窗台上原来的位置。", self: "回去头一天，隔壁摊的人还认得你，笑着说您这是退了个假休。你把算盘放回了柜台上原来的位置。", flex: "回去头一天，站点的人还认得你，笑着说您这是退了个假休。你把头盔挂回了墙上原来的钉子。" } },

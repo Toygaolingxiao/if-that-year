@@ -92,12 +92,21 @@
   const OCC_MED = ["med_work", "med_hosp", "nurse_work", "img_work"];
   const OCC_SINGLE = ["factory_work", "craft_work", "miner_work", "fab_work", "shop_work", "gig_work", "courier_work", "farm_work", "teach_work", "acct_work", "care_work", "write_work", "heavy_work", "dev_work", "press_work", "driver_taxi", "fin_work", "truck_work", "took_over_job", "exam_landed"];
   const OCC_CHANGE = ["p20_cnc_retrain", "p20_newline_trained", "xiahai"];
+  // 账本里的明确转行事实（v0.20.1 返修）：条目本身没有入行旗，但正文就是一次换行当——
+  // p2_022「转行一年，新工作的收入只有原来的六成」、p17_015「你转行去了房产中介」。
+  const OCC_CHANGE_FACTS = ["p2_022", "p17_015"];
   function occupationTrail() {
     const F = IFY.S.flags || {};
     const lines = [];
     if (OCC_MED.some((f) => F[f])) lines.push("med");
     for (const f of OCC_SINGLE) if (F[f]) lines.push(f);
+    // 入行旗之外的成段行当（v0.20.1 返修，审计 run-03）：网贷地推立的是经历旗 p19_p2p_in、不在入行旗表里，
+    // 此前不计数——run-03 这类「地推几年又去做批发」的局因此被误判单行当。地推/销售单列一组。
+    if (F.p19_p2p_in) lines.push("p19_p2p_in");
+    // 副业形态（v0.20.1 返修）：已有主行当时，副业是第二摊活儿，算另一行——不再算「一辈子就干这一行」。
+    if (lines.length && (F.side_start || F.side_job || F.side_business)) lines.push("side");
     const change = OCC_CHANGE.filter((f) => F[f]);
+    for (const id of OCC_CHANGE_FACTS) if (typeof IFY.hasFact === "function" ? IFY.hasFact(id) : F[id]) change.push(id);
     const ages = IFY.S.flagAges || {};
     let entryAge = null;
     for (const f of [...OCC_MED, ...OCC_SINGLE]) if (F[f] && typeof ages[f] === "number") entryAge = entryAge == null ? ages[f] : Math.min(entryAge, ages[f]);
@@ -141,6 +150,7 @@
       case "parents": return "父母都不在了";
       case "kidAge": case "kidAgeMax": return "孩子年纪没对上";
       case "flagAge": return "有件事过去太久了";
+      case "rehireAfter": return "退了以后没再回去做过半截";
       case "era": case "eraIn": return "那是另一代人的事";
       case "minYear": return "年份还没到";
       default: return "就差一项";
@@ -281,6 +291,29 @@
     });
   }
 
+  // ---------- 子女在场判定（v0.20.1 返修，审计 run-02）：「孩子在跟前长大」类句子要有孩子实际出场记录 ----------
+  // 口径：账本（S.ledger）里 kind=event/rare/proc 的记录，其条目定义带 kids=has 状态门
+  // （state 或 stateAll 的 kids 含 has）或带 kidMin 门，且落账年龄在孩子长大期间
+  // （kidsAt 起 18 年内；kidsAt 缺失的旧存档回落为不限年）——计数 ≥1 才算在场。
+  // run-02 的形状正是反例：39–58 岁零出场、59 岁才冒出来买房（那时孩子按账已成年），不算「在跟前长大」。
+  function kidPresenceCount() {
+    const led = Array.isArray(IFY.S.ledger) ? IFY.S.ledger : [];
+    if (!led.length || !IFY.D || !Array.isArray(IFY.D.events)) return 0;
+    const byId = new Map(IFY.D.events.map((e) => [e.id, e]));
+    const kidsAt = typeof IFY.S.kidsAt === "number" ? IFY.S.kidsAt : null;
+    let n = 0;
+    for (const e of led) {
+      if (e.kind !== "event" && e.kind !== "rare" && e.kind !== "proc") continue;
+      const def = byId.get(e.id);
+      if (!def) continue;
+      const gateHas = (o) => o && o.kids !== undefined && [].concat(o.kids).includes("has");
+      if (!gateHas(def.state) && !gateHas(def.stateAll) && def.kidMin == null) continue;
+      if (kidsAt != null && typeof e.age === "number" && e.age - kidsAt > 18) continue;
+      n++;
+    }
+    return n;
+  }
+
   // ---------- 结算九槽（v0.18.0，地基 §4.6/§4.7）：九个槽位全读状态与账本拼装 ----------
   // 落脚/陪伴/钱/手艺事业/子女线/父母线/没办完的事/影子代价/认领句；认领句（玩家在瞥视时留下的话）原样入槽；
   // 判词退为九槽之后的收尾一行。平淡轨（没撞上什么大事的一生）在认领槽有「平淡而完整」的写法。
@@ -323,7 +356,7 @@
     slots.push(["手艺事业", s4]);
     let s5;
     if (F.late_parent) s5 = "孩子来得晚。别人抱孙辈的年纪，你还在给孩子开家长会。";
-    else if (ST.kids === "has") s5 = F.kid_abroad ? "孩子大了，去了远方。逢年过节，电话那头热闹。" : "孩子在跟前长大，一年一年，也长成了大人。";
+    else if (ST.kids === "has") s5 = F.kid_abroad ? "孩子大了，去了远方。逢年过节，电话那头热闹。" : kidPresenceCount() >= 1 ? "孩子在跟前长大，一年一年，也长成了大人。" : "孩子的事落定之后，日子还是照常往下过。逢年过节，电话里多说几句。";
     else if (ST.kids === "none") s5 = IFY.S.covenant && IFY.S.covenant.kind === "none" ? "孩子的事，38 岁那年就定下了：不要。后来照着这个安排过。" : "这一生没要孩子。屋里清静，日子是另一种过法。";
     else s5 = "孩子的事一直没正式定下来。拖着拖着，就到了这岁数。";
     slots.push(["子女", s5]);
@@ -335,7 +368,8 @@
     else s6 = "到这一生走完，爸妈都还健在。这样的情形，不多。";
     slots.push(["父母", s6]);
     let s7;
-    if (IFY.S.covenant && IFY.S.covenant.kind === "wait" && ST.kids === "undecided") s7 = "38 岁挂起的那份账，到最后也没正式对完。";
+    if (F.cov_solo_done && ST.kids === "undecided") s7 = "38 岁挂起的那份账，45 岁你一个人对完了。孩子的事没落定，可那份约不算悬着了。";
+    else if (IFY.S.covenant && IFY.S.covenant.kind === "wait" && ST.kids === "undecided") s7 = "38 岁挂起的那份账，到最后也没正式对完。";
     else if (F.late_tried && !F.late_parent) s7 = "想要孩子那几年，试过，也跑过医院，最后没等来。这事放下了，就是偶尔还想起。";
     else if ((IFY.S.glimpsesSkipped || 0) >= 2) s7 = "另一条路有几回摆在眼前，你都没去细看。不知道的，就让它不知道下去。";
     else if (F.renting && !F.bought_house) s7 = "买房的事提过几回，最后没办成，一直租着住。";
@@ -482,5 +516,5 @@
     });
     refreshCard();
   }
-  Object.assign(IFY, { verdict, lifeTags, specialEnding, settlementMapHtml, renderLives, settlementSlots, renderEnd, occupationTrail, nearMisses, chosenOfFork });
+  Object.assign(IFY, { verdict, lifeTags, specialEnding, settlementMapHtml, renderLives, settlementSlots, renderEnd, occupationTrail, kidPresenceCount, nearMisses, chosenOfFork });
 })(window.IFY);
