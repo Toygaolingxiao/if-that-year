@@ -371,7 +371,7 @@
     if (F.cov_solo_done && ST.kids === "undecided") s7 = "38 岁挂起的那份账，45 岁你一个人对完了。孩子的事没落定，可那份约不算悬着了。";
     else if (IFY.S.covenant && IFY.S.covenant.kind === "wait" && ST.kids === "undecided") s7 = "38 岁挂起的那份账，到最后也没正式对完。";
     else if (F.late_tried && !F.late_parent) s7 = "想要孩子那几年，试过，也跑过医院，最后没等来。这事放下了，就是偶尔还想起。";
-    else if ((IFY.S.glimpsesSkipped || 0) >= 2) s7 = "另一条路有几回摆在眼前，你都没去细看。不知道的，就让它不知道下去。";
+    else if ((IFY.playerMeta().glimpsesSkipped || 0) >= 2) s7 = "另一条路有几回摆在眼前，你都没去细看。不知道的，就让它不知道下去。"; // v0.21 WP1：瞥视计数改读 session.meta（蓝图 3.1）
     else if (F.renting && !F.bought_house) s7 = "买房的事提过几回，最后没办成，一直租着住。";
     else s7 = "没什么悬着的大事。该办的办了，办不了的，也放下了。";
     slots.push(["没办完的事", s7]);
@@ -379,7 +379,7 @@
     const sh = mainU && IFY.D.shadows ? IFY.D.shadows[mainU.id] : null;
     const cost = sh ? IFY.shadowCostText(sh).replace(/^代价也清楚：/, "") : "";
     slots.push(["另一条路", cost ? `没走的那条路，代价在那边：${cost}` : "没走的那几条路，各有各的走法，没法放在一起称。"]);
-    const refl = IFY.S.reflections && IFY.S.reflections.length ? IFY.S.reflections[IFY.S.reflections.length - 1].text : "";
+    const reflArr = IFY.playerMeta().reflections || []; const refl = reflArr.length ? reflArr[reflArr.length - 1].text : ""; // v0.21 WP1：第九槽 reflections 改读 session.meta（蓝图 3.1）
     const flatLife = !(IFY.S.usedRare || []).length && (Array.isArray(IFY.S.ledger) ? IFY.S.ledger.filter((e) => e.kind === "event").length : 99) < 30;
     slots.push(["你留的话", refl ? `「${refl}」` : flatLife ? "这一生没留下认领的话。平淡是平淡，可一年一年都是真的——平淡，也是完整的一生。" : "这一生没留下认领的话。就这么走完了。"]);
     return slots;
@@ -401,9 +401,9 @@
     // 自动推进提示（v0.17.0 定案）：默认关的玩家，完局后只在这页提示一次可开平年自动；提示过就落 prefs，不再重复
     const showAutoHint = IFY.prefs.mode === "off" && !IFY.prefs.autoHintSeen;
     if (showAutoHint) { IFY.prefs.autoHintSeen = true; IFY.savePrefs(); }
-    const skippedLine = IFY.S.glimpsesSkipped ? `<p>你有 ${IFY.S.glimpsesSkipped} 次没有去细看另一条路。这样也好，有些事不知道，更睡得着。</p>` : "";
-    const reflHtml = IFY.S.reflections.length
-      ? `<h3>你留给自己的话</h3>` + IFY.S.reflections.map((r) => `<p class="refl">「${IFY.esc(r.text)}」（${r.age} 岁）</p>`).join("") : "";
+    const skippedLine = IFY.playerMeta().glimpsesSkipped ? `<p>你有 ${IFY.playerMeta().glimpsesSkipped} 次没有去细看另一条路。这样也好，有些事不知道，更睡得着。</p>` : ""; // v0.21 WP1：瞥视计数改读 meta
+    const reflHtml = IFY.playerMeta().reflections.length
+      ? `<h3>你留给自己的话</h3>` + IFY.playerMeta().reflections.map((r) => `<p class="refl">「${IFY.esc(r.text)}」（${r.age} 岁）</p>`).join("") : ""; // v0.21 WP1：reflections 改读 meta
     IFY.app().innerHTML = `<section class="card">${IFY.head(null, true)}
       <div class="rev" style="--d:0s">
       <h2>${IFY.finalAge()} 岁 · 这一局走完了</h2>
@@ -435,7 +435,7 @@
       <div class="sharedesk">
         <h3>把这一生寄出去</h3>
         <label class="refl-label">给这一生留一句话（可选）
-          <input id="shareline" type="text" maxlength="60" placeholder="一句就好，会出现在发帖文案的开头" value="${IFY.S.reflections.length ? IFY.esc(IFY.S.reflections[0].text) : ""}">
+          <input id="shareline" type="text" maxlength="60" placeholder="一句就好，会出现在发帖文案的开头" value="${IFY.playerMeta().reflections.length ? IFY.esc(IFY.playerMeta().reflections[0].text) : ""}">
         </label>
         <label class="refl-label"><input type="checkbox" id="cardrefl"> 把这句话印到分享卡上（只有你勾选才会印）</label>
         <p class="setlab">卡面</p>

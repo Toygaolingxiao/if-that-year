@@ -174,6 +174,7 @@ function scan(item, itemId, inhGate) {
     }
   }
   for (const c of (item.choices || [])) scan(c, itemId, effGate);
+  for (const v of (item.variants || [])) scan(v, itemId, effGate); // v0.21.1：序章变体池与选项同规实扫（变体级 set 记在幕 id 名下）
 }
 for (const e of events) scan(e, e.id);
 // 出身牌（v0.13.0）：牌是钩子旗的 setter 本体，一并实扫（id 与事件不得撞名）
@@ -236,6 +237,7 @@ function collectDeps(item, acc) {
   if (item.setState) for (const [dom, to] of Object.entries(item.setState)) acc.setStates.push([dom, to]);
   if (item.setStateBySit) for (const variant of Object.values(item.setStateBySit)) for (const [dom, to] of Object.entries(variant || {})) acc.setStates.push([dom, to]);
   for (const c of (item.choices || [])) collectDeps(c, acc);
+  for (const v of (item.variants || [])) collectDeps(v, acc); // v0.21.1：变体级 set 计入可生产性，与 scan 同规
 }
 for (const e of events) { const acc = newAcc(); collectDeps(e, acc); prodItems.set(e.id, acc); }
 for (const f of D.forks) { const acc = newAcc(); for (const c of f.choices) collectDeps(c, acc); prodItems.set(f.id || `fork${f.age}`, acc); }

@@ -12,7 +12,7 @@
     c2000: { dadAge: [25, 33], momAge: [23, 31], dadLife: [79, 10], momLife: [85, 10] },
   };
 
-  function triW() { return (IFY.rngW() + IFY.rngW() + IFY.rngW() - 1.5) / 1.5; } // [-1,1] 近正态扰动（进程流）
+  function triW(draw) { const d = draw || (() => IFY.rngW()); return (d() + d() + d() - 1.5) / 1.5; } // [-1,1] 近正态扰动（进程流；v0.21 WP1：抽取函数可注入，缺省即进程流 rngW，公式不动）
 
   // 照护预警信号点（v0.20.0 M2 收尾，可见检定）：care 起点前 2–4 年的一个呈现点。
   // 由已掷出的 careAge/deathAge 确定性派生、不消费进程流——父母各时点（care/hosp/dead）的掷点序列与旧版逐位一致，死亡分布不动。
@@ -22,18 +22,29 @@
     return a < P.careAge ? a : P.careAge - 1;
   }
 
-  function initParents() {
+  // v0.21 WP1（蓝图裁定三）：掷点函数 one() 改为可注入流抽取函数——Track_A 传 rngW、Track_B 传它自己的
+  // #shadow#world 流包装；公式与 PARENT_CAL 一字不动，缺省抽取即现行 rngW，主线消费顺序与数值逐位不变。
+  // parentFate 是 one() 去掉 age0 掷点后的同一条公式：影子出生时 age0 拷自主线（出身共享），只在影子
+  // 进程流上重掷 deathAge/careAge/hospAge（命运各自），掷序与 one() 的后半段逐位同构。
+  function parentFate(age0, lifeBand, draw) {
+    const d = draw || (() => IFY.rngW());
+    const life = Math.round(lifeBand[0] + triW(d) * lifeBand[1]);
+    const deathAge = Math.max(26, life - age0); // 换算成主角年龄口径的离世点；下限保证此事不出在童年段（序章不处理）
+    const careAge = Math.max(24, deathAge - (2 + Math.floor(d() * 4))); // 需照护段起点：离世前 2–5 年
+    const hospAge = deathAge - careAge >= 2 ? careAge + 1 + Math.floor(d() * (deathAge - careAge - 1)) : null;
+    return { age0, deathAge, careAge, hospAge, stage: "well", signalAge: signalAgeOf({ careAge, deathAge }), signalShown: false }; // stage: well → care → hosp → dead；signal 为 care 前的呈现层前置标记（进程内部状态，不进存档状态域、不改 care/hosp/dead 时点）
+  }
+
+  function one(ageBand, lifeBand, draw) {
+    const d = draw || (() => IFY.rngW());
+    const age0 = ageBand[0] + Math.floor(d() * (ageBand[1] - ageBand[0] + 1));
+    return parentFate(age0, lifeBand, d);
+  }
+
+  function initParents(draw) {
     if (IFY.S.parents || !IFY.S.route) return;
     const cal = PARENT_CAL[IFY.S.era] || PARENT_CAL.c2000;
-    const one = (ageBand, lifeBand) => {
-      const age0 = ageBand[0] + Math.floor(IFY.rngW() * (ageBand[1] - ageBand[0] + 1));
-      const life = Math.round(lifeBand[0] + triW() * lifeBand[1]);
-      const deathAge = Math.max(26, life - age0); // 换算成主角年龄口径的离世点；下限保证此事不出在童年段（序章不处理）
-      const careAge = Math.max(24, deathAge - (2 + Math.floor(IFY.rngW() * 4))); // 需照护段起点：离世前 2–5 年
-      const hospAge = deathAge - careAge >= 2 ? careAge + 1 + Math.floor(IFY.rngW() * (deathAge - careAge - 1)) : null;
-      return { age0, deathAge, careAge, hospAge, stage: "well", signalAge: signalAgeOf({ careAge, deathAge }), signalShown: false }; // stage: well → care → hosp → dead；signal 为 care 前的呈现层前置标记（进程内部状态，不进存档状态域、不改 care/hosp/dead 时点）
-    };
-    IFY.S.parents = { dad: one(cal.dadAge, cal.dadLife), mom: one(cal.momAge, cal.momLife) };
+    IFY.S.parents = { dad: one(cal.dadAge, cal.dadLife, draw), mom: one(cal.momAge, cal.momLife, draw) };
   }
 
   // 本年到期的进程动静（每岁至多一件：离世 > 住院 > 照护，父先于母）；已被事件写过世的父母不再发作
@@ -54,10 +65,10 @@
     return due[0];
   }
 
-  // 进程条目呈现（pack36 的 proc_* 条目）：与事件年同形，但过完回到本年 step（进程拍不独占这一年，年内的分岔/瞥视照常）
-  function renderProcItem(item, who, beat) {
-    IFY.curKind = "proc";
-    IFY.S.flatCarry = null; // 进程年不是平年
+  // 父母进程段位推进（v0.21 WP2 抽共享）：节拍解决即推进父母进程段位（离世的状态流转走条目自身的 setState）。
+  // 呈现层 renderProcItem 与无头解决器（shadow-life.js 的 stepYearHeadless）共用这一份——蓝图 5.2 点名抽取处：
+  // 改这段逻辑两边同时生效，不许在无头侧另抄一份。函数体与抽取前 renderProcItem 内的原段逐字相同。
+  function advanceParentStage(who, beat) {
     if (beat && IFY.S.parents && IFY.S.parents[who]) { // 节拍呈现即推进父母进程段位（离世的状态流转走条目自身的 setState）
       if (beat === "signal") { IFY.S.parents[who].signalShown = true; } // 信号拍只记呈现过：不推进段位、不立 care_stage 旗
       else {
@@ -65,6 +76,13 @@
         if (beat === "care") IFY.S.flags.care_stage = true;
       }
     }
+  }
+
+  // 进程条目呈现（pack36 的 proc_* 条目）：与事件年同形，但过完回到本年 step（进程拍不独占这一年，年内的分岔/瞥视照常）
+  function renderProcItem(item, who, beat) {
+    IFY.curKind = "proc";
+    IFY.S.flatCarry = null; // 进程年不是平年
+    advanceParentStage(who, beat); // v0.21 WP2：父母 stage 推进改调共享函数（原段代码搬家，逻辑一字不动）
     if (item.set) IFY.S.flags[item.set] = true;
     IFY.applyState(item);
     if (!item.choices) { IFY.applyEffects(item.effects); } else IFY.S.lastDelta = "";
@@ -91,5 +109,5 @@
       });
     }));
   }
-  Object.assign(IFY, { PARENT_CAL, triW, signalAgeOf, initParents, parentsDue, renderProcItem });
+  Object.assign(IFY, { PARENT_CAL, triW, signalAgeOf, initParents, parentsDue, renderProcItem, advanceParentStage, parentOne: one, parentFate });
 })(window.IFY);

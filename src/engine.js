@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.20.4 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.21.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -35,10 +35,10 @@ window.IFY = window.IFY || {};
   const GLIMPSE_AGES = { 30: 0, 40: 1, 50: 2 };
 
   const ERAS = [
-    { id: "c1955", birth: 1955, label: "1955 年生", desc: "22 岁是 1977 年：恢复高考、返城、分房、下岗潮" },
-    { id: "c1965", birth: 1965, label: "1965 年生", desc: "22 岁是 1987 年：海南热、下海潮、房改" },
-    { id: "c1978", birth: 1978, label: "1978 年生", desc: "22 岁是 2000 年：互联网、非典、房价起飞" },
-    { id: "c2000", birth: 2000, label: "2000 年生", desc: "22 岁是 2022 年：现在这一代人的路" },
+    { id: "c1955", birth: 1955, label: "50年代出生", desc: "22 岁是 1977 年：恢复高考、返城、分房、下岗潮" },
+    { id: "c1965", birth: 1965, label: "60年代出生", desc: "22 岁是 1987 年：海南热、下海潮、房改" },
+    { id: "c1978", birth: 1978, label: "70年代出生", desc: "22 岁是 2000 年：互联网、非典、房价起飞" },
+    { id: "c2000", birth: 2000, label: "2000年代出生", desc: "22 岁是 2022 年：现在这一代人的路" },
   ];
 
   const SAVE_KEY = "ify-save-v2";
@@ -113,9 +113,9 @@ window.IFY = window.IFY || {};
     return {
       seedStr, age: START_AGE, era: "c2000", birthYear: 2000,
       stats: Object.fromEntries(STAT_META.map(([k, , init]) => [k, init])),
-      route: null, unchosen: [], log: [], reflections: [],
+      route: null, unchosen: [], log: [], reflections: [], // v0.21 WP1：reflections 是玩家层字段——本字段只为 Track 同形保留、恒不作数，权威在 session.meta（蓝图 3.1）
       usedEvents: [], flags: {}, state: IFY.initialState(), crisisUsed: {}, microUsed: [], usedRare: [], cards: [],
-      glimpsesSeen: 0, glimpsesSkipped: 0, lastDelta: "",
+      glimpsesSeen: 0, glimpsesSkipped: 0, lastDelta: "", // v0.21 WP1：glimpsesSeen/glimpsesSkipped 同上——同形保留、恒不作数，权威在 session.meta（蓝图 3.1）
       healthCrisisSeen: false, death: null, pendingFork: null,
       // v0.17.0 地基字段：阶段机 phase/stage（origin/child/teen/youth/adult/late）、温度 temp（0–100）与节奏型 rhythm（只管质地，不做玩家可见数值）、
       // 童年记号 marks、fork38 立约 covenant、序章运行态 prologue、平年合并 flatCarry 与温度平淡年计数 flatYears
@@ -127,15 +127,35 @@ window.IFY = window.IFY || {};
       kidsBornAt: null, catAt: null, dogAt: null,
       // v0.19.0：退休相位运行态 retirePlan（{form, nodeAge}，50 岁后按活计形态定一次）、part 落点 partAt/partYears、退休落点 retiredAt、节点推迟计数 retireDefers
       retirePlan: null, partAt: null, partYears: null, retiredAt: null, retireDefers: 0,
-      autoMode: DEFAULT_AUTO_MODE, speed: "mid", // 推进设定在本局的副本；权威来源是 localStorage 的 ify-prefs
+      autoMode: DEFAULT_AUTO_MODE, speed: "mid", // 推进设定在本局的副本；权威来源是 localStorage 的 ify-prefs；v0.21 WP1：同形保留、恒不作数，存档时只进 session.meta（蓝图 3.1）
     };
   }
 
-  function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify({ ...IFY.S, rngA: RNG.a, rngW: RNGW.a, rngAmb: RNGA.a })); } catch (e) { /* 存不了不阻塞游玩 */ } }
+  function save() {
+    // v0.21 WP1（蓝图裁定一）：不受控上下文（IFY._lifeDepth>0）里不许存档——那会把别条人生的状态写进档。
+    // 调试/sim 口径下抛错（置 IFY.LIFE_DEBUG 或 window.IFY_LIFE_DEBUG），防施工手滑；常规口径静默跳过本次。
+    if (IFY._lifeDepth > 0) {
+      if (IFY.LIFE_DEBUG || (typeof window !== "undefined" && window.IFY_LIFE_DEBUG)) throw new Error("save() called inside withLife (IFY._lifeDepth=" + IFY._lifeDepth + ")");
+      return;
+    }
+    try {
+      // v0.21 WP1（蓝图 3.3）：存档改为序列化 session（v:2 形状），仍写 ify-save-v2 键；会话层不可用时回落旧平铺形状。
+      const payload = typeof IFY.serializeSession === "function" ? IFY.serializeSession() : null;
+      localStorage.setItem(SAVE_KEY, JSON.stringify(payload || { ...IFY.S, rngA: RNG.a, rngW: RNGW.a, rngAmb: RNGA.a }));
+    } catch (e) { /* 存不了不阻塞游玩 */ }
+  }
 
   // 存档判活（v0.17.0 改为按阶段判）：成年段存档有 route；序章段存档没有 route（路线 22 岁才定），凭 phase=prologue + prologue 运行态判活。
   // 旧版（v0.15/v0.16）存档恒有 route，走原判活路径；坏档仍按 null 处理。
-  function loadSave() { try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); return s && (s.route || (s.phase === "prologue" && s.prologue)) ? s : null; } catch (e) { return null; } }
+  // v0.21 WP1（蓝图 3.3）：v2 形状（有 tracks）按受控 Track 条目判活；旧平铺形状照旧。
+  function loadSave() {
+    try {
+      const s = JSON.parse(localStorage.getItem(SAVE_KEY));
+      if (!s) return null;
+      if (s.tracks) { const a = s.tracks[s.controlTrack || "A"] || s.tracks.A; return a && (a.route || (a.phase === "prologue" && a.prologue)) ? s : null; }
+      return (s.route || (s.phase === "prologue" && s.prologue)) ? s : null;
+    } catch (e) { return null; }
+  }
 
   function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
 
@@ -241,6 +261,7 @@ window.IFY = window.IFY || {};
   function savePrefs() {
     try { localStorage.setItem(PREFS_KEY, JSON.stringify(IFY.prefs)); } catch (e) { /* 存不了不阻塞 */ }
     if (IFY.S) { IFY.S.autoMode = IFY.prefs.mode; IFY.S.speed = IFY.prefs.speed; }
+    if (IFY.session && IFY.session.meta) { IFY.session.meta.autoMode = IFY.prefs.mode; IFY.session.meta.speed = IFY.prefs.speed; } // v0.21 WP1：推进设置的玩家层权威同步进 session.meta（蓝图 3.1）
   }
 
   IFY.autoTimer = null;  // 主 setTimeout 句柄（choice 模式下到点触发的是「预高亮」动作）
@@ -365,7 +386,8 @@ window.IFY = window.IFY || {};
     const cardBtn = (id, i, cat) => { const c = CARDS.byId[id]; const fx = cardFx(c); return `<button type="button" class="cardpick${picked[cat] === i ? " sel" : ""}" data-cat="${cat}" data-i="${i}"><b>${esc(c.name)}</b><span>${esc(c.text)}</span>${fx ? `<small>${esc(fx)}</small>` : ""}</button>`; };
     const deckHtml = () => [["family", "家底"], ["temper", "性子"], ["era", "时代"]].map(([cat, lab]) => `<p class="setlab">${lab}</p><div class="cardrow" data-cat="${cat}">${dealt[cat].map((id, i) => cardBtn(id, i, cat)).join("")}</div>`).join("");
     // 旧同局链接可能带 end 参数：从本版起忽略，不报错。
-    const savedLabel = saved ? (saved.route ? saved.route.name : (STAGE_LABEL[saved.stage] || "序章")) : "";
+    const savedCtl = saved && saved.tracks ? (saved.tracks[saved.controlTrack || "A"] || saved.tracks.A || {}) : saved; // v0.21 WP1：v2 档的展示字段在受控 Track 条目里
+    const savedLabel = saved ? (savedCtl.route ? savedCtl.route.name : (STAGE_LABEL[savedCtl.stage] || "序章")) : "";
     app().innerHTML = `
       <section class="card">
         <h1 id="starttitle">22 岁，宿舍要退了。</h1>
@@ -409,22 +431,27 @@ window.IFY = window.IFY || {};
         </div>
         <p class="hint" id="setsummary"></p>
         <div class="actions">
-          ${saved ? `<button class="primary" id="resume">继续上次的人生（${saved.age} 岁 · ${esc(savedLabel)}）</button>` : ""}
+          ${saved ? `<button class="primary" id="resume">继续上次的人生（${savedCtl.age} 岁 · ${esc(savedLabel)}）</button>` : ""}
           <button id="startgo" class="${saved ? "ghost" : "primary"}">${saved ? "重新开始一局" : "开始这一生"}</button>
         </div>
         <div class="row"><button class="ghost" id="liveslink">活过的人生</button></div>
         ${sLine ? `<p class="hint">${sLine}</p>` : ""}
         ${lLine ? `<p class="hint">${lLine}</p>` : ""}
         <p class="hint">不填随机。填了，运气定下来，跟朋友比同一局就用它。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam ? "，年代也按对方那局选好了" : ""}${cardsParam ? "，出身牌也按对方选过的对齐了" : ""}，点下面开始这一生，就是同一局。` : ""}</p>
-        <p class="hint ver">v0.20.4</p>
+        <p class="hint ver">v0.21.0</p>
       </section>`;
     let startLock = false; // §6.1 防连点：双击不能在同一帧触发两次开局（统一挂在 #startgo 上）
     el("liveslink").addEventListener("click", () => { ANA.track("lives_view", {}); IFY.renderLives(); });
     if (saved) el("resume").addEventListener("click", () => {
       // v0.13.2：缺 seedStr 且无合法 rngA 的残档会在 seedFromString 处炸——按坏档清掉回开局，不抛错
-      if (!saved.seedStr && typeof saved.rngA !== "number") { clearSave(); renderStart(); return; }
-      IFY.S = saved;
-      IFY.S.seedStr = IFY.S.seedStr || String(saved.rngA); // 仅有 rngA 的旧残档：用数字串兜底展示，RNG 仍走 rngA
+      // v0.21 WP1（蓝图 3.3）：存档两形状识别——v2（有 tracks）由 shadow-life 接管成 session 并返回受控 Track 的
+      // 平铺态；旧平铺档就地包成 session（tracks.B=null、meta 从旧 state 同名字段接管、序章段档同样 B=null）。
+      // 下文逐字段回填对两形状同口径作用于受控 Track 的平铺态（flat），后续读流一律读 flat。
+      const ctlSaved = saved.tracks ? (saved.tracks[saved.controlTrack || "A"] || saved.tracks.A || {}) : saved;
+      if (!ctlSaved.seedStr && typeof ctlSaved.rngA !== "number") { clearSave(); renderStart(); return; }
+      const flat = saved.tracks ? IFY.adoptSessionSave(saved) : (typeof IFY.wrapLegacySession === "function" ? IFY.wrapLegacySession(saved) : saved);
+      IFY.S = flat;
+      IFY.S.seedStr = IFY.S.seedStr || String(flat.rngA); // 仅有 rngA 的旧残档：用数字串兜底展示，RNG 仍走 rngA
       IFY.S.usedRare = IFY.S.usedRare || []; IFY.S.era = IFY.S.era || "c2000"; IFY.S.birthYear = IFY.S.birthYear || 2000;
       IFY.S.cards = IFY.S.cards || []; // v0.13.0：旧存档（无牌局）续玩不补发、不追溯改数值，出身行不出（§A3.3）
       IFY.S.healthCrisisSeen = !!IFY.S.healthCrisisSeen || !!(IFY.S.crisisUsed && IFY.S.crisisUsed.health);
@@ -433,7 +460,7 @@ window.IFY = window.IFY || {};
       delete IFY.S.endAge;
       IFY.S.stats = IFY.S.stats || {};
       for (const [k, , init] of STAT_META) if (typeof IFY.S.stats[k] !== "number") IFY.S.stats[k] = init; // 新维度迁移：旧存档缺的维度按初值补齐（如 v0.9.0 新增的智慧），不清档不报错
-      if (!IFY.S.state || typeof IFY.S.state !== "object") IFY.S.state = IFY.deriveStateFromLegacy(saved); // v0.12.0：旧存档无 state，由旧 flags 推导（docs/STATE-MATRIX.md §5）
+      if (!IFY.S.state || typeof IFY.S.state !== "object") IFY.S.state = IFY.deriveStateFromLegacy(flat); // v0.12.0：旧存档无 state，由旧 flags 推导（docs/STATE-MATRIX.md §5）
       else for (const [dom, def] of Object.entries(IFY.REG.domains || {})) if (!(dom in IFY.S.state)) IFY.S.state[dom] = def.initial;
       // v0.17.0 回填：旧存档（v0.15/v0.16）没有阶段/温度/记号等字段——阶段按有无 route 定（老玩家恒成年段），温度按路线基线回填，序章态为空
       IFY.S.phase = IFY.S.phase || "adult"; IFY.S.stage = IFY.S.stage || "adult";
@@ -450,9 +477,10 @@ window.IFY = window.IFY || {};
       // v0.19.0 回填：旧存档无退休运行态——节点计划为空（step 时按当前年龄与活计形态惰性生成），abroadKind/workPhase 缺域已由上方 initialState 补齐（出国线由 settleAbroadDefault 补推断）
       if (!("retirePlan" in IFY.S)) IFY.S.retirePlan = null; if (!("partAt" in IFY.S)) IFY.S.partAt = null; if (!("partYears" in IFY.S)) IFY.S.partYears = null; if (!("retiredAt" in IFY.S)) IFY.S.retiredAt = null; IFY.S.retireDefers = IFY.S.retireDefers || 0;
       IFY.S.autoMode = IFY.prefs.mode; IFY.S.speed = IFY.prefs.speed;
-      RNG.a = typeof saved.rngA === "number" ? saved.rngA : seedFromString(saved.seedStr);
-      RNGW.a = typeof saved.rngW === "number" ? saved.rngW : seedFromString(String(saved.rngA) + "#world-legacy"); // 旧存档无进程/环境流存档值：由旧随机态派生续玩（不承诺与旧口径同一局，见 DEVLOG）
-      RNGA.a = typeof saved.rngAmb === "number" ? saved.rngAmb : seedFromString(String(saved.rngA) + "#ambient-legacy");
+      if (IFY.session && IFY.session.meta) { IFY.session.meta.autoMode = IFY.prefs.mode; IFY.session.meta.speed = IFY.prefs.speed; } // v0.21 WP1：推进设置回填同步 meta（蓝图 3.1）
+      RNG.a = typeof flat.rngA === "number" ? flat.rngA : seedFromString(flat.seedStr);
+      RNGW.a = typeof flat.rngW === "number" ? flat.rngW : seedFromString(String(flat.rngA) + "#world-legacy"); // 旧存档无进程/环境流存档值：由旧随机态派生续玩（不承诺与旧口径同一局，见 DEVLOG）
+      RNGA.a = typeof flat.rngAmb === "number" ? flat.rngAmb : seedFromString(String(flat.rngA) + "#ambient-legacy");
       IFY.prevStats = null; IFY.resumeMark = true; // §6.2 续玩第一屏给一句定位
       if (IFY.S.death) renderDeath(); else step();
     });
@@ -461,7 +489,7 @@ window.IFY = window.IFY || {};
     const preSel = (id, attr, val) => { const box = el(id); if (!box || !val) return; const btns = box.querySelectorAll(".segbtn"); btns.forEach((o) => { if (o.dataset[attr] === val) { btns.forEach((p) => p.classList.remove("sel")); o.classList.add("sel"); } }); };
     preSel("erapick", "era", eraParam);
     const autoSummary = () => IFY.prefs.mode === "off" ? "手动推进" : `自动推进 ${AUTO_MODES.find(([k]) => k === IFY.prefs.mode)[1]} · ${SPEED_LABEL[IFY.prefs.speed]}（${SPEED_STYLE[IFY.prefs.speed]}）`;
-    const updSummary = () => { const eb = document.querySelector("#erapick .segbtn.sel"); const sv = (el("seedin").value || "").trim(); const birth = eb ? +eb.dataset.birth : 2000; const pro = PRO && selEra() === PROLOGUE_ERA; const cn = !pro && CARDS_ON && dealt ? ` · 出身 ${[dealt.family[picked.family], dealt.temper[picked.temper], dealt.era[picked.era]].map((id) => CARDS.byId[id].name).join("/")}` : ""; el("setsummary").textContent = `这一局：${eb ? eb.textContent.trim() : "2000 年生"} · ${pro ? "从小时候讲起" : `${birth + 22} 年 22 岁`} · ${sv ? `种子「${sv}」` : "随机种子"} · ${autoSummary()}${cn}`; };
+    const updSummary = () => { const eb = document.querySelector("#erapick .segbtn.sel"); const sv = (el("seedin").value || "").trim(); const birth = eb ? +eb.dataset.birth : 2000; const pro = PRO && selEra() === PROLOGUE_ERA; const cn = !pro && CARDS_ON && dealt ? ` · 出身 ${[dealt.family[picked.family], dealt.temper[picked.temper], dealt.era[picked.era]].map((id) => CARDS.byId[id].name).join("/")}` : ""; el("setsummary").textContent = `这一局：${eb ? eb.textContent.trim() : "2000年代出生"} · ${pro ? "从小时候讲起" : `${birth + 22} 年 22 岁`} · ${sv ? `种子「${sv}」` : "随机种子"} · ${autoSummary()}${cn}`; };
     // 出身牌接线：点选改选（每行恒有一张预选=所发第一张，选路不拦截）；改年代只重发时代行；种子变更重发三行（所选位置重置为第一张）
     const effSeed = () => (el("seedin").value || "").trim() || seedParam || candSeed;
     const selEra = () => { const eb = document.querySelector("#erapick .segbtn.sel"); return eb ? eb.dataset.era : "c2000"; };
@@ -552,6 +580,7 @@ window.IFY = window.IFY || {};
 
   function newGame(seedStr, route, opts) {
     IFY.S = freshState(seedStr);
+    IFY.session = null; // v0.21 WP1：新局先弃旧会话，Track_B 出生时由 shadow-life 重建 session
     IFY.prevStats = null; IFY.resumeMark = false;
     IFY.streamFollow = true; IFY.streamSeen = 0; IFY.streamTop = 0;
     seedStreams(seedStr); // v0.18.0：三股流由主种子派生
@@ -573,6 +602,10 @@ window.IFY = window.IFY || {};
     applyEffects(route.stats); IFY.S.lastDelta = "";
     IFY.rec("route", route.id);
     IFY.S.log.push(`22 岁 · 出发：${route.name}`);
+    // v0.21 WP1（蓝图裁定三施工注）：落路线后、首次 save() 前显式调用 initParents（Track_A 传 rngW）——
+    // 22 岁首个 step 之前进程流没有任何其他消费者，调用点前移不改变进程流的消费顺序（parity 套件复核）。
+    IFY.initParents(IFY.rngW);
+    if (typeof IFY.birthShadow === "function") IFY.birthShadow(); // v0.21 WP1（蓝图 3.3）：Track_B 在落路线这一拍出生，保证有路线的 v2 存档必有两条 Track
     save();
     step();
   }
@@ -582,6 +615,7 @@ window.IFY = window.IFY || {};
 
   function newGamePrologue(seedStr, eraId, birth) {
     IFY.S = freshState(seedStr);
+    IFY.session = null; // v0.21 WP1：序章段会话由 save() 惰性建（tracks.B=null，蓝图 3.3），Track_B 待 22 岁汇入时出生
     IFY.prevStats = null; IFY.resumeMark = false;
     IFY.streamFollow = true; IFY.streamSeen = 0; IFY.streamTop = 0;
     seedStreams(seedStr); // v0.18.0：三股流由主种子派生
@@ -685,6 +719,9 @@ window.IFY = window.IFY || {};
     applyEffects(route.stats); IFY.S.lastDelta = "";
     IFY.rec("route", route.id);
     IFY.S.log.push(`22 岁 · 出发：${route.name}`);
+    // v0.21 WP1（蓝图裁定三施工注）：同 newGame 口径——落路线后、首次 save() 前显式 initParents（Track_A 传 rngW），随后 Track_B 出生
+    IFY.initParents(IFY.rngW);
+    if (typeof IFY.birthShadow === "function") IFY.birthShadow();
     save();
     step();
   }
@@ -724,8 +761,10 @@ window.IFY = window.IFY || {};
   function advance() {
     if (IFY.S.death) return renderDeath();
     IFY.S.age += 1;
-    if (IFY.S.age >= MAX_AGE) { IFY.S.age = MAX_AGE; return step(); }
-    if (IFY.rollDeath()) { save(); return renderDeath(); }
+    if (IFY.S.age >= MAX_AGE) { IFY.S.age = MAX_AGE; return step(); } // 受控到 80 = 终局口径：不受控 Track 不再步进（蓝图 5.1）
+    if (IFY.rollDeath()) { save(); return renderDeath(); } // 受控终局：不受控 Track 冻结在同龄处，不再步进（蓝图 5.1）
+    // v0.21 WP1（蓝图 5.1 唯一挂点）：受控未终局才步进不受控 Track——瞥视在 step() 呈现阶段读到的对面已是同龄最新状态。特性守卫：会话层不可用时跳过。
+    if (typeof IFY.stepUncontrolled === "function") IFY.stepUncontrolled();
     step();
   }
 
