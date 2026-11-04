@@ -1,9 +1,10 @@
 // [M1-B 内容重组] 本文件现位于 src/content/pool/pack1.js（按领域重组搬入），除本行外内容一字未动。
+// v0.23 WP8 fix4（四修）：p1_004（国考报名/岗位表）、p1_052（gap 年自述准备考试）补 ctx.eduGateHalf 宽学历门（放行 school/pre/half 或已立桥，只挡 never/left 未立桥；机制见 src/record.js）。
 window.GAME_PACKS=(window.GAME_PACKS||[]).concat([
 {"id":"p1_001","minYear":2010,"min":23,"max":25,"text":"招聘软件上滑了一晚上，你投出去四十多份简历。回复你的只有两家，一家要你先交培训费。","choices":[{"label":"那家交培训费的，拉黑举报","effects":{"growth":1,"wisdom":5},"echo":"举报理由你写了两行字，提交完心里舒服了点。"},{"label":"另一家约了面试，先去看看","effects":{"freedom":1},"echo":"面试地点在居民楼里，你走到门口，又折了回来。"}]},
 {"id":"p1_002","ctx":{"eduGate":true},"minYear":2002,"forbid":"exam_landed","min":22,"max":24,"text":"校招宣讲会站满了人，HR 说今年招六个。散场时你数了数，光你们班就来了三十多个。"},
 {"id":"p1_003","minYear":2002,"min":23,"max":27,"text":"考研二战的同学还在自习室占着座。你们聚餐，他把行测题册垫在啤酒箱上，先干了一杯。","choices":[{"label":"问他后不后悔，他说先考上再说","effects":{"relation":1},"echo":"散场时他把题册塞回包里，动作很熟练。"},{"label":"没多问，给他夹了块肉","effects":{"relation":2,"money":-1},"echo":"他走的时候说，下次聚就是上岸饭了。谁也没接话，都举了杯。"}]},
-{"id":"p1_004","minYear":2005,"forbidRoute":"abroad","forbid":["exam_passed","exam_landed"],"min":23,"max":30,"text":"国考报名那天系统挤崩了。你妈把岗位表打印出来，用红笔圈了三个离家近的。","choices":[{"label":"报了，买套题先刷着","effects":{"growth":2,"freedom":-1},"echo":"题册一百多块，刷到第三套的时候，你妈已经开始打听面试班了。"},{"label":"先放放，还是想再看看外面的机会","effects":{"freedom":2},"echo":"岗位表被压在茶几玻璃下面，过年回家还能看见那三个红圈。"}]},
+{"id":"p1_004","ctx":{"eduGateHalf":true},"minYear":2005,"forbidRoute":"abroad","forbid":["exam_passed","exam_landed"],"min":23,"max":30,"text":"国考报名那天系统挤崩了。你妈把岗位表打印出来，用红笔圈了三个离家近的。","choices":[{"label":"报了，买套题先刷着","effects":{"growth":2,"freedom":-1},"echo":"题册一百多块，刷到第三套的时候，你妈已经开始打听面试班了。"},{"label":"先放放，还是想再看看外面的机会","effects":{"freedom":2},"echo":"岗位表被压在茶几玻璃下面，过年回家还能看见那三个红圈。"}]},
 {"id":"p1_005","minYear":2012,"min":33,"max":35,"require":"stay_put","text":"考编的年龄线卡在 35 岁。同事群里有人算了算，这是他能报的最后一年，题已经刷到第四遍了。"},
 {"id":"p1_006","minYear":2002,"min":24,"max":30,"route":"corp","text":"这年的校招薪资又涨了。你带的新人，起薪比你当年多三千。你把这事咽下去，教他怎么用打印机。"},
 {"id":"p1_007","min":24,"max":32,"route":"corp","text":"公司开始讲期权和上市。同事把计算器按得噼啪响，算自己那份能换几平米。","choices":[{"label":"听个热闹，工资到账才是真的","effects":{"money":1},"echo":"季度奖到账那天，你请自己吃了一碗加了蛋的面。"},{"label":"跟着激动了一阵，也算了算","effects":{"growth":1,"freedom":-1,"wisdom":3},"echo":"那张写满数字的纸你留了很久，搬工位的时候才扔。"}]},
@@ -38,8 +39,8 @@ window.GAME_PACKS=(window.GAME_PACKS||[]).concat([
 {"id":"p1_036","minYear":2012,"min":26,"max":40,"text":"基金群里天天有人晒收益，你追着买了几只热门的。半年后打开账户，绿的多红的少。","choices":[{"label":"割了，认下这笔学费","effects":{"money":-2,"wisdom":6},"echo":"退出来那笔钱，你给家里添了台洗衣机，带烘干。"},{"label":"放着不动，眼不见心不烦","effects":{"money":-1,"health":-1,"wisdom":5},"echo":"它就在那儿趴着，你每个季度瞄一眼，心跳一次。"}]},
 {"id":"p1_037","minYear":2012,"min":24,"max":38,"text":"同学在群里说币又涨了，附了张截图。另一个同学说，上轮他就是在最高点接的，现在还没回本。"},
 {"id":"p1_038","minYear":2018,"min":25,"max":45,"text":"大家开始聊消费降级：临期食品店排起了队，二手平台上你的闲置卖出去三件。"},
-{"id":"p1_039","ctx":{"form":["employee","public"]},"min":28,"max":38,"text":"疫情最紧的那阵，你在家办公。工位是餐桌，会议背景是晾衣架，猫在镜头前走了三个来回。","stateNot":{"cat":"gone"}},
-{"id":"p1_040","min":28,"max":38,"minYear":2020,"text":"楼被封了十四天。团购群里接龙接到深夜，你学会了用面粉做出六种吃法。","effects":{"health":1,"relation":1}},
+{"id":"p1_039","ctx":{"form":["employee","public"]},"forbid":"covid95_days","min":28,"max":38,"text":"疫情最紧的那阵，你在家办公。工位是餐桌，会议背景是晾衣架，猫在镜头前走了三个来回。","stateNot":{"cat":"gone"}},
+{"id":"p1_040","forbid":"covid95_days","min":28,"max":38,"minYear":2020,"text":"楼被封了十四天。团购群里接龙接到深夜，你学会了用面粉做出六种吃法。","effects":{"health":1,"relation":1}},
 {"id":"p1_041","minYear":2020,"min":29,"max":40,"text":"公司改成混合办公，一周去三天。省下的通勤时间，你补了觉，楼下新开的菜场也逛熟了。","effects":{"freedom":2,"health":1}},
 {"id":"p1_042","min":22,"max":30,"minYear":2013,"text":"移动支付刚铺开那会儿，你教爸妈绑卡。视频里举着手机对了半天焦，付款码终于扫上了。","stateAll":{"dad":"alive","mom":"alive"}},
 {"id":"p1_043","min":24,"max":40,"minYear":2008,"text":"双城生活的人周五晚上在高铁上改 PPT。过道里全是同样的电脑包，和他一样的眼神。","effects":{"health":-1}},
@@ -51,8 +52,8 @@ window.GAME_PACKS=(window.GAME_PACKS||[]).concat([
 {"id":"p1_049","minYear":2016,"min":24,"max":40,"text":"人人都在试副业的年头，你也开了个账号。更新到第九条，播放量两位数。","choices":[{"label":"先放那儿，忙过这阵再说","effects":{"freedom":1},"echo":"账号密码你记在备忘录里，和一堆取件码躺在一起。"},{"label":"咬牙更到第三十条看看","effects":{"growth":2,"health":-1},"echo":"第三十条那天，评论区第一次有人问你是干什么的。"}]},
 {"id":"p1_050","min":25,"max":38,"text":"行业峰会散场，名片换了一兜。你发现大家的名头都很好听，聊起业务都先叹气。"},
 {"id":"p1_051","min":23,"max":30,"route":"gap","text":"停年里你在青旅前台帮过一阵忙。住店的人来来去去，有个辞职旅行的姐姐，走了三个月又回来上班了。"},
-{"id":"p1_052","min":23,"max":30,"route":"gap","text":"家里亲戚问你这一年在干嘛，你解释到第三遍，把话咽了回去，说在准备考试。","effects":{"relation":-1,"health":-1}},
-{"id":"p1_053","min":23,"max":32,"route":"home","text":"单位分了宿舍，两人一间。窗外就是操场，起床号比闹钟还准时。"},
+{"id":"p1_052","min":23,"max":30,"route":"gap","ctx":{"eduGateHalf":true},"text":"家里亲戚问你这一年在干嘛，你解释到第三遍，把话咽了回去，说在准备考试。","effects":{"relation":-1,"health":-1}},
+{"id":"p1_053","min":23,"max":32,"route":"home","text":"单位分了宿舍，两人一间。窗外就是操场，起床号比闹钟还准时。","textEra":{"c1995":"单位分了宿舍，两人一间。窗外就是操场，天刚亮跑道上就有人跑步，脚步声一阵一阵的。","c2000":"单位分了宿舍，两人一间。窗外就是操场，天刚亮跑道上就有人跑步，脚步声一阵一阵的。"}},
 {"id":"p1_054","min":25,"max":40,"minYear":2018,"route":"home","text":"县里开始搞直播带货，单位让你兼着出镜。第一回你对着镜头背了五遍词，卖出去三单。","effects":{"growth":1,"relation":1}},
 {"id":"p1_055","min":24,"max":36,"route":"abroad","text":"语言班里全是等签证的人。老师说，今年的通过率比去年低，你们互相看了看，没人接话。"},
 {"id":"p1_056","forbidRoute":"home","min":26,"max":40,"route":"abroad","text":"异乡的冬天黑得早。你学会了在超市打折时段囤货，还练出了一手快炒。"},

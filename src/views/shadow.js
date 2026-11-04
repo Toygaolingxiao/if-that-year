@@ -22,7 +22,12 @@ const SHADOW_LATE_DETAILS = new Set([
 ]);
 
 function shadowStageText(stage) {
-const all = shadowRoute().stages[stage];
+const sh = shadowRoute();
+const rawStages = sh.stages[stage];
+// 年代变体（stagesEra，形状 { 原文行: { 年代id: 文本 } }，字段契约登记在 registry.js）：取到原数组后、既有过滤之前先逐行映射——
+// 本局年代有变体的行替换为变体，无变体或路线未声明 stagesEra 时原样（恒等映射）；池大小不变，不多耗一抽随机。
+const eraMap = sh.stagesEra;
+const all = eraMap ? rawStages.map((t) => { const m = eraMap[t]; const v = m && IFY.S ? m[IFY.S.era] : null; return v != null ? v : t; }) : rawStages;
 // 年代过滤（v0.20.1 W4）：瞥视目标年份=影子人生所处的日历年（出生年+当前年龄，与 scheduler 公历门口径一致）。
 // 目标年份 <2000 时剔除带具体金额的细节（如「转了两千」「存下五百块」——1980 年代月工资不足百元，这类数额不成立）；
 // 剔完为空则回退全池，保证瞥视永远有细节可看。
@@ -323,6 +328,34 @@ if (line) return line;
 return B.death? `${B.death.age} 岁 · 这一生停在这里：${B.death.text}`: "";
 }
 
+// ---------- v0.23 WP9 A线：童年记号瞥视轮换消费（Real/Legacy 两路共用；scripts/sim.js 同口径复刻） ----------
+// 按落账序逐瞥一句：取 S.marks 中第一个未示且有可解析文本的条目——可解析文本＝条目自带 shadow
+// ?? 注册表 PRO.marks[id].shadow（旧档条目无 shadow 字段时回落注册表、不报错；池记号旧条目注册表
+// 里也没有、无文本可示，跳过）。条目（或注册表条目）带 shadowBySchooling 时，按消费当时
+// S.state.schooling 解析：有该键用分文、否则缺省句。已示 id 记 S.prologue.shadowMarksShown；
+// 旧档只有 shadowMarkShown===true 时，首次消费前把 marks[0].id 视为已示（迁移，不重示其句）。
+// 纯状态函数、零 RNG 消费；第一瞥行为与旧口径逐字一致（首个未示恒为 marks[0] 的情形）。
+function glimpseMarkLineNext() {
+const S = IFY.S;
+if (!IFY.PRO || !S || !S.prologue || !(S.marks || []).length) return "";
+const P = S.prologue;
+if (!Array.isArray(P.shadowMarksShown)) {
+P.shadowMarksShown = [];
+if (P.shadowMarkShown === true && S.marks[0] && S.marks[0].id) P.shadowMarksShown.push(S.marks[0].id);
+}
+const shown = new Set(P.shadowMarksShown);
+const entry = (S.marks || []).find((m) => m && m.id &&!shown.has(m.id) && ((m.shadow != null) || (IFY.PRO.marks[m.id] && IFY.PRO.marks[m.id].shadow != null)));
+if (!entry) return "";
+let text = entry.shadow != null? entry.shadow: IFY.PRO.marks[entry.id].shadow;
+const bySch = entry.shadowBySchooling || (IFY.PRO.marks[entry.id] && IFY.PRO.marks[entry.id].shadowBySchooling) || null;
+if (bySch && S.state && bySch[S.state.schooling] != null) text = bySch[S.state.schooling];
+if (!text) return "";
+P.shadowMarksShown.push(entry.id);
+P.shadowMarkShown = true; // 旧口径镜像：任一瞥视示句后置 true（旧档迁移判定只读它与 marks[0]）
+S.log.push(`${S.age} 岁 · ${text}`);
+return text;
+}
+
 // ---------- 真账瞥视（呈现骨架与 legacy 同一套，只换取材） ----------
 function renderGlimpseReal(stage, found) {
 const { entry} = found;
@@ -370,12 +403,8 @@ if (mainText) (IFY.S.shadowSeenTexts = IFY.S.shadowSeenTexts || []).push(mainTex
 IFY.rec("glimpse", "seen", mainText? { text: mainText}: undefined);
 IFY.S.log.push(mainText? `${IFY.S.age} 岁 · 影子：${mainText}`: `${IFY.S.age} 岁 · 看了另一条路`);
 if (mode === "memorial") entry.memorialShown = true; // 悼念呈现后才置位（蓝图 6.3）
-// 童年记号的影子回响（v0.17.0）：每局第一次看瞥视时附一句「两条路上共同的事实」——童年不进影子锚点，只留共同事实
-let markLine = "";
-if (IFY.PRO && IFY.S.prologue &&!IFY.S.prologue.shadowMarkShown && (IFY.S.marks || []).length) {
-const mk = IFY.PRO.marks[IFY.S.marks[0].id];
-if (mk) { markLine = mk.shadow; IFY.S.prologue.shadowMarkShown = true; IFY.S.log.push(`${IFY.S.age} 岁 · ${mk.shadow}`);}
-}
+// 童年记号的影子回响（v0.17.0；v0.23 WP9 A线改轮换消费）：每次看瞥视按落账序附一句未示过的「两条路上共同的事实」——童年不进影子锚点，只留共同事实
+const markLine = glimpseMarkLineNext();
 const factsHtml = `<p class="hint">近况，一行一条：</p>` + facts.map((f) => `<p class="body">· ${IFY.esc(f.text)}</p>`).join("");
 let detailHtml = "";
 if (mode === "normal") {
@@ -435,12 +464,8 @@ const mSeen = IFY.playerMeta(); mSeen.glimpsesSeen += 1; IFY.S.glimpsesSeen = mS
 (IFY.S.shadowSeenTexts = IFY.S.shadowSeenTexts || []).push(text);
 IFY.rec("glimpse", "seen", { text});
 IFY.S.log.push(`${IFY.S.age} 岁 · 影子：${text}`);
-// 童年记号的影子回响（v0.17.0）：每局第一次看瞥视时附一句「两条路上共同的事实」——童年不进影子锚点，只留共同事实
-let markLine = "";
-if (IFY.PRO && IFY.S.prologue &&!IFY.S.prologue.shadowMarkShown && (IFY.S.marks || []).length) {
-const mk = IFY.PRO.marks[IFY.S.marks[0].id];
-if (mk) { markLine = mk.shadow; IFY.S.prologue.shadowMarkShown = true; IFY.S.log.push(`${IFY.S.age} 岁 · ${mk.shadow}`);}
-}
+// 童年记号的影子回响（v0.17.0；v0.23 WP9 A线改轮换消费）：每次看瞥视按落账序附一句未示过的「两条路上共同的事实」——童年不进影子锚点，只留共同事实
+const markLine = glimpseMarkLineNext();
 IFY.el("detail").innerHTML = `<p class="body">「${IFY.esc(text)}」</p>${markLine? `<p class="body">${IFY.esc(markLine)}</p>`: ""}
 <label class="refl-label">给现实里的自己留一句话（会出现在你的结算里）<input id="refl" type="text" maxlength="60" placeholder="一句就好"></label>
 <div class="row"><button class="primary" id="cont">记下，继续</button><button class="ghost" id="cont2">不写了，继续</button></div>`;
@@ -486,7 +511,7 @@ return { mode, materials: [], facts, skeleton: skeleton.slice(0, 1), closing: ""
 Object.assign(IFY, {
 shadowRoute, shadowStageText, shadowCostText, shadowFinalText, shadowCompareLines, renderGlimpse,
 // WP4 取材层导出（供出处检查工具与断言复用同一套登记表与纯函数；呈现层之外不消费它们做决策）
-glimpseFactLines, glimpsePick, glimpseSkeleton, glimpseDeathLine, uncontrolledEntry, glimpseTakeForTest,
+glimpseFactLines, glimpsePick, glimpseSkeleton, glimpseDeathLine, uncontrolledEntry, glimpseTakeForTest, glimpseMarkLineNext,
 GLIMPSE_FACT_SOURCES: { OWNED_FLAGS, MORTGAGE_SETTER_IDS, MORTGAGE_ONGOING_IDS, HEALTH_ALERT_IDS, FACT_WORDS},
 });
 })(window.IFY);

@@ -6,7 +6,7 @@
    validate-state 按枚举值集校验；schooling 域本身的状态集与边一字不动。同理 examBand/sentdownForm/
    quotaHolder/studyForm 都是挂在宿主域旁的枚举事实（host 标注见 enumFacts），不进 domains。 */
 window.GAME_REGISTRY = {
- "version": "0.23.6",
+ "version": "0.23.7",
  "domains": {
   "spouse": {
    "label": "配偶",
