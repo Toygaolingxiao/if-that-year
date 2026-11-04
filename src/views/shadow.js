@@ -392,7 +392,7 @@ detailHtml = `${skeleton[0]? `<p class="body">${IFY.esc(skeleton[0])}</p>`: ""}$
 // 反思输入行之前；机会说明行只陈述机会存量，不劝换不劝留。悼念/回望 mode 天然不在 normal、不出；
 // skip 路径不经本处理器，不出。拒绝只关本次（下个瞥视点照常出），接受走 IFY.handControl()。
 const swapHtml = (mode === "normal" && !meta.swapped)
-? `<div id="swapblock"><p class="hint">换过去的机会，一生只有一次。换了，就再没有第二次。</p><div class="row"><button class="primary" id="swap-yes">换过去，过它接下来的日子</button><button class="ghost" id="swap-no">不换，继续过我的</button></div></div>`
+? `<div id="swapblock"><p class="hint">换过去，一生只能换这一次。这次不换，下次瞥视还能再想；换了，就再没有第二次。</p><div class="row"><button class="primary" id="swap-yes">换过去，过它接下来的日子</button><button class="ghost" id="swap-no">不换，继续过我的</button></div></div>`
 : "";
 IFY.el("detail").innerHTML = `${detailHtml}${markLine? `<p class="body">${IFY.esc(markLine)}</p>`: ""}${swapHtml}
 <label class="refl-label">给现实里的自己留一句话（会出现在你的结算里）<input id="refl" type="text" maxlength="60" placeholder="一句就好"></label>

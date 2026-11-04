@@ -653,42 +653,51 @@
     return `另一条路（${routeName}）活到了 80 岁。`;
   }
 
-  // 第八槽揭价一句（硬线）：揭价对象只能从 meta.shownFacts 里 type:"material" 的素材选，且必须能在对面账本里对上
-  // （id 与 atAge 同时命中）；取最近一条（atAge 最大，同龄取后示的一条），再找它之后同域的下一次 state 流转作
-  // 「后来的事」——素材域的认法：素材本身是 state 条目时域即其 id 前缀；其余素材认同岁紧邻其前的 state 条目
-  // （落账序里流转先于条目记账，那条流转就是这件事落定的域）。找不到同域后续流转、或后续流转没有登记句形时，
-  // 不出揭价句——没露过面的事不许凭空收费，无后续的事不许编后来的价。
+  // 第八槽揭价一句（硬线）：揭价对象只能从 meta.shownFacts 里 type:"material" 的素材选，且必须能在它
+  // 来源轨的账本里对上（id 与 atAge 同时命中），再找锚之后同域的下一次 state 流转作「后来的事」——
+  // 素材域的认法：素材本身是 state 条目时域即其 id 前缀；其余素材认同岁紧邻其前的 state 条目
+  // （落账序里流转先于条目记账，那条流转就是这件事落定的域）。找不到同域后续流转、或后续流转没有
+  // 登记句形时不出句——没露过面的事不许凭空收费，无后续的事不许编后来的价。
+  // v0.22.1 Z1（锚归属修复）：旧实现只在入参 B（被换下轨）一本账里找锚，但交换前瞥视的素材全部出自
+  // 当时的影子轨——交换后那条轨正是玩家接管并续过的身体，其账本就是 IFY.S 的账本；交换后的瞥视素材
+  // 才出自被换下轨。归属错位使揭价句在审计 10 局交换局里 0 触发。现口径：候选账本按
+  // [接管轨（IFY.S）、被换下轨（B）] 顺序排，素材按新近（atAge 大者优先、同龄后示者优先）逐个试锚，
+  // 第一个能凑齐「锚 + 同域后续流转」的出句（旧实现只试最新一条、凑不齐即沉默，同样是 0 触发的成因）。
+  // 未交换局候选只有影子轨一本（B），与素材来源恒一致。
   function shadowRevealSentence(B) {
     const ses = IFY.session;
     const shown = ses && ses.meta && Array.isArray(ses.meta.shownFacts) ? ses.meta.shownFacts : [];
     const mats = shown.filter((f) => f && f.type === "material" && f.id);
     if (!mats.length) return "";
-    const led = Array.isArray(B.ledger) ? B.ledger : [];
-    const cands = [];
-    mats.forEach((sf, order) => {
-      let idx = -1;
-      led.forEach((e, i) => { if (e.id === sf.id && (sf.atAge == null || e.age === sf.atAge)) idx = i; }); // 同 id 同岁取后落账一条（带选项的条目后一条是落点）
-      if (idx >= 0) cands.push({ sf, idx, age: led[idx].age, order });
-    });
-    if (!cands.length) return "";
-    cands.sort((a, b) => (b.age - a.age) || (b.order - a.order));
-    const anchor = led[cands[0].idx];
-    let dom = null;
-    if (anchor.kind === "state" && typeof anchor.id === "string" && anchor.id.includes(">")) dom = anchor.id.split(">")[0];
-    else {
-      for (let j = cands[0].idx - 1; j >= Math.max(0, cands[0].idx - 4); j--) {
-        if (led[j].kind === "state" && led[j].age === anchor.age && typeof led[j].id === "string" && led[j].id.includes(">")) { dom = led[j].id.split(">")[0]; break; }
+    const ledgers = [];
+    if (ses && ses.meta && ses.meta.swapped && IFY.S && Array.isArray(IFY.S.ledger)) ledgers.push(IFY.S.ledger); // 接管轨：交换前素材的来源账
+    if (B && Array.isArray(B.ledger)) ledgers.push(B.ledger); // 被换下轨（未交换局即影子轨）：交换后素材的来源账
+    const ordered = mats.map((sf, order) => ({ sf, order })).sort((a, b) => ((b.sf.atAge || 0) - (a.sf.atAge || 0)) || (b.order - a.order));
+    for (const { sf } of ordered) {
+      for (const led of ledgers) {
+        let idx = -1;
+        led.forEach((e, i) => { if (e.id === sf.id && (sf.atAge == null || e.age === sf.atAge)) idx = i; }); // 同 id 同岁取后落账一条（带选项的条目后一条是落点）
+        if (idx < 0) continue;
+        const anchor = led[idx];
+        let dom = null;
+        if (anchor.kind === "state" && typeof anchor.id === "string" && anchor.id.includes(">")) dom = anchor.id.split(">")[0];
+        else {
+          for (let j = idx - 1; j >= Math.max(0, idx - 4); j--) {
+            if (led[j].kind === "state" && led[j].age === anchor.age && typeof led[j].id === "string" && led[j].id.includes(">")) { dom = led[j].id.split(">")[0]; break; }
+          }
+        }
+        if (!dom) continue;
+        let next = null;
+        for (let j = idx + 1; j < led.length; j++) {
+          const e = led[j];
+          if (e.kind === "state" && typeof e.id === "string" && e.id.startsWith(dom + ">") && STATE_PHRASE_LOCAL[e.id]) { next = e; break; }
+        }
+        if (!next) continue;
+        const glimpseAge = typeof sf.glimpseAge === "number" ? sf.glimpseAge : anchor.age;
+        return `你 ${glimpseAge} 岁看过的那件事，后来${STATE_PHRASE_LOCAL[next.id]}，在 ${next.age} 岁。`;
       }
     }
-    if (!dom) return "";
-    let next = null;
-    for (let j = cands[0].idx + 1; j < led.length; j++) {
-      const e = led[j];
-      if (e.kind === "state" && typeof e.id === "string" && e.id.startsWith(dom + ">") && STATE_PHRASE_LOCAL[e.id]) { next = e; break; }
-    }
-    if (!next) return "";
-    const glimpseAge = typeof cands[0].sf.glimpseAge === "number" ? cands[0].sf.glimpseAge : anchor.age;
-    return `你 ${glimpseAge} 岁看过的那件事，后来${STATE_PHRASE_LOCAL[next.id]}，在 ${next.age} 岁。`;
+    return "";
   }
 
   function eighthSlotReal(B) {
@@ -696,19 +705,33 @@
     return shadowFinalSentence(B) + shadowRevealSentence(B);
   }
 
-  // shadowCompareLines 包装（v0.22 WP7，协调者修正条件）：原函数在 shadow.js（本包不许动）——
-  // 仅交换局（meta.swapped）：对照行 main 已由第八槽真账承载，main 返回 ""；
-  // 未交换局（含全部一期冻结集）必须与一期逐字一致，原样透传（初版误以「有不受控 Track」为条件，
-  // 一期起每局都有不受控影子轨，parity 416/416 全红后收紧到 swapped）。
+  // shadowCompareLines 包装（v0.22 WP7 立、v0.22.1 F7 扩围）：原函数在 shadow.js——
+  // 有不受控 Track 的局（交换与未交换 alike），对照主句改由第八槽真账承载，main 返回 ""
+  // （v0.22 时只对交换局如此收紧，是为 parity 冻结集所做的协调者裁定；v0.22.1 按审计 F7 推翻该裁定：
+  // 未交换局第八槽一并真账化、主句一并让位，parity 基线随本版按归因表重封，见 fix-v0221/REPORT.md）。
+  // 无 Track 的 legacy 局无账可依，原样透传模板（回落口径）。
   if (typeof IFY.shadowCompareLines === "function" && !IFY._wp7ShadowCompareWrapped) {
     const origShadowCompareLines = IFY.shadowCompareLines;
     IFY.shadowCompareLines = function () {
       const r = origShadowCompareLines();
-      const ses = IFY.session;
-      if (ses && ses.meta && ses.meta.swapped) return { main: "", others: r.others };
+      if (uncontrolledState()) return { main: "", others: r.others };
       return r;
     };
     IFY._wp7ShadowCompareWrapped = true;
+  }
+
+  // 段进段配偶状态（v0.22.1 F2 辅助）：某段 Track 在进段岁（fromAge）那一刻的 spouse 值——
+  // 按该 Track 全账本回放 age ≤ fromAge 的 spouse 流转取最后一个（无流转取初始 none）。
+  // 接管轨在交换前已成家的事实不在段切片里，stateWitnessed 认不到，靠这一口补认。
+  function segEntrySpouse(view, val) {
+    for (const seg of view.segments) {
+      let cur = "none";
+      for (const e of (Array.isArray(seg.state.ledger) ? seg.state.ledger : [])) {
+        if (e.kind === "state" && typeof e.id === "string" && e.id.startsWith("spouse>") && typeof e.age === "number" && e.age <= seg.fromAge) cur = e.id.slice(7);
+      }
+      if (cur === val) return true;
+    }
+    return false;
   }
 
   // ---------- 结算九槽（v0.18.0，地基 §4.6/§4.7）：九个槽位全读状态与账本拼装 ----------
@@ -717,9 +740,23 @@
   function settlementSlots() {
     const F = IFY.S.flags, ST = IFY.S.state || {};
     // v0.22 WP7：段视图只在交换局非空——非空时子女/父母/没办完的事三槽与手艺事业的轨迹读段视图，
-    // 落脚/陪伴/钱三槽照旧读终局身体（IFY.S）；视图为 null 时全槽走下方原读法，一字不动。
+    // 钱槽照旧读终局身体（IFY.S）；视图为 null 时全槽走下方原读法，一字不动。
+    // v0.22.1 F2/F4：交换局的落脚（下文 trail 段拼接）与陪伴（终局单身时查段内伴侣史）也改读段视图。
     const view = playerFacts();
-    const trail = IFY.residenceTrail();
+    // v0.22.1 F4：交换局的落脚按段拼接——每段在自己 Track 的账本窗口内算居所轨迹
+    // （residenceTrailOf），年数按段归属相加、终局落点取末段的真实落点；不再只读终局身体
+    // 一轨的全程轨迹（那会把一段的年数说成整生、甚至把落点说反，审计 run-01/03/06）。
+    // 未交换局（view 为 null）仍走 IFY.residenceTrail() 原读法。
+    const trail = (view && typeof IFY.residenceTrailOf === "function") ? (() => {
+      const spans = { home: 0, city: 0, abroad: 0 };
+      let fin = null;
+      for (const seg of view.segments) {
+        const t = IFY.residenceTrailOf(seg.state, seg.fromAge, seg.toAge);
+        spans.home += t.spans.home; spans.city += t.spans.city; spans.abroad += t.spans.abroad;
+        fin = t.final;
+      }
+      return { final: fin, spans };
+    })() : IFY.residenceTrail();
     const slots = [];
     let s1;
     if (trail.final === "home" && trail.spans.city + trail.spans.abroad >= 5) s1 = `在外头住了${trail.spans.city + trail.spans.abroad}年，最后还是回了老家落脚。`;
@@ -733,6 +770,11 @@
     else if (ST.spouse === "widowed") s2 = "另一半先走了一步。最后一段路，是自己走完的。";
     else if (ST.spouse === "divorced") s2 = "中间那段婚姻散了。后来的日子，各过各的。";
     else if (ST.spouse === "dating") s2 = "身边一直有个人，没领证，也没散，就这么处到了老。";
+    // v0.22.1 F2：终局身体是单身、但任一段里成过家/有过伴侣时，不许断言「没和谁凑成一对」——
+    // 见证口径 = 段内 spouse 流转（stateWitnessed）或该段进段时的配偶状态（接管轨在交换岁
+    // 之前已成家的情形，流转不在段切片内，按其全账本回放进段值补认）。
+    else if (view && (view.stateWitnessed("spouse", "partnered") || segEntrySpouse(view, "partnered"))) s2 = "前一段日子里成了家，身边有过人。换了路以后一直是一个人，饭自己吃，也过来了。";
+    else if (view && (view.stateWitnessed("spouse", "dating") || segEntrySpouse(view, "dating"))) s2 = "前一段日子里，身边处过一个人。换了路以后没再遇上谁，饭自己吃，日子自己过，也过来了。";
     else if (ST.spouse === "single") s2 = "这一生没和谁凑成一对。日子自己过，饭自己吃，也过来了。";
     else s2 = "没遇上要凑成一对的人。一个人，也把日子过完了。";
     slots.push(["陪伴", s2]);
@@ -799,17 +841,18 @@
     else if (!view && F.cov_solo_done && ST.kids === "undecided") s7 = "38 岁挂起的那份账，45 岁你一个人对完了。孩子的事没落定，可那份约不算悬着了。";
     else if (!view && IFY.S.covenant && IFY.S.covenant.kind === "wait" && ST.kids === "undecided") s7 = "38 岁挂起的那份账，到最后也没正式对完。";
     else if (!view && F.late_tried && !F.late_parent) s7 = "想要孩子那几年，试过，也跑过医院，最后没等来。这事放下了，就是偶尔还想起。";
-    else if ((IFY.playerMeta().glimpsesSkipped || 0) >= 2) s7 = "另一条路有几回摆在眼前，你都没去细看。不知道的，就让它不知道下去。"; // v0.21 WP1：瞥视计数改读 session.meta（蓝图 3.1）
+    else if ((IFY.playerMeta().glimpsesSkipped || 0) >= 2 && !(IFY.playerMeta().glimpsesSeen > 0)) s7 = "另一条路有几回摆在眼前，你都没去细看。不知道的，就让它不知道下去。"; // v0.21 WP1：瞥视计数改读 session.meta（蓝图 3.1）；v0.22.1 F8：看过至少一次的人不许判「都没去细看」，计数口径与文案对齐（审计 run-13）
     else if (F.renting && !F.bought_house) s7 = "买房的事提过几回，最后没办成，一直租着住。";
     else s7 = "没什么悬着的大事。该办的办了，办不了的，也放下了。";
     slots.push(["没办完的事", s7]);
-    // 第八槽（v0.22 WP7 真账化，协调者收紧条件）：仅交换局读对面全账本——终局一句 + shownFacts 揭价一句
-    // （取材与硬线见 eighthSlotReal 上方注释）。未交换局与 legacy 局走原模板一字不动。取舍如实记：
-    // 蓝图 7.3 字面要未交接局也读 Track_B 全账本，但 WP8 把 parity 冻结集列为硬项、且明言不换的局
-    // 与一期行为一致——两者冲突时从 parity/任务书：交换局（模板说法「没走的那条路」在那里是假话）
-    // 全量真账化；未交换局维持一期已上线的模板代价句，此偏离蓝图字面处留待用户裁。
-    const sesS8 = IFY.session;
-    const uncB = (sesS8 && sesS8.meta && sesS8.meta.swapped) ? uncontrolledState() : null;
+    // 第八槽（v0.22 WP7 交换局真账化；v0.22.1 F7 扩到未交换局）：只要本局有不受控 Track
+    // （新局恒有），就读它的真实账本——终局一句 + shownFacts 揭价一句（取材与硬线见
+    // eighthSlotReal 上方注释），与交换局同口径。模板代价句只作无账可依（legacy 旧档、
+    // 无 Track）时的回落。沿革如实记：蓝图 7.3 字面本要未交接局也读 Track_B 全账本，v0.22
+    // 施工时因 parity 冻结集硬线做了协调者裁定、只对交换局真账化；全记录审计 F7 证实模板
+    // 断言（买房/搬家次数等）与未交换局影子的真实流水可逐条对撞，v0.22.1 按审计推翻裁定、
+    // 全量真账化，parity 基线随本版按归因表重封（fix-v0221/REPORT.md）。
+    const uncB = uncontrolledState();
     if (uncB) slots.push(["另一条路", eighthSlotReal(uncB)]);
     else {
       const mainU = (IFY.S.unchosen || []).find((u) => u.kind === "route");

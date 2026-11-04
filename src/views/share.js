@@ -93,9 +93,17 @@
     x.fillStyle = "#2F4A3C"; x.beginPath(); x.arc(990, gy, 12, 0, 7); x.fill();
   }
 
+  // 卡面流水来源（v0.22.1 F5）：交换局改读 playerFacts 的合并段流水（玩家两段亲历的拼接，
+  // 与结算同一份账），不再拿接管轨自 22 岁起的全程流水（前半段是政策 Bot 的年月）冒充
+  // 「这一生」；未交换局视图为 null，走 IFY.S.log 原口径，一字不变。
+  function cardLogLines() {
+    const v = typeof IFY.playerFacts === "function" ? IFY.playerFacts() : null;
+    return v ? v.mergedLog : (IFY.S.log || []);
+  }
+
   function parseLog() {
     const entries = [];
-    for (const l of IFY.S.log) {
+    for (const l of cardLogLines()) {
       const m = l.match(/^(\d+) 岁 · ([\s\S]*)$/);
       if (m) entries.push({ age: +m[1], text: m[2] });
     }
@@ -222,7 +230,8 @@
       drawRoad(x, gy);
       x.font = "30px " + IFY.SERIF; x.fillStyle = "#8A948C";
       x.fillText("22 岁", 90, gy + 54); x.textAlign = "right"; x.fillText(end + " 岁", 990, gy + 54); x.textAlign = "left";
-      const keyFork = IFY.S.log.find((l) => l.includes("回不回老家")) || IFY.S.log.find((l) => l.includes("·") && l.includes("："));
+      const cardLog = cardLogLines(); // v0.22.1 F5：「关键的一岔」与流水卡同源，交换局读合并段流水
+      const keyFork = cardLog.find((l) => l.includes("回不回老家")) || cardLog.find((l) => l.includes("·") && l.includes("："));
       y = gy + (big ? 118 : 104);
       x.fillStyle = "#23211C"; x.font = "34px " + IFY.SANS;
       if (keyFork) y = wrapText(x, "关键的一岔：" + keyFork.split("· ")[1], 90, y, 900, 50);
