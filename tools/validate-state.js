@@ -9,12 +9,12 @@
 "use strict";
 const fs = require("fs"), vm = require("vm"), path = require("path");
 const ROOT = path.join(__dirname, "..");
-const PACK_FILES = ["src/content/pool/pack1.js", "src/content/pool/pack2.js", "src/content/pool/pack3.js", "src/content/pool/pack4.js", "src/content/pool/pack5.js", "src/content/pool/pack6.js", "src/content/pool/pack9.js", "src/content/pool/pack10.js", "src/content/pool/pack11.js", "src/content/pool/pack12.js", "src/content/lines/side-and-steady.js", "src/content/pool/pack14.js", "src/content/pool/pack15.js", "src/content/lines/exam.js", "src/content/pool/pack17.js", "src/content/pool/pack18.js", "src/content/pool/pack19.js", "src/content/pool/pack20.js", "src/content/pool/pack21.js", "src/content/pool/pack22.js", "src/content/pool/pack23.js", "src/content/lines/late-life.js", "src/content/pool/pack25.js", "src/content/pool/pack26.js", "src/content/pool/pack27.js", "src/content/pool/pack28.js", "src/content/pool/pack29.js", "src/content/pool/pack30.js", "src/content/pool/pack33.js", "src/content/pool/pack31.js", "src/content/pool/pack32.js", "src/content/pool/pack34.js", "src/content/lines/covenant.js", "src/content/lines/process-beats.js", "src/content/lines/abroad.js", "src/content/era/era1955.js", "src/content/era/era1965.js", "src/content/era/era1978.js"];
+const PACK_FILES = ["src/content/pool/pack1.js", "src/content/pool/pack2.js", "src/content/pool/pack3.js", "src/content/pool/pack4.js", "src/content/pool/pack5.js", "src/content/pool/pack6.js", "src/content/pool/pack9.js", "src/content/pool/pack10.js", "src/content/pool/pack11.js", "src/content/pool/pack12.js", "src/content/lines/side-and-steady.js", "src/content/pool/pack14.js", "src/content/pool/pack15.js", "src/content/lines/exam.js", "src/content/pool/pack17.js", "src/content/pool/pack18.js", "src/content/pool/pack19.js", "src/content/pool/pack20.js", "src/content/pool/pack21.js", "src/content/pool/pack22.js", "src/content/pool/pack23.js", "src/content/lines/late-life.js", "src/content/pool/pack25.js", "src/content/pool/pack26.js", "src/content/pool/pack27.js", "src/content/pool/pack28.js", "src/content/pool/pack29.js", "src/content/pool/pack30.js", "src/content/pool/pack33.js", "src/content/pool/pack31.js", "src/content/pool/pack32.js", "src/content/pool/pack34.js", "src/content/lines/covenant.js", "src/content/lines/process-beats.js", "src/content/lines/abroad.js", "src/content/era/era1955.js", "src/content/era/era1965.js", "src/content/era/era1978.js", "src/content/era/era1985.js", "src/content/era/era1995.js"];
 const ld = (rel, key) => { const s = { window: {} }; vm.createContext(s); vm.runInContext(fs.readFileSync(path.join(ROOT, rel), "utf8"), s, { filename: rel }); return s.window[key]; };
 const errors = [], warnings = [];
 const err = (m) => errors.push(m), warn = (m) => warnings.push(m);
 
-const REG = (() => { const s = { window: {} }; vm.createContext(s); for (const rel of ["src/world/state.js", "src/registry.js"]) vm.runInContext(fs.readFileSync(path.join(ROOT, rel), "utf8"), s, { filename: rel }); return s.window.GAME_REGISTRY; })(); // v0.20.0 拆分：domains 在 src/world/state.js，milestones 在 src/registry.js，须同沙盒顺序载入
+const REG = (() => { const s = { window: {} }; vm.createContext(s); for (const rel of ["src/content/registry-v023.js", "src/content/registry-wp2.js", "src/content/registry-wp3.js", "src/content/registry-wp4.js", "src/content/registry-wp5.js", "src/content/registry-wp6.js", "src/content/registry-wp7.js", "src/content/registry-wp8.js", "src/world/state.js", "src/registry.js"]) vm.runInContext(fs.readFileSync(path.join(ROOT, rel), "utf8"), s, { filename: rel }); return s.window.GAME_REGISTRY; })(); // v0.20.0 拆分：domains 在 src/world/state.js，milestones 在 src/registry.js，须同沙盒顺序载入；v0.23 WP1：登记数据文件（registry-v023.js）先行，registry.js 尾部合入
 const D = ld("src/events.js", "GAME_DATA");
 let events = [...D.events];
 for (const p of PACK_FILES) events = events.concat(ld(p, "GAME_PACKS") || []); // v0.20.0 M1-B：内容按领域重组至 src/content/，PACK_FILES 为 index.html 相对顺序的完整路径
@@ -24,6 +24,8 @@ const byId = new Map();
 for (const e of events) { if (byId.has(e.id)) err(`重复 id: ${e.id}`); byId.set(e.id, e); }
 
 const DOMAINS = REG.domains || {}, MILESTONES = REG.milestones || {};
+const ENUM_FACTS = REG.enumFacts || {}, FAMILY_FACTS = REG.familyFacts || {}; // v0.23 WP1（E11/E4）：枚举事实与家庭事实旗登记
+const ERA_VALUES_ALL = ["c1955", "c1965", "c1978", "c1985", "c1995", "c2000"]; // v0.23 WP1（E12 后六代）：年代变体/年代框的键值域，与 engine.js ERAS 表同步
 const DOMAIN_FLAGS = new Set(["partner","single_ok","slow_love","divorced","spouse_dead","has_kid","no_kid","undecided_kid","dad_dead","mom_dead","dog_home","dog_gone","cat_gone"]); // v0.11 时代的域旗，数据中不得再出现
 const asArr = (v) => v == null ? [] : (Array.isArray(v) ? v : [v]);
 const edgeKey = (d, f, t) => `${d}:${f}>${t}`;
@@ -37,18 +39,58 @@ const stateRefs = new Set(); // "dom=value" 正向要求出现过
 // 载体 from 推断（v0.13.0 口径补强，docs/STATE-MATRIX.md §7）：setState 的 from 优先按条目自身（含从父事件继承）的正向 state/stateAll 门控推断；
 // 无门控的分岔条目按此表声明前态——分岔是一次性年龄节点，前态由结构保证（fork31 在 31 岁触发，此前无任何条目能写 spouse；fork38 同理于 kids）。
 const UNGATED_FORK_FROM = { fork31: { spouse: "none" }, fork38: { kids: "undecided" }, fork45: { kids: "undecided" }, pr_origin: { schooling: "pre" }, pr_fork16: { track: "pre" } }; // v0.17.0：序章两个结构节点同理（来历幕落定处境、16 岁分岔写入轨道，前态由结构保证）
+// familyBeat 拍型断言（v0.23 WP1 E4）：处境陈述＋小应对（effects 白名单 relation/wisdom ±1、记号 set、
+// familyFact 旗）＋回声；不许 setState、不许 setFact——其中 quotaHolder 单独点名报错：顶替名额归属
+// 只能由 L65-家 的发放规则函数写（蓝图 §3.3 评审 B1 的可判定落点）。
+function checkFamilyBeat(item, itemId) {
+  if (typeof item.text !== "string" || !item.text) err(`${itemId}: familyBeat 缺处境陈述 text`);
+  if (item.setState) err(`${itemId}: familyBeat 不许带 setState（小应对不许改处境本身）`);
+  if (item.setFact) {
+    if ("quotaHolder" in item.setFact) err(`${itemId}: familyBeat.setFact 写了 quotaHolder——归属只能由 L65-家发放规则函数写（E4 专门断言）`);
+    else err(`${itemId}: familyBeat 不许带 setFact`);
+  }
+  if (item.echo !== undefined && typeof item.echo !== "string") err(`${itemId}: familyBeat.echo 不是文本`);
+  if (item.familyFact !== undefined && !(item.familyFact in FAMILY_FACTS)) err(`${itemId}: familyBeat familyFact ${item.familyFact} 未登记（GAME_REGISTRY.familyFacts）`);
+  for (const c of item.choices || []) {
+    if (c.setState) err(`${itemId}: familyBeat 小应对带 setState（白名单外）`);
+    if (c.setFact) {
+      if ("quotaHolder" in c.setFact) err(`${itemId}: familyBeat 小应对 setFact 写了 quotaHolder——归属只能由 L65-家发放规则函数写（E4 专门断言）`);
+      else err(`${itemId}: familyBeat 小应对带 setFact（白名单外）`);
+    }
+    if (c.effects) for (const [k, v] of Object.entries(c.effects)) {
+      if (!["relation", "wisdom"].includes(k)) err(`${itemId}: familyBeat 小应对 effects 含白名单外键 ${k}（只许 relation/wisdom）`);
+      else if (typeof v !== "number" || Math.abs(v) > 1) err(`${itemId}: familyBeat 小应对 effects.${k}=${v} 超过 ±1 小幅线`);
+    }
+    if (c.familyFact !== undefined && !(c.familyFact in FAMILY_FACTS)) err(`${itemId}: familyBeat 小应对 familyFact ${c.familyFact} 未登记（GAME_REGISTRY.familyFacts）`);
+  }
+}
+// eraFrame 形状（v0.23 WP1 E2）：键为已登记年代、框 text 非空、框选项与本体选项同规实扫（scan 在下方定义，函数声明提升可用）
+function checkEraFrameShape(owner, itemId) {
+  if (!owner.eraFrame) return;
+  for (const [ev, fr] of Object.entries(owner.eraFrame)) {
+    if (!ERA_VALUES_ALL.includes(ev)) { err(`${itemId}: eraFrame 含非法年代键 ${ev}`); continue; }
+    if (!fr || typeof fr !== "object" || typeof fr.text !== "string" || !fr.text) err(`${itemId}: eraFrame.${ev}.text 不是非空文本`);
+    if (fr && fr.choices !== undefined) {
+      if (!Array.isArray(fr.choices) || !fr.choices.length) err(`${itemId}: eraFrame.${ev}.choices 不是非空数组`);
+      else for (const c of fr.choices) scan(c, itemId);
+    }
+  }
+}
 function scan(item, itemId, inhGate) {
   const effGate = Object.assign({}, inhGate);
   for (const fld of ["state", "stateAll"]) if (item[fld]) for (const [dom, v] of Object.entries(item[fld])) effGate[dom] = asArr(v);
   for (const fld of ["require", "forbid", "all", "any"]) for (const f of asArr(item[fld])) {
     if (DOMAIN_FLAGS.has(f)) err(`${itemId}: 域旗 ${f} 仍出现在 ${fld}（v0.12 起改用 state/stateNot）`);
-    else if (!(f in MILESTONES)) err(`${itemId}: ${fld} 引用未登记旗标 ${f}`);
+    else if (!(f in MILESTONES) && !(f in FAMILY_FACTS)) err(`${itemId}: ${fld} 引用未登记旗标 ${f}`); // v0.23 合并二期（裁定 D① 同族）：家庭事实旗也是真登记（如 era1985 回响 require originLB/famLaidOff85）——引用面与 requiresFlag 同口径兼认两表，两表皆无仍报错
   }
   if (item.set) {
     if (DOMAIN_FLAGS.has(item.set)) err(`${itemId}: set 仍在立域旗 ${item.set}（改用 setState）`);
     else if (!(item.set in MILESTONES)) err(`${itemId}: set 未登记旗标 ${item.set}`);
     else { if (!seenSetters.has(item.set)) seenSetters.set(item.set, new Set()); seenSetters.get(item.set).add(itemId); }
   }
+  // familyFact 立旗产出承认（v0.23 合并一期，wp4-tools-patch (b)）：familyBeat 幕级 familyFact 在 present()
+  // 呈现即立、选项级 familyFact 在 choose() 落旗，两路产出原不被 scan 承认——已登记者（里程碑或家庭事实旗表）计入 seenSetters。
+  if (item.familyFact && (item.familyFact in MILESTONES || item.familyFact in FAMILY_FACTS)) { if (!seenSetters.has(item.familyFact)) seenSetters.set(item.familyFact, new Set()); seenSetters.get(item.familyFact).add(itemId); }
   for (const [fld] of [["state"], ["stateAll"], ["stateNot"]]) {
     if (!item[fld]) continue;
     for (const [dom, v] of Object.entries(item[fld])) {
@@ -67,6 +109,9 @@ function scan(item, itemId, inhGate) {
     const a = asArr(item.state[dom]), b = asArr(item.stateAll[dom]);
     if (!b.every((v) => a.includes(v))) err(`${itemId}: 互斥组合——state.${dom} 与 stateAll.${dom} 候选集不一致`);
   }
+  // 选项级 requiresState 是真门控（prologue.js choiceGateOk 强制过滤），载体 from 推断须认它（v0.23 合并二期）：
+  // 否则带门 setState 选项（如 c1985 pr_y18 对口升学 requiresState{track:craft}）会被误记到所有同向边上。
+  if (item.requiresState) for (const [dom, v] of Object.entries(item.requiresState)) effGate[dom] = asArr(v);
   if (item.setState) for (const [dom, to] of Object.entries(item.setState)) {
     if (!DOMAINS[dom]) { err(`${itemId}: setState 引用未登记域 ${dom}`); continue; }
     // 载体 from 推断：有正向门控（含继承）只登记 from∈门控值的边；无门控分岔按 UNGATED_FORK_FROM；其余无门控条目登记为所有指向 to 的已启用边的载体出现
@@ -164,8 +209,8 @@ function scan(item, itemId, inhGate) {
       else if (typeof txt !== "string" || !txt) err(`${itemId}: ${fld}.${fv} 不是非空文本`);
     }
   }
-  // 年代变体（v0.20.1 面板急修登记）：textEra/echoEra/labelEra 须为 { 年代id: 非空文本 }，键值域为四个年代 id。
-  const ERA_VALUES = ["c1955", "c1965", "c1978", "c2000"];
+  // 年代变体（v0.20.1 面板急修登记）：textEra/echoEra/labelEra 须为 { 年代id: 非空文本 }，键值域为六个年代 id（v0.23 WP1 E12 后）。
+  const ERA_VALUES = ERA_VALUES_ALL;
   for (const fld of ["textEra", "echoEra", "labelEra"]) {
     if (!item[fld]) continue;
     for (const [ev, txt] of Object.entries(item[fld])) {
@@ -173,7 +218,33 @@ function scan(item, itemId, inhGate) {
       else if (typeof txt !== "string" || !txt) err(`${itemId}: ${fld}.${ev} 不是非空文本`);
     }
   }
+  checkEraFrameShape(item, itemId); // 年代框变体（v0.23 WP1 E2）
+  // 枚举事实声明（v0.23 WP1 E11）：setFact/requiresFact 的事实名须已登记、值须在值集内（absent 是缺省读法、不许显式写入值集校验面）
+  for (const fld of ["setFact", "requiresFact"]) {
+    if (!item[fld]) continue;
+    if (typeof item[fld] !== "object" || Array.isArray(item[fld])) { err(`${itemId}: ${fld} 不是对象`); continue; }
+    for (const [name, v] of Object.entries(item[fld])) {
+      const def = ENUM_FACTS[name];
+      if (!def) { err(`${itemId}: ${fld} 引用未登记枚举事实 ${name}`); continue; }
+      for (const val of asArr(v)) if (!def.values.includes(val)) err(`${itemId}: ${fld}.${name} 值 ${val} 不在值集 {${def.values.join("/")}} 内`);
+    }
+  }
+  // 序章选项门（v0.23 WP1 E3）：requiresSit 须为处境值；requiresFlag 须为已登记里程碑或家庭事实旗；requiresState 的域/值须已登记
+  if (item.requiresSit !== undefined) for (const v of asArr(item.requiresSit)) if (!["school", "half", "never"].includes(v)) err(`${itemId}: requiresSit 含非法处境值 ${v}`);
+  if (item.requiresFlag !== undefined) for (const f of asArr(item.requiresFlag)) if (!(f in MILESTONES) && !(f in FAMILY_FACTS)) err(`${itemId}: requiresFlag 引用未登记旗 ${f}`);
+  if (item.requiresState !== undefined) for (const [dom, v] of Object.entries(item.requiresState || {})) {
+    if (!DOMAINS[dom]) { err(`${itemId}: requiresState 引用未登记域 ${dom}`); continue; }
+    for (const val of asArr(v)) if (!DOMAINS[dom].states.includes(val)) err(`${itemId}: requiresState 引用域 ${dom} 的未登记状态 ${val}`);
+  }
+  // gateNote 声明面（v0.23 WP1 E3）：带 gateNote 必须同带非空 gateNoteNeeds（元素为已登记旗/家庭事实旗/枚举事实）；文案逐字规格在 validate-storylet 核
+  if (item.gateNote !== undefined) {
+    if (typeof item.gateNote !== "string" || !item.gateNote) err(`${itemId}: gateNote 不是非空文本`);
+    if (!Array.isArray(item.gateNoteNeeds) || !item.gateNoteNeeds.length) err(`${itemId}: gateNote 已声明但 gateNoteNeeds 缺失或为空（声明面必须齐，缺省不渲染靠它判定）`);
+    else for (const n of item.gateNoteNeeds) if (!(n in MILESTONES) && !(n in FAMILY_FACTS) && !(n in ENUM_FACTS)) err(`${itemId}: gateNoteNeeds 引用未登记事实 ${n}`);
+  }
+  if (item.familyBeat) checkFamilyBeat(item, itemId); // familyBeat 拍型断言（v0.23 WP1 E4，含 quotaHolder 专门断言）
   for (const c of (item.choices || [])) scan(c, itemId, effGate);
+  for (const c of (item.choicesTown || [])) scan(c, itemId, effGate); // v0.23 合并二期：城镇形整拍选项（WP2 choicesTown）是运行时真选项，其 set/setFact 与普通选项同规实扫（原实扫看不见，sent_down 等旗的 setter 被误报缺失）
   for (const v of (item.variants || [])) scan(v, itemId, effGate); // v0.21.1：序章变体池与选项同规实扫（变体级 set 记在幕 id 名下）
 }
 for (const e of events) scan(e, e.id);
@@ -182,19 +253,74 @@ const CARDS = ld("src/content/prologue/cards.js", "GAME_CARDS");
 let cardCount = 0;
 if (CARDS && CARDS.byId) for (const c of Object.values(CARDS.byId)) { cardCount++; if (byId.has(c.id)) err(`重复 id: 牌 ${c.id} 与事件撞名`); scan(c, c.id); }
 for (const f of D.forks) for (const c of f.choices) scan(c, f.id || `fork${f.age}`); // v0.18.0：同龄双分岔（fork28/fork28m）以显式 id 为键
+for (const f of D.forks) { // v0.23 WP1（E1/E2）：分岔本体级的年代变体与年代框也要核——本体不在 events 集合里，上方实扫只覆盖到选项级
+  const fid = f.id || `fork${f.age}`;
+  for (const fld of ["textEra", "echoEra", "labelEra"]) {
+    if (!f[fld]) continue;
+    for (const [ev, txt] of Object.entries(f[fld])) {
+      if (!ERA_VALUES_ALL.includes(ev)) err(`${fid}: ${fld} 含非法年代键 ${ev}`);
+      else if (typeof txt !== "string" || !txt) err(`${fid}: ${fld}.${ev} 不是非空文本`);
+    }
+  }
+  checkEraFrameShape(f, fid);
+}
 for (const [k, c] of Object.entries(D.crisis || {})) for (const ch of c.choices) scan(ch, `crisis_${k}`);
 // 序章幕（v0.17.0，src/content/prologue/prologue.js）：与事件同规实扫（顶层 set/setState 与选项递归）
-const PRO = ld("src/content/prologue/prologue.js", "GAME_PROLOGUE");
+const PRO = (() => { const s = { window: {} }; vm.createContext(s); for (const rel of ["src/content/prologue/prologue-c1955.js", "src/content/prologue/prologue-c1965.js", "src/content/prologue/prologue-c1978.js", "src/content/prologue/prologue-c1985.js", "src/content/prologue/prologue-c1995.js", "src/content/prologue/prologue.js"]) vm.runInContext(fs.readFileSync(path.join(ROOT, rel), "utf8"), s, { filename: rel }); const g = s.window.GAME_PROLOGUE; g.__packs = s.window.GAME_PROLOGUE_PACKS || {}; return g; })(); // v0.23 合并一期（wp4-tools-patch (a)）：同沙盒先载全部序章包再载 prologue.js，使 PRO.acts 含各代幕（setter 可达性按全集判）；合并二期起同沙盒留住 GAME_PROLOGUE_PACKS 供按包实扫与年代归属
 if (PRO && PRO.acts) for (const a of PRO.acts) scan(a, a.id);
 
+// ---- 池条目实扫（v0.23 合并二期，裁定 D②／WP3 B-2）----
+// 池条目（pack.poolActs／pool／pool95）不是固定幕，原实扫完全看不见它们的 setter（11 条误报之源）。
+// 按 prologue.js 池调度的运行时物化形状摊平成伪条目、与固定幕同规实扫（familyBeat 型检同样适用）；
+// scan 读不到的产出面（poolSetByStage 旗名、变体 markGrant/marks、poolExtraFact、逐变体 familyFact）
+// 汇入 extras，在条目 id 名下按 scan 的 familyFact 承认口径补记 seenSetters（运行时均在呈现点真立）。
+const poolPseudos = []; // { item, extras:Set }
+function creditExtra(flag, itemId) {
+  if (flag in MILESTONES || flag in FAMILY_FACTS) { if (!seenSetters.has(flag)) seenSetters.set(flag, new Set()); seenSetters.get(flag).add(itemId); }
+}
+for (const pk of Object.values(PRO.__packs || {})) {
+  for (const e of pk.poolActs || []) { // WP2 形：按段（bands）逐段物化
+    for (const b of Object.values(e.bands || {})) {
+      poolPseudos.push({ item: { id: e.id, familyBeat: true, familyFact: b.familyFact || e.familyFact, set: e.set || b.mark, text: b.text, echo: b.echo, choices: b.choices || [] }, extras: new Set(), win: e.window });
+    }
+  }
+  for (const e of pk.pool || []) {
+    if (e.act) { // WP3 形：act 模板本体实扫（variants/choices 递归覆盖变体 set 与选项 set）
+      const extras = new Set(Object.values(e.act.poolSetByStage || {}));
+      for (const cs of Object.values(e.act.stageChoices || {})) for (const c of cs || []) { scan(c, e.id); if (c.set) extras.add(c.set); if (c.familyFact) extras.add(c.familyFact); }
+      poolPseudos.push({ item: Object.assign({}, e.act, { id: e.id }), extras, win: e.window });
+    } else { // WP7 形：变体选项合并实扫，markGrant/extraFact 入 extras
+      const extras = new Set();
+      for (const v of e.variants || []) { if (v.markGrant) extras.add(v.markGrant.id); if (v.extraFact) extras.add(v.extraFact); }
+      poolPseudos.push({ item: { id: e.id, familyBeat: true, familyFact: e.familyFact, text: (e.variants || []).map((v) => v.text).find(Boolean) || "池条目", echo: (e.variants || []).map((v) => v.echo).find(Boolean), choices: (e.variants || []).flatMap((v) => v.choices || []) }, extras, win: e.window });
+    }
+  }
+  for (const e of pk.pool95 || []) { // WP8 形：逐变体 familyFact 与记号入 extras，选项合并实扫
+    const extras = new Set();
+    for (const v of e.variants || []) { if (v.familyFact) extras.add(v.familyFact); for (const m of v.marks || []) extras.add(m); }
+    poolPseudos.push({ item: { id: e.id, familyBeat: true, text: (e.variants || []).map((v) => v.text).find(Boolean) || "池条目", echo: (e.variants || []).map((v) => v.echo).find(Boolean), choices: (e.variants || []).flatMap((v) => v.choices || []) }, extras, win: e.window });
+  }
+}
+for (const p of poolPseudos) { scan(p.item, p.item.id); for (const f of p.extras) creditExtra(f, p.item.id); }
+// 钩子写旗承认（v0.23 合并二期，裁定 D③／WP3 B-3）：quota_decided65 由 prologue.js 的 quotaBeat 钩子
+// 在归属发放命中时与 quotaHolder 同步立（注册表注记同此口径），任何条目都不以 set 声明它——
+// 仅当树里真有 quotaBeat 拍（钩子的载体）时，承认其拍 id（pr_teen2）为 setter；无载体则不承认（校验器不钝化）。
+if (PRO && (PRO.acts || []).some((a) => a.quotaBeat)) { if (!seenSetters.has("quota_decided65")) seenSetters.set("quota_decided65", new Set()); seenSetters.get("quota_decided65").add("pr_teen2"); }
+
 // ---- 注册表双向一致性 ----
+const allItemIds = new Set([...byId.keys(), ...(PRO && PRO.acts ? PRO.acts.map((a) => a.id) : []), ...poolPseudos.map((p) => p.item.id), ...(CARDS && CARDS.byId ? Object.keys(CARDS.byId) : [])]); // 消费点自登记的实存核对面（合并二期）
 for (const [flag, def] of Object.entries(MILESTONES)) {
   const declared = new Set(def.setters || []);
   const seen = seenSetters.get(flag) || new Set();
-  for (const id of declared) if (!seen.has(id)) err(`注册表里程碑 ${flag}: 声明 setter ${id} 在数据中未找到`);
+  for (const id of declared) {
+    // 消费点自登记承认（v0.23 合并二期）：registry-wp7 的 echo_*85 是「回响条目自身不立新旗、只登记归属」
+    // 的消费点登记（setters＝条目自身 id）——仅当同名条目在数据中实存时承认；条目不存在仍报错（校验器不钝化）。
+    if (id === flag && allItemIds.has(id)) continue;
+    if (!seen.has(id)) err(`注册表里程碑 ${flag}: 声明 setter ${id} 在数据中未找到`);
+  }
   for (const id of seen) if (!declared.has(id)) err(`里程碑 ${flag}: 数据中 ${id} 立了此旗但注册表未登记该 setter`);
 }
-for (const [flag, seen] of seenSetters) if (!(flag in MILESTONES)) err(`数据中出现未登记里程碑 ${flag}（setter: ${[...seen].join(",")}）`);
+for (const [flag, seen] of seenSetters) if (!(flag in MILESTONES) && !(flag in FAMILY_FACTS)) err(`数据中出现未登记里程碑 ${flag}（setter: ${[...seen].join(",")}）`); // v0.23 合并二期（裁定 D①）：familyFact 立旗的产出已在 scan 按 familyFacts 登记承认计入 seenSetters，下游终检须兼认家庭事实旗表——只认里程碑表会把 migrantExam/famCare00 这类已登记者误报为「未登记」；两表皆无登记者仍报错（校验器不钝化）
 for (const [k, e] of declaredEdges) {
   if (!(e.by || []).length) continue; // reserved 边单列警告
   const seen = seenCarriers.get(k) || new Set();
@@ -234,17 +360,30 @@ function collectDeps(item, acc) {
   if (item.chain) acc.chain = item.chain;
   for (const fld of ["state", "stateAll"]) if (item[fld]) for (const [dom, v] of Object.entries(item[fld])) { if (!acc.states.has(dom)) acc.states.set(dom, new Set()); for (const val of asArr(v)) acc.states.get(dom).add(val); }
   if (item.set) acc.sets.add(item.set);
+  if (item.familyFact) acc.sets.add(item.familyFact); // v0.23 合并一期（wp4-tools-patch (b)）：familyFact 立旗产出计入可生产性，与 scan 的 seenSetters 同口径
   if (item.setState) for (const [dom, to] of Object.entries(item.setState)) acc.setStates.push([dom, to]);
   if (item.setStateBySit) for (const variant of Object.values(item.setStateBySit)) for (const [dom, to] of Object.entries(variant || {})) acc.setStates.push([dom, to]);
   for (const c of (item.choices || [])) collectDeps(c, acc);
+  for (const c of (item.choicesTown || [])) collectDeps(c, acc); // 城镇形选项与 scan 同规（合并二期）
   for (const v of (item.variants || [])) collectDeps(v, acc); // v0.21.1：变体级 set 计入可生产性，与 scan 同规
 }
 for (const e of events) { const acc = newAcc(); collectDeps(e, acc); prodItems.set(e.id, acc); }
 for (const f of D.forks) { const acc = newAcc(); for (const c of f.choices) collectDeps(c, acc); prodItems.set(f.id || `fork${f.age}`, acc); }
 for (const [k, c] of Object.entries(D.crisis || {})) { const acc = newAcc(); for (const ch of c.choices) collectDeps(ch, acc); prodItems.set(`crisis_${k}`, acc); }
 if (CARDS && CARDS.byId) for (const c of Object.values(CARDS.byId)) { const acc = newAcc(); collectDeps(c, acc); prodItems.set(c.id, acc); }
-if (PRO && PRO.acts) for (const a of PRO.acts) { const acc = newAcc(); collectDeps(a, acc); prodItems.set(a.id, acc); }
-const structural = new Set([...D.forks.map((f) => f.id || `fork${f.age}`), ...Object.keys(D.crisis || {}).map((k) => `crisis_${k}`), ...(CARDS && CARDS.byId ? Object.keys(CARDS.byId) : []), ...(PRO && PRO.acts ? PRO.acts.map((a) => a.id) : [])]); // 序章幕是序列驱动的结构节点，与分岔同规
+// 年代归属（v0.23 合并二期，裁定 MB-1）：PRO.acts 是全部年代包同 id 幕的拼接（同 act 槽、一代一本），
+// 裸 id 建键会让后载包覆盖先载包的依赖账、吞掉别代 setter。可生产性/年龄两本账按「年代:id」建键；
+// 旗与边仍按裸名对账（注册表声明本是裸 id 口径，任一年代的产出即算该旗可生产——与 fixpoint 既有「年代不建模」口径一致）。
+const eraOfAct = new Map();
+for (const [era, pk] of Object.entries(PRO.__packs || {})) {
+  for (const a of pk.acts || []) eraOfAct.set(a, era);
+  for (const lst of Object.values(pk.sitActs || {})) for (const a of lst || []) eraOfAct.set(a, era);
+}
+const qidOf = (a) => `${eraOfAct.get(a) || "c2000"}:${a.id}`;
+if (PRO && PRO.acts) for (const a of PRO.acts) { const acc = newAcc(); collectDeps(a, acc); prodItems.set(qidOf(a), acc); }
+for (const p of poolPseudos) { const acc = newAcc(); collectDeps(p.item, acc); for (const f of p.extras) acc.sets.add(f); prodItems.set(p.item.id, acc); } // 池条目与固定幕同规入可生产性账（合并二期 D②）
+{ const qb = (PRO && PRO.acts || []).find((a) => a.quotaBeat); if (qb) { const acc = prodItems.get(qidOf(qb)); if (acc) acc.sets.add("quota_decided65"); } } // 钩子写旗的可生产性（合并二期 D③）：quota_decided65 由 quotaBeat 钩子写、计入其载体拍的产出，与 seenSetters 承认同口径
+const structural = new Set([...D.forks.map((f) => f.id || `fork${f.age}`), ...Object.keys(D.crisis || {}).map((k) => `crisis_${k}`), ...(CARDS && CARDS.byId ? Object.keys(CARDS.byId) : []), ...(PRO && PRO.acts ? PRO.acts.map((a) => qidOf(a)) : [])]); // 序章幕是序列驱动的结构节点，与分岔同规
 const presentable = new Set(structural);
 const producible = new Set();
 const attainable = new Map(); for (const [dom, def] of Object.entries(DOMAINS)) attainable.set(dom, new Set([def.initial]));
@@ -288,10 +427,10 @@ for (const [id, acc] of prodItems) {
 //   只在数学上不可能时报错（宁漏不误）：(A) 条目 max < 其正向状态门某域候选值的最早年龄；
 //   (B) 条目 max < chain 前置条目的最早可呈现年龄；(C) 条目全部允许年代下 birth+max < minYear。
 //   负向门（forbid/stateNot）、数值门（when/stats）、路线门不建模（不产生年龄互斥）；结局无年龄窗不查。
-const ERA_BIRTH = { c1955: 1955, c1965: 1965, c1978: 1978, c2000: 2000 }; // 与 engine.js ERAS 表同步
+const ERA_BIRTH = { c1955: 1955, c1965: 1965, c1978: 1978, c1985: 1985, c1995: 1995, c2000: 2000 }; // 与 engine.js ERAS 表同步（v0.23 WP1 E12 后六代）
 const ageItems = new Map(); // id -> {min,max,gates:Map(dom->Set(vals)),flags:Set,any:Set,chain,sets:Set,setStates:[[dom,to]],eraGate:[eras],minYear}
-function ageAcc(item, min, max) {
-  const a = { min, max, gates: new Map(), flags: new Set(), any: new Set(), chain: item.chain || null, sets: new Set(), setStates: [], eraGate: null, minYear: item.minYear || null };
+function ageAcc(item, min, max, bareId) {
+  const a = { min, max, bareId: bareId || item.id, gates: new Map(), flags: new Set(), any: new Set(), chain: item.chain || null, sets: new Set(), setStates: [], eraGate: null, minYear: item.minYear || null }; // bareId：账按年代键建、边载体对账用条目裸 id（无 id 的分岔以其账键 forkNN 为裸 id，合并二期 MB-1）
   if (item.era) a.eraGate = [item.era]; else if (item.eraIn) a.eraGate = asArr(item.eraIn);
   const walk = (o) => {
     for (const fld of ["state", "stateAll"]) if (o[fld]) for (const [dom, v] of Object.entries(o[fld])) { if (!a.gates.has(dom)) a.gates.set(dom, new Set()); for (const val of asArr(v)) a.gates.get(dom).add(val); }
@@ -302,13 +441,15 @@ function ageAcc(item, min, max) {
     if (o.setState) for (const [dom, to] of Object.entries(o.setState)) a.setStates.push([dom, to]);
     if (o.setStateBySit) for (const variant of Object.values(o.setStateBySit)) for (const [dom, to] of Object.entries(variant || {})) a.setStates.push([dom, to]);
     for (const c of (o.choices || [])) walk(c);
+    for (const c of (o.choicesTown || [])) walk(c); // 城镇形选项同规（合并二期）
   };
   walk(item);
   return a;
 }
 for (const e of events) if (typeof e.min === "number" && typeof e.max === "number") ageItems.set(e.id, ageAcc(e, e.min, e.max));
-for (const f of D.forks) ageItems.set(f.id || `fork${f.age}`, ageAcc(f, f.age, f.age));
-if (PRO && PRO.acts) for (const a of PRO.acts) ageItems.set(a.id, ageAcc(a, a.age, a.age)); // 序章幕：单一年龄节点，与分岔同规
+for (const f of D.forks) ageItems.set(f.id || `fork${f.age}`, ageAcc(f, f.age, f.age, f.id || `fork${f.age}`));
+if (PRO && PRO.acts) for (const a of PRO.acts) ageItems.set(qidOf(a), ageAcc(a, a.age, a.age)); // 序章幕：单一年龄节点，与分岔同规（年代键，合并二期 MB-1）
+for (const p of poolPseudos) if (p.win) ageItems.set(p.item.id, ageAcc(p.item, p.win[0], p.win[1])); // 池条目：窗口即年龄窗（合并二期 D②）
 if (CARDS && CARDS.byId) for (const c of Object.values(CARDS.byId)) ageItems.set(c.id, { min: 22, max: 22, gates: new Map(), flags: new Set(), any: new Set(), chain: null, sets: new Set(c.set ? [c.set] : []), setStates: [], eraGate: null, minYear: null });
 const stateEarliest = new Map(); // "dom=value" -> age
 // 年龄基线（v0.17.0 重建）：人生从 5 岁来历幕起算（旧版按 22 岁开局写死）——域初值在 5 岁即成立；
@@ -326,8 +467,8 @@ while (grewA && guardA++ < 500) {
     for (const f of a.sets) if (!flagEarliest.has(f) || ea < flagEarliest.get(f)) { flagEarliest.set(f, ea); grewA = true; }
     for (const [dom, to] of a.setStates) {
       const k = `${dom}=${to}`;
-      // 写出须同时满足：该边在注册表里就是由本载体承担（by 含本条目 id），且前态在载体年龄时已可达
-      const pres = [...declaredEdges.values()].filter((e) => e.dom === dom && e.to === to && (e.by || []).includes(id));
+      // 写出须同时满足：该边在注册表里就是由本载体承担（by 含本条目裸 id），且前态在载体年龄时已可达
+      const pres = [...declaredEdges.values()].filter((e) => e.dom === dom && e.to === to && (e.by || []).includes(a.bareId));
       const okPre = pres.some((e) => stateEarliest.has(`${dom}=${e.from}`) && ea >= stateEarliest.get(`${dom}=${e.from}`));
       if (okPre && (!stateEarliest.has(k) || ea < stateEarliest.get(k))) { stateEarliest.set(k, ea); grewA = true; }
     }
@@ -357,7 +498,7 @@ while (grewA && guardA++ < 500) {
     if (need === Infinity && itemEarliest.get(id) !== Infinity) { itemEarliest.set(id, Infinity); grewA = true; }
   }
 }
-const AGE_STRUCTURAL = new Set([...D.forks.map((f) => f.id || `fork${f.age}`), ...(CARDS && CARDS.byId ? Object.keys(CARDS.byId) : []), ...(PRO && PRO.acts ? PRO.acts.map((a) => a.id) : [])]);
+const AGE_STRUCTURAL = new Set([...D.forks.map((f) => f.id || `fork${f.age}`), ...(CARDS && CARDS.byId ? Object.keys(CARDS.byId) : []), ...(PRO && PRO.acts ? PRO.acts.map((a) => qidOf(a)) : [])]);
 for (const [id, a] of ageItems) {
   if (AGE_STRUCTURAL.has(id)) continue; // 分岔/出身牌无窗口可查
   // (A) 窗口终点早于正向状态门要求值的最早年龄
@@ -378,7 +519,16 @@ for (const [id, a] of ageItems) {
   }
 }
 
-console.log(`validate-state: 条目 ${events.length}（含核心/扩展/协同/稀有/结局）+ 出身牌 ${cardCount} + 序章幕 ${PRO && PRO.acts ? PRO.acts.length : 0} | 域 ${Object.keys(DOMAINS).length} | 里程碑 ${Object.keys(MILESTONES).length}`);
+// ---- 枚举事实与家庭事实旗登记自检（v0.23 WP1 E11/E4）----
+for (const [name, def] of Object.entries(ENUM_FACTS)) {
+  if (!def || !Array.isArray(def.values) || !def.values.length) { err(`枚举事实 ${name}: values 缺失或为空`); continue; }
+  if (new Set(def.values).size !== def.values.length) err(`枚举事实 ${name}: values 有重复`);
+  if (def.values.includes("absent")) err(`枚举事实 ${name}: values 不许含 absent（absent 是缺省读法、不是一个值）`);
+  if (def.host && !DOMAINS[def.host]) err(`枚举事实 ${name}: host 宿主域 ${def.host} 未登记`);
+}
+for (const [name, def] of Object.entries(FAMILY_FACTS)) if (!def || typeof def !== "object" || Array.isArray(def)) err(`家庭事实旗 ${name}: 登记形状非法（应为 {beat, note} 对象）`);
+
+console.log(`validate-state: 条目 ${events.length}（含核心/扩展/协同/稀有/结局）+ 出身牌 ${cardCount} + 序章幕 ${PRO && PRO.acts ? PRO.acts.length : 0} | 域 ${Object.keys(DOMAINS).length} | 里程碑 ${Object.keys(MILESTONES).length} | 枚举事实 ${Object.keys(ENUM_FACTS).length} | 家庭事实旗 ${Object.keys(FAMILY_FACTS).length}`);
 if (reservedInfo.length) { console.log(`已登记未开放（reserved）${reservedInfo.length} 项:`); reservedInfo.forEach((m) => console.log("  RESERVED", m)); }
 console.log(`错误 ${errors.length} 条:`); errors.forEach((m) => console.log("  ERROR", m));
 console.log(`警告 ${warnings.length} 条:`); warnings.forEach((m) => console.log("  WARN", m));

@@ -17,7 +17,7 @@
 "use strict";
 const fs = require("fs"), vm = require("vm"), path = require("path");
 const ROOT = path.join(__dirname, "..");
-const PACK_FILES = ["src/content/pool/pack1.js", "src/content/pool/pack2.js", "src/content/pool/pack3.js", "src/content/pool/pack4.js", "src/content/pool/pack5.js", "src/content/pool/pack6.js", "src/content/pool/pack9.js", "src/content/pool/pack10.js", "src/content/pool/pack11.js", "src/content/pool/pack12.js", "src/content/lines/side-and-steady.js", "src/content/pool/pack14.js", "src/content/pool/pack15.js", "src/content/lines/exam.js", "src/content/pool/pack17.js", "src/content/pool/pack18.js", "src/content/pool/pack19.js", "src/content/pool/pack20.js", "src/content/pool/pack21.js", "src/content/pool/pack22.js", "src/content/pool/pack23.js", "src/content/lines/late-life.js", "src/content/pool/pack25.js", "src/content/pool/pack26.js", "src/content/pool/pack27.js", "src/content/pool/pack28.js", "src/content/pool/pack29.js", "src/content/pool/pack30.js", "src/content/pool/pack33.js", "src/content/pool/pack31.js", "src/content/pool/pack32.js", "src/content/pool/pack34.js", "src/content/lines/covenant.js", "src/content/lines/process-beats.js", "src/content/lines/abroad.js", "src/content/era/era1955.js", "src/content/era/era1965.js", "src/content/era/era1978.js"];
+const PACK_FILES = ["src/content/pool/pack1.js", "src/content/pool/pack2.js", "src/content/pool/pack3.js", "src/content/pool/pack4.js", "src/content/pool/pack5.js", "src/content/pool/pack6.js", "src/content/pool/pack9.js", "src/content/pool/pack10.js", "src/content/pool/pack11.js", "src/content/pool/pack12.js", "src/content/lines/side-and-steady.js", "src/content/pool/pack14.js", "src/content/pool/pack15.js", "src/content/lines/exam.js", "src/content/pool/pack17.js", "src/content/pool/pack18.js", "src/content/pool/pack19.js", "src/content/pool/pack20.js", "src/content/pool/pack21.js", "src/content/pool/pack22.js", "src/content/pool/pack23.js", "src/content/lines/late-life.js", "src/content/pool/pack25.js", "src/content/pool/pack26.js", "src/content/pool/pack27.js", "src/content/pool/pack28.js", "src/content/pool/pack29.js", "src/content/pool/pack30.js", "src/content/pool/pack33.js", "src/content/pool/pack31.js", "src/content/pool/pack32.js", "src/content/pool/pack34.js", "src/content/lines/covenant.js", "src/content/lines/process-beats.js", "src/content/lines/abroad.js", "src/content/era/era1955.js", "src/content/era/era1965.js", "src/content/era/era1978.js", "src/content/era/era1985.js", "src/content/era/era1995.js"];
 
 const sandbox = { window: {}, console };
 sandbox.window = sandbox;
@@ -27,7 +27,8 @@ load("src/events.js");
 for (const p of PACK_FILES) load(p);
 load("src/content/prologue/cards.js");
 load("src/content/rare/synergy.js");
-load("src/world/state.js"); load("src/registry.js"); load("src/anchors.js"); load("src/rhythm.js");
+load("src/content/registry-v023.js"); load("src/content/registry-wp2.js"); load("src/content/registry-wp3.js"); load("src/content/registry-wp4.js"); load("src/content/registry-wp5.js"); load("src/content/registry-wp6.js"); load("src/content/registry-wp7.js"); load("src/content/registry-wp8.js"); load("src/world/state.js"); load("src/registry.js"); load("src/anchors.js"); load("src/rhythm.js");
+load("src/content/prologue/prologue-c1955.js"); load("src/content/prologue/prologue-c1965.js"); load("src/content/prologue/prologue-c1978.js"); load("src/content/prologue/prologue-c1985.js"); load("src/content/prologue/prologue-c1995.js");
 load("src/content/prologue/prologue.js");
 load("src/storylet.js");
 
@@ -107,7 +108,7 @@ function checkEffects(item, at) {
     }
   }
   // 年代变体（v0.20.1 面板急修）：与 validate-state 同口径核形状。
-  const ERA_VALUES = ["c1955", "c1965", "c1978", "c2000"];
+  const ERA_VALUES = ["c1955", "c1965", "c1978", "c1985", "c1995", "c2000"]; // v0.23 WP1（E12 后六代）
   for (const fld of ["textEra", "echoEra", "labelEra"]) {
     if (!item[fld]) continue;
     for (const [ev, txt] of Object.entries(item[fld])) {
@@ -115,6 +116,28 @@ function checkEffects(item, at) {
       else if (typeof txt !== "string" || !txt) err(`${at} ${fld}.${ev} 不是非空文本`);
     }
   }
+  // 枚举事实与序章选项门（v0.23 WP1 E3/E11）：此处只核形状，事实名/值集归 validate-state 按 registry 核。
+  for (const fld of ["setFact", "requiresFact"]) if (item[fld] !== undefined && (typeof item[fld] !== "object" || item[fld] === null || Array.isArray(item[fld]))) err(`${at} ${fld} 形状非法（应为对象）`);
+  if (item.requiresSit !== undefined && !(typeof item.requiresSit === "string" || Array.isArray(item.requiresSit))) err(`${at} requiresSit 形状非法（应为处境值或其数组）`);
+  if (item.requiresFlag !== undefined && !(typeof item.requiresFlag === "string" || Array.isArray(item.requiresFlag))) err(`${at} requiresFlag 形状非法（应为旗名或其数组）`);
+  if (item.requiresState !== undefined && (typeof item.requiresState !== "object" || item.requiresState === null || Array.isArray(item.requiresState))) err(`${at} requiresState 形状非法（应为对象）`);
+  // gateNote 文案规格（v0.23 WP1 E3）：叙述者口吻、一句、≤40 字、不许通知腔——逐字拦 banned 词。
+  if (item.gateNote !== undefined) {
+    if (typeof item.gateNote !== "string" || !item.gateNote) err(`${at} gateNote 不是非空文本`);
+    else {
+      if (item.gateNote.length > 40) err(`${at} gateNote 超 40 字（实 ${item.gateNote.length} 字）`);
+      for (const w of ["你不符合", "由于", "资格", "条件不足"]) if (item.gateNote.includes(w)) err(`${at} gateNote 含通知腔词「${w}」`);
+    }
+    if (!Array.isArray(item.gateNoteNeeds) || !item.gateNoteNeeds.length) err(`${at} gateNote 已声明但 gateNoteNeeds 缺失或为空`);
+  }
+  // eraFrame 年代框（v0.23 WP1 E2）：键为已登记年代、框 text 非空、choices 若有须为带 label 的非空数组。
+  if (item.eraFrame !== undefined) for (const [ev, fr] of Object.entries(item.eraFrame || {})) {
+    if (!ERA_VALUES.includes(ev)) { err(`${at} eraFrame 含非法年代键 ${ev}`); continue; }
+    if (!fr || typeof fr.text !== "string" || !fr.text) err(`${at} eraFrame.${ev}.text 不是非空文本`);
+    if (fr && fr.choices !== undefined && (!Array.isArray(fr.choices) || !fr.choices.length || fr.choices.some((c) => !c || typeof c.label !== "string"))) err(`${at} eraFrame.${ev}.choices 形状非法`);
+  }
+  // familyBeat 拍型（v0.23 WP1 E4）：此处只核 familyBeat 标记与回声字段形状；白名单/quotaHolder 逐项断言在 validate-state。
+  if (item.familyBeat !== undefined && item.familyBeat !== true) err(`${at} familyBeat 应为 true`);
   // 返聘后复退门与退休年数变体（v0.20.1 W7）：与 validate-state 同口径核形状。
   if (item.rehireAfterRetire !== undefined && typeof item.rehireAfterRetire !== "boolean") err(`${at} rehireAfterRetire 不是布尔`);
   if (item.textRetireYears !== undefined) {
@@ -128,12 +151,20 @@ for (const [name, arr] of collections) for (const e of arr) checkEffects(e, `${n
 for (const e of D.endings || []) checkEffects(e, `endings:${e.id}`);
 
 // ---- 全池 id 唯一（含 endings 与危机合成 id）----
+// 序章幕按包/年代分组建键（v0.23 合并二期，裁定 MB-1）：各年代包有意复用同一批 act id
+// （同 act 槽、一代一本，运行时按年代分发不冲突）——裸 id 建键会把跨代同名幕误报重复。
+// 键＝「年代:id」，同年代内同 id 仍报错；归属按对象引用对包内 acts/sitActs 对账，无包归属者为 c2000 内置。
 const seen = new Map();
 const reg = (id, where) => { if (id == null) return; if (seen.has(id)) err(`重复 id: ${id}（${where} 与 ${seen.get(id)}）`); else seen.set(id, where); };
+const eraOfAct = new Map();
+for (const [era, pk] of Object.entries(sandbox.GAME_PROLOGUE_PACKS || {})) {
+  for (const a of pk.acts || []) eraOfAct.set(a, era);
+  for (const lst of Object.values(pk.sitActs || {})) for (const a of lst || []) eraOfAct.set(a, era);
+}
 for (const e of D.events || []) reg(e.id, "events");
 for (const e of D.rare || []) reg(e.id, "rare");
 for (const f of D.forks || []) reg(f.id || `fork${f.age}`, "forks");
-for (const a of (PRO && PRO.acts) || []) reg(a.id, "prologue");
+for (const a of (PRO && PRO.acts) || []) reg(`${eraOfAct.get(a) || "c2000"}:${a.id}`, `prologue@${eraOfAct.get(a) || "c2000"}`);
 for (const e of D.endings || []) reg(e.id, "endings");
 for (const k of Object.keys(D.crisis || {})) reg(`crisis_${k}`, "crisis");
 

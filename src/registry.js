@@ -32,6 +32,9 @@
      （医护在行期间的公司口径文本用；值域与 ctx.mainLine 同为 FORM_OF_FLAG 的键）。
    - ctx.eduGate（条目级，v0.20.1 W6 登记）：true——学历门：须 schooling=school 或已立
      edu_bridge 旗（夜校/自考桥）；schooling=pre（无序章处境判定的年代）恒过。
+   - ctx.eduGateHalf（条目级，v0.23 WP8 fix4 登记）：true——宽学历门：eduGate 口径另放行
+     schooling=half。用于考试链链身与同类质地条目（补门前本可被 half 单独抽到，续读行为
+     不变，只挡 never/left 未立桥者）；链头 p16_001 仍用 eduGate。求值在 record.js ctxOk。
    - ctx.anyCareTarget（条目级，v0.20.1 W8 登记）：true——在护对象门：陪床/等喊号/护工排班类
      文本须有当下还在的在护对象——父母任一在世且处于父母照护情境（care_self/care_hired/
      care_rotate 任一事实在账），或伴侣在场（partnered/dating）且有伴侣照护事实
@@ -55,8 +58,47 @@
    - textEra（条目级）/ echoEra / labelEra（选项级，v0.20.1 面板急修登记）：{ 年代id: 文本 }——
      年代变体。年代不是状态域（S.era 独立于 S.state，textState 的键装不下年代），故同形另立：
      解析点 views/year.js eraVariant（formText/echoText/labelText 各叠一层，优先级
-     无单位 > 年代 > 形态 > 状态），未声明本年代时回落原文。键值域 = 四个年代 id
-     （c1955/c1965/c1978/c2000），tools/validate-state.js 与 validate-storylet.js 逐项核形状。 */
+     无单位 > 年代 > 形态 > 状态），未声明本年代时回落原文。键值域 = 六个年代 id
+     （c1955/c1965/c1978/c1985/c1995/c2000），tools/validate-state.js 与 validate-storylet.js 逐项核形状。
+     v0.23 WP1（E1）：分岔（fork）与分岔选项同享此机制——fork 级 textEra 由 views/year.js 的 formText
+     解析、choice 级 labelEra/echoEra 由 labelText/echoText 解析，口径与条目级完全一致，不另立通道。
+   - stagesEra（影子级，D.shadows 各路线对象上）：{ 原文行: { 年代id: 文本 } }——影子阶段文本的
+     年代变体：键为该路线 stages 里的原文行，值为该行在本年代的替换行；解析点 views/shadow.js
+     shadowStageText（取池后、既有年代/阶段过滤之前逐行映射，未声明本年代时回落原文行，未声明
+     stagesEra 的路线恒等映射、行为一字不变）；池大小与随机消耗不变，键值域同 textEra（六个年代 id）。
+   - eraFrame（分岔级，v0.23 WP1 E2 登记）：{ 年代id: { text, choices } }——fork33 的年代框变体：
+     命中本年代时整框替换题面与全选项（set 旗与影子政策按旗匹配的读法不变），未命中回落本体；
+     解析点 views/year.js renderFork 与 shadow-life.js 的无头解决器（两处同口径）；框与本体的对应
+     关系登记在 src/anchors.js 的 GAME_ANCHORS.eraFrames，内容（c1955/c1965 两框）随 WP6 落。
+   - 枚举事实（v0.23 WP1 E11 定版）：多值干上事实（examBand/schoolingDepth/sentdownForm/quotaHolder/
+     studyForm）不用里程碑的布尔模型，统一登记在本文件尾部的 GAME_REGISTRY.enumFacts（名、值集、
+     宿主域 host、缺省 absent＝未发生）；持久化挂存档根上的伴随容器 S.facts（{ 事实名: 值 }，
+     与 S.state/S.flags 并列，见 src/engine.js freshState），旧档缺失容器或缺失键一律按 absent 读、
+     不掷不补写；validate-state 按值集校验数据里的 setFact/requiresFact 声明；分根复制按 E8 清单
+     逐项点名（src/world/shadow-life.js birthShadow）。注意与 trackAlt 分家：PACK-SPEC 的 trackAlt
+     是序章文本变体义（流抽签定版），玩家亲选的中专身份是枚举事实 studyForm，两义不许混登记。
+   - 序章选项门（v0.23 WP1 E3 登记）：序章 choices 可带 requiresSit（处境值或其数组）/
+     requiresState（{ 域: 值或值数组 }）/ requiresFlag（旗名或其数组，须全立）/ requiresFact
+     （{ 枚举事实名: 值或值数组 }，按 absent 口径读）——不满足即不出（默认不提这扇门，不用灰置）；
+     求值点 src/content/prologue/prologue.js present（gateChoices）。题面尾句 gateNote 只在
+     gateNoteNeeds 声明的资格来源事实全部已立（旗已立或枚举事实非 absent）时才渲染，缺省
+     （无 gateNoteNeeds 或事实未立）恒不渲染；gateNote 文案规格：叙述者口吻、一句、≤40 字、
+     只陈述规则与事实，不许出现「你不符合／由于／资格／条件不足」式通知腔（validate-storylet 逐字拦）。
+   - familyBeat 拍型（v0.23 WP1 E4 登记）：序章 act 带 familyBeat:true——处境陈述（act.text，
+     无选项段）＋小应对（act.choices）＋回声（act.echo）。小应对 effects 白名单：只许 relation/
+     wisdom 且单项 |值|≤1，另许 set（记号，须已登记里程碑）与 familyFact（家庭事实旗，须已登记在
+     本文件尾部 GAME_REGISTRY.familyFacts）；不许 setState、不许 setFact——尤其不许写 quotaHolder：
+     顶替名额归属只能由 L65-家 的发放规则函数写（蓝图 §3.3），validate-state 对 familyBeat 专门断言。
+     Runtime 落点：prologue.js choose 写 familyFact 旗并拦截 familyBeat 选项的 setFact（防御纵深）。
+   - exam 链头年代门（v0.23 WP1 E10 机制面）：pack16 链头条目 p16_001 可带 eraIn（年代 id 数组，
+     scheduler.js met() 现行求值）关停老年代的考试链；字段支持在此登记，取值随 WP6 落码——
+     本包不改链头数据（关停与密度回补是 WP6/WP2/WP3 的内容面）。
+   - 登记数据文件（v0.23 WP1 E9 骨架）：各内容包的新登记（里程碑/枚举事实/家庭事实旗/examBand
+     分表/序章分岔锚点）一律写独立登记数据文件、加载期合入，不许直改本文件本体。文件形状：
+     window.GAME_REGISTRY_EXTRA = (window.GAME_REGISTRY_EXTRA || []).concat([{ milestones:{},
+     enumFacts:{}, familyFacts:{}, examBandTables:{}, prologueForks:[] }])；加载点 = index.html
+     里 state.js 之前（样例文件 src/content/registry-v023.js）；合入点 = 本文件尾部（registry 类）
+     与 src/anchors.js（prologueForks 类），同名先登记者胜、后到者不覆盖。 */
 /* 拆分说明（v0.20.0）：version 与 domains 已移至 src/world/state.js（须在本文件之前加载）；
    本文件只登记里程碑（milestones），正文与拆分前一字未动。 */
 window.GAME_REGISTRY.milestones = {
@@ -531,7 +573,8 @@ window.GAME_REGISTRY.milestones = {
   },
   "kid2": {
    "setters": [
-    "e78_017"
+    "e78_017",
+    "e85_004"
    ]
   },
   "kid_abroad": {
@@ -1335,3 +1378,77 @@ window.GAME_REGISTRY.milestones = {
    "note": "证券柜台入行（v0.19.0，年代内小线）：营业部柜台留任选项立旗，仅 c1965 两条"
   }
  };
+
+/* ---- v0.23 WP1 登记区（E11 枚举事实 / E5 examBand 分表 / E9 家庭事实旗与登记合入）----
+   本段是 WP1 的登记骨架本体：枚举事实与家庭事实旗在此定版登记；各内容包的新登记不许改
+   本文件，写独立登记数据文件（形状见文件头注释与 src/content/registry-v023.js），由本段
+   尾部的合入器在加载期并入（同名先登记者胜）。 */
+
+// 枚举事实（E11）：{ values 值集, host 宿主域（伴随字段的归属域，只作口径标注）, note }
+// 缺省恒 absent（未发生）——S.facts 里无此键、或存档无 facts 容器，都按 absent 读。
+window.GAME_REGISTRY.enumFacts = {
+  "examBand": {
+    "values": ["high", "mid", "low"],
+    "host": "track",
+    "note": "考试分数档（三档，v0.23 E5）：序章分岔拍内经考试场景由 rollExamBand（序章自有流）掷定；分布是设计参数、按代×处境分表登记在 examBandTables，无统计出处；band 只切第一次的单子、不锁终身（出口见蓝图 §3.2 总则④）"
+  },
+  "schoolingDepth": {
+    "values": ["full", "cut", "none"],
+    "host": "schooling",
+    "note": "读到哪儿的深度标（v0.23 E6）：full=读完高中段 / cut=短读 / none=没读；不新开状态域，按枚举事实登记、validate-state 按值集校验；F55-a 写、F55-c 的高考门按 depth 划（不按 track）"
+  },
+  "sentdownForm": {
+    "values": ["chadui", "changdui", "bingtuan"],
+    "host": "track",
+    "note": "下乡去向构成（三形，v0.23 F55-b 第二层掷定）：chadui=插队 / changdui=场队 / bingtuan=农场兵团；只对已下乡者掷，absent=没下乡（含留城与农村形）；决定 17–21 按轨分文与返城拍的出法"
+  },
+  "quotaHolder": {
+    "values": ["mine", "sibling", "none"],
+    "host": "track",
+    "note": "顶替名额归属（v0.23 F65-a/L65-家）：只能由 L65-家的发放规则函数按已立家庭事实写，familyBeat 小应对的 effects/setFact 永远不许写它（validate-state 专门断言，E4）"
+  },
+  "studyForm": {
+    "values": ["zhongzhuan", "putong"],
+    "host": "track",
+    "note": "玩家亲选的升学身份（v0.23 Q4 甲案）：zhongzhuan=中专形 / putong=普通高中形；与 PACK-SPEC 的 trackAlt（序章文本变体义）分家，两义不许混登记"
+  },
+};
+
+// 家庭事实旗（familyFact）：familyBeat 与处境发放立的家庭层事实旗全量登记（E8 分根复制清单按此表逐项点名）。
+// 旗本体仍是 S.flags 里的布尔旗；本表是「哪些旗算家庭事实」的单一事实源——新家庭旗先在此登记再写内容。
+window.GAME_REGISTRY.familyFacts = {
+  "famSplit55": { "beat": "L55-家", "note": "一家分两处（c1955）：大人调动/支援建设，孩子跟走或留亲戚家" },
+  "originLB": { "beat": "L85-留/L95-留", "note": "留守来历（沿 PACK-SPEC 已定名）：父母外出，孩子留祖辈处；c1985/c1995 同名同义、参数分代" },
+  "migrantExam": { "beat": "L95-考/L00-考", "note": "随迁升学议题已立：回原籍考还是留当地考，墙在升学端" },
+  "famTight78": { "beat": "L78-家", "note": "家里的钱先紧起来（c1978）：父母下海/开店或下岗，紧的那一样落到孩子身上" },
+  "famLaidOff85": { "beat": "L85-岗", "note": "父母下岗（c1985）：家里的钱紧了，先紧孩子的哪一样" },
+  "famRestructure95": { "beat": "L95-婚", "note": "父母离异后的日常安排（c1995）：跟谁住的日常尺寸事实，克制写事不写惨" },
+  "famCare00": { "beat": "L00-护", "note": "看护翻转预告（c2000）：祖辈住院，孩子第一次在病房跑腿" },
+  "famSentdownEcho": { "beat": "L65-衔", "note": "兄姐下乡/返城的衔接记号（c1965，只作记号不立新线）：饭桌上少一副/多一副碗筷" },
+};
+
+// examBand 分布表（E5）：按代 × 处境登记三档权重——设计参数，无统计出处（蓝图 §3.2 总则②注）。
+// 本包只落 c2000 占位登记（精确值随各代包在其 CALIB 头定版后经登记数据文件合入同名键覆盖申请——
+// 合入规则先登记者胜，故各代包的定版表须直接改本表对应键或在本文件登记，不走 extra 覆盖）。
+window.GAME_REGISTRY.examBandTables = {
+  "c2000": {
+    "school": { "high": 45, "mid": 35, "low": 20 },
+    "half": { "high": 25, "mid": 35, "low": 40 },
+    "never": { "high": 10, "mid": 30, "low": 60 },
+    "note": "c2000 定版（v0.23 WP5）：数值是设计参数、无统计出处；WP1 占位值经 WP5 定版确认不改、即为定版（定版对账见 registry-wp5.js 同值登记）"
+  },
+};
+
+// 登记数据文件合入（E9）：window.GAME_REGISTRY_EXTRA 是各内容包登记数据文件 concat 出的数组，
+// 加载位在 state.js 之前、registry.js 之前（index.html / sim / 各校验工具同序）。同名键先登记者胜：
+// 本体登记优先，extra 只补本体没有的键——防内容包静默覆盖 WP1 定版口径。
+(function mergeRegistryExtra() {
+  const REG = window.GAME_REGISTRY;
+  for (const x of window.GAME_REGISTRY_EXTRA || []) {
+    if (!x) continue;
+    for (const [k, v] of Object.entries(x.milestones || {})) if (!(k in REG.milestones)) REG.milestones[k] = v;
+    for (const [k, v] of Object.entries(x.enumFacts || {})) if (!(k in REG.enumFacts)) REG.enumFacts[k] = v;
+    for (const [k, v] of Object.entries(x.familyFacts || {})) if (!(k in REG.familyFacts)) REG.familyFacts[k] = v;
+    for (const [k, v] of Object.entries(x.examBandTables || {})) if (!(k in REG.examBandTables)) REG.examBandTables[k] = v;
+  }
+})();

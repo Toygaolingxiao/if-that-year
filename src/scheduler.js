@@ -33,6 +33,10 @@
     return true;
   }
 
+  function factAnyOk(clauses) { // WP2（补丁稿 wp2-scheduler-year-patch，合并二期落）: clause={事实名:值, _flag:旗名}; 任一 clause 的全部条件合即过
+    const F = (IFY.S && IFY.S.facts) || {};
+    return (clauses || []).some((cl) => Object.entries(cl).every(([k, v]) => k === "_flag" ? !!IFY.S.flags[v] : ((F[k] == null ? "absent" : F[k]) === v)));
+  }
   function evidenceCount(e) { // F4 证据点：evidence 组内任一备选命中算一点（备选 = 事件/稀有/旗标 id 或 {stat} 数值门）
     if (!e.evidence) return 99; // 未声明证据组的条目按满证据（现行 17 条结局已全部声明）
     let n = 0;
@@ -87,8 +91,10 @@
     if (e.route && e.route !== IFY.S.route.id) return false;
     if (e.routeIn && !e.routeIn.includes(IFY.S.route.id)) return false;
     if (e.forbidRoute && e.forbidRoute === IFY.S.route.id) return false;
+    if (e.requiresFactHard && !factAnyOk(e.requiresFactHard)) return false; // WP2（补丁稿 wp2-scheduler-year-patch，合并二期落）: 枚举事实硬门
     if (e.era && IFY.S.era !== e.era) return false;
     if (e.minYear && (IFY.S.birthYear || 1978) + IFY.S.age < e.minYear) return false; // 公历门（v0.11.0）：事件标注的最早公历年，出生年+年龄换算
+    if (e.maxYear && (IFY.S.birthYear || 1978) + IFY.S.age > e.maxYear) return false; // 公历门下限对偶（v0.23 合并二期 F）：事件标注的最晚公历年；此前 maxYear 字段只有 p1_035 在用而 met 未消费，本轮起真生效（该条可达公历本就在界内，行为不变）
     if (e.eraIn && !e.eraIn.includes(IFY.S.era || "c2000")) return false;
     if (e.require && !(Array.isArray(e.require) ? e.require : [e.require]).every((f) => IFY.S.flags[f])) return false;
     if (e.forbid && (Array.isArray(e.forbid) ? e.forbid : [e.forbid]).some((f) => IFY.S.flags[f])) return false;

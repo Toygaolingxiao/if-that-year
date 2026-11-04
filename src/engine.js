@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.22.1 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.23.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -19,7 +19,8 @@ window.IFY = window.IFY || {};
 
   const RHYTHM = window.GAME_RHYTHM || null; // 节奏档案与温度（v0.17.0，src/rhythm.js；派生公式单一来源）
 
-  const PROLOGUE_ERA = "c2000"; // 本轮试点年代：只有它走序章开局，其余年代序章随各自施工轮铺（地基第五章第二步）
+  const PROLOGUE_ERA = "c2000"; // 首个序章年代（兼容导出保留）；v0.22.0 起六代全量走序章开局，判定走 hasPrologue（有年代包即走）
+  const hasPrologue = (era) => !!(PRO && typeof PRO.hasPack === "function" && PRO.hasPack(era));
 
   const ANA = window.GAME_ANALYTICS || { track() {}, flush() {} }; // 匿名埋点（v0.13.1，src/analytics.js；默认关闭、关闭时无操作，口径见 docs/ANALYTICS.md）
 
@@ -121,6 +122,10 @@ window.IFY = window.IFY || {};
       // 童年记号 marks、fork38 立约 covenant、序章运行态 prologue、平年合并 flatCarry 与温度平淡年计数 flatYears
       phase: "adult", stage: "adult", temp: null, rhythm: null,
       marks: [], covenant: null, prologue: null, flatCarry: null, flatYears: 0,
+      // v0.23 WP1（E11 枚举事实）：干上多值事实的持久化伴随容器——{ 事实名: 值 }，缺失键按 absent（未发生）读；
+      // 登记（名/值集/缺省）在 src/registry.js 的 GAME_REGISTRY.enumFacts，validate-state 按值集校验。
+      // 不进 S.state（域内互斥模型装不下多值事实）、不进 S.flags（布尔模型装不下三值以上），故另立伴随容器随存档走。
+      facts: {},
       // v0.18.0 内核一期：结构化账本 ledger、父母进程 parents、dating 起点 datingSince 与推迟计数 datingDefers、旗标落点年龄 flagAges、子女落点 kidsAt
       ledger: [], parents: null, datingSince: null, datingDefers: 0, flagAges: {}, kidsAt: null,
       // v0.20.1：子女出生年 kidsBornAt（出生拍首次呈现时由 apply.js 落点，缺失时 kidAge 回落 kidsAt）、宠物抱回年 catAt/dogAt（cat/dog 流转到 home 时落点）
@@ -427,7 +432,7 @@ window.IFY = window.IFY || {};
           </div>
           <div class="dailyrow"><button class="ghost" id="daily">今日一局 · 今天的固定局，点这先备好</button></div>
           <p class="hint" id="dailyline"></p>
-          <p class="hint tomorrow-note">明天一局：${tomDaily.era.label} · ${tomDaily.era.id === PROLOGUE_ERA ? "从小时候开始" : esc(tomDaily.route.name)}。</p>
+          <p class="hint tomorrow-note">明天一局：${tomDaily.era.label} · ${hasPrologue(tomDaily.era.id) ? "从小时候开始" : esc(tomDaily.route.name)}。</p>
         </div>
         <p class="hint" id="setsummary"></p>
         <div class="actions">
@@ -438,7 +443,7 @@ window.IFY = window.IFY || {};
         ${sLine ? `<p class="hint">${sLine}</p>` : ""}
         ${lLine ? `<p class="hint">${lLine}</p>` : ""}
         <p class="hint">不填随机。填了，运气定下来，跟朋友比同一局就用它。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam ? "，年代也按对方那局选好了" : ""}${cardsParam ? "，出身牌也按对方选过的对齐了" : ""}，点下面开始这一生，就是同一局。` : ""}</p>
-        <p class="hint ver">v0.22.1</p>
+        <p class="hint ver">v0.23.0</p>
       </section>`;
     let startLock = false; // §6.1 防连点：双击不能在同一帧触发两次开局（统一挂在 #startgo 上）
     el("liveslink").addEventListener("click", () => { ANA.track("lives_view", {}); IFY.renderLives(); });
@@ -474,6 +479,8 @@ window.IFY = window.IFY || {};
       IFY.S.datingDefers = IFY.S.datingDefers || 0; IFY.S.flagAges = IFY.S.flagAges || {}; if (!("kidsAt" in IFY.S)) IFY.S.kidsAt = null;
       // v0.20.1 回填：旧存档无出生年/抱回年——三字段补 null；kidsBornAt 为 null 时 kidAge 口径回落 kidsAt（scheduler.js 单一口径），catAt/dogAt 为 null 时宠物年龄门不过（旧档宠物岁数无从推断，不猜）
       if (!("kidsBornAt" in IFY.S)) IFY.S.kidsBornAt = null; if (!("catAt" in IFY.S)) IFY.S.catAt = null; if (!("dogAt" in IFY.S)) IFY.S.dogAt = null;
+      // v0.23 WP1 回填（E11）：旧存档无枚举事实容器——补空对象，全部事实按 absent（未发生）读，不掷、不补写
+      if (!IFY.S.facts || typeof IFY.S.facts !== "object" || Array.isArray(IFY.S.facts)) IFY.S.facts = {};
       // v0.19.0 回填：旧存档无退休运行态——节点计划为空（step 时按当前年龄与活计形态惰性生成），abroadKind/workPhase 缺域已由上方 initialState 补齐（出国线由 settleAbroadDefault 补推断）
       if (!("retirePlan" in IFY.S)) IFY.S.retirePlan = null; if (!("partAt" in IFY.S)) IFY.S.partAt = null; if (!("partYears" in IFY.S)) IFY.S.partYears = null; if (!("retiredAt" in IFY.S)) IFY.S.retiredAt = null; IFY.S.retireDefers = IFY.S.retireDefers || 0;
       IFY.S.autoMode = IFY.prefs.mode; IFY.S.speed = IFY.prefs.speed;
@@ -489,7 +496,7 @@ window.IFY = window.IFY || {};
     const preSel = (id, attr, val) => { const box = el(id); if (!box || !val) return; const btns = box.querySelectorAll(".segbtn"); btns.forEach((o) => { if (o.dataset[attr] === val) { btns.forEach((p) => p.classList.remove("sel")); o.classList.add("sel"); } }); };
     preSel("erapick", "era", eraParam);
     const autoSummary = () => IFY.prefs.mode === "off" ? "手动推进" : `自动推进 ${AUTO_MODES.find(([k]) => k === IFY.prefs.mode)[1]} · ${SPEED_LABEL[IFY.prefs.speed]}（${SPEED_STYLE[IFY.prefs.speed]}）`;
-    const updSummary = () => { const eb = document.querySelector("#erapick .segbtn.sel"); const sv = (el("seedin").value || "").trim(); const birth = eb ? +eb.dataset.birth : 2000; const pro = PRO && selEra() === PROLOGUE_ERA; const cn = !pro && CARDS_ON && dealt ? ` · 出身 ${[dealt.family[picked.family], dealt.temper[picked.temper], dealt.era[picked.era]].map((id) => CARDS.byId[id].name).join("/")}` : ""; el("setsummary").textContent = `这一局：${eb ? eb.textContent.trim() : "2000年代出生"} · ${pro ? "从小时候讲起" : `${birth + 22} 年 22 岁`} · ${sv ? `种子「${sv}」` : "随机种子"} · ${autoSummary()}${cn}`; };
+    const updSummary = () => { const eb = document.querySelector("#erapick .segbtn.sel"); const sv = (el("seedin").value || "").trim(); const birth = eb ? +eb.dataset.birth : 2000; const pro = hasPrologue(selEra()); const cn = !pro && CARDS_ON && dealt ? ` · 出身 ${[dealt.family[picked.family], dealt.temper[picked.temper], dealt.era[picked.era]].map((id) => CARDS.byId[id].name).join("/")}` : ""; el("setsummary").textContent = `这一局：${eb ? eb.textContent.trim() : "2000年代出生"} · ${pro ? "从小时候讲起" : `${birth + 22} 年 22 岁`} · ${sv ? `种子「${sv}」` : "随机种子"} · ${autoSummary()}${cn}`; };
     // 出身牌接线：点选改选（每行恒有一张预选=所发第一张，选路不拦截）；改年代只重发时代行；种子变更重发三行（所选位置重置为第一张）
     const effSeed = () => (el("seedin").value || "").trim() || seedParam || candSeed;
     const selEra = () => { const eb = document.querySelector("#erapick .segbtn.sel"); return eb ? eb.dataset.era : "c2000"; };
@@ -515,7 +522,7 @@ window.IFY = window.IFY || {};
     // 年代分流（v0.17.0）：试点年代走序章开局——藏牌面与路线、亮序章入口；其余年代照旧。切换只改呈现，开局函数在点击时按年代走
     const startLabel = (pro) => saved ? "重新开始一局" : (pro ? "从童年开始这一生" : "开始这一生"); // 有存档时主按钮让位给续玩：文案恒为重开（存档优先）
     const eraToggle = () => {
-      const pro = !!(PRO && selEra() === PROLOGUE_ERA);
+      const pro = hasPrologue(selEra());
       const t = el("starttitle"); if (t) t.textContent = pro ? "这一生，从小时候讲起。" : "22 岁，宿舍要退了。";
       const io = el("intro-old"); if (io) io.hidden = pro;
       const ip = el("intro-pro"); if (ip) ip.hidden = !pro;
@@ -536,7 +543,7 @@ window.IFY = window.IFY || {};
       if (eb) eb.click(); // 年代走既有接线（重发时代牌 + 刷新小结）
       redealAll(); updSummary();
       const goLabel = el("startgo") ? el("startgo").textContent : "开始这一生";
-      if (PRO && dd.era.id === PROLOGUE_ERA) {
+      if (hasPrologue(dd.era.id)) {
         el("dailyline").textContent = `今日一局：${dd.era.label}，从小时候开始。种子和年代都替你备好了，点下面「${goLabel}」就是今日这局。`;
       } else {
         document.querySelectorAll(".routepick").forEach((o) => { const on = D.routes[Number(o.dataset.i)].id === dd.route.id; o.classList.toggle("dailymark", on); o.classList.toggle("sel", on); });
@@ -556,7 +563,7 @@ window.IFY = window.IFY || {};
       el("startgo").disabled = true;
       const seedStr = (el("seedin").value || "").trim() || seedParam || candSeed; // 随机开局用开局页渲染时已生成的候选种子（牌面据此而发，§A3.2）
       const eb = document.querySelector("#erapick .segbtn.sel");
-      if (PRO && selEra() === PROLOGUE_ERA) {
+      if (hasPrologue(selEra())) {
         newGamePrologue(seedStr, eb ? eb.dataset.era : PROLOGUE_ERA, eb ? +eb.dataset.birth : 2000);
         return;
       }
@@ -643,6 +650,7 @@ window.IFY = window.IFY || {};
     app().innerHTML = `<section class="card">${prologueHead(view.age, view.stage)}${IFY.autoPanelHtml()}
       ${view.title ? `<h2>${esc(view.title)}</h2>` : ""}
       ${view.text.split("\n").map((p) => `<p class="body">${esc(p)}</p>`).join("")}
+      ${view.gateNote ? `<p class="hint">${esc(view.gateNote)}</p>` : ""}
       <div id="echo"></div>
       ${view.choices ? `<div class="choices">${view.choices.map((c, i) => `<button class="choice" data-i="${i}">${esc(c.label)}</button>`).join("")}</div>`
                      : `<button class="primary" id="cont">${view.id === "pr_y21" ? "到 22 岁" : "继续"}</button>`}
@@ -808,7 +816,7 @@ window.IFY = window.IFY || {};
     }
     IFY.downloadCurrent();
   }
-  Object.assign(IFY, { D, CARDS, PRO, RHYTHM, PROLOGUE_ERA, ANA, START_AGE, MAX_AGE, STAT_META, GLIMPSE_AGES, ERAS, SAVE_KEY,
+  Object.assign(IFY, { D, CARDS, PRO, RHYTHM, PROLOGUE_ERA, hasPrologue, ANA, START_AGE, MAX_AGE, STAT_META, GLIMPSE_AGES, ERAS, SAVE_KEY,
     LIVES_KEY, PREFS_KEY, SPEED_CPS, SPEED_LABEL, SPEED_STYLE, AUTO_BASE_MS, AUTO_CAP_MS, AUTO_MODES,
     DEFAULT_AUTO_MODE, RNG, RNGW, RNGA, mulberry, rng, rngW, rngA, seedStreams, seedFromString, clamp, esc,
     el, app, reducedMotion, freshState, save, loadSave, clearSave, loadLives, todayStr, recordLives,

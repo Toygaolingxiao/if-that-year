@@ -146,6 +146,14 @@
     } : null;
     const schoolingCopy = A.state ? A.state.schooling : undefined;               // 序章年代：state.schooling / state.track（3.1）
     const trackCopy = A.state ? A.state.track : undefined;
+    // v0.23 E8（WP1）：枚举事实全量逐项点名——examBand / schoolingDepth / sentdownForm / quotaHolder / studyForm
+    // 都住在 S.facts 伴随容器里，整容器深拷贝即逐项同值（键缺失＝absent，两账同读法）；不改 v0.22 语义，只扩复制面。
+    const factsCopy = A.facts ? JSON.parse(JSON.stringify(A.facts)) : {};
+    // v0.23 E8（WP1）：familyFact 全量——按 GAME_REGISTRY.familyFacts 登记表逐项点名，只拷 A 已立的家庭事实旗；
+    // S.flags 仍不整拷（其余旗的既有口径不变：出身牌 set 旗经下方牌 effects 重演、干后旗各走各账）。
+    const FAM_FACTS = (typeof window !== "undefined" && window.GAME_REGISTRY && window.GAME_REGISTRY.familyFacts) || {};
+    const famFlagsCopy = {};
+    for (const name of Object.keys(FAM_FACTS)) if (A.flags && A.flags[name]) famFlagsCopy[name] = true;
     const unchosenBase = (A.unchosen || []).filter((u) => u.kind !== "route").map((u) => ({ ...u })); // 16 岁轨道的不选支与主线同（分岔之前）；route 条目在下面按 B 重走
     const parentsA = A.parents ? JSON.parse(JSON.stringify(A.parents)) : null;   // 裁定三：age0 出生拷贝的来源
 
@@ -159,6 +167,8 @@
       S.route = routeB;
       if (schoolingCopy !== undefined) S.state.schooling = schoolingCopy;
       if (trackCopy !== undefined) S.state.track = trackCopy;
+      S.facts = factsCopy; // v0.23 E8：枚举事实整容器落 B（与 A 深拷贝同值，之后各走各账）
+      for (const [name, v] of Object.entries(famFlagsCopy)) S.flags[name] = v; // v0.23 E8：familyFact 已立旗逐项落 B
       S.marks = marksCopy;
       S.prologue = proCopy;
       S.cards = cardsCopy;
@@ -221,7 +231,7 @@
     IFY.rec("proc", item.id, { set: item.set || null, fx: !item.choices ? S.lastDelta : null });
     S.log.push(`${S.age} 岁 · ${IFY.procText(item)}`);
     if (!item.choices) return;
-    const vis = item.choices.map((c, i) => [c, i]).filter(([c]) => !(c.deferDating && (S.datingDefers || 0) >= 2)); // dating 推迟两次后不再给推迟选项（呈现层同款过滤）
+    const vis = item.choices.map((c, i) => [c, i]).filter(([c]) => !(c.deferDating && (S.datingDefers || 0) >= 2) && (!FORK_GATE_KEYS.some((k) => k in c) || IFY.met(c))); // dating 推迟两次后不再给推迟选项（呈现层同款过滤）；v0.23 WP6（S-6D）：选项级门同口径过滤（FORK_GATE_KEYS 含 eraIn，定义见 resolveForkHeadless 上方），与呈现层 renderProcItem 改后一致
     const visChoices = (vis.length ? vis : item.choices.map((c, i) => [c, i])).map(([c]) => c); // 全被过滤时回落全选项集（蓝图 4.5 口径；呈现层此情形为空屏，无头不许无解）
     const c = visChoices[policyIdx({ kind: "proc", item, choices: visChoices })];
     if (!c) return;
@@ -240,6 +250,8 @@
   function resolveForkHeadless(fork) {
     const S = IFY.S;
     S.flatCarry = null; // 分岔年不是平年
+    // 年代框变体（v0.23 WP1 E2，与呈现层 renderFork 同口径）：eraFrame 命中本 Track 年代时整框替换选项集（set 旗不变，政策仍按旗/效果面对同一组选项）
+    if (fork.eraFrame && fork.eraFrame[S.era]) { const fr = fork.eraFrame[S.era]; fork = Object.assign({}, fork, { title: fr.title || fork.title, choices: fr.choices || fork.choices }); }
     let vis = fork.choices.map((c, i) => [c, i]).filter(([c]) => !FORK_GATE_KEYS.some((k) => k in c) || IFY.met(c)); // 选项级门（呈现层同款）
     if (!vis.length) vis = fork.choices.map((c, i) => [c, i]); // 过滤为空回落全选项集（呈现层同款回落）
     const visChoices = vis.map(([c]) => c);

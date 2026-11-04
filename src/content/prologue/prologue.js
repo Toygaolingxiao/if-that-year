@@ -341,5 +341,6 @@
     return { done: P.done, gapFx };
   }
 
-  window.GAME_PROLOGUE = { acts: ACTS.concat(SIT_ACTS.half, SIT_ACTS.never), sitActs: SIT_ACTS, marks: MARKS, flatsByAge: FLATS_BY_AGE, situationW: SITUATION_W, start, present, choose, stageFor, prng };
+  function hasPack(era) { return era === "c2000" || !!(window.GAME_PROLOGUE_PACKS && window.GAME_PROLOGUE_PACKS[era]); } // v0.23 WP1 shim（S1 先行，全量机制随 S2 整文件入）
+  window.GAME_PROLOGUE = { acts: ACTS.concat(SIT_ACTS.half, SIT_ACTS.never), sitActs: SIT_ACTS, marks: MARKS, flatsByAge: FLATS_BY_AGE, situationW: SITUATION_W, start, present, choose, stageFor, prng, hasPack };
 })();

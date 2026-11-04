@@ -352,7 +352,7 @@
       case "state": return (item.need || []).some((v) => view.domainEnd(item.dom) === v || view.stateWitnessed(item.dom, v));
       case "ctx": {
         const ctx = e.ctx; if (!ctx) return false;
-        if (["form", "notForm", "mainLine", "notMainLine", "entry", "eduGate", "anyCareTarget"].some((k) => ctx[k] !== undefined)) return false;
+        if (["form", "notForm", "mainLine", "notMainLine", "entry", "eduGate", "eduGateHalf", "anyCareTarget"].some((k) => ctx[k] !== undefined)) return false;
         if (ctx.flag && !(view.hasFact(ctx.flag) || view.flagWitnessed(ctx.flag))) return false;
         if (ctx.anyFlag && !ctx.anyFlag.some((f) => view.hasFact(f) || view.flagWitnessed(f))) return false;
         if (ctx.state) for (const [dom, vals] of Object.entries(ctx.state)) {

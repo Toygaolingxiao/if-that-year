@@ -93,14 +93,32 @@
     return retireYearsText(item, eraVariant(item && item.textEra, formVariant(item && item.textForm, stateVariant(item && item.textState, (item && item.text) || ""))));
   }
 
-  function procText(item) { return formText(item); }
+  // WP2（补丁稿 wp2-scheduler-year-patch，合并二期落）: textFact 枚举事实文本变体 { 事实名: { 值: 文本 } };
+  // 条目带 requiresFactAny(软门)时: 门已过用原文(本人形), 未过按事实值取变体(目击形); 无软门的 textFact 直接按值取。
+  function factVariant(item, fallback) {
+    const map = item && item.textFact;
+    if (!map) return fallback;
+    if (item.requiresFactAny) {
+      const F = (IFY.S && IFY.S.facts) || {};
+      const ok = item.requiresFactAny.some((cl) => Object.entries(cl).every(([k, v]) => k === "_flag" ? !!IFY.S.flags[v] : ((F[k] == null ? "absent" : F[k]) === v)));
+      if (ok) return fallback;
+    }
+    for (const [fn, variants] of Object.entries(map)) { const cur = ((IFY.S && IFY.S.facts) || {})[fn]; const v = variants && variants[cur == null ? "absent" : cur]; if (v != null) return v; }
+    return fallback;
+  }
+  function procText(item) { return factVariant(item, formText(item)); }
 
   function renderFork(fork) {
     IFY.curKind = "fork";
     IFY.S.flatCarry = null; // 分岔年不是平年：挂起的平年只留在流水账里（22–38 合并纪律）
+    // 年代框变体（v0.23 WP1 E2）：fork.eraFrame 命中本年代时整框替换（题面+全选项，title 可随框换）——
+    // set 旗与影子政策按旗匹配的读法不变（框选项与本体同 set 目标，内容随 WP6、对应关系登记在 anchors.eraFrames）；
+    // 无 eraFrame 或未命中本年代时 fork 原样走现行解析，行为一字不变。无头解决器（shadow-life.js）同口径。
+    const frame = fork.eraFrame && fork.eraFrame[IFY.S.era];
+    if (frame) fork = Object.assign({}, fork, { title: frame.title || fork.title, choices: frame.choices || fork.choices });
     const covPrefix = fork.age === 45 && IFY.S.covenant && IFY.S.covenant.kind === "wait" ? `<p>七年前在 38 岁挂起的那份账，今天到期。</p>` : ""; // 立约到期点呈现
     const careNow = IFY.S.parents ? ((IFY.S.parents.dad.stage === "care" && IFY.S.state.dad === "alive") || (IFY.S.parents.mom.stage === "care" && IFY.S.state.mom === "alive")) : !!IFY.S.flags.care_stage;
-    const forkText = fork.age === 52 && careNow && fork.textCare ? fork.textCare : formText(fork); // v0.18.0 审计急修：textCare 只认「正在照护且父母尚在」——旧 care_stage 旗在父母离世后仍留着，不能让 52 岁分岔对孤儿说「你已经在照护里了」 // fork52 与父母进程对齐（v0.18.0）：进程已到照护段时文本随动 // v0.19.0 审计急修：非照护段文本走 textState 分版（只剩一位父母时按在世的那位说）
+    const forkText = frame ? (frame.text || "") : (fork.age === 52 && careNow && fork.textCare ? fork.textCare : formText(fork)); // v0.18.0 审计急修：textCare 只认「正在照护且父母尚在」——旧 care_stage 旗在父母离世后仍留着，不能让 52 岁分岔对孤儿说「你已经在照护里了」 // fork52 与父母进程对齐（v0.18.0）：进程已到照护段时文本随动 // v0.19.0 审计急修：非照护段文本走 textState 分版（只剩一位父母时按在世的那位说）
     const GATE_KEYS = ["require", "forbid", "all", "any", "state", "stateAll", "stateNot", "era", "eraIn", "minYear", "route", "routeIn", "forbidRoute", "chain"];
     let vis = fork.choices.map((c, i) => [c, i]).filter(([c]) => !GATE_KEYS.some((k) => k in c) || IFY.met(c)); // 选项级门（v0.18.0）：带门的选项按本局事实显隐（如 fork52 排班选项只给有兄弟姐妹的人）
     if (!vis.length) vis = fork.choices.map((c, i) => [c, i]);

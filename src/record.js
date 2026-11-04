@@ -65,6 +65,14 @@
       const sc = IFY.S.state && IFY.S.state.schooling;
       if (sc && sc !== "school" && sc !== "pre" && !hasFact("edu_bridge")) return false;
     }
+    // 宽学历门（v0.23 WP8 fix4）：ctx.eduGateHalf=true——在 eduGate 口径上另放行 schooling=half。
+    // 用于考试链链身与同类质地条目：它们在补门前本就可被 half 玩家单独抽到（链头 eduGate 只管
+    // 链的入口、不管链身单抽），硬约束 school/half 续读行为不变，故链身用宽门；只挡 never/left
+    // 未立桥者。链头 p16_001 仍用 eduGate 严口径，不在此列。
+    if (ctx.eduGateHalf) {
+      const sc = IFY.S.state && IFY.S.state.schooling;
+      if (sc && sc !== "school" && sc !== "pre" && sc !== "half" && !hasFact("edu_bridge")) return false;
+    }
     // 在护对象门（v0.20.1 W8 登记）：ctx.anyCareTarget=true——陪床/等喊号/护工排班类文本必须有
     // 「当下还在的在护对象」：父母任一在世且本局处于父母照护情境（care_self/care_hired/care_rotate
     // 任一事实在账），或伴侣在场（partnered/dating）且有伴侣照护事实（care_hired_spouse 在账）。
