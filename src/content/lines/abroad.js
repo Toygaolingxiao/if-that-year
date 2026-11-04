@@ -3,14 +3,24 @@
 // 正文只写原型属性（离家多远、能不能长住、当地话这道墙多高、回来一趟多贵），不写具体国名；
 // 入口拍 proc_abroad_kind 为 procOnly，只由引擎进程在 22–26 岁呈现，落 abroadKind 值；
 // 未落值（含旧存档）由引擎 settleAbroadDefault 补推断。年代口径：主体 c1978/c2000，c1965 少量，c1955 不进本包。
+// v0.23 WP6（abroad 年代门审计落地，蓝图 §3.1/WP6 第 5 条）：c1955/c1965 的 abroad 事件面只许
+// 培训/进修/劳务协作（dispatch）形——① dispatch 形既有条目（ab37_005/014/023）eraIn 补进 c1955，
+// 通信/汇款两条（ab37_007/009）补 c1955 并给信件口吻的 textEra；② 入口拍新增「派出去进修」选项
+// （c1955/c1965 专属、落 dispatch），原移民/定居形三选项（anglo/eastasia/europe）加选项级 eraIn
+// （c1978+ 才亮）。注意：选项级 eraIn 的呈现过滤在 renderProcItem/resolveProcHeadless（现行只过滤
+// deferDating），须配合补丁稿 work/wp6-parents-patch.md 与 work/wp6-shadow-life-patch.md 合并后才
+// 在呈现层生效；inferAbroadDefault 的年代权重另见 work/wp6-place-patch.md。审计逐条清单落
+// sim-v023/logs/wp6/abroad-audit.md。
 window.GAME_PACKS = (window.GAME_PACKS || []).concat([
   // —— 入口拍：去向（22–26 岁，route=abroad） ——
   { id: "proc_abroad_kind", min: 22, max: 26, procOnly: true, route: "abroad", text: "能去的地方摆在你面前，不止一个。每个地方脾气不一样，往后要过的日子，也就跟着两样。这一回，你往哪边去。",
+    textEra: { c1955: "单位里传下消息：有个出去的名额。去处不多，路子就那么两条，名额还得争。这一回，你想走哪条。", c1965: "出去的名额落到单位头上。能走的路子不多，多半是跟着项目走，或是派出去学东西。这一回，你想走哪条。" },
     choices: [
-      { label: "去远的那个地方，住下就不走了", setState: { abroadKind: "anglo" }, effects: { growth: 3, freedom: 2, money: -2 }, echo: "落地的地方离家很远。住下来的路很长，得一年一年攒。头一件事，是把当地话学利索。" },
-      { label: "去离家近的，想回就回", setState: { abroadKind: "eastasia" }, effects: { money: 1, relation: 1, growth: 2 }, echo: "离家近，逢年过节回得去。字大半认得，话还得慢慢学，规矩也得慢慢摸。" },
-      { label: "去日子慢、假期多的地方", setState: { abroadKind: "europe" }, effects: { freedom: 3, health: 1, money: -1 }, echo: "那边的日子过得慢，税扣得重，假给得足。当地话难学，急不得。" },
+      { label: "去远的那个地方，住下就不走了", eraIn: ["c1978", "c1985", "c1995", "c2000"], setState: { abroadKind: "anglo" }, effects: { growth: 3, freedom: 2, money: -2 }, echo: "落地的地方离家很远。住下来的路很长，得一年一年攒。头一件事，是把当地话学利索。" },
+      { label: "去离家近的，想回就回", eraIn: ["c1978", "c1985", "c1995", "c2000"], setState: { abroadKind: "eastasia" }, effects: { money: 1, relation: 1, growth: 2 }, echo: "离家近，逢年过节回得去。字大半认得，话还得慢慢学，规矩也得慢慢摸。" },
+      { label: "去日子慢、假期多的地方", eraIn: ["c1978", "c1985", "c1995", "c2000"], setState: { abroadKind: "europe" }, effects: { freedom: 3, health: 1, money: -1 }, echo: "那边的日子过得慢，税扣得重，假给得足。当地话难学，急不得。" },
       { label: "跟着项目出去挣钱，干完就回来", setState: { abroadKind: "dispatch" }, effects: { money: 4, health: -2, freedom: -1 }, echo: "合同签了几年，住处跟着项目走。钱是多，就是哪儿都住不长，行李不敢全拆开。" },
+      { label: "跟着单位派出去进修，学完回来", eraIn: ["c1955", "c1965"], setState: { abroadKind: "dispatch" }, effects: { growth: 3, money: 1, relation: -1 }, echo: "名额是单位争来的，先学话，再学技术。走之前把家里的事安顿好，回来还回原单位。" },
     ] },
   // —— 早段（22–34）：落地、当地话、第一份活、身份节点 ——
   { id: "ab37_001", w: 2, min: 22, max: 27, route: "abroad", eraIn: ["c1978", "c2000"], text: "落地那天，箱子摊在出租屋的地板上，半箱子药、一包底料、一件厚外套。窗外黑得早，楼下店都关了。你把被子抖开，先睡了一觉，醒来才想起还没给家里报平安。",
@@ -21,18 +31,18 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
     effects: { growth: 2, relation: 1 } },
   { id: "ab37_004", w: 2, min: 23, max: 30, route: "abroad", eraIn: ["c1978", "c2000"], text: "第一份活是熟人介绍的，在后厨帮工，钱按周结。头一周你切坏了两筐菜，领班没骂，把刀换了把钝的给你，说先练手，别练到手上。周末结钱，数了两遍，先把房租留出来。",
     effects: { money: 2, health: -1 } },
-  { id: "ab37_005", w: 2, min: 23, max: 32, route: "abroad", eraIn: ["c1965", "c1978", "c2000"], state: { abroadKind: "dispatch" }, text: "项目上的住处是排房，一间住四个人，床挨着床。食堂几点开饭，澡堂几点有热水，墙上都贴着。钱按月打回卡里，比在家里多不少，就是出了营地没处去，晚上只能在院里转圈。",
+  { id: "ab37_005", w: 2, min: 23, max: 32, route: "abroad", eraIn: ["c1955", "c1965", "c1978", "c1985", "c1995", "c2000"], state: { abroadKind: "dispatch" }, text: "项目上的住处是排房，一间住四个人，床挨着床。食堂几点开饭，澡堂几点有热水，墙上都贴着。钱按月打回卡里，比在家里多不少，就是出了营地没处去，晚上只能在院里转圈。",
     effects: { money: 3, freedom: -2, health: -1 } },
   { id: "ab37_006", w: 2, min: 24, max: 33, route: "abroad", eraIn: ["c1978", "c2000"], text: "头一回续身份，材料要得细：雇主的信、住处的合同、这几个月的工资单。你跑了三趟，第三趟窗口的人把清单划掉最后一项，说齐了。你站在门口把回执看了两遍，才敢往回走。",
     effects: { growth: 1, wisdom: 2 } },
-  { id: "ab37_007", w: 2, min: 24, max: 34, route: "abroad", eraIn: ["c1965", "c1978", "c2000"], text: "给家里打电话要算着时差，也算着话费。你妈接起来先问吃没吃，你说吃了，其实刚下班，锅还没热。聊到最后，她说家里都好，你别惦记。你挂了电话，在本子上把下回要说的事记下来，怕再打时又忘。",
+  { id: "ab37_007", w: 2, min: 24, max: 34, route: "abroad", eraIn: ["c1955", "c1965", "c1978", "c1985", "c1995", "c2000"], text: "给家里打电话要算着时差，也算着话费。你妈接起来先问吃没吃，你说吃了，其实刚下班，锅还没热。聊到最后，她说家里都好，你别惦记。你挂了电话，在本子上把下回要说的事记下来，怕再打时又忘。", textEra: { c1955: "往家里写信要算着邮路，一封信走一个多月。你把要说的事先记在本子上，怕提笔时又忘。信里只报平安，末了添一句：家里别惦记。回信到时，你已经把寄出去的那封背下来了。", c1995: "跟家里视频要算着时差，也得等家里那边有网、得空的时候。你妈接起来先问吃没吃，你说吃了，其实刚下班，锅还没热。聊到最后，她说家里都好，你别惦记。挂了之后，你把下回要说的事记在手机备忘里，怕再聊时又忘。", c2000: "跟家里视频要算着时差，也得等家里那边有网、得空的时候。你妈接起来先问吃没吃，你说吃了，其实刚下班，锅还没热。聊到最后，她说家里都好，你别惦记。挂了之后，你把下回要说的事记在手机备忘里，怕再聊时又忘。" },
     effects: { relation: 2, money: -1 } },
   { id: "ab37_008", w: 2, min: 24, max: 32, route: "abroad", eraIn: ["c1978", "c2000"], text: "合租的屋子四个人，水电按人头摊。厨房排班表贴在冰箱上，谁的锅没刷，红笔圈出来。头一个月你圈了别人两次，自己被圈了一次。慢慢地，几个人凑钱买了口大锅，周末轮着做一顿家里的菜。",
     choices: [
       { label: "把规矩认下来，住得久些", effects: { relation: 2 }, echo: "排班表换了三张，锅一直没换。后来有人搬走，新来的人先看的就是那张表。" },
       { label: "攒钱，年底换个单间", effects: { money: 1, freedom: 1 }, echo: "你开始把零钱单独放一个信封，信封上写着房租，别的钱谁也不许动。" },
     ] },
-  { id: "ab37_009", w: 2, min: 25, max: 34, route: "abroad", eraIn: ["c1965", "c1978", "c2000"], text: "第一次往家汇款，单子填了四遍，手续费扣得你心疼。你妈收到后打电话来，说数对上了，又说家里不缺钱，让你留着自己花。你说这边够用。挂了电话，你把汇款的回执夹在证件里，没舍得扔。",
+  { id: "ab37_009", w: 2, min: 25, max: 34, route: "abroad", eraIn: ["c1955", "c1965", "c1978", "c1985", "c1995", "c2000"], text: "第一次往家汇款，单子填了四遍，手续费扣得你心疼。你妈收到后打电话来，说数对上了，又说家里不缺钱，让你留着自己花。你说这边够用。挂了电话，你把汇款的回执夹在证件里，没舍得扔。", textEra: { c1955: "第一次往家汇款，单子填了四遍，手续费扣得你心疼。家里回信说数对上了，又说不缺钱，让你留着自己花。你把汇款的回执夹在证件里，没舍得扔。", c1995: "第一次用手机往家转钱，验证码等了两回，账号输错一位退了回来，又赶上当天限额，只能先转一半，手续费扣得你心疼。你妈收到后打电话来，说数对上了，又说家里不缺钱，让你留着自己花。你说这边够用。挂了电话，你把转账记录截了图，存进相册里，没舍得删。", c2000: "第一次用手机往家转钱，验证码等了两回，账号输错一位退了回来，又赶上当天限额，只能先转一半，手续费扣得你心疼。你妈收到后打电话来，说数对上了，又说家里不缺钱，让你留着自己花。你说这边够用。挂了电话，你把转账记录截了图，存进相册里，没舍得删。" },
     effects: { relation: 2, money: -2 } },
   { id: "ab37_010", w: 2, min: 24, max: 33, route: "abroad", eraIn: ["c1978", "c2000"], state: { abroadKind: ["anglo", "europe"] }, text: "冬天的黑来得早，下午四点多天就暗了。屋里取暖费贵，你裹着毯子看书，隔壁的老人敲门，送来一碗汤，说天冷，喝点热的。你把碗洗好送回去，顺手帮对方把门口的雪铲了。",
     effects: { relation: 2, health: -1 } },
@@ -43,7 +53,7 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
     effects: { growth: 1, freedom: 2 } },
   { id: "ab37_013", w: 2, min: 35, max: 48, route: "abroad", eraIn: ["c1978", "c2000"], state: { abroadKind: "eastasia" }, text: "离家近的好处，过年最明显：别人还在算假，你拎个包就回了，初五再赶回来上班，误不了事。这几年你攒下的钱大半换成了家里的东西：给爸妈换的热水器、修的屋顶，票据都在抽屉里。",
     effects: { relation: 2, money: 1 } },
-  { id: "ab37_014", w: 2, min: 36, max: 50, route: "abroad", eraIn: ["c1965", "c1978", "c2000"], state: { abroadKind: "dispatch" }, text: "第二个项目又签了，还是排房、食堂、按月打钱。家里问你什么时候是个头，你说干完这个项目就回。话说了两年，项目一个接一个。你把挣的钱大半寄回去，自己的行李还是那两箱。",
+  { id: "ab37_014", w: 2, min: 36, max: 50, route: "abroad", eraIn: ["c1955", "c1965", "c1978", "c1985", "c1995", "c2000"], state: { abroadKind: "dispatch" }, text: "第二个项目又签了，还是排房、食堂、按月打钱。家里问你什么时候是个头，你说干完这个项目就回。话说了两年，项目一个接一个。你把挣的钱大半寄回去，自己的行李还是那两箱。",
     effects: { money: 3, relation: -1 } },
   { id: "ab37_015", w: 2, min: 38, max: 52, route: "abroad", eraIn: ["c1978", "c2000"], anyParentAlive: true, stateAll: { dad: "alive", mom: "alive" }, text: "你妈在电话里说，你爸最近上楼要歇两回。你问要不要回去看看，她说不用，先忙你的。挂了电话你坐了很久，把接下来三个月的假都查了一遍，又把机票的价格看了两回。",
     effects: { relation: 1, wisdom: 2 } },
@@ -68,7 +78,7 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
     effects: { wisdom: 3, freedom: 1 } },
   { id: "ab37_022", w: 2, min: 58, max: 70, route: "abroad", eraIn: ["c1978", "c2000"], state: { abroadKind: "europe" }, text: "这边退下来的日子，慢有慢的过法：假多，事少，社区的活动排得满。你报了个园艺的班，种出来的东西分给邻居。就是冬天的黑还是长，屋里得早早开灯。",
     effects: { health: 1, relation: 1 } },
-  { id: "ab37_023", w: 2, min: 55, max: 66, route: "abroad", eraIn: ["c1965", "c1978", "c2000"], state: { abroadKind: "dispatch" }, text: "最后一个项目结了，合同到期，行李还是那两箱，就是人比来时老了。这些年挣的钱，大半在家里：房子修了，孩子的事帮了，存折上还剩一笔。你站在营地门口等车，想着回去先睡个整觉。",
+  { id: "ab37_023", w: 2, min: 55, max: 66, route: "abroad", eraIn: ["c1955", "c1965", "c1978", "c1985", "c1995", "c2000"], state: { abroadKind: "dispatch" }, text: "最后一个项目结了，合同到期，行李还是那两箱，就是人比来时老了。这些年挣的钱，大半在家里：房子修了，孩子的事帮了，存折上还剩一笔。你站在营地门口等车，想着回去先睡个整觉。",
     choices: [
       { label: "回了，往后就在家过", effects: { health: 2, relation: 2 }, set: "back_home_stay", echo: "到家那晚，饭是家里人留的，热了三遍。你说还是家里的床睡得沉。" },
       { label: "歇半年，看看还有没有短活", effects: { money: 2, health: -1 }, echo: "电话留给了项目上的人。真有电话来时，你犹豫了半天，最后还是没接。" },

@@ -1,4 +1,5 @@
 // [M1-B 内容重组] 本文件现位于 src/content/pool/pack6.js（按领域重组搬入），除本行外内容一字未动。
+// v0.23 WP8 fix4（四修）：p6_010（当年招考简章）补 ctx.eduGateHalf 宽学历门（只挡 never/left 未立桥）；p6_014、p6_063 补 textState.schooling.never 分文（没进过校门者无校服/无坐过的教室）。
 window.GAME_PACKS=(window.GAME_PACKS||[]).concat([
 {"id":"p6_001","min":40,"max":56,"require":"job_hop","text":"当年跳槽去的那家公司上了新闻，新办公室搬进了写字楼。你把链接转给老同事，对方回了句：你眼光可以。","effects":{"growth":1,"freedom":-1,"wisdom":5}},
 {"id":"p6_002","minYear":2000,"min":44,"max":60,"require":"job_hop","text":"猎头又打来电话，开场白还是那套：有个机会特别适合您。你听完，先问了离家多远。","choices":[{"label":"去聊聊看","effects":{"growth":1,"wisdom":5},"echo":"聊完回来你发现，自己问的全是几点下班、双休算不算数。"},{"label":"不折腾了，挂了","effects":{"freedom":2,"health":1},"echo":"你把手机扣在桌上，安心吃了顿午饭。"}]},
@@ -9,11 +10,11 @@ window.GAME_PACKS=(window.GAME_PACKS||[]).concat([
 {"id":"p6_007","min":46,"max":60,"require":"side_start","text":"家里的工具箱落了灰，又被你翻了出来。邻居家的门锁坏了，你拎着工具箱就过去了。"},
 {"id":"p6_008","min":42,"max":58,"require":"saw_home","text":"回老家办事，路过当年打听过的那家单位。楼还在，牌子换了，门口的梧桐粗了一圈。"},
 {"id":"p6_009","minYear":2012,"min":48,"max":62,"require":"saw_home","text":"同学群里说，当年你想考的那个岗位，后来并进了新单位，编制只剩一半。有人@你：幸好你没回来。","choices":[{"label":"回了个表情，没接话","effects":{"freedom":1,"wisdom":5},"echo":"你在群里潜水惯了，这次也一样。"},{"label":"说：回来也有回来的活法","effects":{"relation":1,"wisdom":5},"echo":"群里安静了一会儿，老班长出来岔开了话题。"}]},
-{"id":"p6_010","min":52,"max":64,"require":"saw_home","text":"父亲收拾老屋，翻出你当年打印的招考简章，问还留着吗。你说留着吧，垫桌脚正好。","effects":{"wisdom":4},"stateAll":{"dad":"alive"}},
+{"id":"p6_010","min":52,"max":64,"require":"saw_home","ctx":{"eduGateHalf":true},"text":"父亲收拾老屋，翻出你当年打印的招考简章，问还留着吗。你说留着吧，垫桌脚正好。","effects":{"wisdom":4},"stateAll":{"dad":"alive"}},
 {"id":"p6_011","min":40,"max":55,"require":"stayed_city","text":"你刚来这座城市时住的那片城中村拆了。你绕路去看了一眼，卖肠粉的摊子还在路口，就是挪了地方。"},
 {"id":"p6_012","min":50,"max":63,"minYear":2014,"require":"stayed_city","text":"父母第一次来你这边过冬。你带他们坐地铁、扫码买菜，母亲学会了用手机付款，逢人就讲。","choices":[{"label":"多留他们住些日子","effects":{"relation":2,"money":-2,"wisdom":3},"echo":"阳台上多了两盆他们侍弄的花，你下班回家先去看一眼长势。"},{"label":"按原计划送他们回去","effects":{"money":1,"freedom":1},"echo":"送站回来屋里一下子空了，你把电视打开，声音调大了一格。"}],"stateAll":{"mom":"alive","dad":"alive"}},
 {"id":"p6_013","min":42,"max":56,"minYear":2008,"require":"often_back","text":"老家那趟慢车停运了，换成了高铁。四十分钟，你还没睡着就到了。车站新楼亮堂，就是等车的那排长椅没了。"},
-{"id":"p6_014","min":48,"max":62,"require":"often_back","text":"你在老家的房间，床单是母亲换的新的。衣柜里还挂着你上学时的校服，她一直没舍得扔。","effects":{"relation":1,"wisdom":3},"stateAll":{"mom":"alive"}},
+{"id":"p6_014","min":48,"max":62,"require":"often_back","text":"你在老家的房间，床单是母亲换的新的。衣柜里还挂着你上学时的校服，她一直没舍得扔。","textState":{"schooling":{"never":"你在老家的房间，床单是母亲换的新的。衣柜里还挂着你小时候的一件褂子，补过两回了，她一直没舍得扔。"}},"effects":{"relation":1,"wisdom":3},"stateAll":{"mom":"alive"}},
 {"id":"p6_015","min":42,"max":56,"w":2,"text":"对方做了个小手术，你在手术室门口坐了四个小时。轮到你签字的时候，手有点抖。这位置，你们换过来了。","choices":[{"label":"请长假陪到底","effects":{"relation":2,"money":-2,"freedom":-1,"wisdom":5},"echo":"出院那天对方说，饭还是你做的合口。你说那当然。"},{"label":"白天上班，晚上陪护","effects":{"relation":2,"health":-2,"wisdom":6},"echo":"你把折叠椅搬进病房，护士都认得你了。"}],"state":{"spouse":"partnered"}},
 {"id":"p6_016","min":48,"max":62,"text":"结婚纪念日两个人都忘了。晚上刷手机看到日期，对方从冰箱摸出块蛋糕胚，你打了两个鸡蛋。凑合过，也算过。","state":{"spouse":"partnered"}},
 {"id":"p6_017","min":54,"max":64,"text":"对方的手机密码换成了你的生日，你的是对方的。谁也没说破，输错的时候互相笑一下。","state":{"spouse":"partnered"}},
@@ -62,7 +63,7 @@ window.GAME_PACKS=(window.GAME_PACKS||[]).concat([
 {"id":"p6_060","minYear":2012,"min":44,"max":58,"text":"你们这行今年关了三家同行公司。行业群里，转让设备的消息比订单还多。","effects":{"money":-1}},
 {"id":"p6_061","forbid":["laid_off"],"stateNot":{"workPhase":"retired"},"ctx":{"form":["employee","public"]},"min":48,"max":62,"text":"单位的活只剩往年的一半，班次跟着减了下来。空出来的晚上，你反而不知道干什么。","choices":[{"label":"把空时间拿去学门新手艺","effects":{"growth":2,"freedom":1},"echo":"你报了个夜校班，同学里有跟你一样转行的。"},{"label":"多陪陪家里，补这些年欠的","effects":{"relation":2,"health":1,"wisdom":5},"echo":"晚饭桌上你出现得勤了，父亲的话都变多了。"}],"stateAll":{"dad":"alive"}},
 {"id":"p6_062","min":44,"max":60,"text":"回老家过年，县城新开了家商场，门口排长队。老百货大楼拆了，母亲说，她年轻时在那儿买过布。","stateAll":{"mom":"alive"}},
-{"id":"p6_063","min":50,"max":64,"text":"老家的村小合并到镇上去了。校舍改成了养老服务站，你上学时坐的那间教室，现在摆着康复器材。"},
+{"id":"p6_063","min":50,"max":64,"text":"老家的村小合并到镇上去了。校舍改成了养老服务站，你上学时坐的那间教室，现在摆着康复器材。","textState":{"schooling":{"never":"老家的村小合并到镇上去了。校舍改成了养老服务站，教室里现在摆着康复器材。你没在里头上过课，可那口上课的铃，你在校门外听了好几年。"}}},
 {"id":"p6_064","minYear":2012,"min":48,"max":62,"text":"老屋的屋顶漏了，村里说翻修有补贴，要申请得趁今年。兄弟姐妹在群里商量，你先把申请材料垫上了。","choices":[{"label":"修，老屋留着","effects":{"money":-3,"relation":1},"echo":"修好的那天，父亲在院子里转了好几圈，摸了摸新瓦。"},{"label":"先不修，看政策再等等","effects":{"money":1},"echo":"你把材料收进抽屉，跟父亲说，明年开春再定。"}],"stateAll":{"dad":"alive"},"forbid":"only_child"},
 {"id":"p6_065","min":50,"max":64,"text":"你给父母的卫生间装了扶手和防滑垫。装完父亲扶着走了一圈，说：这下洗澡不用喊人了。","effects":{"relation":1,"money":-1},"stateAll":{"dad":"alive","mom":"alive"}},
 {"id":"p6_066","min":58,"max":64,"text":"社区老年大学开学，报名队伍排到了大门口。舞蹈班满员最快，你抢到了合唱团的最后一个名额。"},

@@ -1,4 +1,5 @@
 // [M1-B 内容重组] 本文件现位于 src/content/pool/pack5.js（按领域重组搬入），除本行外内容一字未动。
+// v0.23 WP8 fix4（四修）：p5_037、p5_035 补 textState.schooling.never 分文（小学同学/小学同桌改「一块儿长大的伙伴」口径）。
 window.GAME_PACKS=(window.GAME_PACKS||[]).concat([
 {"id":"p5_001","minYear":2002,"min":24,"max":32,"text":"毕业后最先出头的老同学回城请客，一桌人起哄让他买单，他笑着把卡递给了服务员。","effects":{"relation":1}},
 {"id":"p5_002","minYear":2012,"min":30,"max":44,"text":"当年坐你后排、总借橡皮的同学开了家公司，新闻推送到你手机上，你截了图发到同学群里。","effects":{"relation":1,"growth":1}},
@@ -34,9 +35,9 @@ window.GAME_PACKS=(window.GAME_PACKS||[]).concat([
 {"id":"p5_032","min":23,"max":30,"text":"那场没通过的面试，结束时面试官说：你的长处是能把话说到人心上，别浪费了。这句话你记了很多年。","effects":{"growth":2,"wisdom":5}},
 {"id":"p5_033","ctx":{"form":["employee","public"]},"min":28,"max":42,"text":"前辈把你拉到楼梯间，说新来的那个项目别接，里面有笔糊涂账，接了就是背锅的。","choices":[{"label":"听了，没接","effects":{"growth":1,"money":1,"wisdom":5},"echo":"半年后项目审计，接手的同事被约谈。你在食堂碰见前辈，替他打了份汤。"},{"label":"没听，接了","effects":{"growth":2,"health":-2,"wisdom":6},"echo":"账查了大半年才理清。你确实长了本事，也确实瘦了六斤。"}]},
 {"id":"p5_034","min":44,"max":58,"text":"行业里的老前辈退休，把他攒了半辈子的名片盒给了你，说电话都还在，就是人退了，情分你接着用。","effects":{"relation":2,"wisdom":5}},
-{"id":"p5_035","min":28,"max":44,"text":"小学同桌不知从哪儿加到了你，第一句是问你还记不记得三年级那次打架。你们聊到半夜，把半个班的名字都对了一遍。","effects":{"relation":2}},
+{"id":"p5_035","min":28,"max":44,"text":"小学同桌不知从哪儿加到了你，第一句是问你还记不记得三年级那次打架。你们聊到半夜，把半个班的名字都对了一遍。","textState":{"schooling":{"never":"小时候一块儿玩大的伙伴不知从哪儿加到了你，第一句是问你还记不记得那年在坡上打的那一架。你们聊到半夜，把小时候那一片的人名都对了一遍。"}},"effects":{"relation":2}},
 {"id":"p5_036","min":36,"max":52,"text":"失联十几年的朋友托人找到你，就为说一句：高中借你的那本小说，他前年搬家时翻出来了，一直没还。","effects":{"relation":1}},
-{"id":"p5_037","min":34,"max":52,"forbidRoute":"home","text":"你在外地的夜市买烤串，听见有人用家乡话喊你的小名。回头一看是小学同学，两人手里都举着串，站着聊了二十分钟。","effects":{"relation":2}},
+{"id":"p5_037","min":34,"max":52,"forbidRoute":"home","text":"你在外地的夜市买烤串，听见有人用家乡话喊你的小名。回头一看是小学同学，两人手里都举着串，站着聊了二十分钟。","textState":{"schooling":{"never":"你在外地的夜市买烤串，听见有人用家乡话喊你的小名。回头一看，是小时候一块儿长大的伙伴，两人手里都举着串，站着聊了二十分钟。"}},"effects":{"relation":2}},
 {"id":"p5_038","min":48,"max":64,"text":"通讯录里翻到一个十年前的号码，备注就一个字。你盯着它看了一会儿。","choices":[{"label":"打过去","effects":{"relation":2},"echo":"对方愣了三秒才听出你。你们约了下周喝茶，各带一瓶酒。"},{"label":"没打，把通讯录关了","effects":{"freedom":1},"echo":"过了几天你又想起来，还是没打。号码还存在手机里。"}]},
 {"id":"p5_039","minYear":2012,"min":24,"max":46,"text":"家族群里姑姑又转了篇养生文，你妈第一个点了赞。你把辟谣链接发进群，半天没人接话。晚上你爸发了个红包，话题就过去了。","effects":{"relation":1},"stateAll":{"dad":"alive","mom":"alive"}},
 {"id":"p5_040","stateAll":{"dad":"alive"},"minYear":2014,"min":26,"max":50,"text":"过年家族群发红包，你抢了八块六，你爸抢到三毛，在群里问怎么提现。全家人教了他十分钟。","effects":{"relation":1}},

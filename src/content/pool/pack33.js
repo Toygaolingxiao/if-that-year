@@ -1,6 +1,7 @@
 // [M1-B 内容重组] 本文件现位于 src/content/pool/pack33.js（按领域重组搬入），除本行外内容一字未动。
 // pack33 — v0.13.0 出身牌钩子事件：require 对应 hook_* 旗（开局选牌立旗），分布 23–45 岁——出身的回响来得早
 // v0.13.2：削「说破因果」解释尾（哪练的/小时候…练的），动作与物件留下，出身与当下的扣合交给读者
+// v0.23 WP8 fix4（四修）：p33_010 补 textState.schooling.never 分文（小学同学/老班长/座位表改小时候伙伴口径；require 的家底钩子不变）。
 window.GAME_PACKS = (window.GAME_PACKS || []).concat([
 {"id":"p33_001","min":24,"max":38,"require":"hook_counter","text":"同事盘了个小店，月底把账本抱来找你：流水和库存对不上，差了七百多。你拿计算器一笔笔捋，半小时找出来是两笔进货记重了。他把账本合上，请你晚上吃饭。","choices":[{"label":"收下他塞的红包，图个吉利","effects":{"money":1,"relation":1},"echo":"红包不厚。回家的路上你想起小时候，赊账的人站在柜台外头，你爸摆摆手说下回再说。"},{"label":"不收。留个人情在那儿","effects":{"relation":2,"wisdom":1},"echo":"他改请你吃了顿饭。账清了，人情没清——你从小就知道，这两本账不是一本。"}]},
 {"id":"p33_002","min":30,"max":45,"require":"hook_counter","text":"你帮家里亲戚算一笔合伙的账，前后三年的流水摊了一桌子。算完你把话说明白：这账再合伙下去要伤人。后来他们散了伙，没红脸，逢年过节还在一张桌子上吃饭。","effects":{"wisdom":2,"relation":1}},
@@ -11,7 +12,7 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
 {"id":"p33_007","min":24,"max":38,"require":"hook_grandma","text":"同事来家里吃饭，尝了你腌的菜，问在哪买的。你说自己腌的，方子是奶奶的。后来她隔三差五来讨一小坛，你家的坛子就没空过。","effects":{"relation":2,"money":-1}},
 {"id":"p33_008","min":30,"max":45,"require":"hook_grandma","text":"家里老人住院，你去陪床。几点量体温、药怎么分、夜里怎么翻身，你上手就熟。护工看你换床单的手法，点了点头，把热水瓶往你这边推了推。","choices":[{"label":"多陪几晚，白天再补觉","effects":{"relation":3,"health":-2},"echo":"夜里走廊的灯一闪一闪，你想起奶奶摇椅边的那盏小灯。"},{"label":"请人陪，自己跑手续","effects":{"money":-2,"relation":1},"echo":"你把缴费、取药的路跑顺了。陪床的事，你终究没抢过人家专业的。"}]},
 {"id":"p33_009","ctx":{"form":["employee","public"]},"min":23,"max":33,"require":"hook_moved_kid","text":"刚换的新单位，别人要一个月才认全人，你一周就摸清了谁跟谁不对付、食堂哪个窗口快。你从小换地方换惯了，进新门先看人。","effects":{"growth":2,"relation":1}},
-{"id":"p33_010","min":30,"max":45,"require":"hook_moved_kid","text":"失联多年的小学同学通过老班长联系上你。你们在电话里对了半天座位表，才想起彼此坐过前后桌。约好见面，临了又各自忙，拖了半年还没见上。","effects":{}},
+{"id":"p33_010","min":30,"max":45,"require":"hook_moved_kid","text":"失联多年的小学同学通过老班长联系上你。你们在电话里对了半天座位表，才想起彼此坐过前后桌。约好见面，临了又各自忙，拖了半年还没见上。","textState":{"schooling":{"never":"失联多年的小伙伴辗转联系上你。你们在电话里对了半天小时候的事，才把彼此的样子想起来。约好见面，临了又各自忙，拖了半年还没见上。"}},"effects":{}},
 {"id":"p33_011","ctx":{"form":["employee","public"]},"min":23,"max":35,"require":"hook_sporty","text":"单位运动会缺人，主管挨个问，你报了个一千五。跑完第三名，奖品是一提抽纸。年轻同事递水过来，问你平常藏哪练的，你把水瓶拧开先喝了一口。","effects":{"health":2,"freedom":1}},
 {"id":"p33_012","forbidRoute":"abroad","min":30,"max":45,"require":"hook_sporty","text":"公司团建去爬山，年轻人走一半就坐在台阶上。你把多余的水分出去，又折回去接最后那个。到山顶时你的膝盖先提醒你：岁数到了。","effects":{"relation":2,"health":-1}},
 {"id":"p33_013","ctx":{"form":["employee","public"]},"min":24,"max":40,"require":"hook_stage","text":"部门汇报前，主讲的同事嗓子哑了，领导让你顶上。你对着镜子顺了两遍词，上台没卡壳。散会有人拍拍你肩，问你是不是干过这行，你摇摇头，去倒了杯水。","effects":{"growth":2,"relation":1}},

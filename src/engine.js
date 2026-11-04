@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.23.4 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.23.5 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -91,6 +91,7 @@ window.IFY = window.IFY || {};
 
   const esc = (s) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
+  const routeDesc = (r) => (r.descEra && IFY.S && r.descEra[IFY.S.era]) || r.desc; // v0.23 WP6（S-6A）：路线 desc 年代变体消费（descEra 与 desc 并列、同形于事件 textEra，契约见 registry-wp6.js）；未声明该年代回落 desc 原文
   const el = (id) => document.getElementById(id);
 
   const app = () => el("app");
@@ -377,6 +378,7 @@ window.IFY = window.IFY || {};
     const candSeed = String(Math.floor(Math.random() * 1e6));
     const startEra = eraParam && ERAS.some((e) => e.id === eraParam) ? eraParam : "c2000";
     let dealt = CARDS_ON ? CARDS.deal(seedParam || candSeed, startEra) : null;
+    const routeDescPreview = (r) => { const eb = document.querySelector("#erapick .segbtn.sel"); const era = eb ? eb.dataset.era : startEra; return (r.descEra && r.descEra[era]) || r.desc; }; // v0.23 WP6（S-6A）：设置区预览读 erapick 当前选中年代（模板初建时 DOM 未就绪则回落 startEra）；eraToggle 里随年代切换刷新
     const picked = { family: 0, temper: 0, era: 0 };
     // 同局链接带来的牌面：在已发的三选一里对齐选中下标；不在手牌中则忽略（防篡改/旧链）
     if (CARDS_ON && dealt && cardsParam) {
@@ -408,7 +410,7 @@ window.IFY = window.IFY || {};
         </div>
         <div class="setblock" id="routeblock">
           <p class="setlab">路线 · 22 岁那年要选的路，先看看</p>
-          <div class="choices" id="routechoices">${D.routes.map((r, i) => `<button type="button" class="choice routepick${i === 0 ? " sel" : ""}" data-i="${i}"><b>${esc(r.name)}</b><small>${esc(r.desc)}</small></button>`).join("")}</div>
+          <div class="choices" id="routechoices">${D.routes.map((r, i) => `<button type="button" class="choice routepick${i === 0 ? " sel" : ""}" data-i="${i}"><b>${esc(r.name)}</b><small>${esc(routeDescPreview(r))}</small></button>`).join("")}</div>
           ${CARDS_ON ? `<div class="carddeck" id="carddeck">${deckHtml()}</div>` : ""}
           <p class="hint" id="prohint" hidden>这一局从小时候开始，路等 22 岁再选。家里什么样是发到手里的，没有重抽。</p>
         </div>
@@ -443,7 +445,7 @@ window.IFY = window.IFY || {};
         ${sLine ? `<p class="hint">${sLine}</p>` : ""}
         ${lLine ? `<p class="hint">${lLine}</p>` : ""}
         <p class="hint">不填随机。填了，运气定下来，跟朋友比同一局就用它。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam ? "，年代也按对方那局选好了" : ""}${cardsParam ? "，出身牌也按对方选过的对齐了" : ""}，点下面开始这一生，就是同一局。` : ""}</p>
-        <p class="hint ver">v0.23.4</p>
+        <p class="hint ver">v0.23.5</p>
       </section>`;
     let startLock = false; // §6.1 防连点：双击不能在同一帧触发两次开局（统一挂在 #startgo 上）
     el("liveslink").addEventListener("click", () => { ANA.track("lives_view", {}); IFY.renderLives(); });
@@ -527,7 +529,7 @@ window.IFY = window.IFY || {};
       const io = el("intro-old"); if (io) io.hidden = pro;
       const ip = el("intro-pro"); if (ip) ip.hidden = !pro;
       const dk = el("carddeck"); if (dk) dk.hidden = pro;
-      const rc = el("routechoices"); if (rc) rc.hidden = pro;
+      const rc = el("routechoices"); if (rc) { rc.hidden = pro; rc.querySelectorAll(".routepick small").forEach((sm, i) => { const r = D.routes[i]; if (r) sm.textContent = routeDescPreview(r); }); } // v0.23 WP6：路线预览 desc 随年代切换刷新（pickSeg 先行改 .sel，本函数后行，routeDescPreview 读到新选中年代）
       const ph = el("prohint"); if (ph) ph.hidden = !pro;
       const sg = el("startgo"); if (sg) sg.textContent = startLabel(pro);
     };
@@ -695,7 +697,7 @@ window.IFY = window.IFY || {};
     app().innerHTML = `<section class="card">${prologueHead(START_AGE, "adult")}${IFY.autoPanelHtml()}
       <h2>22 岁 · 往后的路</h2>
       <p>${trackName ? `这几年，你是${trackName}过来的。` : ""}到了 22 岁，路一下子宽了。往哪边走，这一回你自己定。没选的那几条也不会消失——它们会在你 30、40、50 岁的时候，远远地看你一眼。</p>
-      <div class="choices">${D.routes.map((r, i) => `<button class="choice" data-i="${i}"><b>${esc(r.name)}</b><small>${esc(r.desc)}</small></button>`).join("")}</div>
+      <div class="choices">${D.routes.map((r, i) => `<button class="choice" data-i="${i}"><b>${esc(r.name)}</b><small>${esc(routeDesc(r))}</small></button>`).join("")}</div>
       </section>`;
     IFY.finishRender();
     document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {

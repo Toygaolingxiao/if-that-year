@@ -88,7 +88,9 @@
     if (!item.choices) { IFY.applyEffects(item.effects); } else IFY.S.lastDelta = "";
     IFY.rec("proc", item.id, { set: item.set || null, fx: !item.choices ? IFY.S.lastDelta : null });
     IFY.S.log.push(`${IFY.S.age} 岁 · ${IFY.procText(item)}`);
-    const visChoices = item.choices ? item.choices.map((c, i) => [c, i]).filter(([c]) => !(c.deferDating && (IFY.S.datingDefers || 0) >= 2)) : null; // dating 推迟两次后不再给推迟选项
+    const GATE_KEYS = ["require", "forbid", "all", "any", "state", "stateAll", "stateNot", "era", "eraIn", "minYear", "route", "routeIn", "forbidRoute", "chain"]; // v0.23 WP6（S-6D）：选项级门与 renderFork 同口径（原只过滤 deferDating，proc_abroad_kind 的 eraIn 不生效）
+    let visChoices = item.choices ? item.choices.map((c, i) => [c, i]).filter(([c]) => !(c.deferDating && (IFY.S.datingDefers || 0) >= 2) && (!GATE_KEYS.some((k) => k in c) || IFY.met(c))) : null; // dating 推迟两次后不再给推迟选项
+    if (visChoices && !visChoices.length && item.choices) visChoices = item.choices.map((c, i) => [c, i]); // 全被过滤时回落全选项集（与 renderFork 同款，防空屏/abroadKind 永远落不了值）
     IFY.app().innerHTML = `<section class="card">${IFY.head()}<p class="body">${IFY.esc(IFY.procText(item))}</p>${IFY.deltaLine()}
       ${visChoices ? `<div class="choices">${visChoices.map(([c, i]) => `<button class="choice" data-i="${i}">${IFY.esc(c.label)}</button>`).join("")}</div><div id="echo"></div>`
                   : `<button class="primary" id="cont">继续</button>`}</section>`;

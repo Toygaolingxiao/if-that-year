@@ -7,7 +7,10 @@
   // 走的仍是注册表已声明的 unset→* 边（经 applyState），不会出现 abroadKind 为空、新包永不命中的局。
   const ABROAD_KIND_W = [["anglo", 0.34], ["eastasia", 0.61], ["europe", 0.83], ["dispatch", 1.01]]; // 推断权重（累计）：移民国 > 近邻 > 福利型 > 派遣
 
-  function inferAbroadKind() { const r = IFY.rngW(); for (const [k, w] of ABROAD_KIND_W) if (r < w) return k; return "dispatch"; }
+  function inferAbroadKind() {
+    if (IFY.S.era === "c1955" || IFY.S.era === "c1965") return "dispatch"; // v0.23 WP6（S-6D）：这两代唯一的 abroadKind 形是 dispatch（定居形条目已被 eraIn 挡在两代之外）；提前 return 不消费 rngW，属设计内变化
+    const r = IFY.rngW(); for (const [k, w] of ABROAD_KIND_W) if (r < w) return k; return "dispatch";
+  }
 
   function settleAbroadDefault() {
     if (!IFY.S.route || IFY.S.route.id !== "abroad" || !IFY.S.state || IFY.S.state.abroadKind !== "unset" || IFY.S.age < 27) return;
