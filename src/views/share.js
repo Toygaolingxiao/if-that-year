@@ -26,6 +26,11 @@
     return (inp.value || "").trim().slice(0, 40);
   }
 
+  // 本局是否交换过（v0.22 WP7）：权威在 session.meta.swapped；无 session 时恒 false（legacy 口径）。
+  function swappedOnce() {
+    return !!(IFY.session && IFY.session.meta && IFY.session.meta.swapped);
+  }
+
   // 发帖文案：感想（若填）+ 判词 + 主影子 + 其他三条路 + 钩子 + 同局链接
   function shareCopy() {
     const line = (IFY.el("shareline") ? IFY.el("shareline").value : "").trim();
@@ -35,6 +40,7 @@
     const shadowLines = IFY.shadowCompareLines();
     if (shadowLines.main) parts.push(shadowLines.main);
     parts.push(...shadowLines.others);
+    if (swappedOnce()) parts.push("中途换过一条路"); // v0.22 WP7：交换过的局，文案同步加这一行
     parts.push("同样的运气，你会怎么选？");
     parts.push(sameSeedUrl());
     return parts.join("\n");
@@ -221,8 +227,13 @@
       x.fillStyle = "#23211C"; x.font = "34px " + IFY.SANS;
       if (keyFork) y = wrapText(x, "关键的一岔：" + keyFork.split("· ")[1], 90, y, 900, 50);
       y = wrapText(x, "这条路：" + IFY.S.route.name + "，你走完了。", 90, y + 6, 900, 50);
+      // v0.22 WP7：交换过的局，路线行后加小字一行（27px 灰，与事实标签行同档，不抢判词与路线行）
+      if (swappedOnce()) { x.fillStyle = "#8A948C"; x.font = "27px " + IFY.SANS; y = wrapText(x, "中途换过一条路", 90, y + 2, 900, 40); x.font = "34px " + IFY.SANS; }
       x.fillStyle = "#8A948C";
-      y = wrapText(x, "另一条路（" + sh.name + "）：" + IFY.shadowCostText(sh), 90, y + 6, 900, big ? 50 : 46);
+      // v0.22 WP7：有不受控 Track 条目时影子行改真账短句（路线名 + 终局岁数，同第八槽终局一句压缩版），
+      // 不再用 shadowCostText 模板（防与真账打架）；无条目（legacy）照旧模板。
+      const realShadowLine = typeof IFY.uncontrolledFinalLine === "function" ? IFY.uncontrolledFinalLine() : "";
+      y = wrapText(x, realShadowLine || ("另一条路（" + sh.name + "）：" + IFY.shadowCostText(sh)), 90, y + 6, 900, big ? 50 : 46);
       if (refl) { x.fillStyle = "#2F4A3C"; x.font = "34px " + IFY.SERIF; y = wrapText(x, "「" + refl + "」", 90, y + 10, 900, 50); }
       cardStats(x, y + (big ? 26 : 14), 560, big ? 50 : 42);
     }

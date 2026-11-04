@@ -79,10 +79,125 @@
 
   // 分岔「本局选了哪一项」（结算年表与差一步共用同一读法：查本局日志行）
   // 日志行写的是呈现口径的标签（spouse 变体 / 形态 labelForm 变体），反查须把变体集合一并认下，只认原文会漏掉变体局。
-  function chosenOfFork(f) {
+  function chosenFromLog(logArr, f) {
     const variants = (c) => [c.label, ...Object.values(c.labelBySpouse || {}), ...Object.values(c.labelForm || {})];
-    const line = IFY.S.log.find((l) => l.startsWith(`${f.age} 岁 · `) && f.choices.some((c) => variants(c).some((v) => v && l.endsWith(`：${v}`))));
+    const line = (Array.isArray(logArr) ? logArr : []).find((l) => typeof l === "string" && l.startsWith(`${f.age} 岁 · `) && f.choices.some((c) => variants(c).some((v) => v && l.endsWith(`：${v}`))));
     return line ? line.slice(line.lastIndexOf("：") + 1) : "";
+  }
+  function chosenOfFork(f) {
+    return chosenFromLog(IFY.S && IFY.S.log, f);
+  }
+  // v0.22 WP7：段版反查——在指定 Track 的 state.log 里查（道路图段脊线与分段 faced 判定用）。
+  function chosenOfForkIn(state, f) {
+    return chosenFromLog(state && state.log, f);
+  }
+
+  // ---------- 段事实视图 playerFacts（v0.22 WP7，蓝图 7.3） ----------
+  // 未交换（无 session / !meta.swapped / controlLog 段数 <2 / 段引用的 Track 缺失）恒返回 null：
+  // 全部调用方在 null 时走既有原读法一字不动——未交换局结算与现行逐字一致是硬线。
+  // 交换后返回段视图：segments（每段 track/state/fromAge/toAge，末段 toAge 取该 Track 终局岁）、
+  // mergedLedger / mergedLog（各段按 [fromAge,toAge] 切片、按 age 稳定排序；swap 账落在交换岁、
+  // 两段切片都含它）、hasFact（merged ledger 里 id 或 set 命中）、flagWitnessed（分段见证判，见下）、
+  // domainEnd（见证终局，见下）、stateWitnessed / covenant（跨段查的辅助口）。
+  const DOMAIN_INITIAL = { dad: "alive", mom: "alive", spouse: "none", kids: "undecided", workPhase: "working" };
+  function domainInitial(dom) {
+    if (dom in DOMAIN_INITIAL) return DOMAIN_INITIAL[dom];
+    try { const ini = typeof IFY.initialState === "function" ? IFY.initialState() : null; if (ini && dom in ini) return ini[dom]; } catch (e) {}
+    return undefined;
+  }
+  function playerFacts() {
+    const ses = IFY.session;
+    if (!ses || !ses.tracks || !ses.meta || !ses.meta.swapped) return null;
+    const clog = Array.isArray(ses.meta.controlLog) ? ses.meta.controlLog.filter((s) => s && (s.track === "A" || s.track === "B")) : [];
+    if (clog.length < 2) return null;
+    const segs = [];
+    for (let i = 0; i < clog.length; i++) {
+      const entry = ses.tracks[clog[i].track];
+      if (!entry || !entry.state) return null; // 段引用的 Track 缺失：视图不成立，调用方回落原读法
+      const st = entry.state;
+      const isLast = i === clog.length - 1;
+      const fromAge = typeof clog[i].fromAge === "number" ? clog[i].fromAge : (IFY.START_AGE || 22);
+      let toAge = typeof clog[i].toAge === "number" ? clog[i].toAge : null;
+      if (isLast) toAge = st.death ? st.death.age : (typeof st.age === "number" ? st.age : (IFY.MAX_AGE || 80)); // 末段 toAge 取该 Track 终局岁
+      else if (toAge == null) toAge = typeof clog[i + 1].fromAge === "number" ? clog[i + 1].fromAge : fromAge;
+      segs.push({ track: clog[i].track, state: st, trackState: st, entry, fromAge, toAge });
+    }
+    // 各段切片（账本与流水同口径：[fromAge,toAge] 闭区间；带原始次序供稳定排序）
+    const segLedgers = segs.map((seg) => (Array.isArray(seg.state.ledger) ? seg.state.ledger : []).filter((e) => e && typeof e.age === "number" && e.age >= seg.fromAge && e.age <= seg.toAge));
+    const segLogs = segs.map((seg) => (Array.isArray(seg.state.log) ? seg.state.log : []).filter((l) => { const m = typeof l === "string" && l.match(/^(\d+) 岁 · /); return m && +m[1] >= seg.fromAge && +m[1] <= seg.toAge; }));
+    const mergedLedger = [];
+    segLedgers.forEach((led, si) => led.forEach((e, ei) => mergedLedger.push({ e, si, ei })));
+    mergedLedger.sort((a, b) => (a.e.age - b.e.age) || (a.si - b.si) || (a.ei - b.ei));
+    const mergedLogArr = [];
+    segLogs.forEach((lines, si) => lines.forEach((l, ei) => mergedLogArr.push({ l, si, ei, age: +l.match(/^(\d+) 岁 · /)[1] })));
+    mergedLogArr.sort((a, b) => (a.age - b.age) || (a.si - b.si) || (a.ei - b.ei));
+    const view = {
+      segments: segs, segmentLedgers: segLedgers, segmentLogs: segLogs,
+      ledger: mergedLedger.map((x) => x.e),
+      mergedLedger: mergedLedger.map((x) => x.e),
+      log: mergedLogArr.map((x) => x.l),
+      mergedLog: mergedLogArr.map((x) => x.l),
+    };
+    view.hasFact = (id) => view.mergedLedger.some((e) => e.id === id || e.set === id);
+    // 分段见证：某段见证某旗 = 该段切片账本有 set=该旗，或该段 Track 的 flagAges 落段内，
+    // 或该段为末段且该旗现存于末段 Track（换入身体既有的旗，是玩家接手后要过的日子的一部分）。
+    const segWitnesses = (si, flag) => {
+      const seg = segs[si], st = seg.state, isLast = si === segs.length - 1;
+      if (segLedgers[si].some((e) => e.set === flag)) return true;
+      const fa = st.flagAges && typeof st.flagAges[flag] === "number" ? st.flagAges[flag] : null;
+      if (fa != null && fa >= seg.fromAge && fa <= seg.toAge) return true;
+      if (isLast && st.flags && st.flags[flag]) return true;
+      return false;
+    };
+    view.segWitnesses = segWitnesses;
+    view.flagWitnessed = (a, b) => {
+      if (b !== undefined) { // 双参 (trackState, flag)：第一参定位段（段对象 / Track state 对象 / track 键）
+        const flag = b;
+        let si = -1;
+        if (typeof a === "string") si = segs.findIndex((s) => s.track === a);
+        else if (a && Array.isArray(a.segmentLedgers) === false && a.state && typeof a.fromAge === "number") si = segs.indexOf(a);
+        else if (a) si = segs.findIndex((s) => s.state === a);
+        if (si >= 0) return segWitnesses(si, flag);
+        if (a && a.flags) return !!a.flags[flag]; // 定位不到段的裸 state：只认现存
+        return false;
+      }
+      return segs.some((_, si) => segWitnesses(si, a));
+    };
+    // 见证终局（三级口径，理由见 wp7 日志）：段切片内最后一条该域流转 → 无流转时读末段终局 state → 回落初始值。
+    view.domainEnd = (dom) => {
+      let val, found = false;
+      for (let si = 0; si < segs.length; si++) for (const e of segLedgers[si]) {
+        if (e.kind === "state" && typeof e.id === "string" && e.id.startsWith(dom + ">")) { val = e.id.slice(dom.length + 1); found = true; }
+      }
+      if (found) return val;
+      const lastSt = segs[segs.length - 1].state;
+      if (lastSt.state && lastSt.state[dom] !== undefined) return lastSt.state[dom];
+      return domainInitial(dom);
+    };
+    // 某域某值在任一段内成立过：段切片有该流转，或末段终局 state 就是该值，或段内流转推得的段末值是该值。
+    view.stateWitnessed = (dom, v) => {
+      for (let si = 0; si < segs.length; si++) {
+        let cur = domainInitial(dom);
+        for (const e of segLedgers[si]) if (e.kind === "state" && typeof e.id === "string" && e.id.startsWith(dom + ">")) cur = e.id.slice(dom.length + 1);
+        if (segLedgers[si].some((e) => e.kind === "state" && e.id === dom + ">" + v)) return true;
+        if (si === segs.length - 1 && segs[si].state.state && segs[si].state.state[dom] === v) return true;
+        if (cur === v && segLedgers[si].some((e) => e.kind === "state" && typeof e.id === "string" && e.id.startsWith(dom + ">"))) return true;
+      }
+      return false;
+    };
+    // 立约跨段查：任一段 Track 的 covenant，其 since 落段内、或它长在末段 Track 上（换入身体在身的约），都算玩家这边的约；
+    // 多段都有时取时间序最后一份（后一段的约是玩家最后在过的那份）。
+    view.covenant = () => {
+      let cov = null;
+      segs.forEach((seg, si) => {
+        const c = seg.state.covenant;
+        if (!c) return;
+        const isLast = si === segs.length - 1;
+        if (isLast || (typeof c.since === "number" && c.since >= seg.fromAge && c.since <= seg.toAge)) cov = c;
+      });
+      return cov;
+    };
+    return view;
   }
 
   // ---------- 职业轨迹（v0.20.0 M2 结算事实对账）：入行旗按行当归组读账本 ----------
@@ -110,6 +225,33 @@
     const ages = IFY.S.flagAges || {};
     let entryAge = null;
     for (const f of [...OCC_MED, ...OCC_SINGLE]) if (F[f] && typeof ages[f] === "number") entryAge = entryAge == null ? ages[f] : Math.min(entryAge, ages[f]);
+    return {
+      lines, change, entryAge,
+      drift: lines.length >= 2 || change.length > 0,
+      single: lines.length === 1 && !change.length && (entryAge == null || entryAge <= 42),
+      none: lines.length === 0,
+    };
+  }
+
+  // 职业轨迹段版（v0.22 WP7）：与 occupationTrail 同一张 OCC 表、同一种归组，入行旗/改行事实改按段见证口径汇总——
+  // 原人生段里入过的行、接管段里入过的行都算玩家的行当；Bot 在玩家离场后给交出 Track 立的旗不算（flagWitnessed 分段判）。
+  // entryAge 取各段见证旗在其 Track flagAges 里的最小落点。occupationTrail() 无参行为一字不动，未交换局仍走它。
+  function occupationTrailFromFacts(view) {
+    const lines = [];
+    if (OCC_MED.some((f) => view.flagWitnessed(f))) lines.push("med");
+    for (const f of OCC_SINGLE) if (view.flagWitnessed(f)) lines.push(f);
+    if (view.flagWitnessed("p19_p2p_in")) lines.push("p19_p2p_in");
+    if (lines.length && ["side_start", "side_job", "side_business"].some((f) => view.flagWitnessed(f))) lines.push("side");
+    const change = OCC_CHANGE.filter((f) => view.flagWitnessed(f));
+    for (const id of OCC_CHANGE_FACTS) if (view.hasFact(id)) change.push(id);
+    let entryAge = null;
+    for (const seg of view.segments) {
+      const ages = seg.state.flagAges || {};
+      for (const f of [...OCC_MED, ...OCC_SINGLE]) {
+        if (!view.flagWitnessed(seg.state, f)) continue;
+        if (typeof ages[f] === "number") entryAge = entryAge == null ? ages[f] : Math.min(entryAge, ages[f]);
+      }
+    }
     return {
       lines, change, entryAge,
       drift: lines.length >= 2 || change.length > 0,
@@ -180,7 +322,9 @@
       const u = IFY.unmetConditions(e);
       if (u.unmet.length === 1 && u.evidenceMissing <= 1) out.push({ kind: "ending", id: e.id, title: e.title, age: endAge, miss: missText(u.unmet[0]), evMiss: u.evidenceMissing });
     }
-    const faced = (IFY.D.forks || []).filter((f) => (!IFY.S.death || f.age < IFY.S.death.age) && (!f.state || chosenOfFork(f)));
+    // v0.22 WP7：视图非空时 faced 判定改读 merged log（两段里真遇过的分岔都算玩家遇过）；未交换走原读法。
+    const nmView = playerFacts();
+    const faced = (IFY.D.forks || []).filter((f) => (!IFY.S.death || f.age < IFY.S.death.age) && (!f.state || (nmView ? !!chosenFromLog(nmView.mergedLog, f) : chosenOfFork(f))));
     for (const f of IFY.D.forks || []) {
       if (IFY.S.death ? f.age >= IFY.S.death.age : f.age > endAge) continue; // 没活到那个岁数的岔口不算差一步
       if (faced.includes(f)) continue;
@@ -192,9 +336,64 @@
     return [...ends, ...forks].slice(0, 6); // 不展示全图：最多六个剪影
   }
 
+  // ---------- specialEnding 段事实补通道（v0.22 WP7，蓝图 7.3） ----------
+  // 口径边界（硬线）：终局身体上未命中的结局，只许用段视图补「事实类」未满项——kind ∈ flag/anyFlag/chain/state/ctx。
+  // 数值类（stat）、路线类（route/routeIn/forbidRoute）、年代类（era/eraIn/minYear）、时间窗类（kidAge/petAge/flagAge/
+  // rehireAfter/parents 等）未满，一律不许用段视图补——那些讲的是终局身体的形状与时候，不是「经历过没有」。
+  // 负向条件（forbidFlag/stateNot）同样不补：段视图只能证明发生过，证明不了没发生过。
+  // ctx 只补可由段事实直接核的分量（flag/anyFlag/state）；带 form/mainLine/entry/eduGate 等派生分量的 ctx 核不了、不硬补。
+  // evidence 证据点同理只补事实类备选（string id / {rec} / {state}）；{stat} 数值备选永不补。
+  const SEG_FACT_KINDS = new Set(["flag", "anyFlag", "chain", "state", "ctx"]);
+  function segSatisfiesUnmet(view, e, item) {
+    switch (item.kind) {
+      case "flag": return view.hasFact(item.flag) || view.flagWitnessed(item.flag);
+      case "anyFlag": return (item.flags || []).some((f) => view.hasFact(f) || view.flagWitnessed(f));
+      case "chain": return view.hasFact(item.chain);
+      case "state": return (item.need || []).some((v) => view.domainEnd(item.dom) === v || view.stateWitnessed(item.dom, v));
+      case "ctx": {
+        const ctx = e.ctx; if (!ctx) return false;
+        if (["form", "notForm", "mainLine", "notMainLine", "entry", "eduGate", "anyCareTarget"].some((k) => ctx[k] !== undefined)) return false;
+        if (ctx.flag && !(view.hasFact(ctx.flag) || view.flagWitnessed(ctx.flag))) return false;
+        if (ctx.anyFlag && !ctx.anyFlag.some((f) => view.hasFact(f) || view.flagWitnessed(f))) return false;
+        if (ctx.state) for (const [dom, vals] of Object.entries(ctx.state)) {
+          if (!vals.some((v) => (IFY.S.state && IFY.S.state[dom] === v) || view.domainEnd(dom) === v || view.stateWitnessed(dom, v))) return false;
+        }
+        return !!(ctx.flag || ctx.anyFlag || ctx.state);
+      }
+      default: return false;
+    }
+  }
+  function segEvidenceCount(view, e) {
+    if (!e.evidence) return 99; // 与 evidenceCount 同口径：未声明证据组按满证据
+    let n = 0;
+    for (const group of e.evidence) {
+      const hit = group.some((alt) => {
+        if (typeof alt === "string") return IFY.hasFact(alt) || view.hasFact(alt) || view.flagWitnessed(alt);
+        if (alt && alt.stat) return alt.stat.gt !== undefined ? IFY.S.stats[alt.stat.k] > alt.stat.gt : IFY.S.stats[alt.stat.k] < alt.stat.lt; // 数值备选只认终局身体，不补
+        if (alt && alt.state) return Object.entries(alt.state).every(([dom, v]) => (IFY.S.state && IFY.S.state[dom] === v) || view.domainEnd(dom) === v || view.stateWitnessed(dom, v));
+        if (alt && alt.rec) return IFY.hasRec(alt.rec) || view.hasFact(alt.rec);
+        return false;
+      });
+      if (hit) n++;
+    }
+    return n;
+  }
+
   function specialEnding() {
     // F3/F4（v0.17.0）：met() 条件之外还须凑满 2 个独立证据点（evidence，见 src/content/rare/synergy.js）；凑不满就不出——一局可以没有特殊结局
     const hits = (IFY.D.endings || []).filter((e) => IFY.met(e) && IFY.evidenceCount(e) >= 2);
+    // v0.22 WP7：交换局补一条段事实通道（口径边界见上方注释）——终局身体未命中、未满项全部是事实类且被段视图满足、
+    // 且证据点经段补后凑满 2 点的结局，算命中；与终局命中同池按 tier 排序。未交换（视图为 null）时本段恒不触发。
+    const view = playerFacts();
+    if (view) {
+      for (const e of IFY.D.endings || []) {
+        if (hits.includes(e)) continue;
+        const u = IFY.unmetConditions(e);
+        if (!u.unmet.every((item) => SEG_FACT_KINDS.has(item.kind) && segSatisfiesUnmet(view, e, item))) continue;
+        if (segEvidenceCount(view, e) < 2) continue;
+        hits.push(e);
+      }
+    }
     if (!hits.length) return null;
     hits.sort((a, b) => IFY.TIER_ORDER[a.tier] - IFY.TIER_ORDER[b.tier]);
     return hits[0];
@@ -202,7 +401,7 @@
 
   // ---------- 结算纵轴立轴图（VISUAL-DESIGN 第四节裁定 + UX-MOTION §9.2 生长仪式） ----------
   // 纵轴恒为 22→80 岁：走过的线居中成脊只画到实际终年，早夭的留白就是信息；未选支流按分岔序号左右交替。
-  function settlementMapHtml() {
+  function settlementMapHtmlLegacy() {
     const end = IFY.finalAge();
     const W = Math.min(460, Math.max(300, (window.innerWidth || 360) - 56));
     const cx = W / 2, pxY = 11, topPad = 34;
@@ -244,6 +443,96 @@
     labels.push(`<text class="maplab" style="--bd2:${(GROW_DELAY + GROW_S + 0.1).toFixed(2)}s" x="${cx - 12}" y="${Y(end) + 4}" font-size="11.5" fill="#6E6A5E" text-anchor="end">${end} 岁</text>`);
     if (end < IFY.MAX_AGE) labels.push(`<text x="${cx + 12}" y="${Y(IFY.MAX_AGE) + 4}" font-size="11" fill="#A39C8B">80 岁</text>`);
     // 差一步剪影层（v0.20.0 M2）：空心虚线圈 + 既有灰的虚线支，与已走节点（实心松绿）可区分；不新造配色
+    nearMisses().forEach((n, i) => {
+      const side = i % 2 === 0 ? -1 : 1;
+      const y0 = Y(Math.min(n.age, IFY.MAX_AGE));
+      const dx = side * 84, dy = n.kind === "ending" ? -34 : 30;
+      const yy = Math.max(Y(IFY.START_AGE) + 8, Math.min(Y(IFY.MAX_AGE) - 4, y0 + dy));
+      g += `<path class="mapbranch" style="--bd:${(GROW_DELAY + GROW_S + 0.15 + i * 0.09).toFixed(2)}s" d="M ${cx} ${y0} Q ${cx + dx * 0.72} ${(y0 + yy) / 2} ${cx + dx} ${yy}" fill="none" stroke="#8A948C" stroke-width="1.5" stroke-dasharray="3 4" stroke-linecap="round" opacity=".6"/><circle class="mapnear" cx="${cx + dx}" cy="${yy}" r="4" fill="none" stroke="#8A948C" stroke-width="1.5" stroke-dasharray="3 3" opacity=".75"/>`;
+      const lab = n.kind === "ending" ? `差一步 · ${n.title}：${n.miss}` : `差一步 · ${n.age} 岁：${n.miss}`;
+      labels.push(`<text class="maplab" style="--bd2:${(GROW_DELAY + GROW_S + 0.25 + i * 0.09).toFixed(2)}s" x="${cx + dx + (side === 1 ? 9 : -9)}" y="${yy + 4}" font-size="11" fill="#A39C8B" text-anchor="${side === 1 ? "start" : "end"}">${IFY.esc(fitW(lab))}</text>`);
+    });
+    return `<div class="mapwrap" id="mapwrap"><svg viewBox="0 0 ${W} ${H}" width="${W}" role="img" aria-label="这一生的分岔图">${g}${labels.join("")}</svg></div>`;
+  }
+
+  // ---------- 道路图分发（v0.22 WP7，蓝图 7.4） ----------
+  // 未交换局走 settlementMapHtmlLegacy 原样（与改前逐字一致，断言守）；交换局走交叉点版。
+  function settlementMapHtml() {
+    const ses = IFY.session;
+    if (ses && ses.meta && ses.meta.swapped && ses.meta.swap && playerFacts()) return settlementMapHtmlSwapped();
+    return settlementMapHtmlLegacy();
+  }
+
+  // 交换版道路图：脊线 = 段视图分岔序列（各段 Track 在段内 faced 的分岔 + chosenOfForkIn 标签）；
+  // swap.age 处实心点 + 交叉标签；交出路线以既有灰虚线从交叉点续到交出 Track 终局岁（末端小点），
+  // 接管路线以同款虚线从 22 岁引到交叉点并入脊线。不新造配色（灰 #8A948C 虚线、松绿 #2F4A3C 实心，与原图同）。
+  function settlementMapHtmlSwapped() {
+    fastForwardUncontrolled(); // 交出 Track 的终局岁要读快进后的完整账本（与第八槽同口径）
+    const view = playerFacts();
+    const meta = IFY.session.meta, swapAge = meta.swap.age;
+    const end = IFY.finalAge();
+    const W = Math.min(460, Math.max(300, (window.innerWidth || 360) - 56));
+    const cx = W / 2, pxY = 11, topPad = 34;
+    const Y = (a) => topPad + (a - IFY.START_AGE) * pxY;
+    const H = Y(IFY.MAX_AGE) + 30;
+    const GROW_S = 1.05, GROW_DELAY = 0.36;
+    const units = (s) => [...s].reduce((a, ch) => a + (ch.charCodeAt(0) < 256 ? 0.55 : 1), 0);
+    const fitW = (t) => {
+      const maxU = (W / 2 - 18) / 11.5;
+      if (units(t) <= maxU) return t;
+      let s = t;
+      while (s.length && units(s + "…") > maxU) s = s.slice(0, -1);
+      return s + "…";
+    };
+    // 段内 faced 序列：分岔岁落在段内、且该段 Track 的 log 里真有已选标签（chosenOfForkIn），同岁只取先命中的段
+    const facedSeg = [];
+    for (const f of IFY.D.forks || []) {
+      for (let si = 0; si < view.segments.length; si++) {
+        const seg = view.segments[si];
+        if (f.age < seg.fromAge || f.age > seg.toAge) continue;
+        if (seg.state.death && f.age >= seg.state.death.age) continue;
+        if (f.state && !chosenOfForkIn(seg.state, f)) continue;
+        const chosen = chosenOfForkIn(seg.state, f);
+        if (!chosen && f.state) continue;
+        facedSeg.push({ f, seg, chosen });
+        break;
+      }
+    }
+    let g = `<line x1="${cx}" y1="${Y(IFY.START_AGE)}" x2="${cx}" y2="${Y(IFY.MAX_AGE)}" stroke="#DDD6C9" stroke-width="1.5"/>`;
+    g += `<path class="mapspine" style="--gd:${GROW_DELAY}s" pathLength="100" d="M ${cx} ${Y(IFY.START_AGE)} L ${cx} ${Y(end)}" fill="none" stroke="#2F4A3C" stroke-width="3" stroke-linecap="round"/>`;
+    const labels = [];
+    let prevBd = -1;
+    facedSeg.forEach(({ f, seg, chosen }, fi) => {
+      const side = fi % 2 === 0 ? -1 : 1;
+      const y0 = Y(f.age);
+      let bd = GROW_DELAY + ((f.age - IFY.START_AGE) / Math.max(1, end - IFY.START_AGE)) * GROW_S;
+      if (prevBd >= 0) bd = Math.max(bd, prevBd + 0.09);
+      prevBd = bd;
+      (seg.state.unchosen || []).filter((u) => u.kind === "fork" && u.age === f.age).forEach((u, j) => {
+        const dx = side * (84 + j * 42), dy = (6 + j * 2.5) * pxY;
+        g += `<path class="mapbranch" style="--bd:${bd.toFixed(2)}s" d="M ${cx} ${y0} Q ${cx + dx * 0.72} ${y0 + dy * 0.5} ${cx + dx} ${y0 + dy}" fill="none" stroke="#8A948C" stroke-width="2" stroke-dasharray="4 4" stroke-linecap="round"/><circle cx="${cx + dx}" cy="${y0 + dy}" r="2" fill="#8A948C" opacity=".45"/>`;
+      });
+      g += `<circle cx="${cx}" cy="${y0}" r="4" fill="#2F4A3C"/>`;
+      if (chosen) labels.push(`<text class="maplab" style="--bd2:${(bd + 0.1).toFixed(2)}s" x="${cx - side * 12}" y="${y0 + 4}" font-size="11.5" fill="#6E6A5E" text-anchor="${side === 1 ? "end" : "start"}">${IFY.esc(fitW(`${f.age} 岁 · ${chosen}`))}</text>`);
+    });
+    g += `<circle cx="${cx}" cy="${Y(IFY.START_AGE)}" r="4.5" fill="#2F4A3C"/>`;
+    const startRoute = view.segments[0].state.route ? view.segments[0].state.route.name : "";
+    labels.push(`<text class="maplab" style="--bd2:.4s" x="${cx + 12}" y="${Y(IFY.START_AGE) + 4}" font-size="11.5" fill="#6E6A5E">22 岁 · ${IFY.esc(startRoute)}</text>`);
+    g += `<circle cx="${cx}" cy="${Y(end)}" r="4.5" fill="#2F4A3C"/>`;
+    labels.push(`<text class="maplab" style="--bd2:${(GROW_DELAY + GROW_S + 0.1).toFixed(2)}s" x="${cx - 12}" y="${Y(end) + 4}" font-size="11.5" fill="#6E6A5E" text-anchor="end">${end} 岁</text>`);
+    if (end < IFY.MAX_AGE) labels.push(`<text x="${cx + 12}" y="${Y(IFY.MAX_AGE) + 4}" font-size="11" fill="#A39C8B">80 岁</text>`);
+    // ---- 交叉点：接管路线虚线（22 岁 → 交叉点）+ 交出路线虚线（交叉点 → 交出 Track 终局岁）+ 实心点与标签 ----
+    const ySwap = Y(swapAge);
+    const bdSwap = GROW_DELAY + ((swapAge - IFY.START_AGE) / Math.max(1, end - IFY.START_AGE)) * GROW_S;
+    const dxIn = 84, dxOut = -84;
+    g += `<path class="mapbranch" style="--bd:${bdSwap.toFixed(2)}s" d="M ${cx + dxIn} ${Y(IFY.START_AGE)} Q ${cx + dxIn * 0.72} ${(Y(IFY.START_AGE) + ySwap) / 2} ${cx} ${ySwap}" fill="none" stroke="#8A948C" stroke-width="2" stroke-dasharray="4 4" stroke-linecap="round"/>`;
+    const outSeg = view.segments[0];
+    const outEnd = outSeg.state.death ? outSeg.state.death.age : IFY.MAX_AGE;
+    g += `<path class="mapbranch" style="--bd:${bdSwap.toFixed(2)}s" d="M ${cx} ${ySwap} Q ${cx + dxOut * 0.72} ${(ySwap + Y(outEnd)) / 2} ${cx + dxOut} ${Y(outEnd)}" fill="none" stroke="#8A948C" stroke-width="2" stroke-dasharray="4 4" stroke-linecap="round"/><circle cx="${cx + dxOut}" cy="${Y(outEnd)}" r="2" fill="#8A948C" opacity=".45"/>`;
+    g += `<circle cx="${cx}" cy="${ySwap}" r="4.5" fill="#2F4A3C"/>`;
+    // 交叉标签是定稿整句，不走 fitW 截断（截了就不是那句话了）；居中锚在脊线上，窄屏也放得下整句
+    labels.push(`<text class="maplab" style="--bd2:${(bdSwap + 0.1).toFixed(2)}s" x="${cx}" y="${ySwap - 10}" font-size="11.5" fill="#6E6A5E" text-anchor="middle">${IFY.esc(`${swapAge} 岁 · 换到了「${meta.swap.to}」那条路`)}</text>`);
+    // 差一步剪影层：与原图同画法（nearMisses 的 faced 已按 merged log 判，见 nearMisses 内注）
     nearMisses().forEach((n, i) => {
       const side = i % 2 === 0 ? -1 : 1;
       const y0 = Y(Math.min(n.age, IFY.MAX_AGE));
@@ -314,11 +603,122 @@
     return n;
   }
 
+  // ---------- 结算快进 + 第八槽真账（v0.22 WP7，蓝图 7.3/7.4） ----------
+  // STATE_PHRASE 同口径复刻：源在 shadow.js（该文件内的 const，未导出）——蓝图口径「同一事实全游戏一套句形」，
+  // 此表与 shadow.js 的 STATE_PHRASE 逐字同值，改一处必须同步另一处（本包不许动 shadow.js，故在此复刻并注明）。
+  const STATE_PHRASE_LOCAL = {
+    "spouse>partnered": "成了家", "spouse>dating": "处了一个人", "spouse>single": "定下来一个人过",
+    "spouse>divorced": "离了婚", "spouse>widowed": "另一半先走了",
+    "kids>has": "有了孩子", "kids>none": "定下来不要孩子",
+    "dad>dead": "父亲走了", "mom>dead": "母亲走了",
+    "workPhase>part": "改成做半截活", "workPhase>retired": "退了下来",
+    "dog>home": "养了条狗", "dog>gone": "狗没了", "cat>home": "养了只猫", "cat>gone": "猫没了",
+  };
+
+  // 结算快进（蓝图 7.4）：不受控条目存在、未 finalized、且未死未满 80 时，无头步进到死亡或 80（上限 70 次防死循环），
+  // 置条目 finalized=true。幂等：renderEnd 入口与第八槽/交叉点图都会先调它，重复调用在 finalized 后恒为空转。
+  function fastForwardUncontrolled() {
+    const ses = IFY.session;
+    if (!ses || !ses.tracks || typeof IFY.stepUncontrolled !== "function") return;
+    const key = ses.controlTrack === "A" ? "B" : "A";
+    const entry = ses.tracks[key];
+    if (!entry || !entry.state || entry.finalized) return;
+    let steps = 0;
+    while (!entry.state.death && entry.state.age < (IFY.MAX_AGE || 80) && steps < 70) { IFY.stepUncontrolled(); steps++; }
+    entry.finalized = true;
+  }
+
+  function uncontrolledState() {
+    if (typeof IFY.uncontrolledEntry !== "function") return null;
+    const found = IFY.uncontrolledEntry();
+    return found && found.entry && found.entry.state ? found.entry.state : null;
+  }
+
+  // 对面终局短句（分享卡判词卡用，同第八槽终局一句的压缩版）：路线名 + 终局岁数口径。
+  function uncontrolledFinalLine() {
+    const B = uncontrolledState();
+    if (!B || !B.route) return "";
+    fastForwardUncontrolled();
+    return B.death ? `另一条路（${B.route.name}）走到了 ${B.death.age} 岁` : `另一条路（${B.route.name}）活到了 80 岁`;
+  }
+
+  // 第八槽终局一句：早夭（<60 岁）用 glimpseSkeleton 全生骨架压缩成一句（去掉与槽头重复的路线句），不缩水成光杆终局。
+  function shadowFinalSentence(B) {
+    const routeName = B.route ? B.route.name : "";
+    if (B.death && B.death.age < 60 && typeof IFY.glimpseSkeleton === "function") {
+      const parts = IFY.glimpseSkeleton(B).slice(1).map((s) => s.replace(/。$/, ""));
+      if (parts.length) return `另一条路（${routeName}）在 ${B.death.age} 岁走完了：${parts.join("，")}。`;
+    }
+    if (B.death) return `另一条路（${routeName}）走到了 ${B.death.age} 岁，在那一年走完了。`;
+    return `另一条路（${routeName}）活到了 80 岁。`;
+  }
+
+  // 第八槽揭价一句（硬线）：揭价对象只能从 meta.shownFacts 里 type:"material" 的素材选，且必须能在对面账本里对上
+  // （id 与 atAge 同时命中）；取最近一条（atAge 最大，同龄取后示的一条），再找它之后同域的下一次 state 流转作
+  // 「后来的事」——素材域的认法：素材本身是 state 条目时域即其 id 前缀；其余素材认同岁紧邻其前的 state 条目
+  // （落账序里流转先于条目记账，那条流转就是这件事落定的域）。找不到同域后续流转、或后续流转没有登记句形时，
+  // 不出揭价句——没露过面的事不许凭空收费，无后续的事不许编后来的价。
+  function shadowRevealSentence(B) {
+    const ses = IFY.session;
+    const shown = ses && ses.meta && Array.isArray(ses.meta.shownFacts) ? ses.meta.shownFacts : [];
+    const mats = shown.filter((f) => f && f.type === "material" && f.id);
+    if (!mats.length) return "";
+    const led = Array.isArray(B.ledger) ? B.ledger : [];
+    const cands = [];
+    mats.forEach((sf, order) => {
+      let idx = -1;
+      led.forEach((e, i) => { if (e.id === sf.id && (sf.atAge == null || e.age === sf.atAge)) idx = i; }); // 同 id 同岁取后落账一条（带选项的条目后一条是落点）
+      if (idx >= 0) cands.push({ sf, idx, age: led[idx].age, order });
+    });
+    if (!cands.length) return "";
+    cands.sort((a, b) => (b.age - a.age) || (b.order - a.order));
+    const anchor = led[cands[0].idx];
+    let dom = null;
+    if (anchor.kind === "state" && typeof anchor.id === "string" && anchor.id.includes(">")) dom = anchor.id.split(">")[0];
+    else {
+      for (let j = cands[0].idx - 1; j >= Math.max(0, cands[0].idx - 4); j--) {
+        if (led[j].kind === "state" && led[j].age === anchor.age && typeof led[j].id === "string" && led[j].id.includes(">")) { dom = led[j].id.split(">")[0]; break; }
+      }
+    }
+    if (!dom) return "";
+    let next = null;
+    for (let j = cands[0].idx + 1; j < led.length; j++) {
+      const e = led[j];
+      if (e.kind === "state" && typeof e.id === "string" && e.id.startsWith(dom + ">") && STATE_PHRASE_LOCAL[e.id]) { next = e; break; }
+    }
+    if (!next) return "";
+    const glimpseAge = typeof cands[0].sf.glimpseAge === "number" ? cands[0].sf.glimpseAge : anchor.age;
+    return `你 ${glimpseAge} 岁看过的那件事，后来${STATE_PHRASE_LOCAL[next.id]}，在 ${next.age} 岁。`;
+  }
+
+  function eighthSlotReal(B) {
+    fastForwardUncontrolled(); // 先确保已快进（renderEnd 入口已做过时此处为空转）
+    return shadowFinalSentence(B) + shadowRevealSentence(B);
+  }
+
+  // shadowCompareLines 包装（v0.22 WP7，协调者修正条件）：原函数在 shadow.js（本包不许动）——
+  // 仅交换局（meta.swapped）：对照行 main 已由第八槽真账承载，main 返回 ""；
+  // 未交换局（含全部一期冻结集）必须与一期逐字一致，原样透传（初版误以「有不受控 Track」为条件，
+  // 一期起每局都有不受控影子轨，parity 416/416 全红后收紧到 swapped）。
+  if (typeof IFY.shadowCompareLines === "function" && !IFY._wp7ShadowCompareWrapped) {
+    const origShadowCompareLines = IFY.shadowCompareLines;
+    IFY.shadowCompareLines = function () {
+      const r = origShadowCompareLines();
+      const ses = IFY.session;
+      if (ses && ses.meta && ses.meta.swapped) return { main: "", others: r.others };
+      return r;
+    };
+    IFY._wp7ShadowCompareWrapped = true;
+  }
+
   // ---------- 结算九槽（v0.18.0，地基 §4.6/§4.7）：九个槽位全读状态与账本拼装 ----------
   // 落脚/陪伴/钱/手艺事业/子女线/父母线/没办完的事/影子代价/认领句；认领句（玩家在瞥视时留下的话）原样入槽；
   // 判词退为九槽之后的收尾一行。平淡轨（没撞上什么大事的一生）在认领槽有「平淡而完整」的写法。
   function settlementSlots() {
     const F = IFY.S.flags, ST = IFY.S.state || {};
+    // v0.22 WP7：段视图只在交换局非空——非空时子女/父母/没办完的事三槽与手艺事业的轨迹读段视图，
+    // 落脚/陪伴/钱三槽照旧读终局身体（IFY.S）；视图为 null 时全槽走下方原读法，一字不动。
+    const view = playerFacts();
     const trail = IFY.residenceTrail();
     const slots = [];
     let s1;
@@ -345,7 +745,7 @@
     else s3 = "到最后也没攒下什么。好在饭还吃得上，觉还睡得着。";
     slots.push(["钱", s3]);
     const g = IFY.S.stats.growth;
-    const occ = occupationTrail(); // v0.20.0 M2：事业槽先读职业轨迹——「一辈子就干这一行」只许真单一行当贯穿的局出
+    const occ = view ? occupationTrailFromFacts(view) : occupationTrail(); // v0.20.0 M2：事业槽先读职业轨迹——「一辈子就干这一行」只许真单一行当贯穿的局出；v0.22 WP7：交换局改段版（见证口径汇总）
     let s4;
     if (F.traj_ipo || F.traj_funded) s4 = "事业做到过上市那一步，锣声听过，名字也上过报。";
     else if (F.side_business || F.side_job || F.side_start) s4 = g >= 60 ? "正职之外还干出过一份副业，后来成了日子里的一块。" : "正职之外试过副业，成没成另说，手没闲着。";
@@ -355,30 +755,68 @@
     else s4 = "没在活儿上争过什么高低。日子过得平，活儿也干得平。";
     slots.push(["手艺事业", s4]);
     let s5;
-    if (F.late_parent) s5 = "孩子来得晚。别人抱孙辈的年纪，你还在给孩子开家长会。";
+    if (view) {
+      // 子女槽段版（v0.22 WP7）：任一段有子（段内 kids>has 流转，或末段终局 kids=has）都算玩家的子女线；
+      // 两段都有按时间序各一句（交换变体，单句 ≤60 字）；late_parent/kid_abroad 按 flagWitnessed 分段判。
+      const lastIdx = view.segments.length - 1;
+      const segHasKid = view.segments.map((seg, si) => view.segmentLedgers[si].some((e) => e.kind === "state" && e.id === "kids>has") || (si === lastIdx && seg.state.state && seg.state.state.kids === "has"));
+      const hasIdx = segHasKid.map((h, i) => (h ? i : -1)).filter((i) => i >= 0);
+      const kidSent = (si, ord) => {
+        const seg = view.segments[si];
+        if (view.flagWitnessed(seg.state, "late_parent")) return ord === 0 ? "前一段里孩子来得晚，还在给孩子开家长会。" : "后一段里孩子来得晚，还在给孩子开家长会。";
+        if (view.flagWitnessed(seg.state, "kid_abroad")) return ord === 0 ? "前一段的孩子大了去了远方，过节靠电话热闹。" : "后一段的孩子大了去了远方，过节靠电话热闹。";
+        return ord === 0 ? "前一段日子里有了孩子，看着孩子一点点长大。" : "后一段日子里也有了孩子，屋里又热闹起来。";
+      };
+      if (hasIdx.length >= 2) s5 = kidSent(hasIdx[0], 0) + kidSent(hasIdx[1], 1);
+      else if (hasIdx.length === 1 && hasIdx[0] === lastIdx) {
+        if (view.flagWitnessed("late_parent")) s5 = "孩子来得晚。别人抱孙辈的年纪，你还在给孩子开家长会。";
+        else s5 = view.flagWitnessed("kid_abroad") ? "孩子大了，去了远方。逢年过节，电话那头热闹。" : kidPresenceCount() >= 1 ? "孩子在跟前长大，一年一年，也长成了大人。" : "孩子的事落定之后，日子还是照常往下过。逢年过节，电话里多说几句。";
+      }
+      else if (hasIdx.length === 1) s5 = kidSent(hasIdx[0], 0);
+      else if (view.domainEnd("kids") === "none") { const covK = view.covenant(); s5 = covK && covK.kind === "none" ? "孩子的事，38 岁那年就定下了：不要。后来照着这个安排过。" : "这一生没要孩子。屋里清静，日子是另一种过法。"; }
+      else s5 = "孩子的事一直没正式定下来。拖着拖着，就到了这岁数。";
+    }
+    else if (F.late_parent) s5 = "孩子来得晚。别人抱孙辈的年纪，你还在给孩子开家长会。";
     else if (ST.kids === "has") s5 = F.kid_abroad ? "孩子大了，去了远方。逢年过节，电话那头热闹。" : kidPresenceCount() >= 1 ? "孩子在跟前长大，一年一年，也长成了大人。" : "孩子的事落定之后，日子还是照常往下过。逢年过节，电话里多说几句。";
     else if (ST.kids === "none") s5 = IFY.S.covenant && IFY.S.covenant.kind === "none" ? "孩子的事，38 岁那年就定下了：不要。后来照着这个安排过。" : "这一生没要孩子。屋里清静，日子是另一种过法。";
     else s5 = "孩子的事一直没正式定下来。拖着拖着，就到了这岁数。";
     slots.push(["子女", s5]);
-    const dadD = ST.dad === "dead", momD = ST.mom === "dead";
+    // 父母槽：交换局 dad/mom 取 domainEnd 的见证终局、照护三旗按见证口径；未交换局读终局身体与本局旗（原读法）。
+    const dadD = view ? view.domainEnd("dad") === "dead" : ST.dad === "dead", momD = view ? view.domainEnd("mom") === "dead" : ST.mom === "dead";
+    const careSelf = view ? view.flagWitnessed("care_self") : !!F.care_self, careHired = view ? view.flagWitnessed("care_hired") : !!F.care_hired, careRotate = view ? view.flagWitnessed("care_rotate") : !!F.care_rotate;
     let s6;
-    if (dadD && momD) s6 = F.care_self ? "爸妈都送走了。需要人那几年，你回去陪过一阵。" : F.care_hired ? "爸妈都送走了。走之前请了人照护，你管钱，也管事。" : F.care_rotate ? "爸妈都送走了。需要人那几年，兄妹几个排着班，一人陪一段。" : "爸妈都送走了。最后那一程，赶上了。";
+    if (dadD && momD) s6 = careSelf ? "爸妈都送走了。需要人那几年，你回去陪过一阵。" : careHired ? "爸妈都送走了。走之前请了人照护，你管钱，也管事。" : careRotate ? "爸妈都送走了。需要人那几年，兄妹几个排着班，一人陪一段。" : "爸妈都送走了。最后那一程，赶上了。";
     else if (dadD) s6 = "爸先走了，妈还在。逢年过节，先给妈打电话。";
     else if (momD) s6 = "妈先走了，爸还在。老两口剩一个，屋里空了一半。";
     else s6 = "到这一生走完，爸妈都还健在。这样的情形，不多。";
     slots.push(["父母", s6]);
     let s7;
-    if (F.cov_solo_done && ST.kids === "undecided") s7 = "38 岁挂起的那份账，45 岁你一个人对完了。孩子的事没落定，可那份约不算悬着了。";
-    else if (IFY.S.covenant && IFY.S.covenant.kind === "wait" && ST.kids === "undecided") s7 = "38 岁挂起的那份账，到最后也没正式对完。";
-    else if (F.late_tried && !F.late_parent) s7 = "想要孩子那几年，试过，也跑过医院，最后没等来。这事放下了，就是偶尔还想起。";
+    // 没办完的事（v0.22 WP7）：交换局 covenant 跨段查（任一段的约与其结账旗按见证口径）、late_tried 同理，
+    // kids 收尾按 domainEnd 判；glimpsesSkipped 以下各支照旧（meta 与终局身体）。未交换局走原三支。
+    if (view && view.flagWitnessed("cov_solo_done") && view.domainEnd("kids") === "undecided") s7 = "38 岁挂起的那份账，45 岁你一个人对完了。孩子的事没落定，可那份约不算悬着了。";
+    else if (view && view.covenant() && view.covenant().kind === "wait" && view.domainEnd("kids") === "undecided") s7 = "38 岁挂起的那份账，到最后也没正式对完。";
+    else if (view && view.flagWitnessed("late_tried") && !view.flagWitnessed("late_parent")) s7 = "想要孩子那几年，试过，也跑过医院，最后没等来。这事放下了，就是偶尔还想起。";
+    else if (!view && F.cov_solo_done && ST.kids === "undecided") s7 = "38 岁挂起的那份账，45 岁你一个人对完了。孩子的事没落定，可那份约不算悬着了。";
+    else if (!view && IFY.S.covenant && IFY.S.covenant.kind === "wait" && ST.kids === "undecided") s7 = "38 岁挂起的那份账，到最后也没正式对完。";
+    else if (!view && F.late_tried && !F.late_parent) s7 = "想要孩子那几年，试过，也跑过医院，最后没等来。这事放下了，就是偶尔还想起。";
     else if ((IFY.playerMeta().glimpsesSkipped || 0) >= 2) s7 = "另一条路有几回摆在眼前，你都没去细看。不知道的，就让它不知道下去。"; // v0.21 WP1：瞥视计数改读 session.meta（蓝图 3.1）
     else if (F.renting && !F.bought_house) s7 = "买房的事提过几回，最后没办成，一直租着住。";
     else s7 = "没什么悬着的大事。该办的办了，办不了的，也放下了。";
     slots.push(["没办完的事", s7]);
-    const mainU = (IFY.S.unchosen || []).find((u) => u.kind === "route");
-    const sh = mainU && IFY.D.shadows ? IFY.D.shadows[mainU.id] : null;
-    const cost = sh ? IFY.shadowCostText(sh).replace(/^代价也清楚：/, "") : "";
-    slots.push(["另一条路", cost ? `没走的那条路，代价在那边：${cost}` : "没走的那几条路，各有各的走法，没法放在一起称。"]);
+    // 第八槽（v0.22 WP7 真账化，协调者收紧条件）：仅交换局读对面全账本——终局一句 + shownFacts 揭价一句
+    // （取材与硬线见 eighthSlotReal 上方注释）。未交换局与 legacy 局走原模板一字不动。取舍如实记：
+    // 蓝图 7.3 字面要未交接局也读 Track_B 全账本，但 WP8 把 parity 冻结集列为硬项、且明言不换的局
+    // 与一期行为一致——两者冲突时从 parity/任务书：交换局（模板说法「没走的那条路」在那里是假话）
+    // 全量真账化；未交换局维持一期已上线的模板代价句，此偏离蓝图字面处留待用户裁。
+    const sesS8 = IFY.session;
+    const uncB = (sesS8 && sesS8.meta && sesS8.meta.swapped) ? uncontrolledState() : null;
+    if (uncB) slots.push(["另一条路", eighthSlotReal(uncB)]);
+    else {
+      const mainU = (IFY.S.unchosen || []).find((u) => u.kind === "route");
+      const sh = mainU && IFY.D.shadows ? IFY.D.shadows[mainU.id] : null;
+      const cost = sh ? IFY.shadowCostText(sh).replace(/^代价也清楚：/, "") : "";
+      slots.push(["另一条路", cost ? `没走的那条路，代价在那边：${cost}` : "没走的那几条路，各有各的走法，没法放在一起称。"]);
+    }
     const reflArr = IFY.playerMeta().reflections || []; const refl = reflArr.length ? reflArr[reflArr.length - 1].text : ""; // v0.21 WP1：第九槽 reflections 改读 session.meta（蓝图 3.1）
     const flatLife = !(IFY.S.usedRare || []).length && (Array.isArray(IFY.S.ledger) ? IFY.S.ledger.filter((e) => e.kind === "event").length : 99) < 30;
     slots.push(["你留的话", refl ? `「${refl}」` : flatLife ? "这一生没留下认领的话。平淡是平淡，可一年一年都是真的——平淡，也是完整的一生。" : "这一生没留下认领的话。就这么走完了。"]);
@@ -386,6 +824,10 @@
   }
 
   function renderEnd() {
+    // 结算快进（v0.22 WP7，蓝图 7.4）：clearSave 之前先把不受控 Track 步进到死亡或 80 并置 finalized——
+    // 只置内存位、不另行 save：本函数随后即 clearSave() 清档，终局屏之后没有续读路径，落盘无意义
+    // （与蓝图「并 save」的出入及理由记 wp7 日志；若日后出现终局后续读入口，此处须改真 save）。
+    fastForwardUncontrolled();
     IFY.curKind = "end";
     IFY.clearAutoContext();
     IFY.app().classList.remove("playwrap");
@@ -516,5 +958,7 @@
     });
     refreshCard();
   }
-  Object.assign(IFY, { verdict, lifeTags, specialEnding, settlementMapHtml, renderLives, settlementSlots, renderEnd, occupationTrail, kidPresenceCount, nearMisses, chosenOfFork });
+  Object.assign(IFY, { verdict, lifeTags, specialEnding, settlementMapHtml, renderLives, settlementSlots, renderEnd, occupationTrail, kidPresenceCount, nearMisses, chosenOfFork,
+    // v0.22 WP7 新增导出：段事实视图、段版分岔反查、对面终局短句与结算快进（分享卡与断言复用同一口径）
+    playerFacts, chosenOfForkIn, uncontrolledFinalLine, fastForwardUncontrolled });
 })(window.IFY);

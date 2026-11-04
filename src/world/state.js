@@ -2,7 +2,7 @@
    本文件只含 version 与 domains（域/边/进程标定）；里程碑（milestones）在 src/registry.js，加载顺序须在本文件之后。
    以下注册表正文与拆分前一字未动。 */
 window.GAME_REGISTRY = {
- "version": "0.21.1",
+ "version": "0.22.0",
  "domains": {
   "spouse": {
    "label": "配偶",

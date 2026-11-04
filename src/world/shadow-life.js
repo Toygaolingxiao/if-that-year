@@ -378,6 +378,57 @@
     });
   }
 
+  // ---------- 控制权交接 handControl（蓝图 7.2，二期 WP6）：只动指针，数据零搬运 ----------
+  // 五步顺序写死，每步可断言。纯度构造保证：本函数不写任何 Track 的 state 字段——唯一的
+  // state 内变更是第 3 步经 rec()/log.push 落进两本账的 swap 记账（账本与流水各 +1），那是
+  // 记账不是搬运；玩家层字段（reflections 等）的镜像由各写入口自愈，权威恒在 session.meta，
+  // 本函数只改 meta（controlLog/swap/swapped）与控制权指针，流计数只在全局与条目间等值搬运。
+  function handControl() {
+    const fail = (why) => { console.error("handControl 前置校验失败（提问本不该出现）：" + why); return false; };
+    const session = IFY.session;
+    // 1. 前置校验：任一不满足即断言失败——返回 false 且不改任何状态
+    if (!session || !session.tracks || !session.meta) return fail("session 不存在");
+    const fromKey = session.controlTrack;
+    const fromEntry = session.tracks[fromKey];
+    if (!fromEntry || fromEntry.state !== IFY.S) return fail("controlTrack 未指向当前受控 Track");
+    const toKey = fromKey === "A" ? "B" : "A";
+    const toEntry = session.tracks[toKey];
+    if (!toEntry || !toEntry.state) return fail("目标 Track 不存在");
+    if (toEntry.state.death) return fail("目标 Track 已终局");
+    const X = IFY.S.age;
+    if (!(typeof X === "number" && X < (IFY.MAX_AGE || 80)) || !(toEntry.state.age < (IFY.MAX_AGE || 80))) return fail("age 已达上限");
+    const meta = session.meta;
+    if (meta.swapped) return fail("已交换过（meta.swapped=true）");
+    const fromName = (fromEntry.state.route && fromEntry.state.route.name) || fromEntry.routeId || "";
+    const toName = (toEntry.state.route && toEntry.state.route.name) || toEntry.routeId || "";
+    // 2. meta 记账：关当前段、开新段；落 swap 与 swapped
+    if (!Array.isArray(meta.controlLog)) meta.controlLog = [];
+    let openSeg = null;
+    for (let i = meta.controlLog.length - 1; i >= 0; i--) { if (meta.controlLog[i] && meta.controlLog[i].toAge == null) { openSeg = meta.controlLog[i]; break; } }
+    if (openSeg) openSeg.toAge = X; else meta.controlLog.push({ track: fromKey, fromAge: X, toAge: X });
+    meta.controlLog.push({ track: toKey, fromAge: X, toAge: null });
+    meta.swap = { age: X, from: fromName, to: toName };
+    meta.swapped = true;
+    // 3. 两本账各记一笔 + 各推一条流水行：交出侧在当前上下文直接落；接管侧进 withLife 落
+    IFY.rec("swap", "swap_out", { choice: toName });
+    IFY.S.log.push(`${X} 岁 · 交换：这条路交给了另一个你`);
+    withLife(toEntry, () => {
+      IFY.rec("swap", "swap_in", { choice: fromName });
+      IFY.S.log.push(`${X} 岁 · 交换：从这一年起，由你来过这条路`);
+    });
+    // 4. 翻指针（数据零搬运）：全局三股流计数与 schedStats 先等值回写交出条目，翻转指针，
+    //    再把接管条目的 streams/schedStats 装进全局（键处理照 withLife 写法），IFY.S 改绑接管 state
+    fromEntry.streams = { n: IFY.RNG.a, w: IFY.RNGW.a, a: IFY.RNGA.a };
+    if (IFY.schedStats) fromEntry.schedStats = { ...IFY.schedStats };
+    session.controlTrack = toKey;
+    IFY.RNG.a = toEntry.streams.n; IFY.RNGW.a = toEntry.streams.w; IFY.RNGA.a = toEntry.streams.a;
+    if (IFY.schedStats && toEntry.schedStats) { for (const k of Object.keys(IFY.schedStats)) delete IFY.schedStats[k]; Object.assign(IFY.schedStats, toEntry.schedStats); }
+    IFY.S = toEntry.state;
+    // 5. 存档（存在时）
+    if (typeof IFY.save === "function") IFY.save();
+    return true;
+  }
+
   // ---------- 存档 v2 序列化（蓝图 3.3） ----------
   function trackForSave(track, isControl) {
     const st = track.state;
@@ -495,7 +546,7 @@
   }
 
   Object.assign(IFY, {
-    seedShadowStreams, withLife, birthShadow, stepUncontrolled, stepYearHeadless,
+    seedShadowStreams, withLife, birthShadow, stepUncontrolled, stepYearHeadless, handControl,
     defaultMeta, playerMeta, buildSession, ensureSession,
     serializeSession, adoptSessionSave, wrapLegacySession,
   });

@@ -388,13 +388,28 @@ detailHtml = `<p class="body">「${IFY.esc(deathLine)}」</p>`
 } else { // retro 回望：定格事实表 + 收尾叙述第一句，不编新素材（蓝图 6.3）
 detailHtml = `${skeleton[0]? `<p class="body">${IFY.esc(skeleton[0])}</p>`: ""}${factsHtml}`;
 }
-IFY.el("detail").innerHTML = `${detailHtml}${markLine? `<p class="body">${IFY.esc(markLine)}</p>`: ""}
+// 交换提问（蓝图 7.1 时机 A+，二期 WP6）：只在 normal 屏、未交换过时出，位置在 detail 内容里、
+// 反思输入行之前；机会说明行只陈述机会存量，不劝换不劝留。悼念/回望 mode 天然不在 normal、不出；
+// skip 路径不经本处理器，不出。拒绝只关本次（下个瞥视点照常出），接受走 IFY.handControl()。
+const swapHtml = (mode === "normal" && !meta.swapped)
+? `<div id="swapblock"><p class="hint">换过去的机会，一生只有一次。换了，就再没有第二次。</p><div class="row"><button class="primary" id="swap-yes">换过去，过它接下来的日子</button><button class="ghost" id="swap-no">不换，继续过我的</button></div></div>`
+: "";
+IFY.el("detail").innerHTML = `${detailHtml}${markLine? `<p class="body">${IFY.esc(markLine)}</p>`: ""}${swapHtml}
 <label class="refl-label">给现实里的自己留一句话（会出现在你的结算里）<input id="refl" type="text" maxlength="60" placeholder="一句就好"></label>
 <div class="row"><button class="primary" id="cont">记下，继续</button><button class="ghost" id="cont2">不写了，继续</button></div>`;
 document.querySelector(".row").remove();
 const done = () => { const v = (IFY.el("refl").value || "").trim(); if (v) IFY.playerMeta().reflections.push({ age: IFY.S.age, text: v}); /* v0.21 WP1：反思认领是玩家层，写 session.meta（蓝图 3.1） */ IFY.advance();};
 IFY.el("cont").addEventListener("click", done);
 IFY.el("cont2").addEventListener("click", IFY.advance);
+if (swapHtml) {
+IFY.el("swap-no").addEventListener("click", () => { const b = IFY.el("swapblock"); if (b) b.remove();});
+IFY.el("swap-yes").addEventListener("click", () => {
+let okSwap = false;
+try { okSwap = typeof IFY.handControl === "function" && IFY.handControl();} catch (e) { console.error("交换提问：handControl 抛错，提问块保留待查", e);}
+if (okSwap) { const b = IFY.el("swapblock"); if (b) b.outerHTML = `<p class="body">从这一年起，你过的是这条路的日子了。先前那条，由另一个你接着过。</p>`;}
+else console.error("交换提问：handControl 返回失败，提问块保留待查");
+});
+}
 IFY.save();
 });
 }
