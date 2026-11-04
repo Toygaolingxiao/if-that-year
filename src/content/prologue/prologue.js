@@ -14,14 +14,15 @@
   function prng(S) { const P = S.prologue; P.a |= 0; P.a = (P.a + 0x6D2B79F5) | 0; let t = Math.imul(P.a ^ (P.a >>> 15), 1 | P.a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
   function stageFor(age) { return age < 6 ? "origin" : age <= 12 ? "child" : age <= 16 ? "teen" : age <= 21 ? "youth" : age <= 64 ? "adult" : "late"; }
 
-  // 处境发放权重（[处境, 权重]）：v0.17.0 试点只开 school；v0.18.0 第一步把 c2000 补齐——
-  // school 88（义务教育普及年代的绝大多数）、half 9（帮工 + 初中流失的小格）、never 3（登记小权重：只剩重病、极端贫困、家庭变故这类特殊情形，并带识字线）。
-  // 其余年代仍只开 school，各年代的处境权重在第二步按各自年代的入学数据分别标定。
+  // 处境发放权重（[处境, 权重]）：v0.22.0 六代全部落码——按各年代入学数据的标定链推导
+  // （推导与出处见 ~/workspace/prologue-eras/CALIBRATION.md「建议入库」列；c1995 的 never=1 是内容可达性下限裁量，非数据结论）。
   const SITUATION_W = {
+    c1955: [["school", 46], ["half", 34], ["never", 20]],
+    c1965: [["school", 66], ["half", 26], ["never", 8]],
+    c1978: [["school", 83], ["half", 14], ["never", 3]],
+    c1985: [["school", 88], ["half", 10], ["never", 2]],
+    c1995: [["school", 94], ["half", 5], ["never", 1]],
     c2000: [["school", 88], ["half", 9], ["never", 3]],
-    c1978: [["school", 100], ["half", 0], ["never", 0]],
-    c1965: [["school", 100], ["half", 0], ["never", 0]],
-    c1955: [["school", 100], ["half", 0], ["never", 0]],
   };
   const ORIGIN_OPEN = [
     "你出生那年，家里住的还是老房子，厨房和卧房只隔一道布帘。爸妈把你的小床放在靠墙的一侧，墙上贴着一张全家福，是你满月时照的。",
@@ -107,11 +108,26 @@
         { label: "把念头压下去，先把眼前的试考好", effects: { growth: 1 }, itch: "study", echo: "你把那页写了念头的纸夹进课本里，再没翻开过。" },
         { label: "跟家里旁敲侧击提了一回，看看大人的反应", effects: { relation: 1 }, itch: "out", echo: "你妈说，等你初中毕业再说。你爸没接话，把电视声音调小了一格。" },
       ] },
-    { id: "pr_fork16", age: 16, title: "16 岁 · 往哪条道上走", log: "初中毕业，分了道",
+    // v0.23 WP5（F00 fork16 升级）：bandFork=true 的分岔拍在 present 时走专属呈现（见 WP5 段 forkPresent）——
+    // band 在拍内经考试场景落定并切单子（bandText 三档说法为本代自写，不与他代同句）；craft 带 bandForms
+    // （中职分班形：缺省双口形，mid 换对口升学班形、low 换就业班形，出口在回声里分）；「回老家读高中」
+    // 只对立过 migrantExam 的随迁家庭亮（requiresFlag，L00-考 落地后才有此旗；无旗者选项面与升级前一致）。
+    // 新老选项 setState 目标一律不变（仍是四轨），不触发存档迁移。
+    { id: "pr_fork16", age: 16, title: "16 岁 · 往哪条道上走", log: "初中毕业，分了道", bandFork: true,
       text: "初中毕业。这个夏天过后，一块儿玩的那些人要散到不同的地方去了。你得选一条道，先走起来。",
+      bandText: {
+        high: "中考分数贴在学校门口的墙上，你的名字在普高那一栏里，是圈出来的。这个夏天过后，大家要散到不同的地方去，你得选一条道，先走起来。",
+        mid: "成绩贴出来，普高那条线你差了一截。单子上还剩中职的对口升学班、打工和留家这几行。考上普高的同桌在人堆里朝你挥手，你也抬了抬手。",
+        low: "榜贴出来那天，你从头看到尾，没找着自己的名字。剩下的路在单子下半张：中职就业班、打工、留家。考上的人被围在中间，你先挤出去了。",
+      },
       choices: [
         { label: "接着念高中，往下考", setState: { track: "study" }, echo: "录取通知书到家那天，你妈放了一小挂鞭炮。书包还是旧的，里头换了新课本。" },
-        { label: "去职校，学一门能吃饭的手艺", setState: { track: "craft" }, echo: "报名表上专业那一栏，你填得很慢，一笔一画。师傅还没见着，工具先领了一套。" },
+        { label: "回老家读高中", setState: { track: "study" }, requiresFlag: "migrantExam", echo: "开学前，你坐了大半天的车回老家。县城边上的高中，宿舍是上下铺，你的铺位靠窗，行李先塞在床底下。" },
+        { label: "去中职，学门能吃饭的手艺", setState: { track: "craft" }, echo: "开学先分班：想再往上考的进对口升学班，先学手艺的进就业班。你站在名单前看了一会儿，先去把工具领了。",
+          bandForms: {
+            mid: { label: "去中职对口升学班，还往上考", echo: "这个班照着往上考的路子教，科目精些。班主任说，往年也有从这个班考出去的，就看你自己沉不沉得住气。" },
+            low: { label: "去中职就业班，学手艺早点上岗", echo: "就业班先学手艺，手上有了活，心里不慌。老师说，真想再往上读，高二还有对口升学的口子，就是得自己挤时间。" },
+          } },
         { label: "出去打工，先挣钱", setState: { track: "work" }, echo: "介绍人是同村的亲戚。临走前一晚，你妈把你的衣服叠了又叠，行李袋的拉链差点拉不上。" },
         { label: "留在家里，帮着种地守店", setState: { track: "home" }, echo: "你爸没说什么，第二天一早就把你喊起来下了地。露水把裤脚打湿了一大片。" },
       ] },
@@ -152,6 +168,27 @@
         home: "二十一岁，村里给你说对象的人多起来。你心里清楚，往后的路得宽起来，不能只守着这一摊想了。",
       },
       choices: null }, // 无选项：看完点「到 22 岁」，汇入五路线
+    // v0.23 WP5 家庭层拍（L00-考/L00-护）：wp5Beat=true 的两拍不进缺省幕序——每局至多入序一拍，
+    // 由 seqTableFor 按已定版的家底/留守事实在 start 时选定（见 WP5 段），保证家庭拍净增至多 1 幕。
+    // 两拍同置 14 岁：与 16 岁分岔之间隔着 15 岁少年拍（第一局密度口径）。本数组里置于主幕之后，
+    // 是为了让 v0.17 旧表的前 12 个下标与现行主幕逐 id 对齐（证据包②的 idx 映射靠这一条）。
+    { id: "pr_l00_exam", age: 14, log: "在哪儿考", wp5Beat: true, familyBeat: true, familyFact: "migrantExam",
+      title: "14 岁 · 在哪儿考",
+      text: "初二下学期，爸妈连着几天在饭桌上算一件事：中考回老家考，还是留在这边考。老家那边的教材不一样，回去得提前一学年走。这事他们定，你在旁边听着。",
+      echo: "往后好多年，你都记得那几天的饭桌——你的高中是在哪张饭桌上定下来的，你当时在场。",
+      choices: [
+        { label: "把老家学校的电话抄在作业本最后一页", effects: { wisdom: 1 }, echo: "你抄的时候把区号也写上了。后来真打了那个电话，是你先开的口，问初三还收不收转回去的。" },
+        { label: "拿出攒的零花钱，说车票自己买", effects: { relation: 1 }, echo: "你妈把钱推回来，又往你书包里塞了两百，说这钱留着，到那边买文具。你的钱一分没动，心里那条路先走通了一截。" },
+        { label: "拉着同桌又去打了一下午球，当没听见", effects: {}, echo: "那天下午你们打到天黑，球场的灯都亮了。回家时爸妈已经商量完了，你只赶上听了个结果。" },
+      ] },
+    { id: "pr_l00_care", age: 14, log: "第一次去病房", wp5Beat: true, familyBeat: true, familyFact: "famCare00",
+      text: "奶奶摔了一跤，住了院。白天大人要上班，医院那边得有人跑腿送东西。你放学离得近，这活儿先落到你头上。住院部在几楼，你头一天就跑错了两回。",
+      echo: "那是头一回，照顾人的和被照顾的换了个个儿。你当时只觉得跑腿累，没想到这事往后还有的是。",
+      choices: [
+        { label: "放学先去病房送饭，陪一会儿再回家", effects: { relation: 1 }, echo: "保温桶里的饭她总说比食堂的好吃。你认得护士站的每个人了，查房的点儿，你比闹钟还准。" },
+        { label: "在病房写作业，顺手帮隔壁床的爷爷读报纸", effects: { wisdom: 1 }, echo: "隔壁床的爷爷耳朵背，你读报纸得凑近一点。读完一版，他从柜子里摸出个橘子塞给你，说这是探病的回礼。" },
+        { label: "去了两天就嫌闷，第三天绕去同学家打游戏", effects: { relation: -1 }, echo: "你妈顶了你那天的班，没说你，只把保温桶洗了扣在灶台上。第二天你自己拎着桶去了，比平时早了十分钟。" },
+      ] },
   ];
   // 处境专属幕（v0.18.0 第一步）：half 线（半读半帮工 → 读了又离开/补课）、never 线（没进校门 → 夜校识字线 → 认字之后）。
   // 留守不是处境值，是家底底色（见 start 的 leftBehind）：只改来历幕与童年幕的质地，不占幕序。
@@ -191,14 +228,339 @@
         choices: null }, // v0.21.1 精简：±数二选一改纯叙述
     ],
   };
+  // 年代包分发（v0.22.0）：c2000 内容即上方常量、原样组成本地内置包（parity 不动）；其余五代由
+  // src/content/prologue/prologue-cXXXX.js 在 window.GAME_PROLOGUE_PACKS 注册同形包（在本文件之后加载）。
+  // 包形：{ originOpen[4], originLB, marks{}, flatsByAge{}, acts[], sitActs{half,never}, special{neverChild1Text, neverChild4Text, townFamilies[]} }。
+  // 新机制只在包带相应字段时触发（texts[] 性子拍呈现变体 / choice altLabel+altEcho 城镇形 / act.textTown / act.trackAlt），c2000 包一概不带——旧代随机流消费点一格不变。
+  const C2000_PACK = {
+    originOpen: ORIGIN_OPEN,
+    originLB: "你爸妈去了外地打工，你跟着爷爷奶奶过。电话一礼拜打一回，声音从听筒里出来，有点远。",
+    marks: MARKS, flatsByAge: FLATS_BY_AGE, acts: ACTS, sitActs: SIT_ACTS,
+    special: {
+      neverChild1Text: "开学那天，你没去。家里的事多，没人送你，你自己也知道，这个门这一回进不去了。你站在村口，看背书包的孩子往学校那边走，有个跟你一般大的，书包带子滑下来，又自己拽了上去。你看了一会儿，转身回家帮着干活去了。你跟家里提过一回，没说通，后来也就没再提。",
+      neverChild4Text: "跟你一般大的孩子小学毕业了。毕业照在校门口拍，梧桐树底下站了两排人，你路过的时候看了一眼。你没在里头，你那天是来镇上送东西的，扁担还压在肩上。修鞋摊的大爷倒是还在老地方，见你过来，招手让你坐下歇会儿。临走，你问大爷往后还来不来，他说，来，摊子挪几步，照样修鞋。",
+      townFamilies: [],
+    },
+  };
+  function packFor(era) {
+    const P = window.GAME_PROLOGUE_PACKS;
+    if (era && era !== "c2000" && P && P[era]) return P[era];
+    return C2000_PACK;
+  }
+  function hasPack(era) { return era === "c2000" || !!(window.GAME_PROLOGUE_PACKS && window.GAME_PROLOGUE_PACKS[era]); }
+
+  // ---- v0.23 WP1 机制面（E11/E3/E4/E5）：全部新字段可选，缺省行为＝现行（parity 的根） ----
+  // 枚举事实读口（E11）：S.facts 伴随容器里的多值事实；容器或键缺失（旧档）按 absent 读，不掷不补写。
+  function factOf(S, name) {
+    const F = S && S.facts;
+    const v = F ? F[name] : undefined;
+    return v == null ? "absent" : v;
+  }
+  function setFact(S, name, value) {
+    if (!S.facts || typeof S.facts !== "object") S.facts = {};
+    S.facts[name] = value;
+  }
+  // 序章选项门（E3）：requiresSit/requiresState/requiresFlag/requiresFact 不满足即不出（默认不提这扇门）。
+  // 任一选项都不带门字段时原样返回（不构造新数组——现行幕的选项引用与顺序一字不变）。
+  function choiceGateOk(S, c) {
+    const P = S.prologue;
+    if (c.requiresSit) { const arr = Array.isArray(c.requiresSit) ? c.requiresSit : [c.requiresSit]; if (!arr.includes(P.situation)) return false; }
+    if (c.requiresState) for (const [dom, v] of Object.entries(c.requiresState)) { const want = Array.isArray(v) ? v : [v]; if (!want.includes(S.state[dom])) return false; }
+    if (c.requiresFlag) { const arr = Array.isArray(c.requiresFlag) ? c.requiresFlag : [c.requiresFlag]; for (const f of arr) if (!S.flags[f]) return false; }
+    if (c.requiresFact) for (const [name, v] of Object.entries(c.requiresFact)) { const want = Array.isArray(v) ? v : [v]; if (!want.includes(factOf(S, name))) return false; }
+    if (c.requiresFamily) { const arr = Array.isArray(c.requiresFamily) ? c.requiresFamily : [c.requiresFamily]; if (!arr.includes(P.family)) return false; } // WP2（补丁稿 wp2-prologue-js-patch，合并二期落）：家底门
+    if (c.requiresTemper) { const arr = Array.isArray(c.requiresTemper) ? c.requiresTemper : [c.requiresTemper]; if (!arr.includes(P.temperPick)) return false; } // WP2：性子门（读已定版的性子拍选择）
+    return true;
+  }
+  function gateChoices(S, choices) {
+    if (!choices) return choices;
+    if (!choices.some((c) => c.requiresSit || c.requiresState || c.requiresFlag || c.requiresFact || c.requiresFamily || c.requiresTemper)) return choices;
+    const vis = choices.filter((c) => choiceGateOk(S, c));
+    if (vis.length) return vis;
+    const base = choices.filter((c) => !(c.requiresSit || c.requiresState || c.requiresFlag || c.requiresFact || c.requiresFamily || c.requiresTemper));
+    return base.length ? base : choices; // 全被门滤空时回落无门选项（再空回落全集，与分岔呈现层同款防御，防空屏）
+  }
+  // gateNote（E3）：只在 gateNoteNeeds 声明的资格来源事实全部已立（旗已立或枚举事实非 absent）时渲染；
+  // 无声明、声明为空或任一事实未立，恒不渲染——默认形态是不提这扇门（蓝图 §3.2 总则）。
+  function gateNoteOf(S, act) {
+    if (!act.gateNote) return null;
+    // schooling 门（fix2 合并修复线，opt-in）：带 bandSkipSchooling 的拍对已离校者不渲染考试落账句（与掷档门同口径）。
+    if (Array.isArray(act.bandSkipSchooling) && S.state && act.bandSkipSchooling.includes(S.state.schooling)) return null;
+    const needs = act.gateNoteNeeds;
+    if (!Array.isArray(needs) || !needs.length) return null;
+    const ok = needs.every((n) => !!(S.flags && S.flags[n]) || factOf(S, n) !== "absent");
+    return ok ? act.gateNote : null;
+  }
+  // gateNote 例句标准（蓝图 §3.2 备稿句，本包只落样例一条）：叙述者口吻、一句、≤40 字、只陈述规则与事实。
+  const GATE_NOTE_SAMPLE = "留城的口子很窄，要家里正好占着一条。";
+  // examBand 掷定接口（E5）：分布按代×处境登记在 GAME_REGISTRY.examBandTables（设计参数，无统计出处）；
+  // 只走序章自有流（prng），掷定即写 S.facts.examBand 并返回。无表/无该处境行时返回 null 且不消费流、不写事实。
+  function rollExamBand(S, act) {
+    // schooling 门（fix2 合并修复线，P-A 等效落法、opt-in）：分岔拍带 bandSkipSchooling 声明时，
+    // 当前 schooling 已落入声明值（如 half 退学后的 left、never）的人不掷档、不消费流、不写 examBand 事实，
+    // 题面走该拍的中性分文。未声明此字段的拍（其他年代含 c1978/c2000）行为一字不变。
+    if (act && Array.isArray(act.bandSkipSchooling) && S.state && act.bandSkipSchooling.includes(S.state.schooling)) return null;
+    const REG = window.GAME_REGISTRY || {};
+    const tables = REG.examBandTables || {};
+    const bySit = tables[S.era];
+    const row = bySit && bySit[S.prologue ? S.prologue.situation : "school"];
+    if (!row) return null;
+    const bands = ["high", "mid", "low"];
+    const total = bands.reduce((s, b) => s + (row[b] || 0), 0);
+    if (!(total > 0)) return null;
+    let roll = prng(S) * total;
+    for (const b of bands) { if (roll < (row[b] || 0)) { setFact(S, "examBand", b); return b; } roll -= (row[b] || 0); }
+    setFact(S, "examBand", "low");
+    return "low";
+  }
+
+  // ---- v0.23 WP5（c2000 补课：F00＋L00-考/L00-护＋证据包②③） ----
+  // 随迁质地家底牌（F00②的资格来源）：cf_08「搬过三回家」——孩子跟着家搬、学校换过三个，
+  // 来历幕里已当场可见。看护质地家底牌：cf_07「奶奶带大的」/cf_12「住在外婆家」；留守
+  // （leftBehind，跟祖辈过）同列看护来源。两组都只读开局已定版的事实，不掷新骰、不消费序章流。
+  const MIGRANT_FAMILIES = ["cf_08"];
+  const CARE_FAMILIES = ["cf_07", "cf_12"];
+  // 本局入序的 WP5 家庭拍（至多一拍，蓝图幕数口径「家庭拍每局 ≤2、净增 ≤1」的 c2000 落法）：
+  // 随迁 school 局优先 L00-考（必做件）；其余看护质地局入 L00-护；两组资格同局重叠时只入考拍。
+  function wp5BeatFor(P) {
+    if (!P) return null;
+    if (P.situation === "school" && MIGRANT_FAMILIES.includes(P.family)) return "pr_l00_exam";
+    if (P.leftBehind || CARE_FAMILIES.includes(P.family)) return "pr_l00_care";
+    return null;
+  }
+  // ---- v0.23 合并二期：when* 开局过滤与池调度（WP2/WP3/WP7/WP8 四线合流，主树口径） ----
+  // when* 开局过滤（WP8 §2.3／WP7 P2）：带 whenFact/whenState 的拍是延迟拍，开局不入序，
+  // 16 岁分岔落定后由 choose() 按已定版事实补入（见 choose 的 WP8 段）；whenLeftBehind /
+  // whenNotLeftBehind / whenMigrant / whenChance 在开局按已定版处境事实过滤（whenChance 在此掷一次）。
+  function whenStartOk(S, a) {
+    const P = S.prologue;
+    if (a.whenFact || a.whenState) return false;
+    if (a.whenLeftBehind && !P.leftBehind) return false;
+    if (a.whenNotLeftBehind && P.leftBehind) return false;
+    if (a.whenMigrant && !P.migrantChild) return false;
+    if (a.whenChance != null && !(prng(S) < a.whenChance)) return false;
+    return true;
+  }
+  function whenDeferredOk(S, a) {
+    if (a.whenFact) for (const [fn, v] of Object.entries(a.whenFact)) { if (factOf(S, fn) !== v) return false; }
+    if (a.whenState) for (const [dom, v] of Object.entries(a.whenState)) { if (S.state[dom] !== v) return false; }
+    return true;
+  }
+  function segOf(age) { return age <= 9 ? "low" : age <= 13 ? "mid" : "exam"; }
+  // 池调度（开局一次，消费序章流，结果直接写入 P.seq 并记 P.poolSeen；旧档重建不回填——
+  // rebuildSeq 走 seqTableFor、不经本函数，与 WP3 规格「旧档不回填池」一致）。
+  // 四线条目形状各异，按包字段分派：poolActs＝WP2（bands 分段）、pool＝WP3（act 模板＋保底＋
+  // 替换平年幕位）与 WP7（variants 年龄段＋eligible＋公历门）混装（以条目有无 act 区分）、pool95＝WP8。
+  // 全线共同纪律：每局 ≤2 条；WP3 形第一条池幕优先替换同龄平年幕（pr_child1/pr_child2/pr_teen1），
+  // 替换不着才插入（每局插入预算 1，保底条目可超预算）；保底条目到期必现；公历门年份不掷骰。
+  function poolSchedule(S, pack) {
+    const P = S.prologue;
+    if (!P || !Array.isArray(P.seq)) return;
+    P.poolSeen = [];
+    let placed = 0;
+    const pushAgeSorted = (pseudo) => { P.seq.push(pseudo); P.seq.sort((x, y) => x.age - y.age); P.poolSeen.push(pseudo.id); placed++; };
+    // WP2 形（c1955 poolActs）：逐年掷 weight，互斥组关闭后同组不再掷；段（low/mid/late）定版文本
+    if (Array.isArray(pack.poolActs)) {
+      const closed = new Set();
+      for (const e of pack.poolActs) {
+        if (placed >= 2) break;
+        if (e.mutexGroup && closed.has(e.mutexGroup)) continue;
+        let trig = null;
+        for (let a = e.window[0]; a <= e.window[1]; a++) { if (prng(S) < e.weight) { trig = a; break; } }
+        if (trig == null) continue;
+        if (e.mutexGroup) closed.add(e.mutexGroup);
+        const bandKey = trig <= 9 ? "low" : trig <= 13 ? "mid" : "late";
+        const band = (e.bands || {})[bandKey] || {};
+        pushAgeSorted({ id: e.id, age: trig, log: band.log || e.log || "搬家", familyBeat: true,
+          familyFact: band.familyFact || e.familyFact || undefined, set: e.set || undefined, mark: band.mark || undefined,
+          text: band.text, echo: band.echo || null, choices: band.choices || null, poolEntry: e.id });
+      }
+    }
+    // WP3/WP7 形（pool 数组，包内顺序即调度优先序）
+    if (Array.isArray(pack.pool)) {
+      const PLAIN = { pr_child1: 1, pr_child2: 1, pr_teen1: 1 };
+      let inserts = 0;
+      for (const e of pack.pool) {
+        if (placed >= 2) break;
+        if (e.act) { // WP3 形：act 模板＋保底＋替换/插入落位
+          let trig = null;
+          for (let a = e.window[0]; a <= e.window[1]; a++) { if (prng(S) < e.weight) { trig = a; break; } }
+          if (trig == null && e.guaranteeAge) trig = e.guaranteeAge;
+          if (trig == null) continue;
+          if (e.act.variants) {
+            const pool = e.act.variants.filter((v) => !(v.notFamily && P.family && v.notFamily.includes(P.family)));
+            P.variants[e.id] = pool[Math.floor(prng(S) * pool.length)].key;
+          }
+          const pseudo = Object.assign({}, e.act, { id: e.id, age: trig, poolEntry: e.id });
+          const plainIdx = P.seq.findIndex((x) => x.age === trig && PLAIN[x.id]);
+          if (plainIdx >= 0) { P.seq.splice(plainIdx, 1, pseudo); P.poolSeen.push(e.id); placed++; continue; }
+          if (inserts < 1 || e.guaranteeAge) {
+            inserts++;
+            let pos = P.seq.findIndex((x) => x.age >= trig && x.id !== "pr_origin");
+            if (pos < 0) pos = P.seq.length;
+            P.seq.splice(pos, 0, pseudo); P.poolSeen.push(e.id); placed++; continue;
+          }
+          let donePlace = false;
+          for (let a = trig + 1; a <= e.window[1]; a++) {
+            const j = P.seq.findIndex((x) => x.age === a && PLAIN[x.id]);
+            if (j >= 0) { pseudo.age = a; P.seq.splice(j, 1, pseudo); P.poolSeen.push(e.id); placed++; donePlace = true; break; }
+          }
+          if (!donePlace) continue;
+        } else { // WP7 形：eligible 处境门＋逐年掷 weightPerYear（公历门外年份不掷）＋年龄段变体
+          if (e.eligible === "leftBehind" && !P.leftBehind) continue;
+          if (e.eligible === "notLeftBehind" && P.leftBehind) continue;
+          let trig = null;
+          for (let a = e.window[0]; a <= e.window[1]; a++) {
+            if (e.calendarWindow && ((S.birthYear || 0) + a < e.calendarWindow[0] || (S.birthYear || 0) + a > e.calendarWindow[1])) continue;
+            if (prng(S) < e.weightPerYear) { trig = a; break; }
+          }
+          if (trig == null) continue;
+          const va = (e.variants || []).find((v) => trig >= v.band[0] && trig <= v.band[1]);
+          if (!va) continue;
+          // 补修接线（opt-in，与 pool95 mkPseudo 同形）：变体带 *BySchooling 时随伪条目带到呈现点，
+          // 由 present 池幕段按呈现时 schooling 换文（退学在 14 岁、晚于调度点）；留守局 text 先读
+          // textLBBySchooling[P.situation]（低龄/中段呈现龄 schooling 与开局处境恒等，按处境选精确），
+          // 未命中回落 textLB/text 原口径；未声明这些字段的变体行为一字不变。
+          const pseudo = { id: e.id, age: trig, log: va.log || e.log || "家里的一桩事", familyBeat: true, familyFact: e.familyFact || undefined,
+            text: (P.leftBehind && va.textLBBySchooling && va.textLBBySchooling[P.situation]) ? va.textLBBySchooling[P.situation]
+              : ((P.leftBehind && va.textLB) ? va.textLB : va.text), echo: va.echo || null, choices: va.choices || null, poolEntry: e.id,
+            poolExtraFact: va.extraFact || null,
+            textBySchooling: va.textBySchooling || undefined, echoBySchooling: va.echoBySchooling || undefined,
+            choicesBySchooling: va.choicesBySchooling || undefined };
+          if (va.markGrant) { pseudo.mark = va.markGrant.id; pseudo.set = va.markGrant.id;
+            // v0.23 WP9 A线：池记号影子句随伪条目带到呈现点（此前只转发记号 id、影子文本在调度点丢弃，池记号瞥视不可达）——present 落记号时按条目存进 S.marks 条目，瞥视轮换消费读条目自带文本（见 shadow.js glimpseMarkLineNext）。
+            if (va.markGrant.shadow != null) pseudo.markShadow = va.markGrant.shadow;
+            if (va.markGrant.shadowBySchooling != null) pseudo.markShadowBySchooling = va.markGrant.shadowBySchooling; }
+          pushAgeSorted(pseudo);
+        }
+      }
+    }
+    // WP8 形（c1995 pool95）：调度序固定 leave→move→wed→exam（exam 在同局与 wed 互斥时让位）；计划截前 2
+    if (Array.isArray(pack.pool95)) {
+      const byId = {}; for (const e of pack.pool95) byId[e.id] = e;
+      const plan = [];
+      const hazard = (e) => { let t = null; for (let a = e.window[0]; a <= e.window[1]; a++) { if (prng(S) < e.trigger.perYear) { t = a; break; } } return t; };
+      // fix2（opt-in）：变体可带 textBySit/echoBySit/choicesBySit/factBySit 按开局处境换文/换选项/换家庭事实
+      // （如 never 局的搬家变体不预设在校）；条目可带 notSit 处境门（如 L95-考不对 never 开）。未声明者行为不变。
+      // fix3（opt-in）：变体可带 textLB/echoLB/choicesLB/logLB——留守局（开局已定版）在调度点直接换留守形
+      // （搬家/婚池对留守者不讲「跟着转学/平日在妈这边」；留守形文案自带中性口径，兼覆盖留守×never）；
+      // 变体带 factLB 键（可为 null）时留守局家庭事实按它走（如搬家留守形不落 transfer95/migrantExam）。
+      // 变体可带 textBySchooling/echoBySchooling/choicesBySchooling/factBySchooling——随伪条目带到呈现点，
+      // 按呈现时 schooling 换文（退学发生在 14 岁、晚于调度点，只有呈现点读得到；见 present 的池幕段）。
+      const mkPseudo = (e, trig, va) => { const mkId = (va.marks || [])[0] || undefined; return ({ id: e.id, age: trig,
+        log: (P.leftBehind && va.logLB) || va.log || e.log || "家里的一桩事", familyBeat: true,
+        familyFact: (P.leftBehind && Object.prototype.hasOwnProperty.call(va, "factLB")) ? (va.factLB || undefined)
+          : ((va.factBySit && va.factBySit[P.situation]) || va.familyFact || undefined), mark: mkId,
+        // v0.23 WP9 A线补：set 同步带记号 id（与 WP7 形 pseudo.set＝markGrant.id、固定变体 set＝mark 同口径）——此前 mkPseudo 只有 mark、
+        // present 落记号只进 S.marks 不立旗，成年回响 require（scheduler 只认 S.flags）对池记号永远过不了门（echo_palm95 首批 2000 局持有 140 局命中 0 的结构性原因）；无 marks 的变体 mkId 为 undefined、set 不立、行为不变。
+        set: mkId,
+        // v0.23 WP9 A线：同 WP7 形——变体 markShadow（按记号 id 索引的 map）随伪条目转发到呈现点落账；未声明的变体两字段皆 undefined、行为不变。
+        markShadow: (va.markShadow && mkId) ? va.markShadow[mkId] : undefined,
+        markShadowBySchooling: (va.markShadowBySchooling && mkId) ? va.markShadowBySchooling[mkId] : undefined,
+        text: (P.leftBehind && va.textLB) || (va.textBySit && va.textBySit[P.situation]) || va.text,
+        echo: (P.leftBehind && va.echoLB) || (va.echoBySit && va.echoBySit[P.situation]) || va.echo || null,
+        choices: (P.leftBehind && va.choicesLB) || (va.choicesBySit && va.choicesBySit[P.situation]) || va.choices || null,
+        poolEntry: e.id, poolSegment: va.segment || segOf(trig),
+        textBySchooling: va.textBySchooling || undefined, choicesBySchooling: va.choicesBySchooling || undefined,
+        echoBySchooling: va.echoBySchooling || undefined, factBySchooling: va.factBySchooling || undefined }); };
+      const sitBlocked = (e) => !!(e.notSit && e.notSit.includes(P.situation));
+      const leave = byId.pr_pool95_leave;
+      if (leave && !sitBlocked(leave)) {
+        const form = P.leftBehind ? "leftBehind" : (P.migrantChild ? "migrant" : null);
+        if (form) { const va = (leave.variants || []).find((v) => v.form === form); if (va) plan.push(mkPseudo(leave, leave.guaranteeAge, va)); }
+      }
+      const move = byId.pr_pool95_move;
+      if (move && !sitBlocked(move)) { const t = hazard(move); if (t != null) { const va = (move.variants || []).find((v) => v.segment === segOf(t)); if (va) plan.push(mkPseudo(move, t, va)); } }
+      const wed = byId.pr_pool95_wed;
+      let wedFired = false;
+      if (wed && !sitBlocked(wed)) { const t = hazard(wed); if (t != null) { const va = (wed.variants || []).find((v) => v.segment === segOf(t)); if (va) { plan.push(mkPseudo(wed, t, va)); wedFired = true; } } }
+      const exam = byId.pr_pool95_exam;
+      if (exam && !sitBlocked(exam) && !wedFired && P.migrantChild) { const t = hazard(exam); if (t != null) { const va = (exam.variants || []).find((v) => v.segment === segOf(t)); if (va) plan.push(mkPseudo(exam, t, va)); } }
+      for (const pseudo of plan.slice(0, 2)) pushAgeSorted(pseudo);
+    }
+  }
+  // 幕序组装（start 与旧档重建共用）：包内主幕（滤掉未入选的 wp5Beat 与 when* 未过门拍）＋本处境专属幕，按年龄交错。
+  function seqTableFor(S, pack) {
+    const P = S.prologue;
+    const beatId = wp5BeatFor(P);
+    const acts = pack.acts.filter((a) => (!a.wp5Beat || a.id === beatId) && whenStartOk(S, a));
+    // fix2：处境幕同样过 whenStartOk——带 whenFact/whenState 的处境幕（如按 track 关的 pr_half3）开局不入序，
+    // 分岔后由 choose 的延迟补入接回；无 when* 字段的处境幕 whenStartOk 恒真，行为不变。
+    return acts.concat((pack.sitActs[P.situation] || []).filter((a) => whenStartOk(S, a))).slice().sort((a, b) => a.age - b.age);
+  }
+  // 证据包②（seq=null 旧档回落处置）：v0.17 旧档没有 seq 字段，旧回落直接套现行主幕表会让
+  // idx 整体错位。处置＝按 act id 对齐重建：先用档内账本（ledger）里已呈现的序章幕 id 序列
+  // 对齐现行表（须在现行表里单调），idx 重定位到最后一个已呈现幕的下一位；账本不可用时用
+  // 旧表（v0.17 主幕 12 拍，即包内非 wp5Beat 主幕的前段）按下标取当前幕 id 再重定位——
+  // ACTS 里 WP5 两拍置于主幕之后正是为了让这组下标逐 id 对得上。两路都对不齐的档不许静默
+  // 错位续玩：回到最近一个分岔幕头（pr_fork16，年龄已到时）重开该幕，未到分岔年龄则回
+  // 来历幕重开；处置结果记在 P.seqRebuilt（aligned/fallback），呈现中的幕若 id 对得上则
+  // 保留其定版文本与 presented，避免重复落记号。
+  function rebuildSeq(S, pack) {
+    const P = S.prologue;
+    const table = seqTableFor(S, pack);
+    const legacy = pack.acts.filter((a) => !a.wp5Beat);
+    const presentedId = (typeof P.presented === "number" && P.presented >= 0 && P.presented < legacy.length) ? legacy[P.presented].id : null;
+    let newIdx = null, mode = "aligned";
+    const ledIds = (Array.isArray(S.ledger) ? S.ledger : []).filter((e) => e && e.kind === "prologue" && e.id).map((e) => e.id);
+    if (ledIds.length) {
+      let last = -1, okAlign = true;
+      for (const id of ledIds) {
+        const p = table.findIndex((a) => a.id === id);
+        if (p < 0) continue; // 账本里有现行表已没有的幕 id：跳过该行，不因此判对不齐
+        if (p <= last) { okAlign = false; break; } // 重复或倒序：账本与现行表对不齐
+        last = p;
+      }
+      if (okAlign && last >= 0) newIdx = Math.min(last + 1, table.length);
+    }
+    if (newIdx === null && typeof P.idx === "number" && P.idx >= 0) {
+      if (P.idx >= legacy.length) newIdx = table.length;
+      else { const p = table.findIndex((a) => a.id === legacy[P.idx].id); if (p >= 0) newIdx = p; }
+    }
+    if (newIdx === null) {
+      mode = "fallback";
+      const forkPos = table.findIndex((a) => a.id === "pr_fork16");
+      newIdx = (forkPos >= 0 && typeof S.age === "number" && S.age >= 16) ? forkPos : 0;
+      if (typeof console !== "undefined" && console.warn) console.warn("WP5 seq 重建无法对齐，已按分岔幕头收口（seqRebuilt=fallback）");
+    }
+    P.idx = newIdx;
+    P.seqRebuilt = mode;
+    if (presentedId && table[P.idx] && table[P.idx].id === presentedId) P.presented = P.idx;
+    else { P.presented = -1; P.curText = null; P.curChoices = null; P.pendingState = null; }
+    return table;
+  }
+  // F00 分岔拍呈现（bandFork 拍专用）：新局在拍打开时掷 band 一次（序章流，同局定版）；
+  // 旧档处置见证据包③——bandArmed 只由本版 start() 写入，旧档没有此字段：一律不掷 band、
+  // 不切选项、题面用原文（呈现缺省）。这与 validate-state 的 absent 口径是两件事：校验层
+  // 把 S.facts 缺 examBand 键读作 absent＝未发生、不要求补写；呈现层靠 bandArmed 分新局旧档。
+  function forkMaterialize(S, act) {
+    const P = S.prologue;
+    const legacy = !P.bandArmed;
+    let band = factOf(S, "examBand");
+    if (!legacy && band === "absent") { rollExamBand(S, act); band = factOf(S, "examBand"); }
+    let text = act.text;
+    if (!legacy && band !== "absent" && act.bandText && act.bandText[band]) text = act.bandText[band];
+    if (P.itch === "out") text += "\n十五岁那年你跟家里提过的那件事，今天要定下来了。";
+    let choices = act.choices;
+    if (!legacy && band !== "absent") {
+      // band 切单子（规则登记在 registry-wp5.js）：普高（study 本体）只对 high 亮，mid/low 在
+      // 题面里以同学去向回声出现；craft 按 band 换分班形；work/home 不切。随迁的「回老家读
+      // 高中」带 requiresFlag、不走 band 切（回老家读的是另一张单子），之后由 gateChoices 按旗过滤。
+      choices = act.choices.filter((c) => !(band !== "high" && c.setState && c.setState.track === "study" && !c.requiresFlag))
+        .map((c) => (c.bandForms && c.bandForms[band]) ? Object.assign({}, c, { label: c.bandForms[band].label, echo: c.bandForms[band].echo }) : c);
+    }
+    return { text, choices };
+  }
+
   // 间隔年只在 child/teen/youth 段出现（act 年龄表）：5→7→9→11→12→13→15→16→17→18→20→21，空档为 6/8/10/14/19。处境幕并入后，落在处境幕年龄上的平年不再重复出现。
 
   // 变体发放：只走序章自有流（prng），一格不碰主 RNG。notFamily 粗分在此过滤（如河沟款不发厂区大院家底）。
   function pickVariants(S) {
     const P = S.prologue, out = {};
-    for (const act of ACTS) {
+    for (const act of packFor(S.era).acts) {
       if (!act.variants) continue;
-      const pool = act.variants.filter((v) => !(v.notFamily && P.family && v.notFamily.includes(P.family)));
+      // fix2（opt-in）：变体可带 notMigrant，随迁局不发该款（如农村专属款）；未声明的变体过滤结果不变。
+      const pool = act.variants.filter((v) => !(v.notFamily && P.family && v.notFamily.includes(P.family)) && !(v.notMigrant && P.migrantChild));
       out[act.id] = pool[Math.floor(prng(S) * pool.length)].key;
     }
     return out;
@@ -223,8 +585,9 @@
       temperPick: null,
       eraCard: dealt ? dealt.era[0] : null,
       situation: null, itch: null, done: false,
-      pendingState: null, curText: null, curChoices: null, shadowMarkShown: false,
+      pendingState: null, curText: null, curChoices: null, shadowMarkShown: false, shadowMarksShown: [], // WP9 A线：瞥视已示记号 id 表（轮换消费）；shadowMarkShown 保留作旧口径镜像（任一瞥视示句后置 true）
       seq: null, leftBehind: false, variants: null,
+      bandArmed: true, seqRebuilt: null, // v0.23 WP5：bandArmed 只由本版开局写入（旧档无此字段＝按旧档呈现，证据包③）；seqRebuilt 记②的重建处置
     };
     // 处境发放（年代 × 家底的权重表按种子抽一次；本轮 school 权重 100，其余登记未开放）——发放即定，不重掷
     const table = SITUATION_W[S.era] || SITUATION_W.c2000;
@@ -235,26 +598,67 @@
     // 留守是家底底色（地基 v2.1），不占处境值：父母不在身边长大的孩子各处境都有，half 最多。只改质地（来历幕/童年幕文本），不发数值。
     const LB = { school: 0.18, half: 0.45, never: 0.30 };
     S.prologue.leftBehind = prng(S) < (LB[sit] || 0);
+    // 随迁发放（WP8 接线，合并二期落）：只对带 calib95 的包（c1995）掷一次（按处境概率，序章流），
+    // 定版写入 P.migrantChild；无 calib95 的包不消费流（其余五代一格不变）。
+    // fix3 三修（opt-in）：calib95 声明 migrantNotWhenLeftBehind 的包，随迁只对非留守者掷——
+    // 留守局不掷、不消费流、migrantChild 恒 false（落实 c1995 包头登记口径「仅 !leftBehind 时掷」，
+    // 留守与随迁互斥，origin 不再同屏拼两行互斥文本，考池/搬家池的随迁谓词对留守局自动关闭）。
+    // 未声明此字段的包行为一字不变（现行只有 c1995 带 calib95 且声明了它）。
+    const packPre = packFor(S.era);
+    if (packPre.calib95) {
+      S.prologue.migrantChild = (packPre.calib95.migrantNotWhenLeftBehind && S.prologue.leftBehind)
+        ? false
+        : prng(S) < (packPre.calib95.migrantProb[S.prologue.situation] || 0);
+    }
     // 变体发放（v0.21.1）：带 variants 的幕各抽一款，开局定版写入存档（P.variants），之后只查表不重抽——续玩/读档不换款，同种子新局复现。
     S.prologue.variants = pickVariants(S);
-    // 处境幕并入幕序（按年龄交错，同龄时主幕在前）：本处境的专属幕只在本局出现
-    S.prologue.seq = ACTS.concat(SIT_ACTS[sit] || []).slice().sort((a, b) => a.age - b.age);
+    // 处境幕并入幕序（按年龄交错，同龄时主幕在前）：本处境的专属幕只在本局出现；
+    // v0.23 WP5：WP5 家庭拍至多一拍在此入序（seqTableFor 按家底/留守事实选定，见 WP5 段）
+    const pack0 = packFor(S.era);
+    S.prologue.seq = seqTableFor(S, pack0);
+    poolSchedule(S, pack0); // v0.23 合并二期：池调度在幕序定版后、开局内完成（无池数据的包零消费）
     const prof = rhythmProfiles();
     const base = prof ? prof.childhood : { temp: 45, rhythm: "日常型" };
     S.temp = base.temp; S.rhythm = base.rhythm;
     S.age = 5; S.phase = "prologue"; S.stage = "origin";
   }
 
+  // v0.23 WP9 A线：记号落账条目组装——影子句文本随条目落账存进 S.marks（瞥视轮换消费读条目自带文本，
+  // 池记号不进 pack.marks 合并表、只能靠落账自带）。来源序：act.markShadow（池伪条目自带）→ 注册表
+  // PRO.marks 口径的合并表（MARKS＋各年代包 marks）里该记号的 shadow；有分文时一并存 shadowBySchooling。
+  // 两字段都解析不到就不带（旧式 {id, age} 形，消费端回落注册表、不报错）。
+  function markEntryWithShadow(id, age, act) {
+    const entry = { id, age };
+    let sh = (act && act.markShadow != null) ? act.markShadow : null;
+    let shBy = (act && act.markShadowBySchooling != null) ? act.markShadowBySchooling : null;
+    if (sh == null || shBy == null) {
+      const allMarks = Object.assign({}, MARKS);
+      const PK = window.GAME_PROLOGUE_PACKS || {};
+      for (const k of Object.keys(PK)) Object.assign(allMarks, PK[k].marks || {});
+      const reg = allMarks[id];
+      if (reg) {
+        if (sh == null && reg.shadow != null) sh = reg.shadow;
+        if (shBy == null && reg.shadowBySchooling != null) shBy = reg.shadowBySchooling;
+      }
+    }
+    if (sh != null) entry.shadow = sh;
+    if (shBy != null) entry.shadowBySchooling = shBy;
+    return entry;
+  }
+
   // 物化当前幕：文本与选项只在首次呈现时定版（独立流的消费点固定，同种子复现）；顶层立旗/记号在此落，setState 暂存待调用方走 applyState。
   function present(S) {
     const P = S.prologue;
     if (!P || P.done) return null;
-    if (!P.seq) P.seq = ACTS; // v0.17 旧存档无幕序字段：按主幕表续玩（处境恒 school，与旧局一致）
+    const pack = packFor(S.era);
+    if (!P.seq) P.seq = rebuildSeq(S, pack); // v0.17 旧存档无幕序字段：按 act id 对齐重建（证据包②，见 WP5 段 rebuildSeq；处境恒 school，与旧局一致）
     if (P.leftBehind === undefined) P.leftBehind = false;
     const act = P.seq[P.idx];
     if (!act) return null;
     if (P.presented !== P.idx) {
       P.presented = P.idx;
+      // band 掷定：带 rollBand 的幕在物化点、选项门过滤之前掷定一次（序章自有流）；已掷定（续玩/读档）不重掷。
+      if (act.rollBand && factOf(S, "examBand") === "absent") rollExamBand(S, act);
       // never 变体（v0.20.1 W6）：没进过校门的人，7 岁那拍不落同桌记号（mark_deskmate 的影子回响写的是开学事实，落了会自相矛盾）；12 岁那拍仍路过校门口，老梧桐记号照落。
       const neverAlt = P.situation === "never" && (act.id === "pr_child1" || act.id === "pr_child4");
       // 变体定版（v0.21.1）：记号/立旗/流水账行按本局抽中的款走；never 的 12 岁覆写文本写的是梧桐那一拍，记号与行强制回 v1 款对齐（W6 口径）。
@@ -263,60 +667,187 @@
       const effSet = effV ? effV.set : act.set;
       const effMark = effV ? effV.mark : act.mark;
       if (effSet && !(neverAlt && act.id === "pr_child1")) S.flags[effSet] = true;
-      if (effMark && !(neverAlt && act.id === "pr_child1")) S.marks.push({ id: effMark, age: act.age });
+      if (effMark && !(neverAlt && act.id === "pr_child1")) S.marks.push(markEntryWithShadow(effMark, act.age, act)); // WP9 A线：落账自带影子句（池伪条目走 act.markShadow、固定幕回落注册表）
       P.pendingState = act.setStateBySit ? (act.setStateBySit[P.situation] || act.setState || null) : (act.setState || null);
-      S.log.push(`${act.age} 岁 · ${neverAlt && act.id === "pr_child1" ? "开学那天，你没去" : (effV && effV.log) || act.log}`);
+      // fix3（opt-in）：act.logBySchooling 按呈现时 schooling 换流水账行（如 never/left 局不记「升初中/初中毕业」）；
+      // 未声明此字段的幕行为一字不变。
+      const schLog = (act.logBySchooling && S.state && act.logBySchooling[S.state.schooling]) || null;
+      const baseLog = (neverAlt && act.id === "pr_child1") ? "开学那天，你没去" : ((effV && effV.log) || act.log);
+      S.log.push(`${act.age} 岁 · ${schLog || baseLog}`);
       const C = cards();
       if (act.id === "pr_origin") {
-        const open = ORIGIN_OPEN[Math.floor(prng(S) * ORIGIN_OPEN.length)];
+        // fix3（opt-in）：pack.originOpenNotWithFamily 按开场白下标登记与家底互斥的条目
+        // （如独生句×手足家底 cf_06）——抽中互斥条时顺延一款（不另消费流），未声明的包行为不变。
+        let openIdx = Math.floor(prng(S) * pack.originOpen.length);
+        const openGate = pack.originOpenNotWithFamily && pack.originOpenNotWithFamily[openIdx];
+        if (openGate && P.family && openGate.includes(P.family)) openIdx = (openIdx + 1) % pack.originOpen.length;
+        const open = pack.originOpen[openIdx];
         const fam = P.family && C && C.byId[P.family] ? C.byId[P.family].text : "";
-        const lb = P.leftBehind ? "\n你爸妈去了外地打工，你跟着爷爷奶奶过。电话一礼拜打一回，声音从听筒里出来，有点远。" : "";
-        P.curText = (fam ? open + "\n" + fam : open) + lb;
+        const lb = P.leftBehind ? "\n" + pack.originLB : "";
+        // fix2（opt-in）：originMigrantBySit 按处境换随迁来历行（如 never 者随迁但没报上名，与 pr_child1 口径对齐）；未声明的包行为不变。
+        const migText = (pack.originMigrantBySit && pack.originMigrantBySit[P.situation]) || pack.originMigrant;
+        const mig = P.migrantChild && migText ? "\n" + migText : ""; // WP8：随迁质地行（仅带 originMigrant 的包）
+        P.curText = (fam ? open + "\n" + fam : open) + lb + mig;
         P.curChoices = null;
       } else if (act.temperPick) {
-        P.curText = act.text;
+        // 性子拍呈现变体（新代包带 texts[] 时按序章流在物化点定版一款；c2000 只有单 text，不消费流）
+        // fix2（opt-in）：textsBySchooling 按当前 schooling 换一组候选文本，消费流口径与 texts[] 相同（一次）。
+        const tPool = (act.textsBySchooling && S.state && act.textsBySchooling[S.state.schooling]) || act.texts;
+        P.curText = tPool ? tPool[Math.floor(prng(S) * tPool.length)] : act.text;
         P.curChoices = P.temper.map((cid) => {
           const c = C && C.byId[cid];
           return { label: c ? c.name : cid, card: cid, echo: c ? `「${c.name}」——家里人后来提起你，还总这么说。` : "", effects: {} };
         });
       } else if (act.textByTrack) {
-        P.curText = (act.textByTrack[S.state.track] || act.textByTrack.study) + (act.tail || "");
+        let bt = act.textByTrack[S.state.track] || act.textByTrack.study;
+        // factAlt：按枚举事实（如 studyForm）确定性分文，不消费流；优先于 trackAlt。
+        let factHit = false;
+        if (act.factAlt && act.factAlt.texts) { const fv = factOf(S, act.factAlt.fact); if (act.factAlt.texts[fv]) { bt = act.factAlt.texts[fv]; factHit = true; } }
+        // flagText：按已立旗标分文（如复读形），factAlt 未命中时生效，不消费流。
+        if (!factHit && act.flagText && S.flags && S.flags[act.flagText.flag]) bt = act.flagText.text;
+        // 中专变体（c1965/c1978 的 study 轨 trackAlt）：物化点按序章流二选一，定版后随存档走
+        if (!factHit && act.trackAlt && act.trackAlt[S.state.track] && prng(S) < 0.5) bt = act.trackAlt[S.state.track];
+        // 事实/旗分文（WP2，补丁稿 wp2-prologue-js-patch，合并二期落）：textByFact 按枚举事实值整段换文、textByFlag 按已立旗换文，均不消费流
+        if (act.textByFact) for (const [fn, map] of Object.entries(act.textByFact)) { const fv = factOf(S, fn); if (map && map[fv]) bt = map[fv]; }
+        if (act.textByFlag) for (const [fl, tx] of Object.entries(act.textByFlag)) { if (S.flags[fl]) { bt = tx; break; } }
+        // 出身分文（WP8 §2.4，合并二期落）：factTexts 逐条按枚举事实命中整段换文（如留守/随迁的 17 岁）
+        if (act.factTexts) for (const ft of act.factTexts) { if (factOf(S, ft.fact) === ft.is) bt = ft.text; }
+        P.curText = bt + (act.tail || "");
         P.curChoices = act.choices || null;
       } else if (act.eraText) {
-        const era = P.eraCard && C && C.byId[P.eraCard] ? C.byId[P.eraCard].text : "";
-        const base = v ? v.text : act.text;
-        P.curText = era ? base + "\n" + era : base;
+        let era = P.eraCard && C && C.byId[P.eraCard] ? C.byId[P.eraCard].text : "";
+        // fix2（opt-in）：变体带 textBySchooling 命中当前 schooling 时整段换文，且不再拼时代牌
+        // （时代牌文本可能预设在校，与换文处境相冲）；未命中时拼牌口径不变。
+        const sitAlt = (v && v.textBySchooling && S.state && v.textBySchooling[S.state.schooling]) || (act.textBySchooling && S.state && act.textBySchooling[S.state.schooling]);
+        const base = sitAlt || (v ? v.text : act.text);
+        P.curText = sitAlt ? base : (era ? base + "\n" + era : base);
         P.curChoices = act.choices || null;
       } else if (act.id === "pr_child1" && P.situation === "never") {
-        // never 变体（v0.20.1 W6）：7 岁没进校门，与 8 岁专属拍（pr_never1「没进过校门」）对齐；v0.21.1 精简：±1 选项改纯叙述
-        P.curText = "开学那天，你没去。家里的事多，没人送你，你自己也知道，这个门这一回进不去了。你站在村口，看背书包的孩子往学校那边走，有个跟你一般大的，书包带子滑下来，又自己拽了上去。你看了一会儿，转身回家帮着干活去了。你跟家里提过一回，没说通，后来也就没再提。";
+        // never 变体（v0.20.1 W6）：7 岁没进校门，与 8 岁专属拍（pr_never1「没进过校门」）对齐；文本在年代包 special 里（c2000 原文已移入内置包）
+        // fix3（opt-in）：包带 special.neverChild1MigrantText 时，随迁 never 者读城市形（手续没办下来，与 originMigrantBySit.never 同口径）。
+        P.curText = (P.migrantChild && pack.special.neverChild1MigrantText) || pack.special.neverChild1Text;
         P.curChoices = null;
       } else if (act.id === "pr_child4" && P.situation === "never") {
-        // never 变体（v0.20.1 W6）：12 岁没有「小学毕业」这回事，写路过校门口的一拍；v0.21.1 精简：±1 选项改纯叙述
-        P.curText = "跟你一般大的孩子小学毕业了。毕业照在校门口拍，梧桐树底下站了两排人，你路过的时候看了一眼。你没在里头，你那天是来镇上送东西的，扁担还压在肩上。修鞋摊的大爷倒是还在老地方，见你过来，招手让你坐下歇会儿。临走，你问大爷往后还来不来，他说，来，摊子挪几步，照样修鞋。";
+        // never 变体（v0.20.1 W6）：12 岁没有「小学毕业」这回事，写路过校门口的一拍；文本在年代包 special 里
+        P.curText = pack.special.neverChild4Text;
         P.curChoices = null;
+      } else if (act.id === "pr_fork16" && act.bandFork) {
+        // v0.23 WP5（F00）：band 在拍内落定、切单子、craft 分班形与题面都在 forkMaterialize 定版（见 WP5 段）
+        const fm = forkMaterialize(S, act);
+        P.curText = fm.text;
+        P.curChoices = fm.choices;
       } else {
         let t = v ? v.text : act.text;
         if (act.id === "pr_child2" && P.leftBehind && v && v.textLB) t = v.textLB;
+        // fix2（opt-in）：schooling 分文——变体级/幕级 textBySchooling 命中当前 schooling 时整段换文
+        // （如 never 的童年拍、half 退学后的少年拍不预设在校）；未声明的幕行为不变。
+        if (v && v.textBySchooling && S.state && v.textBySchooling[S.state.schooling]) t = v.textBySchooling[S.state.schooling];
+        if (act.textBySchooling && S.state && act.textBySchooling[S.state.schooling]) t = act.textBySchooling[S.state.schooling];
+        // fix3（opt-in）：act.textByMigrant——随迁者整段换文（如 never 随迁者的 pr_never1 读城市形，不读老家山村形）；未声明的幕行为不变。
+        if (act.textByMigrant && P.migrantChild) t = act.textByMigrant;
+        // 城镇家底的整幕替换文本（c1955 性子相关拍 textTown；仅当家底在本包 townFamilies 内）
+        if (act.textTown && P.family && pack.special.townFamilies.includes(P.family)) t = act.textTown;
+        // factText：按枚举事实（如 examBand）追加场景行（如看榜），不消费流。
+        if (act.factText && act.factText.texts) { const fv = factOf(S, act.factText.fact || "examBand"); if (act.factText.texts[fv]) t += "\n" + act.factText.texts[fv]; }
+        // examBand 掷定＋band 分文（WP7 P1／WP8 §2.5，合并二期合流）：带 examBand 的分岔拍在呈现点掷档一次（序章流）；
+        // bandText 替换式（bandTextReplace：题面只是引子，band 文即正文）与追加式（题面＋band 场景拼接）按拍自带字段分派。
+        if (act.examBand && factOf(S, "examBand") === "absent") rollExamBand(S, act);
+        if (act.examBand && act.bandText) { const btx = act.bandText[factOf(S, "examBand")]; if (btx) t = act.bandTextReplace ? btx : (t || "") + "\n" + btx; }
         if (act.id === "pr_fork16" && P.itch === "out") t += "\n十五岁那年你跟家里提过的那件事，今天要定下来了。";
         if (act.tail) t += act.tail;
         P.curText = t;
-        P.curChoices = act.choices || null;
+        let chs = act.choices || null;
+        // fix2（opt-in）：choicesBySchooling 命中当前 schooling 时整组换选项（itch/effects 口径由包内保持同构）。
+        if (act.choicesBySchooling && S.state && act.choicesBySchooling[S.state.schooling]) chs = act.choicesBySchooling[S.state.schooling];
+        // 城镇家底的选项替换（altLabel/altEcho，如 c1955 城镇孩子的 work 选项不走回队形）：只换呈现，不动 setState/effects
+        if (chs && P.family && pack.special.townFamilies.includes(P.family)) {
+          chs = chs.map((c) => (c.altLabel ? Object.assign({}, c, { label: c.altLabel, echo: c.altEcho }) : c));
+        }
+        // 城镇形 fork 整拍换 choicesTown（WP2，补丁稿 wp2-prologue-js-patch，合并二期落）：呈现时两层掷定一次（下乡发放 assignRoll），按 townSide 过滤
+        if (act.choicesTown && P.family && pack.special.townFamilies.includes(P.family)) {
+          let side = "stay";
+          if (act.assignRoll && prng(S) * 1000 < act.assignRoll.downPerMille) {
+            side = "down";
+            let r2 = prng(S) * 1000, acc = 0, form = "chadui";
+            for (const [fn, w] of Object.entries(act.assignRoll.formsPerMille)) { acc += w; if (r2 < acc) { form = fn; break; } }
+            setFact(S, "sentdownForm", form);
+          }
+          chs = act.choicesTown.filter((c) => (c.townSide || "stay") === side);
+        }
+        P.curChoices = chs;
       }
+      // 配额归属发放（WP3 补丁 2，合并二期落）：quotaBeat 拍在呈现点由包的 quotaRule 按已定版事实发放归属（E4），题面/回声随归属换文
+      if (act.quotaBeat) {
+        const pk = packFor(S.era);
+        if (pk && typeof pk.quotaRule === "function" && factOf(S, "quotaHolder") === "absent") {
+          const holder = pk.quotaRule(pk.collectQuotaFacts(S));
+          if (holder) {
+            setFact(S, "quotaHolder", holder);
+            S.flags.quota_decided65 = true;
+            const key = holder === "sibling" ? (S.flags.sibAway65 ? "siblingAway" : "siblingBack")
+              : holder === "mine" ? (S.flags.sibMarried65 ? "mineMarried" : "mine") : holder;
+            if (act.textByQuota && (act.textByQuota[key] || act.textByQuota[holder])) P.curText = act.textByQuota[key] || act.textByQuota[holder];
+            P.quotaEchoKey = key;
+          }
+        }
+      }
+      // 池幕段呈现覆盖（WP3 补丁 3b，合并二期落）：poolEntry 幕按呈现岁所在段换 stageText/stageChoices/stageEcho，poolSetByStage 旗在此立
+      if (act.poolEntry) {
+        const st = segOf(act.age);
+        P.poolEcho = null;
+        const pv = act.variants ? variantOf(S, act) : null;
+        if (pv && pv.stageText && pv.stageText[st]) P.curText = pv.stageText[st];
+        else if (act.stageText && act.stageText[st]) P.curText = act.stageText[st];
+        if (act.stageChoices && act.stageChoices[st]) P.curChoices = act.stageChoices[st].map((c) => Object.assign({}, c));
+        if (act.stageEcho && act.stageEcho[st]) P.poolEcho = act.stageEcho[st];
+        // fix3（opt-in）：池伪条目带 textBySchooling/choicesBySchooling/echoBySchooling 时按呈现时 schooling 换文
+        // （池调度在开局定版、读不到 14 岁才落定的 left；带考试 framing 的段变体靠此在退学后收口）。未声明者行为不变。
+        const schNow = S.state && S.state.schooling;
+        if (schNow && act.textBySchooling && act.textBySchooling[schNow]) P.curText = act.textBySchooling[schNow];
+        if (schNow && act.choicesBySchooling && act.choicesBySchooling[schNow]) P.curChoices = act.choicesBySchooling[schNow].map((c) => Object.assign({}, c));
+        if (schNow && act.echoBySchooling && act.echoBySchooling[schNow]) P.poolEcho = act.echoBySchooling[schNow];
+        const psf = act.poolSetByStage && act.poolSetByStage[st];
+        if (psf) S.flags[psf] = true;
+      }
+      // v0.23 WP1（E3/E4）：选项门统一在此过一遍（无门字段的幕 gateChoices 原样返回，消费点不变）；
+      // familyBeat 幕级家庭事实旗在呈现即立（与 act.set 同拍口径），回声字段随 view 带出供呈现/结算读。
+      if (P.curChoices) P.curChoices = gateChoices(S, P.curChoices);
+      // fix3（opt-in）：池伪条目带 factBySchooling 时家庭事实按呈现时 schooling 取值（键存在且为 null＝不立旗，
+      // 如退学者不再立 migrantExam）；未声明的幕仍按 act.familyFact 原样立旗。
+      let effFamFact = act.familyFact;
+      if (act.factBySchooling && S.state && Object.prototype.hasOwnProperty.call(act.factBySchooling, S.state.schooling)) effFamFact = act.factBySchooling[S.state.schooling] || null;
+      if (act.familyBeat && effFamFact) S.flags[effFamFact] = true;
+      if (act.poolExtraFact) S.flags[act.poolExtraFact] = true; // WP7（合并二期落）：池变体附加事实旗（临考转学）在呈现即立
     }
-    return { id: act.id, age: act.age, stage: stageFor(act.age), title: act.title || null, text: P.curText, choices: P.curChoices, pendingState: P.pendingState, isFork: act.id === "pr_fork16" };
+    return { id: act.id, age: act.age, stage: stageFor(act.age), title: act.title || null, text: P.curText, choices: P.curChoices, pendingState: P.pendingState, isFork: act.id === "pr_fork16",
+      gateNote: gateNoteOf(S, act), familyBeat: !!act.familyBeat, echo: act.familyBeat ? ((act.poolEntry && P.poolEcho) || (act.echoByQuota && (act.echoByQuota[P.quotaEchoKey] || act.echoByQuota[factOf(S, "quotaHolder")])) || act.echo || null) : null };
   }
 
   // 记账并推进：调用方须先按现行顺序应用所选项的 effects / set（旗）/ setState，再调用本函数。
   // 本函数负责：性子/念头/轨道基线（温度与节奏型）记账、幕次推进、间隔平年落账。返回 { done, gapFx }（gapFx 待调用方 applyEffects）。
   function choose(S, i) {
     const P = S.prologue;
-    if (!P.seq) P.seq = ACTS;
+    if (!P.seq) P.seq = rebuildSeq(S, packFor(S.era)); // 同 present 的旧档处置（证据包②）
     const act = P.seq[P.idx];
     const ch = (P.curChoices || [])[i] || null;
     if (ch) {
       if (ch.card) P.temperPick = ch.card;
       if (ch.itch) P.itch = ch.itch;
+      // v0.23 WP1（E4/E11）：选项级枚举事实与家庭事实旗的落点——setFact 写 S.facts、familyFact 立旗。
+      // familyBeat 的小应对永远不许写 quotaHolder（归属只能由 L65-家发放规则函数写）：在此拦截，
+      // 与 validate-state 的专门断言构成双保险；其余拍型的 setFact 照常落。
+      if (ch.setFact) for (const [name, value] of Object.entries(ch.setFact)) {
+        if (act.familyBeat && name === "quotaHolder") { if (typeof console !== "undefined" && console.warn) console.warn("familyBeat 选项试图写 quotaHolder，已拦截（E4）"); continue; }
+        setFact(S, name, value);
+      }
+      if (ch.familyFact) S.flags[ch.familyFact] = true;
+      // 选项 set 指向已登记记号时同步落记号（WP2，合并二期落）：池幕选项的 mark_* 记号在此补落（旗由调用方照常落）
+      if (ch.set) {
+        const allMarks = Object.assign({}, MARKS);
+        const PK = window.GAME_PROLOGUE_PACKS || {};
+        for (const k of Object.keys(PK)) Object.assign(allMarks, PK[k].marks || {});
+        if (allMarks[ch.set] && !S.marks.some((m) => m.id === ch.set)) S.marks.push(markEntryWithShadow(ch.set, act.age, (act.mark === ch.set) ? act : null)); // WP9 A线：同 present 落点口径，影子句随条目落账（act.markShadow 只认本幕自带记号那一份）
+      }
       if (ch.setState && ch.setState.track) {
         const prof = rhythmProfiles();
         const tp = prof && prof.track[ch.setState.track];
@@ -325,14 +856,23 @@
     }
     P.idx += 1;
     P.presented = -1; P.pendingState = null; P.curText = null; P.curChoices = null;
+    // 延迟拍补入（WP8 §2.3，合并二期落）：16 岁分岔落定后，whenFact/whenState 已满足且未入序的拍按年龄插入幕序
+    if (act.id === "pr_fork16") {
+      const pk = packFor(S.era);
+      // fix2：延迟补入面扩到本处境的 sitActs（与 acts 同口径）；无带 when* 的处境幕的包结果不变。
+      const deferred = (pk.acts || []).concat((pk.sitActs && pk.sitActs[P.situation]) || []).filter((a) => (a.whenFact || a.whenState) && !P.seq.some((x) => x.id === a.id) && whenDeferredOk(S, a));
+      if (deferred.length) P.seq = P.seq.concat(deferred).slice().sort((x, y) => x.age - y.age);
+    }
     const nextAge = P.idx < P.seq.length ? P.seq[P.idx].age : 22;
     const gapFx = {};
     const RH = window.GAME_RHYTHM;
     const flatMute = RH && typeof S.temp === "number" ? RH.derive(S.temp, S.rhythm).volatility < 0.95 : false;
     for (let a = act.age + 1; a < nextAge; a++) {
-      const f = FLATS_BY_AGE[a];
+      const f = packFor(S.era).flatsByAge[a];
       if (!f) continue;
-      S.log.push(`${a} 岁 · ${f.text}`);
+      // fix2（opt-in）：平年文可带 textBySchooling 按当前 schooling 整段换文（未声明的平年行为不变）。
+      const fText = (f.textBySchooling && S.state && f.textBySchooling[S.state.schooling]) || f.text;
+      S.log.push(`${a} 岁 · ${fText}`);
       if (!flatMute) for (const [k, v] of Object.entries(f.effects || {})) gapFx[k] = (gapFx[k] || 0) + v;
     }
     S.age = nextAge;
@@ -341,6 +881,21 @@
     return { done: P.done, gapFx };
   }
 
-  function hasPack(era) { return era === "c2000" || !!(window.GAME_PROLOGUE_PACKS && window.GAME_PROLOGUE_PACKS[era]); } // v0.23 WP1 shim（S1 先行，全量机制随 S2 整文件入）
-  window.GAME_PROLOGUE = { acts: ACTS.concat(SIT_ACTS.half, SIT_ACTS.never), sitActs: SIT_ACTS, marks: MARKS, flatsByAge: FLATS_BY_AGE, situationW: SITUATION_W, start, present, choose, stageFor, prng, hasPack };
+  const PRO_API = { sitActs: SIT_ACTS, flatsByAge: FLATS_BY_AGE, situationW: SITUATION_W, start, present, choose, stageFor, prng, packFor, hasPack,
+    factOf, setFact, rollExamBand, gateNoteSample: GATE_NOTE_SAMPLE,
+    wp5BeatFor, rebuildSeq, migrantFamilies: MIGRANT_FAMILIES, careFamilies: CARE_FAMILIES }; // v0.23 WP5：验收脚本读口（选拍与 seq 重建）
+  // acts / marks 惰性合并全年代包：校验与影子瞥视按 id 查全集（id 跨代唯一，集成时核过）；无包文件被加载的环境（单文件校验沙箱）自动退回 c2000 集。
+  Object.defineProperty(PRO_API, "acts", { enumerable: true, get() {
+    let out = ACTS.concat(SIT_ACTS.half, SIT_ACTS.never);
+    const P = window.GAME_PROLOGUE_PACKS || {};
+    for (const k of Object.keys(P)) { const pk = P[k]; out = out.concat(pk.acts || [], (pk.sitActs && pk.sitActs.half) || [], (pk.sitActs && pk.sitActs.never) || []); }
+    return out;
+  } });
+  Object.defineProperty(PRO_API, "marks", { enumerable: true, get() {
+    const out = Object.assign({}, MARKS);
+    const P = window.GAME_PROLOGUE_PACKS || {};
+    for (const k of Object.keys(P)) Object.assign(out, P[k].marks || {});
+    return out;
+  } });
+  window.GAME_PROLOGUE = PRO_API;
 })();
