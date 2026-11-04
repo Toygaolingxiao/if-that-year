@@ -758,12 +758,15 @@
       return { final: fin, spans };
     })() : IFY.residenceTrail();
     const slots = [];
+    // 落脚槽住房分文（v0.23 WP9，E7）：只许在无更强信号的缺省支按住房事实旗分文——final=home 的熟门熟路支
+    // 与 final=city 的缺省支（else）；在外多年回老家、异国、出乡落脚三支是强信号支，不读旗。优先级从钱槽
+    // 口径：boughtReform ＞ unitHousing（bought_house 不入落脚槽：供房的落脚形状由钱槽与标签行承载）。
     let s1;
     if (trail.final === "home" && trail.spans.city + trail.spans.abroad >= 5) s1 = `在外头住了${trail.spans.city + trail.spans.abroad}年，最后还是回了老家落脚。`;
     else if (trail.final === "abroad") s1 = `最后落脚在异国，在那边住了${trail.spans.abroad}年。`;
     else if (trail.final === "city" && IFY.S.route && IFY.S.route.id === "home") s1 = `后来出了家乡，在外头落了脚，一住${trail.spans.city}年。`;
-    else if (trail.final === "home") s1 = "最后落脚在老家这边，住的还是熟门熟路的地方。";
-    else s1 = "最后落脚在住惯了的这座城。";
+    else if (trail.final === "home") s1 = F.boughtReform ? "最后落脚在老家这边，住的还是房改那会儿买下的那套房。" : F.unitHousing ? "最后落脚在老家这边，住的还是单位分的那套房。" : "最后落脚在老家这边，住的还是熟门熟路的地方。";
+    else s1 = F.boughtReform ? "最后落脚在住惯了的这座城，住的还是房改那会儿买下的那套房。" : F.unitHousing ? "最后落脚在住惯了的这座城，住的还是单位分的那套房。" : "最后落脚在住惯了的这座城。";
     slots.push(["落脚", s1]);
     let s2;
     if (ST.spouse === "partnered") s2 = "另一半陪着走到了最后。吵过，也和好过，饭还是一起吃。";
@@ -780,7 +783,12 @@
     slots.push(["陪伴", s2]);
     const m = IFY.S.stats.money;
     let s3;
+    // 钱槽住房读法（v0.23 WP9，E7）：优先级写死为 bought_house ＞ boughtReform ＞ unitHousing。
+    // boughtReform 支按 money 两段，镜像 bought_house 支的形状（≥60 留余钱 / <60 钱填进房里）；
+    // unitHousing 支只在两 bought 旗皆无时走：住单位分的房、没在房子上掏大钱，余下按 money 四段分说。
     if (F.bought_house) s3 = m >= 60 ? "房子供下来了，手里还留着余钱，够花。" : "供下了一套房，钱多半填进了房子里，日子紧巴巴地过。";
+    else if (F.boughtReform) s3 = m >= 60 ? "房改那会儿把住着的单位房买下来了，手里还留着余钱，够花。" : "房改时把住着的单位房买了下来，钱多半填进了这套房里，日子紧巴巴地过。";
+    else if (F.unitHousing) s3 = m >= 70 ? "住的是单位分的房，没在房子上掏过大钱，手里的钱攒下了，够用，还有富余。" : m >= 40 ? "住的是单位分的房，没在房子上掏过大钱。钱不多不少，够日常开销。" : m >= 20 ? "住的是单位分的房，没在房子上掏过大钱，可手头还是紧，钱这事操心了一辈子。" : "住的是单位分的房，没在房子上掏过大钱，到最后也没攒下什么。好在饭还吃得上，觉还睡得着。";
     else if (m >= 70) s3 = "没买房，手里的钱倒是攒下了，够用，还有富余。";
     else if (m >= 40) s3 = "钱不多不少，够日常开销。遇上大事帮不上，小日子能过。";
     else if (m >= 20) s3 = "手头一直紧。钱这事，操心了一辈子。";
@@ -831,6 +839,19 @@
     else if (dadD) s6 = "爸先走了，妈还在。逢年过节，先给妈打电话。";
     else if (momD) s6 = "妈先走了，爸还在。老两口剩一个，屋里空了一半。";
     else s6 = "到这一生走完，爸妈都还健在。这样的情形，不多。";
+    // 父母线供料（v0.23 WP9）：家庭事实旗（GAME_REGISTRY.familyFacts）中父母线五旗按下方优先表至多取一条，
+    // 追加在终局句之后。句子只写小时候/那几年的人生过程（那时家里的事），不写终局断言，与 dad/mom 终局不冲突。
+    // 读法与本槽照护三旗同口径：交换局按段视图见证判（view.flagWitnessed），未交换局读本局旗。
+    const PARENT_LINE_FACTS = [
+      ["famRestructure95", "爸妈后来分开了。这事你小时候就知道了，日子还是照着过。"],
+      ["famSplit55", "小时候你爸去外地支援新厂，家里分两处住过一阵。"],
+      ["originLB", "小时候爸妈在外头挣钱，你跟着老人住，过年才齐人。"],
+      ["famLaidOff85", "爸妈下过岗，家里紧过一阵，先紧的是你们小的。"],
+      ["famTight78", "爸妈那几年为钱折腾过，家里的钱紧过一阵。"],
+    ];
+    for (const [factFlag, factLine] of PARENT_LINE_FACTS) {
+      if (view ? view.flagWitnessed(factFlag) : !!F[factFlag]) { s6 += factLine; break; }
+    }
     slots.push(["父母", s6]);
     let s7;
     // 没办完的事（v0.22 WP7）：交换局 covenant 跨段查（任一段的约与其结账旗按见证口径）、late_tried 同理，
@@ -842,7 +863,7 @@
     else if (!view && IFY.S.covenant && IFY.S.covenant.kind === "wait" && ST.kids === "undecided") s7 = "38 岁挂起的那份账，到最后也没正式对完。";
     else if (!view && F.late_tried && !F.late_parent) s7 = "想要孩子那几年，试过，也跑过医院，最后没等来。这事放下了，就是偶尔还想起。";
     else if ((IFY.playerMeta().glimpsesSkipped || 0) >= 2 && !(IFY.playerMeta().glimpsesSeen > 0)) s7 = "另一条路有几回摆在眼前，你都没去细看。不知道的，就让它不知道下去。"; // v0.21 WP1：瞥视计数改读 session.meta（蓝图 3.1）；v0.22.1 F8：看过至少一次的人不许判「都没去细看」，计数口径与文案对齐（审计 run-13）
-    else if (F.renting && !F.bought_house) s7 = "买房的事提过几回，最后没办成，一直租着住。";
+    else if (F.renting && !F.bought_house && !F.boughtReform && !F.unitHousing) s7 = "买房的事提过几回，最后没办成，一直租着住。"; // WP9 盲审修复：与钱槽住房优先级同口径——任一自有住房旗（买房/房改/单位分房）在场即不出租房句，免同局自相矛盾
     else s7 = "没什么悬着的大事。该办的办了，办不了的，也放下了。";
     slots.push(["没办完的事", s7]);
     // 第八槽（v0.22 WP7 交换局真账化；v0.22.1 F7 扩到未交换局）：只要本局有不受控 Track

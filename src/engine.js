@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.23.7 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.23.8 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -446,7 +446,7 @@ window.IFY = window.IFY || {};
         ${sLine ? `<p class="hint">${sLine}</p>` : ""}
         ${lLine ? `<p class="hint">${lLine}</p>` : ""}
         <p class="hint">不填随机。填了，运气定下来，跟朋友比同一局就用它。${seedParam ? `<br>你打开的链接带着种子「${esc(seedParam)}」${eraParam ? "，年代也按对方那局选好了" : ""}${cardsParam ? "，出身牌也按对方选过的对齐了" : ""}，点下面开始这一生，就是同一局。` : ""}</p>
-        <p class="hint ver">v0.23.7</p>
+        <p class="hint ver">v0.23.8</p>
       </section>`;
     let startLock = false; // §6.1 防连点：双击不能在同一帧触发两次开局（统一挂在 #startgo 上）
     el("liveslink").addEventListener("click", () => { ANA.track("lives_view", {}); IFY.renderLives(); });
