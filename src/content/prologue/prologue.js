@@ -380,8 +380,30 @@
     if (Array.isArray(pack.pool)) {
       const PLAIN = { pr_child1: 1, pr_child2: 1, pr_teen1: 1 };
       let inserts = 0;
+      // §3.6 排程优先序（WP10 对账，蓝图 L340 下限优先规则扩及轴上必达；地基复核残项 N-01）：
+      // 保底（guaranteeAge）＞ 轴上必达（条目数据声明 axisMust）＞ 常规。总数 ≤2 不变：必达项
+      // 触发且已满员时，顶替已落位中优先级更低的最后一幕（替换形连被换出的平年幕一并还原，
+      // 插入/排序形直接摘除，poolSeen 同步摘除）；无可顶替者（已落位皆同级或更高）时必达项让位。
+      // 常规条目满员即跳过（不掷骰，同旧 break 口径）；必达条目满员仍掷骰定触发——现行数据下
+      // 唯一 axisMust 条目 pool_laidoff85 的处理序位之前至多落位 1 幕，此路不触发、随机流零漂移。
+      const rankOf = (e) => (e.guaranteeAge != null ? 2 : (e.axisMust ? 1 : 0));
+      const placedList = [];
+      const ensureRoom = (rank) => {
+        if (placed < 2) return true;
+        if (rank === 0) return false;
+        for (let i = placedList.length - 1; i >= 0; i--) {
+          const v = placedList[i];
+          if (v.rank >= rank) continue;
+          const idx = P.seq.findIndex((x) => x.poolEntry === v.id);
+          if (idx >= 0) { if (v.via === "replace" && v.plain) P.seq.splice(idx, 1, v.plain); else P.seq.splice(idx, 1); }
+          const ps = P.poolSeen.indexOf(v.id); if (ps >= 0) P.poolSeen.splice(ps, 1);
+          placedList.splice(i, 1); placed--;
+          return true;
+        }
+        return false;
+      };
       for (const e of pack.pool) {
-        if (placed >= 2) break;
+        if (placed >= 2 && rankOf(e) === 0) continue;
         if (e.act) { // WP3 形：act 模板＋保底＋替换/插入落位
           let trig = null;
           for (let a = e.window[0]; a <= e.window[1]; a++) { if (prng(S) < e.weight) { trig = a; break; } }
@@ -393,17 +415,19 @@
           }
           const pseudo = Object.assign({}, e.act, { id: e.id, age: trig, poolEntry: e.id });
           const plainIdx = P.seq.findIndex((x) => x.age === trig && PLAIN[x.id]);
-          if (plainIdx >= 0) { P.seq.splice(plainIdx, 1, pseudo); P.poolSeen.push(e.id); placed++; continue; }
+          if (plainIdx >= 0 && ensureRoom(rankOf(e))) { const removed = P.seq[plainIdx]; P.seq.splice(plainIdx, 1, pseudo); P.poolSeen.push(e.id); placed++; placedList.push({ id: e.id, rank: rankOf(e), via: "replace", plain: removed }); continue; }
           if (inserts < 1 || e.guaranteeAge) {
-            inserts++;
-            let pos = P.seq.findIndex((x) => x.age >= trig && x.id !== "pr_origin");
-            if (pos < 0) pos = P.seq.length;
-            P.seq.splice(pos, 0, pseudo); P.poolSeen.push(e.id); placed++; continue;
+            if (ensureRoom(rankOf(e))) {
+              inserts++;
+              let pos = P.seq.findIndex((x) => x.age >= trig && x.id !== "pr_origin");
+              if (pos < 0) pos = P.seq.length;
+              P.seq.splice(pos, 0, pseudo); P.poolSeen.push(e.id); placed++; placedList.push({ id: e.id, rank: rankOf(e), via: "insert" }); continue;
+            }
           }
           let donePlace = false;
           for (let a = trig + 1; a <= e.window[1]; a++) {
             const j = P.seq.findIndex((x) => x.age === a && PLAIN[x.id]);
-            if (j >= 0) { pseudo.age = a; P.seq.splice(j, 1, pseudo); P.poolSeen.push(e.id); placed++; donePlace = true; break; }
+            if (j >= 0) { if (!ensureRoom(rankOf(e))) break; pseudo.age = a; const removed = P.seq[j]; P.seq.splice(j, 1, pseudo); P.poolSeen.push(e.id); placed++; placedList.push({ id: e.id, rank: rankOf(e), via: "replace", plain: removed }); donePlace = true; break; }
           }
           if (!donePlace) continue;
         } else { // WP7 形：eligible 处境门＋逐年掷 weightPerYear（公历门外年份不掷）＋年龄段变体
@@ -431,7 +455,9 @@
             // v0.23 WP9 A线：池记号影子句随伪条目带到呈现点（此前只转发记号 id、影子文本在调度点丢弃，池记号瞥视不可达）——present 落记号时按条目存进 S.marks 条目，瞥视轮换消费读条目自带文本（见 shadow.js glimpseMarkLineNext）。
             if (va.markGrant.shadow != null) pseudo.markShadow = va.markGrant.shadow;
             if (va.markGrant.shadowBySchooling != null) pseudo.markShadowBySchooling = va.markGrant.shadowBySchooling; }
+          if (!ensureRoom(rankOf(e))) continue;
           pushAgeSorted(pseudo);
+          placedList.push({ id: e.id, rank: rankOf(e), via: "sorted" });
         }
       }
     }

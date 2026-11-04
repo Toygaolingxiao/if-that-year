@@ -56,12 +56,25 @@
     return v != null ? v : fallback;
   }
 
+  // 未决态变体（X-1）：echoFlag/textFlag 形状 { 旗名: 文本 }——考试链结果未落定（录取未到）时，
+  // fork25 的入职回声与 fork28m 的县里题面按考试旗改口径。优先级序固定 exam_passed > exam_shortlist >
+  // exam_retry（写死在此，不读对象键序）；位置在无单位变体之后、年代变体之前；已录取（exam_landed）
+  // 或落榜（exam_failed）立旗后整层关闭——此时原口径的预设事实已经成立，恢复原文。
+  const FLAG_VARIANT_ORDER = ["exam_passed", "exam_shortlist", "exam_retry"];
+  function flagVariant(map, fallback) {
+    if (!map) return fallback;
+    const F = (IFY.S && IFY.S.flags) || {};
+    if (F.exam_landed || F.exam_failed) return fallback;
+    for (const f of FLAG_VARIANT_ORDER) { const v = map[f]; if (v != null && F[f]) return v; }
+    return fallback;
+  }
+
   function echoText(c) {
     // 无当前单位变体（v0.20.1 W7 补 W2 遗留）：选项声明 echoNoUnit 且本局无当前单位事实
     // （work.js noCurrentUnit：买断离厂后无新入行/返聘事实）时优先于形态/状态变体——
     // fork58 选「退」的回响靠它（分岔没有进程拍的 applyRetireVariant 通道）。
     if (c && c.echoNoUnit && typeof IFY.noCurrentUnit === "function" && IFY.noCurrentUnit()) return c.echoNoUnit;
-    return eraVariant(c && c.echoEra, formVariant(c && c.echoForm, stateVariant(c && c.echoState, (c && c.echo) || "")));
+    return flagVariant(c && c.echoFlag, eraVariant(c && c.echoEra, formVariant(c && c.echoForm, stateVariant(c && c.echoState, (c && c.echo) || ""))));
   }
 
   // 选项标签形态变体（v0.20.0 M2 收尾）：labelForm 形状同 echoForm——先按 spouse 变体取标签，
@@ -90,7 +103,7 @@
     // 例外：条目带 textAgain 且本局已全退过时，再退变体优先（与 applyRetireVariant 同序）。
     if (item && item.textNoUnit && typeof IFY.noCurrentUnit === "function" && IFY.noCurrentUnit()
         && !(item.textAgain && typeof IFY.hasRetiredBefore === "function" && IFY.hasRetiredBefore())) return retireYearsText(item, item.textNoUnit);
-    return retireYearsText(item, eraVariant(item && item.textEra, formVariant(item && item.textForm, stateVariant(item && item.textState, (item && item.text) || ""))));
+    return retireYearsText(item, flagVariant(item && item.textFlag, eraVariant(item && item.textEra, formVariant(item && item.textForm, stateVariant(item && item.textState, (item && item.text) || "")))));
   }
 
   // WP2（补丁稿 wp2-scheduler-year-patch，合并二期落）: textFact 枚举事实文本变体 { 事实名: { 值: 文本 } };

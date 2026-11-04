@@ -89,7 +89,7 @@
     if (e.flagAgeWithin && (IFY.S.flagAges == null || IFY.S.flagAges[e.flagAgeWithin.flag] == null || IFY.S.age - IFY.S.flagAges[e.flagAgeWithin.flag] > e.flagAgeWithin.years)) return false; // v0.19.0 三相：旗标落点时间窗门（通用形状 {flag, years}，读 flagAges 底子；挡身后手续隔多年重办类复发）
     if (e.rehireAfterRetire && !(typeof IFY.hasRehireAfterRetire === "function" && IFY.hasRehireAfterRetire())) return false; // v0.20.1 W7：返聘后复退门（条目级布尔）——账本里首次全退流转之后真有过 retired→part 返聘边才可抽（work.js hasRehireAfterRetire，读账本不读旧旗）
     if (e.route && e.route !== IFY.S.route.id) return false;
-    if (e.routeIn && !e.routeIn.includes(IFY.S.route.id)) return false;
+    if (e.routeIn && !e.routeIn.includes(IFY.S.route.id) && !(IFY.S.route.id == null && e.routeIn.includes("home") && IFY.S.state && IFY.S.state.track === "home")) return false;
     if (e.forbidRoute && e.forbidRoute === IFY.S.route.id) return false;
     if (e.requiresFactHard && !factAnyOk(e.requiresFactHard)) return false; // WP2（补丁稿 wp2-scheduler-year-patch，合并二期落）: 枚举事实硬门
     if (e.era && IFY.S.era !== e.era) return false;

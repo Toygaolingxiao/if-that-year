@@ -357,6 +357,12 @@ window.GAME_REGISTRY.milestones = {
    ],
    "note": "考试线面试通过（v0.20.1 W6 新旗）：p16_005 面试拍的通过选项立旗，录取拍 p16_071 以 require+chain 承接"
   },
+  "exam_admitted": {
+   "setters": [
+    "p16_071"
+   ],
+   "note": "录取落点（X-1 新旗）：p16_071 呈现即立；p16_072 以此为 require，报到不得先于录取；exam_passed 仍为面试通过旗、语义不变"
+  },
   "exam_failed": {
    "setters": [
     "p16_007"

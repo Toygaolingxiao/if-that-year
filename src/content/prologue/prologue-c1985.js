@@ -237,7 +237,10 @@
       // L85-岗 入池（换算表：窗 11–15、无保底、下岗形加公历门）。公历门 calendarWindow=[1995,2002]（下岗潮，§八）：
       // 本代年龄窗 11–15 换算公历 1996–2000，整段落在公历窗内——门照章声明，本代口径下不咬合（咬合与否逐代不同，
       // 断言口径是「窗外零触发」）。eligible＝非留守局（父母已外出打工的家里没有本地厂可下岗，叙事互斥，沿原 whenNotLeftBehind）。
-      { id: "pool_laidoff85", kind: "pool", log: "厂里发不出工资了", familyBeat: true, familyFact: "famLaidOff85",
+      // axisMust（§3.6 轴上必达，WP10 对账登记）：下岗是本代的轴事件，调度优先序里位于保底之下、常规之上
+      // （prologue.js poolSchedule 的 rankOf/ensureRoom）；与留守互斥且处理序位在搬家之前，现行数据下满员
+      // 碰撞不可达——字段先行登记，规则先行生效，碰撞以构造局验收（N-01 残项销账）。
+      { id: "pool_laidoff85", kind: "pool", log: "厂里发不出工资了", familyBeat: true, familyFact: "famLaidOff85", axisMust: true,
         window: [11, 15], weightPerYear: 0.13, eligible: "notLeftBehind", calendarWindow: [1995, 2002],
         variants: [
           { band: [11, 13], log: "厂里发不出工资了",

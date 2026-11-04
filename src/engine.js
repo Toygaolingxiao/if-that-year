@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.24.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.24.1 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -156,11 +156,23 @@ window.IFY = window.IFY || {};
   // 旧版（v0.15/v0.16）存档恒有 route，走原判活路径；坏档仍按 null 处理。
   // v0.21 WP1（蓝图 3.3）：v2 形状（有 tracks）按受控 Track 条目判活；旧平铺形状照旧。
   // v0.24.0（首页重做）：无序章开局先落 22 岁汇入拍，未选路的存档凭 mergePending 标记判活（路线落定即清标记）。
+  // X-1 旧档回填：考试链 p16_071 已落而 exam_admitted 未立（旧版无此旗）的存档，读入时按账本补立——
+  // 否则 p16_072 的 require 永远凑不齐、链尾断档。幂等、只补不删；年龄取账本 071 条目年龄，缺条目取当前年龄。
+  function backfillAdmitted(t) {
+    if (!t || t.route == null || !t.flags || t.flags.exam_admitted) return;
+    if (!t.flags.exam_passed || !(t.usedEvents || {}).p16_071) return;
+    t.flags.exam_admitted = true;
+    let age = null;
+    for (const e of t.ledger || []) if (e && e.id === "p16_071") { age = e.age; break; }
+    if (t.flagAges) t.flagAges.exam_admitted = age != null ? age : (t.age != null ? t.age : (t.state && t.state.age != null ? t.state.age : 23));
+  }
+
   function loadSave() {
     try {
       const s = JSON.parse(localStorage.getItem(SAVE_KEY));
       if (!s) return null;
-      if (s.tracks) { const a = s.tracks[s.controlTrack || "A"] || s.tracks.A; return a && (a.route || a.mergePending || (a.phase === "prologue" && a.prologue)) ? s : null; }
+      if (s.tracks) { for (const k of Object.keys(s.tracks)) backfillAdmitted(s.tracks[k]); const a = s.tracks[s.controlTrack || "A"] || s.tracks.A; return a && (a.route || a.mergePending || (a.phase === "prologue" && a.prologue)) ? s : null; }
+      backfillAdmitted(s);
       return (s.route || s.mergePending || (s.phase === "prologue" && s.prologue)) ? s : null;
     } catch (e) { return null; }
   }
