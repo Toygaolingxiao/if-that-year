@@ -58,7 +58,7 @@
     x.strokeStyle = "#DDD6C9"; x.lineWidth = 3; x.strokeRect(36, 36, W - 72, H - 72);
     x.textAlign = "left";
     x.fillStyle = "#2F4A3C"; x.font = "34px " + IFY.SERIF;
-    x.fillText("如果那年 · 另一条路", 90, 130);
+    x.fillText("人生RESTART：如果那年", 90, 130);
     x.fillStyle = "#8A948C"; x.font = "28px monospace"; x.textAlign = "right";
     x.fillText("种子 " + IFY.S.seedStr, W - 90, 130); x.textAlign = "left";
   }
