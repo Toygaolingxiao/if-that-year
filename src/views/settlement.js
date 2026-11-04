@@ -652,7 +652,7 @@
     const B = uncontrolledState();
     if (!B || !B.route) return "";
     fastForwardUncontrolled();
-    return B.death ? `另一条路（${B.route.name}）走到了 ${B.death.age} 岁` : `另一条路（${B.route.name}）活到了 80 岁`;
+    return B.death ? `另一条路（${B.route.name}）走到了 ${B.death.age} 岁` : `另一条路（${B.route.name}）活到了 ${IFY.MAX_AGE || 80} 岁`;
   }
 
   // 第八槽终局一句：早夭（<60 岁）用 glimpseSkeleton 全生骨架压缩成一句（去掉与槽头重复的路线句），不缩水成光杆终局。
@@ -663,7 +663,7 @@
       if (parts.length) return `另一条路（${routeName}）在 ${B.death.age} 岁走完了：${parts.join("，")}。`;
     }
     if (B.death) return `另一条路（${routeName}）走到了 ${B.death.age} 岁，在那一年走完了。`;
-    return `另一条路（${routeName}）活到了 80 岁。`;
+    return `另一条路（${routeName}）活到了 ${IFY.MAX_AGE || 80} 岁。`;
   }
 
   // 第八槽揭价一句（硬线）：揭价对象只能从 meta.shownFacts 里 type:"material" 的素材选，且必须能在它
@@ -817,6 +817,15 @@
     else if (g >= 30) s4 = "活儿干得不算出色，胜在没出过大错。一天一天，也就过来了。";
     else s4 = "没在活儿上争过什么高低。日子过得平，活儿也干得平。";
     slots.push(["手艺事业", s4]);
+    // 自检补修：子女槽「长成了大人」须有年龄算术支撑——子女在终局（死亡岁数，未死按 80）时须已满 18；
+    // 还没长成的只说还在长。落点锚与子孙满堂同源（kidsBornAt ?? kidsAt），读不到锚按没长成处理（只少说不多说）。
+    const kidGrownAtEnd = () => {
+      const bornAt = typeof IFY.S.kidsBornAt === "number" ? IFY.S.kidsBornAt : (typeof IFY.S.kidsAt === "number" ? IFY.S.kidsAt : null);
+      if (bornAt == null) return false;
+      const endAge = IFY.S.death && typeof IFY.S.death.age === "number" ? IFY.S.death.age : (IFY.MAX_AGE || 80);
+      return endAge - bornAt >= 18;
+    };
+    const kidPresenceSentence = () => kidPresenceCount() < 1 ? "孩子的事落定之后，日子还是照常往下过。逢年过节，电话里多说几句。" : (kidGrownAtEnd() ? "孩子在跟前长大，一年一年，也长成了大人。" : "孩子还在跟前长着，一年一年，个头往上蹿。");
     let s5;
     if (view) {
       // 子女槽段版（v0.22 WP7）：任一段有子（段内 kids>has 流转，或末段终局 kids=has）都算玩家的子女线；
@@ -833,14 +842,14 @@
       if (hasIdx.length >= 2) s5 = kidSent(hasIdx[0], 0) + kidSent(hasIdx[1], 1);
       else if (hasIdx.length === 1 && hasIdx[0] === lastIdx) {
         if (view.flagWitnessed("late_parent")) s5 = "孩子来得晚。别人抱孙辈的年纪，你还在给孩子开家长会。";
-        else s5 = view.flagWitnessed("kid_abroad") ? "孩子大了，去了远方。逢年过节，电话那头热闹。" : kidPresenceCount() >= 1 ? "孩子在跟前长大，一年一年，也长成了大人。" : "孩子的事落定之后，日子还是照常往下过。逢年过节，电话里多说几句。";
+        else s5 = view.flagWitnessed("kid_abroad") ? "孩子大了，去了远方。逢年过节，电话那头热闹。" : kidPresenceSentence();
       }
       else if (hasIdx.length === 1) s5 = kidSent(hasIdx[0], 0);
       else if (view.domainEnd("kids") === "none") { const covK = view.covenant(); s5 = covK && covK.kind === "none" ? "孩子的事，38 岁那年就定下了：不要。后来照着这个安排过。" : "这一生没要孩子。屋里清静，日子是另一种过法。"; }
       else s5 = "孩子的事一直没正式定下来。拖着拖着，就到了这岁数。";
     }
     else if (F.late_parent) s5 = "孩子来得晚。别人抱孙辈的年纪，你还在给孩子开家长会。";
-    else if (ST.kids === "has") s5 = F.kid_abroad ? "孩子大了，去了远方。逢年过节，电话那头热闹。" : kidPresenceCount() >= 1 ? "孩子在跟前长大，一年一年，也长成了大人。" : "孩子的事落定之后，日子还是照常往下过。逢年过节，电话里多说几句。";
+    else if (ST.kids === "has") s5 = F.kid_abroad ? "孩子大了，去了远方。逢年过节，电话那头热闹。" : kidPresenceSentence();
     else if (ST.kids === "none") s5 = IFY.S.covenant && IFY.S.covenant.kind === "none" ? "孩子的事，38 岁那年就定下了：不要。后来照着这个安排过。" : "这一生没要孩子。屋里清静，日子是另一种过法。";
     else s5 = "孩子的事一直没正式定下来。拖着拖着，就到了这岁数。";
     slots.push(["子女", s5]);

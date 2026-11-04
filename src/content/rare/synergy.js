@@ -116,7 +116,7 @@ window.GAME_SYNERGY = {
       text: "退休金、存款、说走就走的身体，你都凑齐了。护照上的章一个挨一个，冰箱上贴满了各地的磁铁。有人问你还差哪没去，你说：不差了，剩下的时间，慢慢走回程。" },
     { id: "end_standard", clue: "看到那份文件，总在心里默默改错别字的人。", tier: "epic", all: ["stay_put"], any: ["factory_work", "fab_work", "traj_craft"], stats: [{ k: "growth", gt: 94 }], title: "定标准的人", evidence: [["stay_put"],[{"stat":{"k":"growth","gt":94}}]],
       text: "行业里那份用了很多年的标准，起草人名单里有你。年轻人入行学的第一课，写的就是你定的规矩。你没跟人提过这事，只是每次看到那份文件，都把错别字在心里默默改一遍。" },
-    { id: "end_localfounder", clue: "招工启事贴出去，来应聘的有小学同学孩子的人。", tier: "epic", route: "home", all: ["side_job"], stats: [{ k: "money", gt: 71 }], title: "县城企业家", evidence: [["side_job"],["c_side",{"stat":{"k":"money","gt":71}}]],
+    { id: "end_localfounder", clue: "招工启事贴出去，来应聘的有小学同学孩子的人。", tier: "epic", route: "home", all: ["side_job"], any: ["shop_work"], forbid: ["moved_city"], stats: [{ k: "money", gt: 71 }], title: "县城企业家", evidence: [["side_job"],["c_side",{"stat":{"k":"money","gt":71}}]],
       text: "你在县城里的那摊生意，后来成了镇上最大的用工单位。招工启事贴出去，来的有你小学同学的孩子。你在办公室里看着窗外想：当年要是走了，这一切就都没有了。当然，走了也会有别的——只是这个版本，你过得不后悔。" },
     { id: "end_lottery", clue: "每年那一天还去买一注，还是那组生日号码的人。", tier: "rare", all: ["traj_lottery"], title: "天选之人", evidence: [["r_lottery"],[{"stat":{"k":"money","gt":59}}]],
       text: "中奖的事你没跟几个人说。钱一部分存了定期，一部分给家里添了几样大件，日子还是照常过。只是每年那一天，你会去楼下那家彩票站买一注，还是那组生日号码。店主问你图啥，你说：图个念想。" },

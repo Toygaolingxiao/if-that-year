@@ -67,15 +67,15 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
   { id: "ab37_018", w: 2, min: 38, max: 50, route: "abroad", eraIn: ["c1978", "c2000"], text: "这些年活换了几份，住处搬了四回，箱子越搬越少。在这边认识的人，来来去去，有的回了国，有的去了别的城市。你过生日那天，收到七八条消息，人一个没在跟前。你下楼买了块蛋糕，自己吃了两块。",
     effects: { freedom: 1, wisdom: 2 } },
   { id: "ab37_019", kidAgeMin: 5, kidAgeMax: 7, w: 2, min: 36, max: 50, route: "abroad", eraIn: ["c1978", "c2000"], state: { kids: "has" }, text: "孩子到了上学的年纪，这边的学校怎么进、学什么，你和另一半打听了半个月。名单贴出来那天，你在人群里踮着脚找名字，找着了，回家的路上买了个新书包，孩子背着不肯摘。",
-    effects: { relation: 2, money: -2 } },
+    effects: { relation: 2, money: -2 } , stateAll: { spouse: "partnered" }},
   { id: "ab37_020", w: 2, min: 45, max: 55, route: "abroad", eraIn: ["c1978", "c2000"], text: "留还是回，这一年被问了不下十回。你把两边的账摊在桌上算：这边的住处和活，那边的父母和老同学，孩子往后在哪儿。算到半夜，纸写满了，结论没有。另一半说，先过日子吧，账慢慢算。",
     choices: [
       { label: "先留下来，往长住上再走一步", effects: { freedom: 1, wisdom: 2 }, echo: "你把续手续的日子标在日历上，红笔圈了两圈。这事定下来，心里反倒安静了。" },
       { label: "开始为回去做准备", effects: { growth: 2, money: -1 }, echo: "你把国内老同学的联系方式挨个找回来，先问问那边的活好不好找。" },
-    ] },
+    ] , stateAll: { spouse: "partnered" }},
   // —— 晚段（55–80）：去留节点、退休落点 ——
   { id: "ab37_021", w: 2, min: 58, max: 70, route: "abroad", eraIn: ["c1978", "c2000"], state: { abroadKind: "anglo" }, text: "退下来的事提上日程，你算了算在这边住的年头，比在家乡住的还长了。这边的诊所、超市、常走的那条路，都熟得不能再熟。你跟另一半说，落叶落在哪儿，有时候不是自己说了算的。",
-    effects: { wisdom: 3, freedom: 1 } },
+    effects: { wisdom: 3, freedom: 1 } , stateAll: { spouse: "partnered" }},
   { id: "ab37_022", w: 2, min: 58, max: 70, route: "abroad", eraIn: ["c1978", "c2000"], state: { abroadKind: "europe" }, text: "这边退下来的日子，慢有慢的过法：假多，事少，社区的活动排得满。你报了个园艺的班，种出来的东西分给邻居。就是冬天的黑还是长，屋里得早早开灯。",
     effects: { health: 1, relation: 1 } },
   { id: "ab37_023", w: 2, min: 55, max: 66, route: "abroad", eraIn: ["c1955", "c1965", "c1978", "c1985", "c1995", "c2000"], state: { abroadKind: "dispatch" }, text: "最后一个项目结了，合同到期，行李还是那两箱，就是人比来时老了。这些年挣的钱，大半在家里：房子修了，孩子的事帮了，存折上还剩一笔。你站在营地门口等车，想着回去先睡个整觉。",

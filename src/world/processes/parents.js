@@ -50,15 +50,21 @@
   // 本年到期的进程动静（每岁至多一件：离世 > 住院 > 照护，父先于母）；已被事件写过世的父母不再发作
   function parentsDue() {
     if (!IFY.S.parents) return null;
+    // 内容修复批二轮（双亲进程防重入）：52 岁分岔 fork52「父母需要人了」已把照护落定（住院＋请人/轮流/自己陪），
+    // 但分岔不推进进程段位——此后段位仍停在 well 的在世父母，在本函数口径上一律视同已进 care 段：
+    // 早段信号与照护拍不再回头发，进程住院拍凭 care 段照常可出，离世不受影响。判据只读账本落账
+    // （引擎与无头解决器记账同形：kind="fork"、id="fork52"），不改掷点、段位字段与存档形状，老档同口径。
+    const fork52Done = Array.isArray(IFY.S.ledger) && IFY.S.ledger.some((e) => e && e.kind === "fork" && e.id === "fork52");
     const due = [];
     for (const who of ["dad", "mom"]) {
       const P = IFY.S.parents[who];
       if (!P || IFY.S.state[who] !== "alive") continue;
+      const stage = fork52Done && P.stage === "well" ? "care" : P.stage; // fork52 已落账时 well 视同 care（仅本函数判定用，不写回）
       if (IFY.S.age >= P.deathAge) due.push({ pr: 0, item: "proc_" + who + "_dead", who, beat: "dead" });
-      else if (P.hospAge !== null && IFY.S.age >= P.hospAge && P.stage === "hosp") { /* 已呈现 */ }
-      else if (P.hospAge !== null && IFY.S.age >= P.hospAge && P.stage === "care") due.push({ pr: 1, item: "proc_" + who + "_hosp", who, beat: "hosp" });
-      else if (IFY.S.age >= P.careAge && P.stage === "well") due.push({ pr: 2, item: "proc_" + who + "_care", who, beat: "care" });
-      else if (P.stage === "well" && !P.signalShown && IFY.S.age >= signalAgeOf(P) && IFY.S.age < P.careAge) due.push({ pr: 3, item: "proc_" + who + "_signal", who, beat: "signal" }); // 预警信号：care 之前、每位父母至多一次，优先级最低
+      else if (P.hospAge !== null && IFY.S.age >= P.hospAge && stage === "hosp") { /* 已呈现 */ }
+      else if (P.hospAge !== null && IFY.S.age >= P.hospAge && stage === "care") due.push({ pr: 1, item: "proc_" + who + "_hosp", who, beat: "hosp" });
+      else if (IFY.S.age >= P.careAge && stage === "well") due.push({ pr: 2, item: "proc_" + who + "_care", who, beat: "care" });
+      else if (stage === "well" && !P.signalShown && IFY.S.age >= signalAgeOf(P) && IFY.S.age < P.careAge) due.push({ pr: 3, item: "proc_" + who + "_signal", who, beat: "signal" }); // 预警信号：care 之前、每位父母至多一次，优先级最低
     }
     if (!due.length) return null;
     due.sort((a, b) => a.pr - b.pr);

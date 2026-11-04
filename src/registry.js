@@ -1275,6 +1275,30 @@ window.GAME_REGISTRY.milestones = {
    ],
    "note": "技工入行（v0.19.0）：钳/焊/机修/家电维修学徒拍立旗，技工簇以此为门"
   },
+  "fitter_work": {
+   "setters": [
+    "p20_001"
+   ],
+   "note": "钳工工种（内容修复批二轮）：钳工入行拍条目级立旗，与 craft_work 并置；点名钳工的文本以 craft_work+fitter_work 双旗为门"
+  },
+  "welder_work": {
+   "setters": [
+    "p20_002"
+   ],
+   "note": "焊工工种（内容修复批二轮）：焊工入行拍条目级立旗，与 craft_work 并置；点名焊工的文本以 craft_work+welder_work 双旗为门"
+  },
+  "mech_work": {
+   "setters": [
+    "p20_003"
+   ],
+   "note": "机修工种（内容修复批二轮）：机修入行拍条目级立旗，与 craft_work 并置；点名机修的文本以 craft_work+mech_work 双旗为门"
+  },
+  "appliance_work": {
+   "setters": [
+    "p20_008"
+   ],
+   "note": "家电维修工种（内容修复批二轮）：家电维修入行拍条目级立旗，与 craft_work 并置；点名家电维修的文本以 craft_work+appliance_work 双旗为门"
+  },
   "miner_work": {
    "setters": [
     "p20_009"
