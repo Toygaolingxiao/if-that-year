@@ -161,6 +161,12 @@ function scan(item, itemId, inhGate) {
     if (!(fw.flag in MILESTONES)) err(`${itemId}: flagAgeWithin.flag 引用未登记里程碑 ${fw.flag}`);
     else if (typeof fw.years !== "number" || fw.years < 0) err(`${itemId}: flagAgeWithin.years 不是非负数`);
   }
+  // 旗标落点下限门（内容修复批）：flagAgeMin 与 flagAgeWithin 同形状 {flag, years}，语义为下限（置旗未满 years 年不出）。
+  if (item.flagAgeMin) {
+    const fm = item.flagAgeMin;
+    if (!(fm.flag in MILESTONES)) err(`${itemId}: flagAgeMin.flag 引用未登记里程碑 ${fm.flag}`);
+    else if (typeof fm.years !== "number" || fm.years < 0) err(`${itemId}: flagAgeMin.years 不是非负数`);
+  }
   // 返聘后复退门与退休年数变体（v0.20.1 W7 登记）：rehireAfterRetire 须为布尔；
   // textRetireYears 须为 { mid, long 非空文本 }，且条目 text 须真含「没多久」（替换锚点，防变体静默失效）。
   if (item.rehireAfterRetire !== undefined && typeof item.rehireAfterRetire !== "boolean") err(`${itemId}: rehireAfterRetire 不是布尔`);

@@ -24,12 +24,12 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
   { id: "proc_dad_hosp", min: 22, max: 80, procOnly: true, text: "你爸住院了。病房里六张床，他靠窗。医生说先住下来观察，该做的检查一样一样做。你在走廊的长椅上坐了一夜，天亮的时候去楼下买了粥。",
     choices: [
       { label: "在医院陪床，晚上就睡陪护椅", set: "care_self", effects: { relation: 3, health: -2, money: -2 }, echo: "陪护椅睡得腰酸。可他半夜醒来，看见你在，心里是定的。" },
-      { label: "请护工帮着，自己每天去看一趟", set: "care_hired", effects: { money: -4, relation: 1 }, echo: "护工白班夜班地换。你每天下班先去病房坐一会儿，把当天的检查结果听完再走。", echoForm: { farm: "护工白班夜班地换。你每天忙完地里的活先去病房坐一会儿，把当天的检查结果听完再走。", self: "护工白班夜班地换。你每天打烊后先去病房坐一会儿，把当天的检查结果听完再走。", flex: "护工白班夜班地换。你每天收工先去病房坐一会儿，把当天的检查结果听完再走。" } },
+      { label: "请护工帮着，自己每天去看一趟", set: "care_hired", effects: { money: -4, relation: 1 }, echo: "护工白班夜班地换。你每天先去病房坐一会儿，把当天的检查结果听完再走。" },
     ] },
   { id: "proc_mom_hosp", min: 22, max: 80, procOnly: true, text: "你妈住院了。病房里六张床，她靠窗。医生说先住下来观察，该做的检查一样一样做。你在走廊的长椅上坐了一夜，天亮的时候去楼下买了粥。",
     choices: [
       { label: "在医院陪床，晚上就睡陪护椅", set: "care_self", effects: { relation: 3, health: -2, money: -2 }, echo: "陪护椅睡得腰酸。可她半夜醒来，看见你在，心里是定的。" },
-      { label: "请护工帮着，自己每天去看一趟", set: "care_hired", effects: { money: -4, relation: 1 }, echo: "护工白班夜班地换。你每天下班先去病房坐一会儿，把当天的检查结果听完再走。", echoForm: { farm: "护工白班夜班地换。你每天忙完地里的活先去病房坐一会儿，把当天的检查结果听完再走。", self: "护工白班夜班地换。你每天打烊后先去病房坐一会儿，把当天的检查结果听完再走。", flex: "护工白班夜班地换。你每天收工先去病房坐一会儿，把当天的检查结果听完再走。" } },
+      { label: "请护工帮着，自己每天去看一趟", set: "care_hired", effects: { money: -4, relation: 1 }, echo: "护工白班夜班地换。你每天先去病房坐一会儿，把当天的检查结果听完再走。" },
     ] },
   { id: "proc_dad_dead", min: 22, max: 80, procOnly: true, stateAll: { dad: "alive" }, setState: { dad: "dead" }, text: "你爸走了。走得还算安稳。葬礼办完，亲戚们陆续散了，你一个人把他的屋子收拾了一遍：衣服叠好，工具摆齐，抽屉里有一本记了一辈子的账。",
     effects: { relation: -2, health: -1 } },
@@ -55,7 +55,7 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
       { label: "跟车，先学起来（常年不在家）", set: "truck_work", effects: { money: 3, health: -2, freedom: 2 }, echo: "头一趟跑下来，你在服务区睡了个整觉。醒来的时候，师傅说：能吃这碗饭。" },
       { label: "不跟，太熬人", effects: { health: 1 }, echo: "你帮师傅把货码好，目送车出了院子。这条路，你没上去。" },
     ] },
-  { id: "e_truck_years", min: 36, max: 55, chain: "e_truck_start", ctx: { flag: "truck_work" }, set: "truck_veteran", text: "长途跑了十来年。哪段路雨天打滑、哪个服务区的饭实在，你闭着眼都说得出来。里程表上的数，一天天攒，攒得老长了。",
+  { id: "e_truck_years", min: 36, max: 55, chain: "e_truck_start", ctx: { flag: "truck_work" }, set: "truck_veteran", text: "长途跑了这些年。哪段路雨天打滑、哪个服务区的饭实在，你闭着眼都说得出来。里程表上的数，一天天攒，攒得老长了。",
     effects: { money: 2, health: -2 } },
   // —— 处境回响（C8：识字线 / half 线 / work 轨道） ——
   { id: "e_lit_echo1", min: 30, max: 52, require: "literacy_gain", text: "签一份要紧的合同，人家把笔递给你。你一页一页看完，看得慢，可都看懂了，才在该签字的地方签下自己的名字。这事搁在小时候，你想都不敢想。",
@@ -83,7 +83,7 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
   { id: "proc_retire_auto", min: 66, max: 79, procOnly: true, stateAll: { workPhase: "working" }, setState: { workPhase: "retired" }, set: "retired_begun", text: "年纪到了，这边不再续了。最后一个班上完，年轻人帮你把箱子搬到门口。你站在楼下站了会儿，才慢慢往家走。这事拖了几年，最后是这么定下来的。",
     textNoUnit: "年纪到了，该办的手续都办了。最后把手头的事了清，你在街口站了会儿，才慢慢往家走。这事拖了几年，最后是这么定下来的。",
     effects: { freedom: 3, health: 1, money: -1 } },
-  { id: "e_retire_firstmonth", min: 56, max: 76, state: { workPhase: "retired" }, flagAgeWithin: { flag: "retired_begun", years: 2 }, set: "retire_final_said", text: "退下来头一个月，你还是六点多就醒。醒了没事干，在屋里转两圈，又躺回去。慢慢地，上午买菜、下午走路的点固定下来，日子有了新排法，就是头几天心里空落落的。",
+  { id: "e_retire_firstmonth", min: 56, max: 76, state: { workPhase: "retired" }, flagAgeWithin: { flag: "retired_begun", years: 2 }, set: "retire_final_said", text: "退下来这一阵，你还是六点多就醒。醒了没事干，在屋里转两圈，又躺回去。慢慢地，上午买菜、下午走路的点固定下来，日子有了新排法，就是头几天心里空落落的。",
     effects: { freedom: 2, wisdom: 2 } },
   { id: "e_retire_farewell", min: 55, max: 70, state: { workPhase: "part" }, ctx: { notForm: ["farm", "self", "flex"] }, text: "半退以后，你去的日子少了，新人顶上来大半。有回你去拿落下的东西，工位上已经坐了别人，桌上摆着人家的水杯。你站了一会儿，把自己的旧本子抽出来，走了。",
     effects: { relation: 1, wisdom: 2 } },

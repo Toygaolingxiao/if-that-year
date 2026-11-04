@@ -888,6 +888,10 @@ window.GAME_REGISTRY.milestones = {
     "p12_015"
    ]
   },
+  "pension_paid": {
+   "setters": [],
+   "note": "养老金已到账已当众说过（内容修复批，退休进程三连）：唯一事实来源是 proc_retire_full 的正文/无单位变体（「退休的钱已经打进来了」）。落定载体的 set 位已被 retired_begun 占用、无空位可再立一旗，故由 work.js 的 syncPensionPaid 在账本出现 proc_retire_full 呈现记录时同步立旗、flagAges 记呈现年龄——与 retire_final_said 的引擎同步同型，故 setters 为空、以本注记为准。消费者：p12_019、p14_011 的 forbid——「第一次到账」类文本领过即不出。再退变体（textAgain）正文不提到账、口径从宽计入：p12_019 的 flagAgeWithin 两年窗在再退时点已过，不产生实际误伤"
+  },
   "parents_money_guard": {
    "setters": [
     "p12_039"

@@ -56,7 +56,7 @@ window.GAME_SYNERGY = {
     { id: "r_rescue", label: "河边救起一个人", clue: "救完人发现鞋掉了一只，母亲把新闻存进手机的人。", min: 28, max: 55, minYear: 2008, chance: 0.002, text: "河边有人落水，你跳下去了。人救上来的时候你才发现自己鞋掉了一只。本地新闻播了四十秒，母亲把那段视频存在手机里，给亲戚挨个看。", effects: { relation: 5, health: -2 }, set: "traj_hero" },
     { id: "r_antique", label: "旧瓷瓶擦不得", clue: "被告知『别擦了，这个擦不得』之后，把房顶修了的人。", min: 35, max: 60, chance: 0.003, text: "清理老柜子时翻出个旧瓷瓶，拿去给懂行的人看了一眼。对方戴上眼镜看了很久，说：别擦了，这个擦不得。后来它拍出去的钱，正好够把老房的房顶修了。", effects: { money: 8 }, set: "traj_antique" },
     // —— v0.11.0 新增：五条轨迹链（各挂一个新结局，立旗事件本身都带代价）——
-    { id: "r_teacher_students",ctx: { mainLine: "teach_work" }, label: "学生回来当同事", clue: "把磨毛了边角的备课本，借给三个后辈传看的人。", min: 44, max: 55, chain: "r_school1", require: "traj_school", chance: 0.03, text: "教了二十多年书，你带过的一届学生里，有三个考回县里当老师，一个就分在你隔壁办公室。期中考试前，三个人抱着教案来问你压轴题怎么讲。你把当年的备课本找出来，边角都磨毛了，借给他们传看。你自己掏钱给班里印卷子，已垫了600多。", effects: { relation: 4, growth: 2, money: -3, health: -1 }, set: "traj_taoli" },
+    { id: "r_teacher_students",ctx: { mainLine: "teach_work" }, label: "学生回来当同事", clue: "把磨毛了边角的备课本，借给三个后辈传看的人。", min: 44, max: 55, chain: "r_school1", require: "traj_school", chance: 0.03, text: "教了这么多年书，你带过的一届学生里，有三个考回县里当老师，一个就分在你隔壁办公室。期中考试前，三个人抱着教案来问你压轴题怎么讲。你把当年的备课本找出来，边角都磨毛了，借给他们传看。你自己掏钱给班里印卷子，已垫了600多。", effects: { relation: 4, growth: 2, money: -3, health: -1 }, set: "traj_taoli" },
     { id: "r_craft_apprentice",ctx: { mainLine: ["craft_work","factory_work"] }, label: "车间里收徒弟", clue: "徒弟车废了工件，站在旁边没吭声的人。", min: 40, max: 55, any: ["took_over_job", "p20_cnc_retrain"], chance: 0.025, text: "你在机床边站了二十多年。这天车间主任领来个刚满十八岁的年轻人，说跟你学手艺。年轻人手有点抖，第一天就把一个工件车废了，站在那儿不敢说话。你看了看废件，没吭声。",
       choices: [
         { label: "收下。废件的料钱从我这儿出", effects: { money: -2, relation: 3, health: -2, growth: 2 }, set: "traj_craft", echo: "头三个月他出的活你件件复查，慢是慢了点。可你下班时，工具箱头一次有人帮你收拾好了。" },
@@ -67,7 +67,7 @@ window.GAME_SYNERGY = {
         { label: "留下。这一摊离不开人", effects: { money: -3, relation: 4, health: -2 }, set: "traj_village_doc", echo: "你回了电话，说不去了。当晚有个老人骑电动车来敲门，说家里孩子发烧，先找你看看再说。" },
         { label: "去。往大医院走", effects: { money: 3, growth: 2, relation: -1 }, echo: "交接那天，输液室的人挨个跟你道别。你走的时候，药房的窗户还开着。" },
       ] },
-    { id: "r_captain_final", label: "最后一场球", clue: "喷了两次止痛喷雾，被年轻人抬起来先喊腰的人。", min: 53, max: 62, all: ["team_captain"], chance: 0.04, text: "这支业余球队你张罗了十来年。这场是联赛最后一场，你的膝盖热身时就开始疼，喷了两次止痛喷雾，还是顶完了全场。终场哨响，你们赢了一个球。年轻人把你抬起来的时候，你先喊的是：慢点，我的腰。", effects: { relation: 4, health: -3, growth: 1, wisdom: 2 }, set: "traj_captain" },
+    { id: "r_captain_final", label: "最后一场球", clue: "喷了两次止痛喷雾，被年轻人抬起来先喊腰的人。", min: 53, max: 62, all: ["team_captain"], chance: 0.04, text: "这支业余球队你张罗了这么多年。这场是联赛最后一场，你的膝盖热身时就开始疼，喷了两次止痛喷雾，还是顶完了全场。终场哨响，你们赢了一个球。年轻人把你抬起来的时候，你先喊的是：慢点，我的腰。", effects: { relation: 4, health: -3, growth: 1, wisdom: 2 }, set: "traj_captain" },
     { id: "r_trucker_route", label: "九百公里长途线", clue: "里程表跳得飞快，一个月瘦了六斤的人。", min: 35, max: 46, ctx: { flag: "truck_work" }, chance: 0.012, text: "运输公司新开了一条跨省长途线，单程 900 多公里，跑一趟歇一天，工资比市内短途多出一截。调度问你愿不愿意固定跑这条线。你的驾照年限够，就是夜里赶路、白天补觉，日子要整个翻过来。",
       choices: [
         { label: "接。固定跑长途", effects: { money: 5, health: -4, relation: -2 }, set: "traj_trucker", echo: "第一个月你跑了九趟。服务区的泡面吃了四种口味，里程表跳得飞快，人瘦了六斤。" },
@@ -109,7 +109,9 @@ window.GAME_SYNERGY = {
     { id: "end_influencer", clue: "自称『下班后比较忙的人』，灯还是那盏灯的人。", tier: "epic", all: ["traj_viral"], title: "千万粉丝", evidence: [["r_viral"],["side_job"]],
       text: "你的账号慢慢涨到了一千多万粉丝。有人问你现在算不算名人，你说：算个下班后比较忙的人。视频还是在那个小书桌上拍，灯也没换过。" },
     { id: "end_bigfamily", clue: "六十五岁生日摆了两桌，吹蜡烛时被一屋子人喊、称呼各不相同的人。", tier: "epic", stateAll: { spouse: "partnered", kids: "has" }, stats: [{ k: "relation", gt: 89 }, { k: "health", gt: 58 }], title: "子孙满堂", evidence: [["p14_028","p14_030","p14_031","p14_032","p14_034","p16_059","p16_070","p23_066","p25_006","p25_017","p25_027","p25_037","p25_042","p25_063","p26_013","p29_019","e55_044","e55_050"],["c_partner","cb_old_couple","c_has_kid"]],
-      text: "65 岁生日那天，家里摆了两桌。孩子带着孩子，孩子又带着更小的孩子。吹蜡烛的时候一屋子人喊你，称呼各不相同。你眯着眼睛看了一圈，心想：这一屋子，都是从那一年开始的。" },
+      text: "65 岁生日那天，家里摆了两桌。孩子带着孩子，孩子又带着更小的孩子。吹蜡烛的时候一屋子人喊你，称呼各不相同。你眯着眼睛看了一圈，心想：这一屋子，都是从那一年开始的。",
+      textThree: "65 岁生日那天，家里摆了两桌。孩子带着孩子，一屋子人挤得满满当当。吹蜡烛的时候一屋子人喊你，称呼各不相同。你眯着眼睛看了一圈，心想：这一屋子，都是从那一年开始的。",
+      textFull: "65 岁生日那天，家里摆了两桌。一家人都到齐了，孩子坐在你旁边，另一半在对面。吹蜡烛的时候一屋子人喊你，称呼各不相同。你眯着眼睛看了一圈，心想：这一屋子，都是从那一年开始的。" },
     { id: "end_traveler", clue: "冰箱上贴满各地磁铁，说『剩下的时间慢慢走回程』的人。", tier: "epic", all: ["retired_full"], stats: [{ k: "freedom", gt: 76 }, { k: "money", gt: 54 }], title: "环游世界", evidence: [["retired_full"],["e_trip","cb_old_couple","c_no_kid","p14_059","p14_061"]],
       text: "退休金、存款、说走就走的身体，你都凑齐了。护照上的章一个挨一个，冰箱上贴满了各地的磁铁。有人问你还差哪没去，你说：不差了，剩下的时间，慢慢走回程。" },
     { id: "end_standard", clue: "看到那份文件，总在心里默默改错别字的人。", tier: "epic", all: ["stay_put"], any: ["factory_work", "fab_work", "traj_craft"], stats: [{ k: "growth", gt: 94 }], title: "定标准的人", evidence: [["stay_put"],[{"stat":{"k":"growth","gt":94}}]],
@@ -129,6 +131,6 @@ window.GAME_SYNERGY = {
     { id: "end_captain", clue: "把队长袖标交出去，之后坐在场边管哨子和记分牌的人。", tier: "rare", all: ["traj_captain"], stats: [{ k: "relation", gt: 59 }], title: "老队长", evidence: [["r_captain_final"],["team_captain"]],
       text: "你踢不动全场那年，把队长袖标交给了队里最年轻的那个。交完你们照常去吃宵夜，啤酒你只喝了一杯——膝盖还疼，回家得冰敷。后来每场比赛你都去，坐在场边，哨子和记分牌还归你管。" },
     { id: "end_trucker_million", clue: "服务区哪家的盒饭实在、哪段路雨天打滑，闭着眼都说得出来的人。", tier: "rare", ctx: { flag: "truck_veteran" }, all: ["traj_trucker"], stats: [{ k: "money", gt: 59 }], title: "跑满一百万公里", evidence: [["r_trucker_route"],[{"stat":{"k":"money","gt":59}}]],
-      text: "你跑长途的第十几年，里程表过了一百万公里，公司给你发了块无事故的牌子，挂在驾驶室里。你的腰落下了毛病，补觉要靠耳塞。可这条线上的服务区，哪家的盒饭实在、哪段路雨天打滑，你闭着眼都说得出来。" },
+      text: "你跑长途跑了大半辈子，里程表过了一百万公里，公司给你发了块无事故的牌子，挂在驾驶室里。你的腰落下了毛病，补觉要靠耳塞。可这条线上的服务区，哪家的盒饭实在、哪段路雨天打滑，你闭着眼都说得出来。" },
   ],
 };

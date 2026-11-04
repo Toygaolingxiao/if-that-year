@@ -396,7 +396,20 @@
     }
     if (!hits.length) return null;
     hits.sort((a, b) => IFY.TIER_ORDER[a.tier] - IFY.TIER_ORDER[b.tier]);
-    return hits[0];
+    const hit = hits[0];
+    // 内容修复批（第 8 条 b）：子孙满堂的四代说法须有代际算术支撑——按子女落点（kidsBornAt ?? kidsAt，
+    // 与 scheduler 的 kidAgeTrue 同锚）推 65 岁时子女年龄：≥40 出四代原文；32–39 出三代文（textThree）；
+    // 更小、或读不到落点时出儿孙满堂文（textFull，不提孙辈）。只换文本——命中、档位、证据一概不动，
+    // 出现率不变。交换局按终局身体的落点推，读不到就落 textFull：只会少说，不会多说。
+    if (hit.id === "end_bigfamily" && (hit.textThree || hit.textFull)) {
+      const S = IFY.S || {};
+      const bornAt = typeof S.kidsBornAt === "number" ? S.kidsBornAt : S.kidsAt;
+      const childAgeAt65 = typeof bornAt === "number" ? 65 - bornAt : null;
+      const text = childAgeAt65 != null && childAgeAt65 >= 40 ? hit.text
+        : (childAgeAt65 != null && childAgeAt65 >= 32 ? (hit.textThree || hit.text) : (hit.textFull || hit.text));
+      if (text !== hit.text) return Object.assign({}, hit, { text });
+    }
+    return hit;
   }
 
   // ---------- 结算纵轴立轴图（VISUAL-DESIGN 第四节裁定 + UX-MOTION §9.2 生长仪式） ----------

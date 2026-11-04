@@ -126,6 +126,19 @@
     if (!S.flagAges) S.flagAges = {};
     if (!("retire_final_said" in S.flagAges)) S.flagAges.retire_final_said = t.age;
   }
+  // pension_paid 同步（内容修复批，退休进程三连）：proc_retire_full 的正文/无单位变体已经当众说过
+  // 「退休的钱已经打进来了」——账本出现该进程呈现即立旗（flagAges 记呈现年龄），与 syncRetireFinalSaid 同型。
+  // 落定载体的 set 位已被 retired_begun 占用，此同步是该旗的唯一生产点（登记见 registry 的 pension_paid 注）。
+  // 再退变体（textAgain）正文不提到账、口径从宽计入：其消费者（p12_019/p14_011）的窗口在再退时点已过，不产生实际误伤。
+  function syncPensionPaid() {
+    const S = IFY.S;
+    if (!S || !S.flags || S.flags.pension_paid) return;
+    const t = ledgerOf().find((e) => e.kind === "proc" && e.id === "proc_retire_full");
+    if (!t) return;
+    S.flags.pension_paid = true;
+    if (!S.flagAges) S.flagAges = {};
+    if (!("pension_paid" in S.flagAges)) S.flagAges.pension_paid = t.age;
+  }
   // 今年是否已有退休决定落账（进程拍呈现过，或 workPhase 当年发生过流转）——engine.js 的 fork58 当年互锁读它
   function retireDecidedThisYear() {
     const S = IFY.S;
@@ -174,6 +187,7 @@
   function workPhaseDue() {
     if (!IFY.S.route || !IFY.S.state || !IFY.S.state.workPhase) return null;
     syncRetireFinalSaid();
+    syncPensionPaid();
     if (forkFiredThisYear()) return null; // 反向互锁：fork58 已在当年响过，进程拍当年不再决一次（结构上 fork 从不把人留在 working，此为显式保险）
     ensureRetirePlan();
     const wp = IFY.S.state.workPhase;
@@ -188,5 +202,5 @@
     }
     return null;
   }
-  Object.assign(IFY, { WORK_FORMAL_FLAGS, WORK_INFORMAL_FLAGS, workForm, FORM_VALUES, FORM_OF_FLAG, formOf, mainEntryOf, ensureRetirePlan, workPhaseDue, syncRetireFinalSaid, retireDecidedThisYear, forkFiredThisYear, hasRetiredBefore, hasRehireAfterRetire, noCurrentUnit });
+  Object.assign(IFY, { WORK_FORMAL_FLAGS, WORK_INFORMAL_FLAGS, workForm, FORM_VALUES, FORM_OF_FLAG, formOf, mainEntryOf, ensureRetirePlan, workPhaseDue, syncRetireFinalSaid, syncPensionPaid, retireDecidedThisYear, forkFiredThisYear, hasRetiredBefore, hasRehireAfterRetire, noCurrentUnit });
 })(window.IFY);

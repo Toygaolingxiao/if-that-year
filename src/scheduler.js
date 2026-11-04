@@ -87,6 +87,7 @@
     if (e.petMin != null) { const pa = petAgesTrue(e); if (!pa.length || Math.max(...pa) < e.petMin) return false; } // v0.20.1：宠物真实年龄下限门（老龄文本 ≥9；分不清物种时任一宠物达龄即过）
     if (e.petMax != null) { const pa = petAgesTrue(e); if (!pa.length || Math.min(...pa) > e.petMax) return false; } // v0.20.1：宠物真实年龄上限门（幼宠文本用；任一宠物够小即过）
     if (e.flagAgeWithin && (IFY.S.flagAges == null || IFY.S.flagAges[e.flagAgeWithin.flag] == null || IFY.S.age - IFY.S.flagAges[e.flagAgeWithin.flag] > e.flagAgeWithin.years)) return false; // v0.19.0 三相：旗标落点时间窗门（通用形状 {flag, years}，读 flagAges 底子；挡身后手续隔多年重办类复发）
+    if (e.flagAgeMin && (IFY.S.flagAges == null || IFY.S.flagAges[e.flagAgeMin.flag] == null || IFY.S.age - IFY.S.flagAges[e.flagAgeMin.flag] < e.flagAgeMin.years)) return false; // 内容修复批：旗标落点下限门（flagAgeWithin 的对偶——置旗未满 N 年不出；挡刚落点即被同题追问类紧贴复发，如刚搬完家又问搬不搬；字段形状在 tools/validate-state.js 登记核对）
     if (e.rehireAfterRetire && !(typeof IFY.hasRehireAfterRetire === "function" && IFY.hasRehireAfterRetire())) return false; // v0.20.1 W7：返聘后复退门（条目级布尔）——账本里首次全退流转之后真有过 retired→part 返聘边才可抽（work.js hasRehireAfterRetire，读账本不读旧旗）
     if (e.route && e.route !== IFY.S.route.id) return false;
     if (e.routeIn && !e.routeIn.includes(IFY.S.route.id) && !(IFY.S.route.id == null && e.routeIn.includes("home") && IFY.S.state && IFY.S.state.track === "home")) return false;
@@ -126,6 +127,7 @@
       if (e.petMin != null && (!pa.length || Math.max(...pa) < e.petMin)) out.push({ kind: "petAge", need: e.petMin, have: pa.length ? Math.max(...pa) : null });
       if (e.petMax != null && (!pa.length || Math.min(...pa) > e.petMax)) out.push({ kind: "petAgeMax", need: e.petMax, have: pa.length ? Math.min(...pa) : null }); }
     if (e.flagAgeWithin && (S.flagAges == null || S.flagAges[e.flagAgeWithin.flag] == null || S.age - S.flagAges[e.flagAgeWithin.flag] > e.flagAgeWithin.years)) out.push({ kind: "flagAge", flag: e.flagAgeWithin.flag });
+    if (e.flagAgeMin && (S.flagAges == null || S.flagAges[e.flagAgeMin.flag] == null || S.age - S.flagAges[e.flagAgeMin.flag] < e.flagAgeMin.years)) out.push({ kind: "flagAgeMin", flag: e.flagAgeMin.flag }); // 内容修复批：与 met() 的 flagAgeMin 同口径
     if (e.rehireAfterRetire && !(typeof IFY.hasRehireAfterRetire === "function" && IFY.hasRehireAfterRetire())) out.push({ kind: "rehireAfter" });
     if (e.route && (!S.route || e.route !== S.route.id)) out.push({ kind: "route", need: e.route });
     if (e.routeIn && !(S.route && e.routeIn.includes(S.route.id))) out.push({ kind: "routeIn", need: e.routeIn });

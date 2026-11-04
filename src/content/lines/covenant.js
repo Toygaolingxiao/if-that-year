@@ -18,7 +18,7 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
   // e_kid_settle/e_kid_final 的 kids=undecided 状态门天然不再出题，结算对账也不会再改写成
   // 「等来了孩子」。选「约先对到这儿」只立 cov_solo_done、不落定 kids：门留着，往后真想要
   // 时走 e_kid_settle/final 的单身收养版（events.js 两拍已给单身者分版，带到来回响）。
-  { id: "cov_solo_due", min: 45, max: 47, w: 60, require: "cov38_wait", state: { kids: "undecided" }, stateNot: { spouse: ["partnered", "dating"] }, forbid: ["late_try"], text: "45 岁这年，你把文件夹从抽屉里拿了出来。那张写着日期的纸还在最上面，边角毛了。38 岁那会儿说好的，45 岁到期，再对一回。只是这回桌子对面没有人，这份账，得你一个人对。",
+  { id: "cov_solo_due", min: 45, max: 45, w: 60, require: "cov38_wait", state: { kids: "undecided" }, stateNot: { spouse: ["partnered", "dating"] }, forbid: ["late_try"], text: "45 岁这年，你把文件夹从抽屉里拿了出来。那张写着日期的纸还在最上面，边角毛了。38 岁那会儿说好的，45 岁到期，再对一回。只是这回桌子对面没有人，这份账，得你一个人对。",
     choices: [
       { label: "收了这份约。孩子的事，一个人不再等了", effects: { freedom: 3, wisdom: 1 }, set: "cov_solo_done", setState: { kids: "none" }, echo: "纸折好，塞进抽屉底层。这件事，从今天起不用再搁在心上了。" },
       { label: "约先对到这儿。真有想要的那一天，再重新立", effects: { freedom: 1, wisdom: 2 }, set: "cov_solo_done", echo: "纸压回文件夹最上面。不是还等谁，是这扇门，你没替将来的自己关死。" },
