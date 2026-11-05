@@ -541,7 +541,7 @@
         }
       }
     }
-    // WP8 形（c1995 pool95）：调度序固定 leave→move→wed→exam→qzone（exam 在同局与 wed 互斥时让位）；计划截前 2
+    // WP8 形（c1995 pool95）：调度序固定 leave→move→wed→exam→qzone→wangba→toucai（exam 在同局与 wed 互斥时让位）；计划截前 2
     if (Array.isArray(pack.pool95)) {
       const byId = {}; for (const e of pack.pool95) byId[e.id] = e;
       const plan = [];
@@ -586,6 +586,13 @@
       // 序位在 exam 之后——家庭四条目优先，计划仍截前 2，本条目只在家庭条目未占满时落位。
       const qzone = byId.pr_pool95_qzone;
       if (qzone && !sitBlocked(qzone)) { const t = hazard(qzone); if (t != null) { const va = (qzone.variants || []).find((v) => v.segment === segOf(t)); if (va) plan.push(mkPseudo(qzone, t, va)); } }
+      // 活力批新增（第六、七条目 pr_pool95_wangba「网吧」/pr_pool95_toucai「偷菜」）：无状态门、纯 hazard，
+      // 与 move/wed 同形接线，序位在 qzone 之后——家庭四条目与空间说说优先，计划仍截前 2，
+      // 本两条只在前位条目未占满时落位。
+      const wangba = byId.pr_pool95_wangba;
+      if (wangba && !sitBlocked(wangba)) { const t = hazard(wangba); if (t != null) { const va = (wangba.variants || []).find((v) => v.segment === segOf(t)); if (va) plan.push(mkPseudo(wangba, t, va)); } }
+      const toucai = byId.pr_pool95_toucai;
+      if (toucai && !sitBlocked(toucai)) { const t = hazard(toucai); if (t != null) { const va = (toucai.variants || []).find((v) => v.segment === segOf(t)); if (va) plan.push(mkPseudo(toucai, t, va)); } }
       for (const pseudo of plan.slice(0, 2)) pushAgeSorted(pseudo);
     }
   }

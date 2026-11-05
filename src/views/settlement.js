@@ -877,8 +877,8 @@
     // v0.22.1 F2：终局身体是单身、但任一段里成过家/有过伴侣时，不许断言「没和谁凑成一对」——
     // 见证口径 = 段内 spouse 流转（stateWitnessed）或该段进段时的配偶状态（接管轨在交换岁
     // 之前已成家的情形，流转不在段切片内，按其全账本回放进段值补认）。
-    else if (view && (view.stateWitnessed("spouse", "partnered") || segEntrySpouse(view, "partnered"))) s2 = "前一段日子里成了家，身边有过人。换了路以后一直是一个人，饭自己吃，也过来了。";
-    else if (view && (view.stateWitnessed("spouse", "dating") || segEntrySpouse(view, "dating"))) s2 = "前一段日子里，身边处过一个人。换了路以后没再遇上谁，饭自己吃，日子自己过，也过来了。";
+    else if (view && (view.stateWitnessed("spouse", "partnered") || segEntrySpouse(view, "partnered"))) s2 = "前一段日子里成了家，身边有过人。换了路以后，饭自己吃，屋里一直是一个人。";
+    else if (view && (view.stateWitnessed("spouse", "dating") || segEntrySpouse(view, "dating"))) s2 = "前一段日子里，身边处过一个人。换了路以后没再遇上谁，饭自己吃，日子自己过，饭桌上一直是一副碗筷。";
     else if (ST.spouse === "single") s2 = "这一生没和谁凑成一对。日子自己过，饭自己吃，屋里一直是一个人。";
     else s2 = "没遇上要凑成一对的人。一个人过日子，饭桌上一直是一副碗筷。";
     slots.push(["陪伴", s2]);
@@ -891,11 +891,11 @@
     // 形态取最早一次（housingOf 口径）。各支文案一字未动。
     if (housing.owned === "own" || housing.owned === "commodity") s3 = m >= 60 ? "房子供下来了，手里还留着余钱，够花。" : "供下了一套房，钱多半填进了房子里，日子紧巴巴地过。";
     else if (housing.owned === "reform") s3 = m >= 60 ? "房改那会儿把住着的单位房买下来了，手里还留着余钱，够花。" : "房改时把住着的单位房买了下来，钱多半填进了这套房里，日子紧巴巴地过。";
-    else if (housing.unit) s3 = m >= 70 ? "住的是单位分的房，没在房子上掏过大钱，手里的钱攒下了，够用，还有富余。" : m >= 40 ? "住的是单位分的房，没在房子上掏过大钱。钱不多不少，够日常开销。" : m >= 20 ? "住的是单位分的房，没在房子上掏过大钱，可手头还是紧，钱这事操心了一辈子。" : "住的是单位分的房，没在房子上掏过大钱，到最后也没攒下什么。好在饭还吃得上，觉还睡得着。";
+    else if (housing.unit) s3 = m >= 70 ? "住的是单位分的房，没在房子上掏过大钱，手里的钱攒下了，够用，还有富余。" : m >= 40 ? "住的是单位分的房，没在房子上掏过大钱。钱不多不少，够日常开销。" : m >= 20 ? "住的是单位分的房，没在房子上掏过大钱，可手头还是紧，钱这事操心了一辈子。" : "住的是单位分的房，没在房子上掏过大钱，到最后也没攒下什么。饭还是一顿一顿吃，觉也照常睡。";
     else if (m >= 70) s3 = "没买房，手里的钱倒是攒下了，够用，还有富余。";
     else if (m >= 40) s3 = "钱不多不少，够日常开销。遇上大事帮不上，小日子能过。";
     else if (m >= 20) s3 = "手头一直紧。钱这事，操心了一辈子。";
-    else s3 = "到最后也没攒下什么。好在饭还吃得上，觉还睡得着。";
+    else s3 = "到最后也没攒下什么。饭还是一顿一顿吃，觉也照常睡。";
     slots.push(["钱", s3]);
     const g = IFY.S.stats.growth;
     const occ = view ? occupationTrailFromFacts(view) : occupationTrail(); // v0.20.0 M2：事业槽先读职业轨迹——「一辈子就干这一行」只许真单一行当贯穿的局出；v0.22 WP7：交换局改段版（见证口径汇总）
