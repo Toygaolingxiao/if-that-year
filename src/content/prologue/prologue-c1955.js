@@ -35,7 +35,7 @@
       mark_hoop55: { shadow: "两条路上都一样的是，你那只铁环后来锈得不成样子，还挂在仓房的墙上，谁也没舍得扔。" },
       mark_comic55: { shadow: "两条路上都一样的是，租书摊上那套连环画你始终差最后一本没看成，后来再没找见过。" },
       mark_band55: { shadow: "两条路上都一样的是，那根皮筋后来断成几截，接起来又玩了好久，接头处的疙瘩硌手，你们也习惯了。" },
-      mark_book55: { shadow: "两条路上都一样的是，那套受了潮的课本你一直留着，书页上的水印，像一圈一圈的年轮。" },
+      mark_book55: { shadow: "两条路上都一样的是，那套受了潮的课本你一直留着，书页上全是水印，一圈挨着一圈。" },
       mark_locust55: { shadow: "两条路上都一样的是，村口那棵老槐树还在，代销点换成了小卖部，树底下还是有人乘凉。" },
       mark_movie55: { shadow: "两条路上都一样的是，那场电影的台词你记了半辈子，后来在电视上重看到，开口就能接上下一句。" },
       mark_tablet55: { shadow: "两条路上都一样的是，姨家那块被表弟坐裂的石板，你后来一直用木板替着写字，字倒一天没落下。" },
@@ -144,7 +144,7 @@
           { label: "把铺盖和粮票备齐，家里随后寄东西", townSide: "down", requiresFact: { sentdownForm: "bingtuan" }, set: "sent_down", setFact: { sentdownForm: "bingtuan" }, setState: { track: "work" }, effects: { health: 1 }, echo: "你妈把咸菜塞满包袱。农场发工资要等月底，头一个月，这包东西和同连借的饭票，帮你把日子接上了。" },
           { label: "拿着医院的证明去街道，把留城的事办下来", townSide: "stay", requiresTemper: "ct_13", set: "narrow_frail", setState: { track: "work" }, effects: { relation: 1 }, echo: "证明办下来那天，你妈把那张纸压在箱底，半天没说话。你留下了，可这具身体跟一辈子——重活干不了，招工也多半是人家挑剩下的。" },
           { label: "家里就你一个，街道同意你留下来", townSide: "stay", requiresFamily: "cf_11", set: "narrow_only", setState: { track: "work" }, effects: { relation: 1 }, echo: "你留下了。爸妈松了口气。可往后家里的大事小情，也再没第二个人能替你分担——这笔账，那时候你还没算清。" },
-          { label: "姐姐已经下乡，弟弟还小，你留在爸妈身边", townSide: "stay", requiresFamily: "cf_06", set: "narrow_alone", setState: { track: "work" }, effects: { relation: 1 }, echo: "你留下来守着爸妈。姐姐来信问家里，你回信说都好，让她别惦记。留城的账，是往后几十年慢慢还的照顾。" },
+          { label: "姐姐已经下乡，弟弟还小，你留在爸妈身边", townSide: "stay", requiresFamily: "cf_06", set: "narrow_alone", setState: { track: "work" }, effects: { relation: 1 }, echo: "你留下来守着爸妈。姐姐来信问家里，你回信说都好，让她别惦记。姐姐不在跟前，往后爸妈有个头疼脑热，先到你这儿。" },
           { label: "家里实在揭不开锅，街道按特困把你留下来", townSide: "stay", requiresFamily: "cf_13", set: "narrow_poor", setState: { track: "work" }, effects: { money: 1 }, echo: "留是留下了，可活儿还没影，家里的账还欠着。你先去糊纸盒挣几个零钱，把眼前的冬天对付过去。" },
           { label: "去街道登了记，等招工的信儿", townSide: "stay", set: "stayed_town", setState: { track: "work" }, effects: { growth: 1 }, echo: "登记本上写下你的名字。往后就是等——指标什么时候下来、落不落到你头上，谁也说不准。" },
           { label: "先去街道小厂做临时工，边干边等", townSide: "stay", set: "stayed_town", setState: { track: "work" }, effects: { money: 1, health: -1 }, echo: "临时工的活先干着。活不算重，就是没名分，工资按天结。你把工钱交回家，你妈说，先这么着吧。" },
@@ -175,7 +175,7 @@
           narrow_poor: "你留下来了，可家里的账还压着。白天糊纸盒，晚上替人看摊，挣一分算一分。招工的信儿传过两回，都没轮到你。你妈说，先把这个冬天过过去再说。",
           stayed_town: "留城的日子先是等。街道小厂的临时活干了几个月，招工指标下来一次，没点到你的名。你把登记表又抄了一遍，字比头回工整，心却没头回稳了。",
         },
-        tail: "你把小目标写在课本最后一页，时常翻出来看。",
+        tail: "你把小目标写在课本最后一页，夹了片干树叶在那页，怕自己找不着。",
         choices: null },
       { id: "pr_y18", age: 18, log: "十八岁",
         textByTrack: {
@@ -212,7 +212,7 @@
         } },
         textByFlag: {
           narrow_frail: "你还在传达室，添了个收发报纸的活。招工名单贴出来，你的名字从来不在上头。下了班你帮邻居看看孩子、修修收音机，日子平平地过，身体倒没再出大毛病。",
-          narrow_only: "招工的机会来过一次，名额让给了旁人。你妈嘴上不说，晚上多给你卧了个鸡蛋。家里的大事开始先问你，你发觉，爸妈是真把你当这个家的主心骨了。",
+          narrow_only: "招工的机会来过一次，名额让给了旁人。你妈没说什么，那晚多给你盛了半碗饭。家里的大事开始先问你，你发觉，爸妈是真把你当这个家的主心骨了。",
           narrow_alone: "姐姐还没回来。你爸退了，家里的担子明里暗里往你肩上挪。下了班先去买菜，周末陪你妈去医院拿药。邻居说你顾家，你笑笑，心里知道这没什么可选的。",
           narrow_poor: "家里的账还了一半。你的临时活换了两个，挣得不多，胜在不断顿。冬天还是那件旧棉袄，拆洗一遍又穿上身。招工还没轮上，你把指望收得很小。",
           stayed_town: "这一年你还在街道小厂，活干得比正式工还细。有人劝你别等了，另找个营生。你没应——心里那点指望，还没灭。下了班，你还是先去街道门口看看有没有新名单。",
@@ -335,7 +335,7 @@
             ] },
           mid: {
             text: "你爸要去外地帮工一阵。家里商量了一晚上：你妈留下看家，你是跟走，还是留到姨家住一阵。话是大人定的，你只在门外听了个大概。",
-            echo: "多年以后再想起这件事，你想起的不是去了哪儿，是那晚门外听见的、压低了的商量声。",
+            echo: "那晚你在门外听见的、压低了的商量声，后来想起来还听得见。",
             choices: [
               { label: "跟你爸走，收拾书包时没哭出声", effects: { relation: 1 }, echo: "新学校头一个月，你没交上朋友，放学就往家跑。后来慢慢熟了，可原来同桌的名单，你还抄了一页，一直带着。" },
               { label: "留姨家住，头一晚就帮着挑水劈柴", set: "mark_tablet55", effects: {}, echo: "姨家的表弟把你的石板坐裂了。你没吭声，第二天找了块木板替着写，字照样一天没落下。" },
