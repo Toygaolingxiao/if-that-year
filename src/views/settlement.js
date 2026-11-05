@@ -1035,6 +1035,11 @@
     const skippedLine = IFY.playerMeta().glimpsesSkipped ? `<p>你有 ${IFY.playerMeta().glimpsesSkipped} 次没有去细看另一条路。这样也好，有些事不知道，更睡得着。</p>` : ""; // v0.21 WP1：瞥视计数改读 meta
     const reflHtml = IFY.playerMeta().reflections.length
       ? `<h3>你留给自己的话</h3>` + IFY.playerMeta().reflections.map((r) => `<p class="refl">「${IFY.esc(r.text)}」（${r.age} 岁）</p>`).join("") : ""; // v0.21 WP1：reflections 改读 meta
+    // fix7：结算年表改读分段合并视图（playerFacts，与分岔图/九槽同源）：交换局按 controlLog 段窗拼玩家实际控制过的
+    // 每一段账（A 轨 5 岁→交换岁、B 轨交换岁→终局，交换交出/接管行都落在交换岁、两段切片都含）；视图为 null
+    // （未交换/段不成立）时走原直读 IFY.S.log，未交换输出逐行不变。
+    const tlView = playerFacts();
+    const tlLog = tlView ? tlView.mergedLog : IFY.S.log;
     IFY.app().innerHTML = `<section class="card">${IFY.head(null, true)}
       <div class="rev" style="--d:0s">
       <h2>${IFY.finalAge()} 岁 · 这一局走完了</h2>
@@ -1058,7 +1063,7 @@
       ${settlementMapHtml()}
       <div class="rev" style="--d:.55s">
       <h3>这一生，年表</h3>
-      <div class="timeline">${IFY.S.log.map((l) => { const m = l.match(/^(\d+) 岁 · ([\s\S]*)$/); const yr = m && IFY.S.birthYear ? `${IFY.S.birthYear + (+m[1])} 年 · ` : ""; return `<p>${IFY.esc(yr + l)}</p>`; }).join("")}</div>
+      <div class="timeline">${tlLog.map((l) => { const m = l.match(/^(\d+) 岁 · ([\s\S]*)$/); const yr = m && IFY.S.birthYear ? `${IFY.S.birthYear + (+m[1])} 年 · ` : ""; return `<p>${IFY.esc(yr + l)}</p>`; }).join("")}</div>
       </div>
       <div class="row">
         <button class="ghost" id="copylink">复制同局链接（给朋友玩同一种子）</button>
