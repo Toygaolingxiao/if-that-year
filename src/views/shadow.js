@@ -208,11 +208,20 @@ out.push({ slot: "health", text: alert? FACT_WORDS.healthAlert: FACT_WORDS.healt
 return out;
 }
 
+// 立约引文门（fix4-settle 第 3 条）：registerCovenant 给 fork38 落的「立约：…」流水行是两个人的
+// 约句。这条 Track 38 岁之前没走过定关系/领证路径时，它只是一个人把孩子的事定下来——
+// 引文解析时该行整行剔除，免得任一候选借同岁回落行把它引出来；先前成过家（离异/丧偶）的
+// 不算单身轨，不在此门内。与 settlement.js 的 covenantHadPartner 同判法。
+function glimpseCovenantOk(B) {
+const led = Array.isArray(B.ledger)? B.ledger: [];
+return led.some((e) => (e.id === "spouse>partnered" || e.id === "spouse>dating") && typeof e.age === "number" && e.age <= 38);
+}
+
 // 账本条目 → 它那一岁的流水原句（state 流转没有专属流水行，认同岁造成它的那条行）。
 // 认领序：death 认「这一生停在这里」行 → fork 认含 choice 的行 → rare 认「」行 →
 // crisis 认含标题的行（标题不在账本里，按「岁 · 」前缀 + choice 在行内匹配）→ 其余认同岁未被占用的第一行。
-function logLineFor(B, e, used) {
-const lines = (Array.isArray(B.log)? B.log: []).filter((l) => l.startsWith(`${e.age} 岁 · `) &&!used.has(l));
+function logLineFor(B, e, used, covOk) {
+const lines = (Array.isArray(B.log)? B.log: []).filter((l) => l.startsWith(`${e.age} 岁 · `) &&!used.has(l) && (covOk || !l.includes("· 立约：")));
 if (!lines.length) return "";
 let pick = "";
 if (e.kind === "death") pick = lines.find((l) => l.includes("这一生停在这里")) || "";
@@ -226,6 +235,7 @@ return pick || lines[0];
 // draw = renderGlimpse 入口已消费的那 1 抽的值：仅当第一名出现同级同龄并列时在并列组内决胜，无并列不使用。
 // 纯读函数：不消费任何流（那一抽由调用方消费，见不变式注释）。
 function glimpsePick(B, ctrlLedger, prevAge, age, draw) {
+const covOk = glimpseCovenantOk(B); // fix4-settle 第 3 条：单身轨的「立约：」行不进引文解析（见 logLineFor）
 const ctrlForkAges = new Set((ctrlLedger || []).filter((e) => e.kind === "fork").map((e) => e.age));
 const cands = [];
 (Array.isArray(B.ledger)? B.ledger: []).forEach((e, idx) => {
@@ -248,7 +258,7 @@ const win = tieGroup[Math.min(tieGroup.length - 1, Math.floor(draw * tieGroup.le
 ordered = [win,...cands.filter((c) => c!== win)];
 }
 const used = new Set();
-const resolve = (c) => { const text = logLineFor(B, c.e, used); if (!text) return null; used.add(text); return { id: c.e.id, kind: c.e.kind, age: c.e.age, level: c.level, text};};
+const resolve = (c) => { const text = logLineFor(B, c.e, used, covOk); if (!text) return null; used.add(text); return { id: c.e.id, kind: c.e.kind, age: c.e.age, level: c.level, text};};
 let main = null;
 for (const c of ordered) { main = resolve(c); if (main) break;}
 if (!main) return { main: null, second: null};
@@ -373,7 +383,7 @@ const swapHtml = (mode === "normal" && !meta.swapped)
 ? `<div id="swapblock"><p class="hint">换过去，一生只能换这一次。这次不换，下次瞥视还能再想；换了，就再没有第二次。</p><div class="row"><button class="primary" id="swap-yes">换过去，过它接下来的日子</button><button class="ghost" id="swap-no">不换，继续过我的</button></div></div>`
 : "";
 IFY.el("detail").innerHTML = `${detailHtml}${markLine? `<p class="body">${IFY.esc(markLine)}</p>`: ""}${swapHtml}
-<label class="refl-label">给现实里的自己留一句话（会出现在你的结算里）<input id="refl" type="text" maxlength="60" placeholder="一句就好"></label>
+<label class="refl-label">给现实里的自己留一句话（写下的话，会原样出现在这一生的结算里）<input id="refl" type="text" maxlength="60" placeholder="一句就好"></label>
 <div class="row"><button class="primary" id="cont">记下，继续</button><button class="ghost" id="cont2">不写了，继续</button></div>`;
 document.querySelector(".row").remove();
 const done = () => { const v = (IFY.el("refl").value || "").trim(); if (v) IFY.playerMeta().reflections.push({ age: IFY.S.age, text: v}); /* v0.21 WP1：反思认领是玩家层，写 session.meta（蓝图 3.1） */ IFY.advance();};
@@ -416,7 +426,7 @@ IFY.S.log.push(`${IFY.S.age} 岁 · 影子：${text}`);
 // 童年记号的影子回响（v0.17.0；v0.23 WP9 A线改轮换消费）：每次看瞥视按落账序附一句未示过的「两条路上共同的事实」——童年不进影子锚点，只留共同事实
 const markLine = glimpseMarkLineNext();
 IFY.el("detail").innerHTML = `<p class="body">「${IFY.esc(text)}」</p>${markLine? `<p class="body">${IFY.esc(markLine)}</p>`: ""}
-<label class="refl-label">给现实里的自己留一句话（会出现在你的结算里）<input id="refl" type="text" maxlength="60" placeholder="一句就好"></label>
+<label class="refl-label">给现实里的自己留一句话（写下的话，会原样出现在这一生的结算里）<input id="refl" type="text" maxlength="60" placeholder="一句就好"></label>
 <div class="row"><button class="primary" id="cont">记下，继续</button><button class="ghost" id="cont2">不写了，继续</button></div>`;
 document.querySelector(".row").remove();
 const done = () => { const v = (IFY.el("refl").value || "").trim(); if (v) IFY.playerMeta().reflections.push({ age: IFY.S.age, text: v}); /* v0.21 WP1：反思认领是玩家层，写 session.meta（蓝图 3.1） */ IFY.advance();};

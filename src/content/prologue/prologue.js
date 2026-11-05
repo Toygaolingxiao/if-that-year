@@ -50,7 +50,9 @@
     6: { text: "六岁那年，你学会了自己系鞋带，头一回没让大人帮忙，就是系成了死结，最后还是大人蹲下来解的。", effects: {} },
     8: { text: "这一年没什么大事。你的乳牙掉了一颗，压在枕头底下，第二天枕头底下多了一块糖，你到现在也不确定是谁放的。", effects: {} },
     10: { text: "十岁那年，家里换了台新电视，旧的那台搬去了奶奶屋里。你负责上房顶转天线，转准了画面，全家都说你手稳。", effects: { relation: 1 } },
-    14: { text: "初二这一年，你的个子蹿了一截，校服裤子眼看着短下去，露着脚脖子过了一冬天，谁也没顾上给你换。", effects: {} },
+    14: { text: "初二这一年，你的个子蹿了一截，校服裤子眼看着短下去，露着脚脖子过了一冬天，谁也没顾上给你换。", effects: {},
+      // fix4（序章四修）：never 分文——没进过校门的人没有初二和校服（与各年代包 flat14 同收口）。
+      textBySchooling: { never: "十四岁这一年，你的个子蹿了一截，裤子眼看着短下去，露着脚脖子过了一冬天，谁也没顾上给你换。" } },
     19: { text: "这一年过得平。手机换了张新卡，旧号码的联系人导过来，少了几个，你也没太在意。", effects: {} },
   };
   const ACTS = [
@@ -69,7 +71,9 @@
         { key: "window", log: "开学第一天", set: "mark_window", mark: "mark_window",
           text: "开学第一天，老师把你安排在靠窗的位置。那个座位你一坐就是一年，上课时总忍不住往窗外的操场看，桌角画满了铅笔道子。" },
         { key: "wrongline", log: "开学第一天", set: "mark_wrongline", mark: "mark_wrongline",
-          text: "开学第一天放学，你站错了队，跟着隔壁班走出去半条街，才被门卫喊回来。你妈在校门口等急了，见着你，先笑后骂，牵着你的手往家走。" },
+          text: "开学第一天放学，你站错了队，跟着隔壁班走出去半条街，才被门卫喊回来。你妈在校门口等急了，见着你，先笑后骂，牵着你的手往家走。",
+          // fix4（序章四修）：留守形——校门口等人的换成奶奶（变体 textLB 通用化后生效）。
+          textLB: "开学第一天放学，你站错了队，跟着隔壁班走出去半条街，才被门卫喊回来。你奶奶在校门口等急了，见着你，先笑后骂，牵着你的手往家走。" },
       ] },
     { id: "pr_child2", age: 9, log: "河沟里摸螺蛳",
       variants: [
@@ -621,7 +625,9 @@
     for (const act of packFor(S.era).acts) {
       if (!act.variants) continue;
       // fix2（opt-in）：变体可带 notMigrant，随迁局不发该款（如农村专属款）；未声明的变体过滤结果不变。
-      let pool = act.variants.filter((v) => !(v.notFamily && P.family && v.notFamily.includes(P.family)) && !(v.notMigrant && P.migrantChild));
+      // fix4（opt-in）：变体可带 notLeftBehind，留守局不发该款（如父母日常在场的送学/买车款，
+      // 留守局改发同幕无父母款）；与 notMigrant 同形，每幕仍只掷一次、流位不变。
+      let pool = act.variants.filter((v) => !(v.notFamily && P.family && v.notFamily.includes(P.family)) && !(v.notMigrant && P.migrantChild) && !(v.notLeftBehind && P.leftBehind));
       // fix3 B1（2a）：变体带 setting 时与家底牌场景标签互斥的款不发（过滤后为空回落未过滤池）；每幕仍只掷一次、流位不变。
       if (famSetting) { const sp = pool.filter((v) => !settingConflict(famSetting, v.setting)); if (sp.length) pool = sp; }
       out[act.id] = pool[Math.floor(prng(S) * pool.length)].key;
@@ -664,8 +670,13 @@
     // fix3 B1（子类 1c）：留守掷定后按家底牌面校正——cf_09 的牌面本身就是「爸妈在外地那些年」，
     // 恒为留守；cf_01（柜台后头，你爸在店里）/cf_03（院子作坊，你爸在院里）牌面父母俱在，恒不留守。
     // 双通道（掷骰 vs 牌面）在此收成一个事实源头；校正不消费流、不改掷点。
-    if (S.prologue.family === "cf_09") S.prologue.leftBehind = true;
-    else if (S.prologue.family === "cf_01" || S.prologue.family === "cf_03") S.prologue.leftBehind = false;
+    // fix4（序章四修）：校正表由硬编码三张扩为牌面声明——家底牌带 parentForm（"home" 父母在身边／
+    // "away" 父母在外地，声明与逐张依据在 cards.js）时按声明校正；原三张包含在声明集内、行为不变；
+    // 未声明的牌（中性家底）不校正。cf_05「一个厂里出来的」（双职工同厂、大院长大）旧表漏收，
+    // 与留守行同屏即自相矛盾（第④段盲审 S4-3），本轮起 home 恒不留守。
+    const famDefLB = S.prologue.family && C && C.byId[S.prologue.family] ? C.byId[S.prologue.family] : null;
+    if (famDefLB && famDefLB.parentForm === "away") S.prologue.leftBehind = true;
+    else if (famDefLB && famDefLB.parentForm === "home") S.prologue.leftBehind = false;
     // 随迁发放（WP8 接线，合并二期落）：只对带 calib95 的包（c1995）掷一次（按处境概率，序章流），
     // 定版写入 P.migrantChild；无 calib95 的包不消费流（其余五代一格不变）。
     // fix3 三修（opt-in）：calib95 声明 migrantNotWhenLeftBehind 的包，随迁只对非留守者掷——
@@ -751,11 +762,23 @@
         // 与家底手足形的互斥；顺延改为有界环查（逐款试到首个不冲突者，全冲突回落原抽中款），仍不消费流。
         let openIdx = Math.floor(prng(S) * pack.originOpen.length);
         const famCard0 = P.family && C && C.byId[P.family] ? C.byId[P.family] : null;
+        // fix4（序章四修）：开场白场景与已定版童年变体（pr_child1/pr_child2）的场景互认——出身段是
+        // 城市单位房、童年段却全是村里放牛（第④段盲审 S4-7）即同源拼接。判据只读已定版变体，
+        // 不消费流；never 处境的 pr_child1 呈现走 special 文本（各包均为村口/坡上形），其有效
+        // 场景按 rural 计，不读被覆写的定版变体。包未登记 originOpenSetting 时 os 恒空、本路不触发。
+        const childSettings = [];
+        for (const aid of ["pr_child1", "pr_child2"]) {
+          if (aid === "pr_child1" && P.situation === "never") { childSettings.push("rural"); continue; }
+          const ca = pack.acts.find((x) => x.id === aid);
+          const cv = ca && ca.variants ? variantOf(S, ca) : null;
+          if (cv && cv.setting) childSettings.push(cv.setting);
+        }
         const openConflict = (idx) => {
           const g = pack.originOpenNotWithFamily && pack.originOpenNotWithFamily[idx];
           if (g && P.family && g.includes(P.family)) return true;
           const os = pack.originOpenSetting && pack.originOpenSetting[idx];
           if (settingConflict(famCard0 && famCard0.setting, os)) return true;
+          if (os && childSettings.some((cs) => settingConflict(os, cs))) return true;
           const oa = pack.originOpenAssert && pack.originOpenAssert[idx];
           if (oa) {
             if (P.family === "cf_11" && oa.siblings) return true; // 独生家底 × 任何兄姐断言
@@ -835,10 +858,14 @@
         P.curChoices = fm.choices;
       } else {
         let t = v ? v.text : act.text;
-        if (act.id === "pr_child2" && P.leftBehind && v && v.textLB) t = v.textLB;
         // fix2（opt-in）：schooling 分文——变体级/幕级 textBySchooling 命中当前 schooling 时整段换文
         // （如 never 的童年拍、half 退学后的少年拍不预设在校）；未声明的幕行为不变。
         if (v && v.textBySchooling && S.state && v.textBySchooling[S.state.schooling]) t = v.textBySchooling[S.state.schooling];
+        // fix4（opt-in 通用化）：变体带 textLB 时留守局整段换文——原仅 pr_child2 一幕硬编码，现扩到
+        // 任何带此字段的变体（c1978 child1 egg 款、c1965 child1 river 款、c1985 child4 football 款、
+        // c2000 child1 wrongline 款等父母在场款的祖辈形）。置于变体级 textBySchooling 之后：留守×never
+        // 同命中时以留守文为准（never 分文若仍带父母在场句，如 c1995 field 款旧 never 文，不许盖回）。
+        if (P.leftBehind && v && v.textLB) t = v.textLB;
         // fix3（opt-in）：act.textByMigrant——随迁者整段换文（如 never 随迁者的 pr_never1 读城市形，不读老家山村形）；未声明的幕行为不变。
         if (act.textByMigrant && P.migrantChild) t = act.textByMigrant;
         // 城镇家底的整幕替换文本（c1955 性子相关拍 textTown；仅当家底在本包 townFamilies 内）
@@ -847,6 +874,10 @@
         // （城镇×离校者的分岔题面不许被 textTown 的「初中毕业」盖回去）；现行内容无任何一幕同时带
         // textTown 与 textBySchooling，此移动对既有呈现逐字不变。
         if (act.textBySchooling && S.state && act.textBySchooling[S.state.schooling]) t = act.textBySchooling[S.state.schooling];
+        // fix4（opt-in）：幕级 textLB——无变体幕的留守整段换文（如 c1978 pr_fam78a 的父母回来形、
+        // pr_teen2 的祖辈形）；置于幕级 textBySchooling 之后，留守优先于处境分文（与平年段 choose
+        // 的「留守＞事实＞处境」同序）。未声明的幕行为不变。
+        if (P.leftBehind && act.textLB) t = act.textLB;
         // fix3 B1（子类 1b）：幕级 textByFact 整段换文（与 textByTrack 分支同形）——处境幕的手足句
         // （如 pr_never1 的「看妹妹」）按 siblingForm 分文，置于 textTown 之后使事实分文优先于家底替换。
         if (act.textByFact) for (const [fn, map] of Object.entries(act.textByFact)) { const fv = factOf(S, fn); if (map && map[fv]) t = map[fv]; }

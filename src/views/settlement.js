@@ -800,6 +800,28 @@
     return false;
   }
 
+  // 立约资格（fix4-settle 第 3 条）：立约是两个人的约定。fork38 对从没成过家的人也照样
+  // registerCovenant（spouse.js），但那只是一个人把孩子的事定下来——子女槽已按此陈述
+  // （「孩子的事，38 岁那年就定下了」），对账行里凡断言「立的约」的句子只许真有约的局出。
+  // 判法：把会被对账行读到的每一份约（与 covenantSettleLineSeg 的 covOf 同口径），回到它
+  // 所属 Track 的全账本——38 岁之前真走过定关系/领证路径（spouse 曾落到 partnered/dating）
+  // 才算有约；38 岁那年正单身、但先前成过家的人（离异/丧偶）不算单身局，不在此门内。
+  // 「挂起的那份账」类句子不带立约断言，不在此门内，照旧出。
+  function trackHadPartnerBy38(trackState) {
+    const led = trackState && Array.isArray(trackState.ledger) ? trackState.ledger : [];
+    return led.some((e) => (e.id === "spouse>partnered" || e.id === "spouse>dating") && typeof e.age === "number" && e.age <= 38);
+  }
+  function covenantHadPartner(view) {
+    if (!view) return trackHadPartnerBy38(IFY.S);
+    const lastIdx = view.segments.length - 1;
+    return view.segments.some((seg, si) => {
+      const c = seg.state && seg.state.covenant;
+      if (!c) return false;
+      if (si !== lastIdx && !(typeof c.since === "number" && c.since >= seg.fromAge && c.since <= seg.toAge)) return false;
+      return trackHadPartnerBy38(seg.state);
+    });
+  }
+
   // ---------- 结算九槽（v0.18.0，地基 §4.6/§4.7）：九个槽位全读状态与账本拼装 ----------
   // 落脚/陪伴/钱/手艺事业/子女线/父母线/没办完的事/影子代价/认领句；认领句（玩家在瞥视时留下的话）原样入槽；
   // 判词退为九槽之后的收尾一行。平淡轨（没撞上什么大事的一生）在认领槽有「平淡而完整」的写法。
@@ -829,11 +851,23 @@
     // v0.24.4（AN-2）：住房改读派生 housingOf（place.js）——form=reform 即房改那套、unit 即单位分房；
     // 旧版直读 boughtReform/unitHousing 两面旗，漏了只走到 bought_fangai 的半截房改链。
     const housing = typeof IFY.housingOf === "function" ? IFY.housingOf(IFY.S) : { form: F.boughtReform ? "reform" : null, unit: !!F.unitHousing, rentingNow: !!F.renting && !F.bought_house && !F.boughtReform && !F.unitHousing };
+    // 落脚槽自洽（fix4-settle 第 2 条）：轨迹（residenceTrailOf）只读迁徙节点——居所预设事件
+    // （永住 r_abroad_pr、派遣续约 ab37_014/005 这类「人还在外头」的既成事实）与 fork28 选了
+    // 「不回」（often_back，只落探亲旗、不落迁徙节点）都不在轨迹的账上。这类事实与轨迹结论
+    // 打架时，年数与归宿都不可靠：落脚槽改中性说法，不写具体年数、不下归宿断言（宁缺不编）。
+    // 判定只读账本原样条目；交换局读合并账本（玩家亲历的时间线）。
+    const ledS1 = view ? view.mergedLedger : (Array.isArray(IFY.S.ledger) ? IFY.S.ledger : []);
+    const ABROAD_ASSERT_IDS = ["r_abroad_pr", "ab37_014", "ab37_005"];
+    let lastHomeMoveAge = -1;
+    for (const e of ledS1) if ((e.set === "back_home_stay" || e.set === "near_family") && typeof e.age === "number" && e.age > lastHomeMoveAge) lastHomeMoveAge = e.age;
+    const s1ReturnDoubted = trail.final === "home" && ledS1.some((e) => ABROAD_ASSERT_IDS.includes(e.id) && typeof e.age === "number" && e.age > lastHomeMoveAge);
+    const s1NeverLeftDoubted = trail.final === "home" && trail.spans.city + trail.spans.abroad === 0 && ledS1.some((e) => e.kind === "fork" && e.id === "fork28" && e.set === "often_back");
+    const S1_NEUTRAL = "住的地方前后换过几处，老家住过，外头也住过。";
     let s1;
-    if (trail.final === "home" && trail.spans.city + trail.spans.abroad >= 5) s1 = `在外头住了${trail.spans.city + trail.spans.abroad}年，最后还是回了老家落脚。`;
+    if (trail.final === "home" && trail.spans.city + trail.spans.abroad >= 5) s1 = s1ReturnDoubted ? S1_NEUTRAL : `在外头住了${trail.spans.city + trail.spans.abroad}年，最后还是回了老家落脚。`;
     else if (trail.final === "abroad") s1 = `最后落脚在异国，在那边住了${trail.spans.abroad}年。`;
     else if (trail.final === "city" && IFY.S.route && IFY.S.route.id === "home") s1 = `后来出了家乡，在外头落了脚，一住${trail.spans.city}年。`;
-    else if (trail.final === "home") s1 = housing.form === "reform" ? "最后落脚在老家这边，住的还是房改那会儿买下的那套房。" : housing.unit ? "最后落脚在老家这边，住的还是单位分的那套房。" : "最后落脚在老家这边，住的还是熟门熟路的地方。";
+    else if (trail.final === "home") s1 = s1NeverLeftDoubted ? S1_NEUTRAL : housing.form === "reform" ? "最后落脚在老家这边，住的还是房改那会儿买下的那套房。" : housing.unit ? "最后落脚在老家这边，住的还是单位分的那套房。" : "最后落脚在老家这边，住的还是熟门熟路的地方。";
     else s1 = housing.form === "reform" ? "最后落脚在住惯了的这座城，住的还是房改那会儿买下的那套房。" : housing.unit ? "最后落脚在住惯了的这座城，住的还是单位分的那套房。" : "最后落脚在住惯了的这座城。";
     slots.push(["落脚", s1]);
     let s2;
@@ -994,7 +1028,8 @@
     const livesNew = IFY.recordLives(sp ? sp.id : null, IFY.S.usedRare || []); // 活过记录：落盘 + 本局新纪录（§B3）
     IFY.recordDayAndLife(); // 留存记录（v0.15.0）：日子表 + 最近一局回看，与活过记录同一落点、互不相干
     const shadowLines = IFY.shadowCompareLines();
-    const covLine = IFY.covenantSettleLine(); // fork38 立约的结算对账行（v0.17.0）：没有立过约就不出
+    const covLineRaw = IFY.covenantSettleLine(); // fork38 立约的结算对账行（v0.17.0）：没有立过约就不出
+    const covLine = (covLineRaw.includes("立的约") && !covenantHadPartner(playerFacts())) ? "" : covLineRaw; // fix4-settle 第 3 条：38 岁前没走过定关系/领证路径的局，对账行不许断言立过约（判法见 covenantHadPartner）
     // 自动推进提示（v0.17.0 定案）：默认关的玩家，完局后只在这页提示一次可开平年自动；提示过就落 prefs，不再重复
     const showAutoHint = IFY.prefs.mode === "off" && !IFY.prefs.autoHintSeen;
     if (showAutoHint) { IFY.prefs.autoHintSeen = true; IFY.savePrefs(); }

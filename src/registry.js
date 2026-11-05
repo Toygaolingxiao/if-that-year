@@ -199,7 +199,8 @@ window.GAME_REGISTRY.milestones = {
     "fork33",
     "p17_021",
     "p17_024",
-    "p18_049"
+    "p18_049",
+    "p3_033"
    ]
   },
   "huiqian_chosen": {
