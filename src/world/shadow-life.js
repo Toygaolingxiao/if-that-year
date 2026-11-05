@@ -360,6 +360,7 @@
     if (akd) { const ait = D.events.find((e) => e.id === akd.item); if (ait) resolveProcHeadless(ait); }
     const wpd = IFY.workPhaseDue();
     if (wpd) { const wit = D.events.find((e) => e.id === wpd.item); if (wit) resolveProcHeadless(wit); }
+    if (typeof IFY.wageDue === "function") IFY.wageDue(); // 工资轮：与受控 step() 同点同规（影子不打折，设计稿 §二.3）
     let fork = D.forks.find((f) => f.age === S.age && (!f.route || f.route === S.route.id) && (!f.forbidRoute || f.forbidRoute !== S.route.id) && (!f.forbid || !S.flags[f.forbid]) && (!f.anyParentAlive || S.state.dad === "alive" || S.state.mom === "alive") && (!f.state || IFY.met(f))); // 与 step() 同式（含 fork58 互锁，下行）
     if (fork && fork.age === 58 && typeof IFY.retireDecidedThisYear === "function" && IFY.retireDecidedThisYear()) fork = null;
     if (fork) { resolveForkHeadless(fork); return; }

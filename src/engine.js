@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.28.1 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.29.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -135,6 +135,8 @@ window.IFY = window.IFY || {};
       kidsBornAt: null, catAt: null, dogAt: null,
       // v0.19.0：退休相位运行态 retirePlan（{form, nodeAge}，50 岁后按活计形态定一次）、part 落点 partAt/partYears、退休落点 retiredAt、节点推迟计数 retireDefers
       retirePlan: null, partAt: null, partYears: null, retiredAt: null, retireDefers: 0,
+      // 工资轮：年净额结转余数 wageCarry（小数攒够整数才入账）、养老金基数 wageLastNet（最近一个有活计年份的未打折档额）、已结算年龄戳 wageSettledAge（防 step 重入重复结算）
+      wageCarry: 0, wageLastNet: 0, wageSettledAge: 0,
       autoMode: DEFAULT_AUTO_MODE, speed: "mid", // 推进设定在本局的副本；权威来源是 localStorage 的 ify-prefs；v0.21 WP1：同形保留、恒不作数，存档时只进 session.meta（蓝图 3.1）
     };
   }
@@ -168,12 +170,22 @@ window.IFY = window.IFY || {};
     if (t.flagAges) t.flagAges.exam_admitted = age != null ? age : (t.age != null ? t.age : (t.state && t.state.age != null ? t.state.age : 23));
   }
 
+  // 工资轮旧档回填：v0.27 及更早的存档没有工资三字段，读入时逐轨补缺省（结转 0、养老金基数 0、
+  // 年龄戳 0＝本年尚未结算）。只补缺、不覆盖既有值；wage.js 侧另有 typeof 防御读，双保险。
+  function backfillWage(t) {
+    if (!t || typeof t !== "object") return;
+    if (typeof t.wageCarry !== "number") t.wageCarry = 0;
+    if (typeof t.wageLastNet !== "number") t.wageLastNet = 0;
+    if (typeof t.wageSettledAge !== "number") t.wageSettledAge = 0;
+  }
+
   function loadSave() {
     try {
       const s = JSON.parse(localStorage.getItem(SAVE_KEY));
       if (!s) return null;
-      if (s.tracks) { for (const k of Object.keys(s.tracks)) backfillAdmitted(s.tracks[k]); const a = s.tracks[s.controlTrack || "A"] || s.tracks.A; return a && (a.route || a.mergePending || (a.phase === "prologue" && a.prologue)) ? s : null; }
-      backfillAdmitted(s);
+      // v2 的 Track 条目本体即平铺 state（route/flags 直挂条目上，与 backfillAdmitted 同口径）
+      if (s.tracks) { for (const k of Object.keys(s.tracks)) { backfillAdmitted(s.tracks[k]); backfillWage(s.tracks[k]); } const a = s.tracks[s.controlTrack || "A"] || s.tracks.A; return a && (a.route || a.mergePending || (a.phase === "prologue" && a.prologue)) ? s : null; }
+      backfillAdmitted(s); backfillWage(s);
       return (s.route || s.mergePending || (s.phase === "prologue" && s.prologue)) ? s : null;
     } catch (e) { return null; }
   }
@@ -782,6 +794,7 @@ window.IFY = window.IFY || {};
     if (akd) { const ait = D.events.find((e) => e.id === akd.item); if (ait) { IFY.renderProcItem(ait); return IFY.mountStream(); } }
     const wpd = IFY.workPhaseDue();
     if (wpd) { const wit = D.events.find((e) => e.id === wpd.item); if (wit) { IFY.renderProcItem(wit); return IFY.mountStream(); } }
+    if (typeof IFY.wageDue === "function") IFY.wageDue(); // 工资轮：年净额结算（进程层、work 相位拍之后；年龄戳防 step 重入重复结算，影子轨同点同规）
     let fork = D.forks.find((f) => f.age === IFY.S.age && (!f.route || f.route === IFY.S.route.id) && (!f.forbidRoute || f.forbidRoute !== IFY.S.route.id) && (!f.forbid || !IFY.S.flags[f.forbid]) && (!f.anyParentAlive || IFY.S.state.dad === "alive" || IFY.S.state.mom === "alive") && (!f.state || IFY.met(f))); // v0.18.0 审计急修：分岔门接线补齐 route/forbidRoute/forbid/anyParentAlive（fork28 镜像、fork52 双亲已不在不出）；原 v0.16.0 口径只认 state 门 // v0.16.0：分岔可带状态门（如 fork45 只给 kids 未定且有伴侣的人）；无门分岔行为不变 // v0.20.0 M2 收尾：fork33 的 bought_house 门由分岔级改选项级（已购房者不再整岔口消失，只隐买/租两项，近家人项保留）
     if (fork && fork.age === 58 && typeof IFY.retireDecidedThisYear === "function" && IFY.retireDecidedThisYear()) fork = null; // v0.20.1 W2 互锁：退休进程拍已在当年落过决定（呈现过 node/full/auto 或 workPhase 当年已流转），58 岁分岔当年不再以未退口吻重问（同一年不许双决）；已全退者另由 fork58 自带 workPhase 状态门挡下
     if (fork) { IFY.renderFork(fork); return IFY.mountStream(); }
