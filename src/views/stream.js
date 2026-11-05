@@ -161,6 +161,35 @@
 
   function roadSvg() {
     const W = 640, pad = 14, end = IFY.finalAge();
+    if (!IFY.S.death && IFY.S.age < IFY.MAX_AGE) {
+      // fix6：游玩中改滑动窗口（step() 保证游玩屏只出现在未终局且岁数未及上限时，故终局屏/结算屏不会进此分支）。
+      // 视窗只装一段路：身后约 21 年＋脚下＋前方约 30 年（同一标尺 12px/年）；当前点锚在全宽 42% 处（cx=271）永不移动，
+      // 岁月推进时路从脚下流过。任何几何量都不编码一生总长：没有全长、没有终点、点的位置比例反推不出剩余寿命。
+      // 图上不出现任何岁数标（当前岁数见下方 meta 行）。
+      const PP = 12; // 每年 12px，身后/前方同一标尺
+      const anchorX = 271; // nowdot 锚位（全宽 42.3%）：身后 (271-14)/12 ≈ 21.4 年，前方 (640-14-271)/12 ≈ 29.6 年
+      const age = IFY.S.age;
+      const X = (a) => anchorX + (a - age) * PP;
+      const forkFiredW = (f) => IFY.S.log.some((l) => l.startsWith(`${f.age} 岁 · `) && f.choices.some((c) => l.endsWith(`：${c.label}`)));
+      let s = "";
+      (IFY.D.forks || []).filter((f) => f.age < end && !(f.state && age > f.age && !forkFiredW(f))).forEach((f) => { // 过滤口径同旧画法（带门分岔没轮到这位玩家时不画）
+        const x = X(f.age);
+        if (x < pad || x > W - pad) return; // 窗口外的站点不画：走过的随窗口左移出界，未来的从右侧渐隐段里随接近而显形
+        const on = age >= f.age, col = on ? "#2F4A3C" : "#C4BCA9";
+        s += `<line x1="${x}" y1="30" x2="${x + 13}" y2="13" stroke="${col}" stroke-width="1.6" stroke-dasharray="3 3"/><circle cx="${x}" cy="30" r="3" fill="${col}"/>`;
+      });
+      // 序章引线与 22 站点：只在窗口覆盖到时出现（开局头几年在画内，年岁渐长自然滑出，不为留住它们破坏窗口规则）；不再配岁数文字标
+      let leadIn = "";
+      if (X(IFY.START_AGE) > pad) {
+        leadIn = `<line x1="${Math.max(pad, X(5))}" y1="30" x2="${X(IFY.START_AGE)}" y2="30" stroke="#C4BCA9" stroke-width="2" stroke-dasharray="2 4"/>`
+          + (X(5) >= pad ? `<circle cx="${X(5)}" cy="30" r="3" fill="none" stroke="#C4BCA9" stroke-width="1.6"/>` : "")
+          + `<circle cx="${X(IFY.START_AGE)}" cy="30" r="3.5" fill="#2F4A3C"/>`;
+      }
+      const track = `<defs><linearGradient id="roadfade" gradientUnits="userSpaceOnUse" x1="${pad}" y1="30" x2="${W - pad}" y2="30"><stop offset="0" stop-color="#D8D2C2" stop-opacity="0"/><stop offset=".07" stop-color="#D8D2C2"/><stop offset=".58" stop-color="#D8D2C2"/><stop offset="1" stop-color="#D8D2C2" stop-opacity="0"/></linearGradient></defs><line x1="${pad}" y1="30" x2="${W - pad}" y2="30" stroke="url(#roadfade)" stroke-width="2"/>`;
+      const greenFrom = X(IFY.START_AGE) > pad ? X(IFY.START_AGE) : pad; // 已走过的成人段：22 站点还在画内时从站点起画（不覆盖引线点线），滑出后从左缘起画
+      return `<svg class="road" viewBox="0 0 ${W} 52" width="100%" aria-hidden="true">${track}${leadIn}${s}<line x1="${greenFrom}" y1="30" x2="${anchorX}" y2="30" stroke="#2F4A3C" stroke-width="2.5"/><circle class="nowdot" cx="${anchorX}" cy="30" r="5" fill="#2F4A3C"/></svg>`;
+    }
+    // 终局路径（死亡屏 renderDeath、结算屏 renderEnd 的 head 调用）：身后记录，v0.26.1 画法原样保留，不走滑动窗口
     const lead = 64; // fix5 追加修正：序章引线宽（全宽 10%，象征段，不参与成人段比例）——人生从 5 岁起，22 岁只是选路的汇合站，不是路的端点
     const x0 = pad + lead;
     const X = (a) => x0 + ((a - IFY.START_AGE) / (end - IFY.START_AGE)) * (W - pad - x0); // 成人段比例不变：先扣引线宽，再按 22..end 标尺算
