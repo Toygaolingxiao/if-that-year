@@ -199,7 +199,7 @@ function scan(item, itemId, inhGate) {
   }
   // 主线门（v0.20.0 M2 第二批）：ctx.mainLine 须为入行旗 id 或其非空数组，值必须是
   // work.js FORM_OF_FLAG 的键（与形态派生同一张表）；标量字符串与数组两种形状都认。
-  const ENTRY_FLAGS = ["farm_work", "exam_landed", "shop_work", "gig_work", "courier_work", "care_work", "write_work", "factory_work", "fab_work", "craft_work", "heavy_work", "miner_work", "truck_work", "med_hosp", "med_work", "nurse_work", "img_work", "teach_work", "acct_work", "fin_work", "press_work", "dev_work", "driver_taxi"];
+  const ENTRY_FLAGS = ["farm_work", "exam_landed", "shop_work", "gig_work", "courier_work", "care_work", "write_work", "factory_work", "fab_work", "craft_work", "heavy_work", "miner_work", "truck_work", "med_hosp", "med_work", "nurse_work", "img_work", "teach_work", "acct_work", "fin_work", "press_work", "dev_work", "driver_taxi", "grad_work"];
   if (item.ctx && item.ctx.mainLine !== undefined) {
     const v = item.ctx.mainLine;
     const arr = Array.isArray(v) ? v : [v];
@@ -208,6 +208,30 @@ function scan(item, itemId, inhGate) {
   }
   // 在护对象门（v0.20.1 W8 登记）：ctx.anyCareTarget 出现时须为 true（求值口径见 registry.js 头注释与 record.js ctxOk）
   if (item.ctx && item.ctx.anyCareTarget !== undefined && item.ctx.anyCareTarget !== true) err(`${itemId}: ctx.anyCareTarget 应为 true`);
+  // 生活事实门（v0.24.4 AN-2 登记）：ctx.house/car/settle 值域核对（派生口径见 place.js housingOf/carOf/settledOf 与 record.js ctxOk）
+  if (item.ctx && item.ctx.house !== undefined && !["owned", "renting", "unit", "any"].includes(item.ctx.house)) err(`${itemId}: ctx.house 含非法值 ${item.ctx.house}`);
+  if (item.ctx && item.ctx.car !== undefined && !["now", "ever", "none"].includes(item.ctx.car)) err(`${itemId}: ctx.car 含非法值 ${item.ctx.car}`);
+  if (item.ctx && item.ctx.settle !== undefined && !["home", "city", "abroad"].includes(item.ctx.settle)) err(`${itemId}: ctx.settle 含非法值 ${item.ctx.settle}`);
+  // 与父母距离变体（v0.24.4 AN-2 登记）：textDist/echoDist 须为 { far: 非空文本 }
+  for (const fld of ["textDist", "echoDist"]) {
+    if (item[fld] === undefined) continue;
+    const v = item[fld];
+    if (!v || typeof v !== "object" || Array.isArray(v)) { err(`${itemId}: ${fld} 不是对象`); continue; }
+    for (const [k, txt] of Object.entries(v)) {
+      if (k !== "far") err(`${itemId}: ${fld} 含非法距离键 ${k}（只许 far）`);
+      else if (typeof txt !== "string" || !txt) err(`${itemId}: ${fld}.far 不是非空文本`);
+    }
+  }
+  // 职业身份派生门（AN-3 登记）：ctx.employed/notEmployed/gradGate/studyLine 出现时须为 true；
+  // ctx.tenureIn 须为 [lo,hi] 非负整数对且 lo≤hi；ctx.lineSwitchWithin 须为非负数（求值口径见 record.js ctxOk）。
+  if (item.ctx) for (const fld of ["employed", "notEmployed", "gradGate", "studyLine"]) {
+    if (item.ctx[fld] !== undefined && item.ctx[fld] !== true) err(`${itemId}: ctx.${fld} 应为 true`);
+  }
+  if (item.ctx && item.ctx.tenureIn !== undefined) {
+    const v = item.ctx.tenureIn;
+    if (!Array.isArray(v) || v.length !== 2 || v.some((x) => typeof x !== "number" || x < 0) || v[0] > v[1]) err(`${itemId}: ctx.tenureIn 应为 [lo,hi] 非负数对且 lo≤hi`);
+  }
+  if (item.ctx && item.ctx.lineSwitchWithin !== undefined && (typeof item.ctx.lineSwitchWithin !== "number" || item.ctx.lineSwitchWithin < 0)) err(`${itemId}: ctx.lineSwitchWithin 应为非负数`);
   for (const fld of ["textForm", "echoForm", "labelForm"]) {
     if (!item[fld]) continue;
     for (const [fv, txt] of Object.entries(item[fld])) {

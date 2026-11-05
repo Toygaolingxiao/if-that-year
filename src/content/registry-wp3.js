@@ -64,8 +64,7 @@ window.GAME_REGISTRY_EXTRA = (window.GAME_REGISTRY_EXTRA || []).concat([{
     c1965: {
       school: { high: 35, mid: 40, low: 25 },
       half: { high: 20, mid: 40, low: 40 },
-      never: { high: 10, mid: 30, low: 60 },
-      note: "c1965 F65-b 小升初分层（WP3 定版）：设计参数，无统计出处；band 只分层、不切 16 岁选项面",
+      note: "c1965 F65-b 小升初分层（WP3 定版）：设计参数，无统计出处；band 只分层、不切 16 岁选项面。fix3 B1（子类 3a）：never 行删除——没进过校门的人不掷 band（与 c1985/c1995 口径对齐，另由 pr_child4 的 bandSkipSchooling 在引擎侧兜底）",
     },
   },
   // 分根集成预留（蓝图 §七，评审后薄集成）：c1965 分根拍＝pr_fork16（顶替形，选择分根），

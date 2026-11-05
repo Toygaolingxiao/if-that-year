@@ -10,29 +10,53 @@
     // F1/F2（v0.17.0）：片段先按 needs 对本局事实过滤再抽；过滤后为空回落中性片段（无 needs 者），事实不许将就
     const pickF = (pool) => {
       if (!Array.isArray(pool)) return { text: pool, idx: 0 };
-      let cands = pool.map((f, i) => [f, i]).filter(([f]) => IFY.factOk(typeof f === "string" ? null : f.needs));
+      let cands = pool.map((f, i) => [f, i]).filter(([f]) => factOkHere(typeof f === "string" ? null : f.needs)); // AN-5 R7：判词过滤走段口径（factOkHere 定义在下方、pickF 调用时已就绪）
       if (!cands.length) cands = pool.map((f, i) => [f, i]).filter(([f]) => typeof f === "string" || !f.needs);
       if (!cands.length) cands = pool.map((f, i) => [f, i]);
       const [f, i] = cands[Math.floor(IFY.rng() * cands.length)];
       return { text: typeof f === "string" ? f : f.t, idx: i };
     };
+    // AN-5 R7：交换局判词改段口径——factOk 本体（scheduler.js，事件调度在用）口径不动；
+    // 本函数内另建段版：flag/anyFlag 按段见证判（任一段成立过即算），notFlag/notAnyFlag 按
+    // 「任一段都没见证过」判（负向门防的是把交出段发生过的事断言成没发生过），state/stateNot/
+    // eraIn 仍读终局身体（状态类句子说的是终局形状，与九槽口径一致）。未交换局（view 为 null）
+    // 走 IFY.factOk 原路，逐字不变。
+    const view = playerFacts();
+    const factOkHere = view ? (needs) => {
+      if (!needs) return true;
+      const wit = (f) => view.hasFact(f) || view.flagWitnessed(f);
+      if (needs.flag && !wit(needs.flag)) return false;
+      if (needs.notFlag && wit(needs.notFlag)) return false;
+      if (needs.anyFlag && !needs.anyFlag.some(wit)) return false;
+      if (needs.notAnyFlag && needs.notAnyFlag.some(wit)) return false;
+      if (needs.state) for (const [dom, vals] of Object.entries(needs.state)) if (!vals.includes(IFY.S.state[dom])) return false;
+      if (needs.stateNot) for (const [dom, vals] of Object.entries(needs.stateNot)) if (vals.includes(IFY.S.state[dom])) return false;
+      if (needs.eraIn && !needs.eraIn.includes(IFY.S.era)) return false;
+      return true;
+    } : IFY.factOk;
     const tF = pickF(IFY.D.verdictTop[top]), cF = pickF(IFY.D.verdictCost[bottom]);
     IFY.S._verdict = { text: tF.text + cF.text, top, bottom, topIdx: tF.idx, costIdx: cF.idx };
     return IFY.S._verdict;
   }
 
   // ---------- 事实标签行（v0.11.0） ----------
-  // 只从本局事实取材，三段为限、纯描述：①路线与人生形状（迁徙旗标优先于路线默认）②一条最有分量的轨迹（按下方优先级取第一条有旗标/日志证据的，无证据不生成）③晚年与家庭收尾。
+  // 只从本局事实取材，三段为限、纯描述：①路线与人生形状（落脚终点由居所轨迹单一派生，旗标只作质地修饰——AN-5 R2）②一条最有分量的轨迹（按下方优先级取第一条有旗标/日志证据的，无证据不生成）③晚年与家庭收尾。
   // 无稀有度、无档位；不复述特殊结局名；纯函数（不耗 rng），同局在结算页与分享卡恒一致。
   function lifeTags() {
     const F = IFY.S.flags, used = IFY.S.usedEvents, out = [];
-    const trail = IFY.residenceTrail(); // v0.18.0：形状段改读实际居所轨迹（账本里的路线起点与迁徙记录），不再只凭路线与旗标
+    const trail = typeof IFY.settledOf === "function" ? IFY.settledOf(IFY.S) : IFY.residenceTrail(); // v0.18.0：形状段改读实际居所轨迹（账本里的路线起点与迁徙记录），不再只凭路线与旗标
+    // v0.24.4（AN-2）：形状只认轨迹终点与段长，旧版的裸旗回落段整段删除——back_home_stay 这类
+    // 只增不减的旗会把「回老家住一阵」读成终局形状，与落脚槽（读轨迹）在同一屏打架（B85-04 实锤）。
+    // 映射表（轨迹形状 → 标签，旧标签词全保留）：终点老家且在外≥5年＝最后回了老家；终点国外＝
+    // 在异乡扎下根；终点城市＝在异乡扎下根，唯「城市→城市搬家」轨迹看不见（同为 city 段），
+    // moved_city 旗是唯一证据且只断言过去搬过家，单独保留这一条旗读；终点老家且在外<5年＝
+    // 按 near_family/often_back/路线默认收尾。
     let shape = "";
     if (trail.final === "home" && trail.spans.city + trail.spans.abroad >= 5) shape = "最后回了老家";
-    else if (F.back_home_stay) shape = "最后回了老家";
-    else if (F.stayed_city) shape = "在异乡扎下根";
-    else if (F.moved_city) shape = "换过城市生活";
-    else if (F.near_family) shape = "守在家人近处";
+    else if (trail.final === "abroad") shape = "在异乡扎下根";
+    else if (trail.final === "city" && F.moved_city && trail.spans.home + trail.spans.abroad === 0 && trail.start === "city") shape = "换过城市生活";
+    else if (trail.final === "city") shape = "在异乡扎下根";
+    else if (trail.final === "home" && F.near_family) shape = "守在家人近处";
     else if (F.often_back) shape = "一直没断了回老家的路";
     else shape = { corp: "去大城市闯过", home: "留在家乡过日子", abroad: "去远方生活过", study: "多读了几年书", gap: "停过一年再出发" }[IFY.S.route.id] || "";
     if (shape) out.push(shape);
@@ -59,7 +83,7 @@
       if (hk) t2 = HOB[hk] + "陪了大半辈子";
     }
     if (!t2 && IFY.S.state && IFY.S.state.dog !== "none") t2 = "养过一条狗"; // v0.12.0：旗标时代 dog_home 立后不清（在养/已离世都算养过），状态读法等价取 ≠none
-    if (!t2 && F.bought_house) t2 = "供过一套房";
+    if (!t2 && typeof IFY.housingOf === "function" && IFY.housingOf(IFY.S).owned) t2 = "供过一套房"; // v0.24.4：改读住房派生（旧版只认 bought_house 一面旗，商品房/房改/集资买家全漏）
     if (t2) out.push(t2);
     const res = trail.final === "home" ? "家乡" : trail.final === "abroad" ? "异国" : "异乡"; // v0.18.0：「终老在异国」只在居所轨迹终点确为异国时才写
     let close = "";
@@ -228,7 +252,9 @@
     return {
       lines, change, entryAge,
       drift: lines.length >= 2 || change.length > 0,
-      single: lines.length === 1 && !change.length && (entryAge == null || entryAge <= 42),
+      // AN-5 R3：入行旗只覆盖成年段，「一辈子」的辖域还含序章——少年轨是打工形（state.track="work"，
+      // 杂工拼盘）时不判 single，落回事业槽中性支（只往少说收，不误伤真单行）。
+      single: lines.length === 1 && !change.length && (entryAge == null || entryAge <= 42) && !(IFY.S.state && IFY.S.state.track === "work"),
       none: lines.length === 0,
     };
   }
@@ -252,10 +278,13 @@
         if (typeof ages[f] === "number") entryAge = entryAge == null ? ages[f] : Math.min(entryAge, ages[f]);
       }
     }
+    // AN-5 R3（段版同门）：少年轨两段共享同一序章，读末段 Track 的 state.track 即可；打工形不判 single。
+    const lastSegState = view.segments.length ? view.segments[view.segments.length - 1].state : null;
+    const teenTrack = lastSegState && lastSegState.state ? lastSegState.state.track : null;
     return {
       lines, change, entryAge,
       drift: lines.length >= 2 || change.length > 0,
-      single: lines.length === 1 && !change.length && (entryAge == null || entryAge <= 42),
+      single: lines.length === 1 && !change.length && (entryAge == null || entryAge <= 42) && teenTrack !== "work",
       none: lines.length === 0,
     };
   }
@@ -394,6 +423,23 @@
         hits.push(e);
       }
     }
+    // AN-5 R9（P-END-2 普查实证后落门）：四个结局的正文预设「65 岁/退休」，本体此前无终局年龄门——
+    // 普查种子 END2-180（c1955）实证：桃李满天下在终局 56 岁、workPhase=working 时落定，正文却写「退休那年」。
+    // 门加在普通通道与段通道汇合之后、排序之前：不合者不算落定，剔除后由下一候选或普通结局接续。
+    // 子孙满堂四个变体都是「65 岁生日那天」的当日戏，只认年龄轴（终局 <65 一律剔除，纵已退休——
+    // 65 岁生日还没到，那场戏无从发生）；其余三结局（桃李/手艺/村医）的预设是退休本身，
+    // 年龄 ≥65 或 workPhase 已 retired/part 任一达标即放行。
+    {
+      const finAge = typeof IFY.finalAge === "function" ? IFY.finalAge() : null;
+      const finPhase = IFY.S && IFY.S.state ? IFY.S.state.workPhase : null;
+      const RETIRE_GATED = { end_teacher_taoli: 1, end_craft_legacy: 1, end_village_doctor: 1 };
+      for (let i = hits.length - 1; i >= 0; i--) {
+        const e = hits[i];
+        if (finAge == null) break;
+        if (e.id === "end_bigfamily") { if (finAge < 65) hits.splice(i, 1); }
+        else if (RETIRE_GATED[e.id] && finAge < 65 && finPhase !== "retired" && finPhase !== "part") hits.splice(i, 1);
+      }
+    }
     if (!hits.length) return null;
     hits.sort((a, b) => IFY.TIER_ORDER[a.tier] - IFY.TIER_ORDER[b.tier]);
     const hit = hits[0];
@@ -401,12 +447,19 @@
     // 与 scheduler 的 kidAgeTrue 同锚）推 65 岁时子女年龄：≥40 出四代原文；32–39 出三代文（textThree）；
     // 更小、或读不到落点时出儿孙满堂文（textFull，不提孙辈）。只换文本——命中、档位、证据一概不动，
     // 出现率不变。交换局按终局身体的落点推，读不到就落 textFull：只会少说，不会多说。
-    if (hit.id === "end_bigfamily" && (hit.textThree || hit.textFull)) {
+    if (hit.id === "end_bigfamily" && (hit.textThree || hit.textFull || hit.textFullSolo)) {
       const S = IFY.S || {};
       const bornAt = typeof S.kidsBornAt === "number" ? S.kidsBornAt : S.kidsAt;
       const childAgeAt65 = typeof bornAt === "number" ? 65 - bornAt : null;
+      // AN-5 R6：选文加第二轴——伴侣在场。textFull 写「另一半在对面」，是 65 岁当下的一场戏，
+      // 要的是当下状态（终局身体 spouse=partnered），不是「曾经 partnered」；交换局经段通道
+      // （stateWitnessed 补「经历过」）落定的局，伴侣已逝时 textFull 不许出，落无伴侣兜底变体
+      // textFullSolo。选文位于普通通道与段通道汇合之后，两路同门——只在普通 met 上加门堵不住段通道。
+      // text/textThree 本就不提伴侣，伴侣已逝时照旧出。命中、档位、证据一概不动，只换文本。
+      const spouseHere = !!(S.state && S.state.spouse === "partnered");
       const text = childAgeAt65 != null && childAgeAt65 >= 40 ? hit.text
-        : (childAgeAt65 != null && childAgeAt65 >= 32 ? (hit.textThree || hit.text) : (hit.textFull || hit.text));
+        : (childAgeAt65 != null && childAgeAt65 >= 32 ? (hit.textThree || hit.text)
+          : (spouseHere ? (hit.textFull || hit.text) : (hit.textFullSolo || hit.textFull || hit.text)));
       if (text !== hit.text) return Object.assign({}, hit, { text });
     }
     return hit;
@@ -771,15 +824,17 @@
       return { final: fin, spans };
     })() : IFY.residenceTrail();
     const slots = [];
-    // 落脚槽住房分文（v0.23 WP9，E7）：只许在无更强信号的缺省支按住房事实旗分文——final=home 的熟门熟路支
-    // 与 final=city 的缺省支（else）；在外多年回老家、异国、出乡落脚三支是强信号支，不读旗。优先级从钱槽
-    // 口径：boughtReform ＞ unitHousing（bought_house 不入落脚槽：供房的落脚形状由钱槽与标签行承载）。
+    // 落脚槽住房分文（v0.23 WP9，E7）：只许在无更强信号的缺省支按住房事实分文——final=home 的熟门熟路支
+    // 与 final=city 的缺省支（else）；在外多年回老家、异国、出乡落脚三支是强信号支，不读住房。
+    // v0.24.4（AN-2）：住房改读派生 housingOf（place.js）——form=reform 即房改那套、unit 即单位分房；
+    // 旧版直读 boughtReform/unitHousing 两面旗，漏了只走到 bought_fangai 的半截房改链。
+    const housing = typeof IFY.housingOf === "function" ? IFY.housingOf(IFY.S) : { form: F.boughtReform ? "reform" : null, unit: !!F.unitHousing, rentingNow: !!F.renting && !F.bought_house && !F.boughtReform && !F.unitHousing };
     let s1;
     if (trail.final === "home" && trail.spans.city + trail.spans.abroad >= 5) s1 = `在外头住了${trail.spans.city + trail.spans.abroad}年，最后还是回了老家落脚。`;
     else if (trail.final === "abroad") s1 = `最后落脚在异国，在那边住了${trail.spans.abroad}年。`;
     else if (trail.final === "city" && IFY.S.route && IFY.S.route.id === "home") s1 = `后来出了家乡，在外头落了脚，一住${trail.spans.city}年。`;
-    else if (trail.final === "home") s1 = F.boughtReform ? "最后落脚在老家这边，住的还是房改那会儿买下的那套房。" : F.unitHousing ? "最后落脚在老家这边，住的还是单位分的那套房。" : "最后落脚在老家这边，住的还是熟门熟路的地方。";
-    else s1 = F.boughtReform ? "最后落脚在住惯了的这座城，住的还是房改那会儿买下的那套房。" : F.unitHousing ? "最后落脚在住惯了的这座城，住的还是单位分的那套房。" : "最后落脚在住惯了的这座城。";
+    else if (trail.final === "home") s1 = housing.form === "reform" ? "最后落脚在老家这边，住的还是房改那会儿买下的那套房。" : housing.unit ? "最后落脚在老家这边，住的还是单位分的那套房。" : "最后落脚在老家这边，住的还是熟门熟路的地方。";
+    else s1 = housing.form === "reform" ? "最后落脚在住惯了的这座城，住的还是房改那会儿买下的那套房。" : housing.unit ? "最后落脚在住惯了的这座城，住的还是单位分的那套房。" : "最后落脚在住惯了的这座城。";
     slots.push(["落脚", s1]);
     let s2;
     if (ST.spouse === "partnered") s2 = "另一半陪着走到了最后。吵过，也和好过，饭还是一起吃。";
@@ -796,12 +851,14 @@
     slots.push(["陪伴", s2]);
     const m = IFY.S.stats.money;
     let s3;
-    // 钱槽住房读法（v0.23 WP9，E7）：优先级写死为 bought_house ＞ boughtReform ＞ unitHousing。
-    // boughtReform 支按 money 两段，镜像 bought_house 支的形状（≥60 留余钱 / <60 钱填进房里）；
-    // unitHousing 支只在两 bought 旗皆无时走：住单位分的房、没在房子上掏大钱，余下按 money 四段分说。
-    if (F.bought_house) s3 = m >= 60 ? "房子供下来了，手里还留着余钱，够花。" : "供下了一套房，钱多半填进了房子里，日子紧巴巴地过。";
-    else if (F.boughtReform) s3 = m >= 60 ? "房改那会儿把住着的单位房买下来了，手里还留着余钱，够花。" : "房改时把住着的单位房买了下来，钱多半填进了这套房里，日子紧巴巴地过。";
-    else if (F.unitHousing) s3 = m >= 70 ? "住的是单位分的房，没在房子上掏过大钱，手里的钱攒下了，够用，还有富余。" : m >= 40 ? "住的是单位分的房，没在房子上掏过大钱。钱不多不少，够日常开销。" : m >= 20 ? "住的是单位分的房，没在房子上掏过大钱，可手头还是紧，钱这事操心了一辈子。" : "住的是单位分的房，没在房子上掏过大钱，到最后也没攒下什么。好在饭还吃得上，觉还睡得着。";
+    // 钱槽住房读法（v0.23 WP9，E7）：优先级 bought_house ＞ boughtReform ＞ unitHousing。
+    // v0.24.4（AN-2）：改读派生 housingOf 的形态——own/commodity 走供房支（商品房与集资建房同此口径），
+    // reform 走房改支（半截链 bought_fangai 也在此认账，旧版直读 boughtReform 会把这批人说成没买房），
+    // unit 支只在未购房时走（住单位分的房、没在房子上掏大钱，余下按 money 四段分说）；多笔购房并存时
+    // 形态取最早一次（housingOf 口径）。各支文案一字未动。
+    if (housing.owned === "own" || housing.owned === "commodity") s3 = m >= 60 ? "房子供下来了，手里还留着余钱，够花。" : "供下了一套房，钱多半填进了房子里，日子紧巴巴地过。";
+    else if (housing.owned === "reform") s3 = m >= 60 ? "房改那会儿把住着的单位房买下来了，手里还留着余钱，够花。" : "房改时把住着的单位房买了下来，钱多半填进了这套房里，日子紧巴巴地过。";
+    else if (housing.unit) s3 = m >= 70 ? "住的是单位分的房，没在房子上掏过大钱，手里的钱攒下了，够用，还有富余。" : m >= 40 ? "住的是单位分的房，没在房子上掏过大钱。钱不多不少，够日常开销。" : m >= 20 ? "住的是单位分的房，没在房子上掏过大钱，可手头还是紧，钱这事操心了一辈子。" : "住的是单位分的房，没在房子上掏过大钱，到最后也没攒下什么。好在饭还吃得上，觉还睡得着。";
     else if (m >= 70) s3 = "没买房，手里的钱倒是攒下了，够用，还有富余。";
     else if (m >= 40) s3 = "钱不多不少，够日常开销。遇上大事帮不上，小日子能过。";
     else if (m >= 20) s3 = "手头一直紧。钱这事，操心了一辈子。";
@@ -867,11 +924,23 @@
     const PARENT_LINE_FACTS = [
       ["famRestructure95", "爸妈后来分开了。这事你小时候就知道了，日子还是照着过。"],
       ["famSplit55", "小时候你爸去外地支援新厂，家里分两处住过一阵。"],
-      ["originLB", "小时候爸妈在外头挣钱，你跟着老人住，过年才齐人。"],
-      ["famLaidOff85", "爸妈下过岗，家里紧过一阵，先紧的是你们小的。"],
+      ["originLB", "小时候爸妈在外头挣钱，你跟着老人住，过年才齐人。"], // 带形门：随迁局不出此句（见下方 migrantForm 判）
+      ["famLaidOff85", "你爸下过岗，家里紧过一阵，先紧的是你们小的。"], // AN-5 R5：主语按变体正文改单数（两变体都只有爸一人）
+      ["famArrears85", "你爸的厂子发不出工资，家里紧过一阵。"], // AN-5 R5：11–13 岁弱档（停发找零活，未下岗落定）
       ["famTight78", "爸妈那几年为钱折腾过，家里的钱紧过一阵。"],
     ];
+    // AN-5 R4：originLB 一旗两形——旗记的是「父母外出」状态，留守句断言的是「留守」形；
+    // 形（leftBehind/migrantChild）在序章状态里，结算须读形再取句。随迁局（任一段序章状态
+    // migrantChild 为真，两段共享同一序章、值恒一致）命中 originLB 时视同未命中、继续往下找；
+    // 序章状态读不到（老档/无序章局）按原行为出句。随迁形自己的回述句属内容决定，本轮只止血。
+    const migrantForm = (() => {
+      const pros = [];
+      if (IFY.S && IFY.S.prologue) pros.push(IFY.S.prologue);
+      if (view) for (const seg of view.segments) if (seg.state && seg.state.prologue) pros.push(seg.state.prologue);
+      return pros.some((p) => p && p.migrantChild);
+    })();
     for (const [factFlag, factLine] of PARENT_LINE_FACTS) {
+      if (factFlag === "originLB" && migrantForm) continue;
       if (view ? view.flagWitnessed(factFlag) : !!F[factFlag]) { s6 += factLine; break; }
     }
     slots.push(["父母", s6]);
@@ -885,7 +954,7 @@
     else if (!view && IFY.S.covenant && IFY.S.covenant.kind === "wait" && ST.kids === "undecided") s7 = "38 岁挂起的那份账，到最后也没正式对完。";
     else if (!view && F.late_tried && !F.late_parent) s7 = "想要孩子那几年，试过，也跑过医院，最后没等来。这事放下了，就是偶尔还想起。";
     else if ((IFY.playerMeta().glimpsesSkipped || 0) >= 2 && !(IFY.playerMeta().glimpsesSeen > 0)) s7 = "另一条路有几回摆在眼前，你都没去细看。不知道的，就让它不知道下去。"; // v0.21 WP1：瞥视计数改读 session.meta（蓝图 3.1）；v0.22.1 F8：看过至少一次的人不许判「都没去细看」，计数口径与文案对齐（审计 run-13）
-    else if (F.renting && !F.bought_house && !F.boughtReform && !F.unitHousing) s7 = "买房的事提过几回，最后没办成，一直租着住。"; // WP9 盲审修复：与钱槽住房优先级同口径——任一自有住房旗（买房/房改/单位分房）在场即不出租房句，免同局自相矛盾
+    else if (housing.rentingNow) s7 = "买房的事提过几回，最后没办成，一直租着住。"; // v0.24.4：改读派生 rentingNow——旧版三旗排除漏了 bought_commodity/bought_fangai/jizi_house，商品房买家照样出「一直租着住」（侦察 c1965 rec-05 实锤）
     else s7 = "没什么悬着的大事。该办的办了，办不了的，也放下了。";
     slots.push(["没办完的事", s7]);
     // 第八槽（v0.22 WP7 交换局真账化；v0.22.1 F7 扩到未交换局）：只要本局有不受控 Track

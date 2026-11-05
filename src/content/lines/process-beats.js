@@ -8,28 +8,28 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
     choices: [
       { label: "请一段长假，回去陪一阵", set: "care_self", effects: { relation: 4, money: -3, freedom: -2 }, echo: "你在家住了一个月。陪他去医院，陪他在院里晒太阳。他嘴上说你瞎耽误工夫，可你走那天，他站在门口看了半天。" },
       { label: "请个护工帮着，自己管钱管事", set: "care_hired", effects: { money: -5, relation: 1 }, echo: "护工是邻居介绍的，干活利索。你每月按时打钱，隔几天打个电话问一遍，心里才算踏实。" },
-      { label: "先观察一段，周末多回去", effects: { relation: 1, freedom: -1 }, echo: "你把周末的安排改了，能回就回。路上的时间变多了，可有些事，错过就是错过了。" },
+      { label: "先观察一段，周末多回去", effects: { relation: 1, freedom: -1 }, echo: "你把周末的安排改了，能回就回。路上的时间变多了，可有些事，错过就是错过了。", echoNear: "你把手边的事都排开了，三天两头过去坐坐。陪着的日子是多了，可有些事，错过就是错过了。" },
     ] },
   { id: "proc_mom_care", min: 22, max: 80, procOnly: true, set: "care_stage", text: "你妈的身体这一年明显不行了。她自己下厨都要扶着灶台站，夜里起来好几回。电话里她说不用你管，可你听得出来，她是怕拖累你。",
     choices: [
       { label: "请一段长假，回去陪一阵", set: "care_self", effects: { relation: 4, money: -3, freedom: -2 }, echo: "你在家住了一个月。给她做饭，扶她在屋里慢慢走。她总说自己能行，可你端过去的饭，她都吃完了。" },
       { label: "请个护工帮着，自己管钱管事", set: "care_hired", effects: { money: -5, relation: 1 }, echo: "护工是邻居介绍的，干活利索。你每月按时打钱，隔几天打个电话问一遍，心里才算踏实。" },
-      { label: "先观察一段，周末多回去", effects: { relation: 1, freedom: -1 }, echo: "你把周末的安排改了，能回就回。路上的时间变多了，可有些事，错过就是错过了。" },
+      { label: "先观察一段，周末多回去", effects: { relation: 1, freedom: -1 }, echo: "你把周末的安排改了，能回就回。路上的时间变多了，可有些事，错过就是错过了。", echoNear: "你把手边的事都排开了，三天两头过去坐坐。陪着的日子是多了，可有些事，错过就是错过了。" },
     ] },
   // —— 照护预警信号拍（v0.20.0 M2 收尾）：care 之前 2–4 年、每位父母至多一次的轻量提示；触发与时点在父母进程（signalAgeOf），本条目只管文本，不立旗、不动状态 ——
-  { id: "proc_dad_signal", min: 22, max: 80, procOnly: true, text: "这一年，你爸的身体露出点苗头。陪他去体检，报告上有几项被圈出来，他摆摆手说没事。回家上楼，他在二楼平台上歇了一回，从前没有过。你把复查的日子记在本子上：他这边，怕是得有人搭把手。", textState: { mom: { dead: "这一年，你爸的身体露出点苗头。陪他去体检，报告上有几项被圈出来，他摆摆手说没事。回家上楼，他在二楼平台上歇了一回，从前没有过。你把复查的日子记在本子上：他这边，怕是得有人搭把手。" } },
+  { id: "proc_dad_signal", min: 22, max: 80, procOnly: true, text: "这一年，你爸的身体露出点苗头。陪他去体检，报告上有几项被圈出来，他摆摆手说没事。回家上楼，他在二楼平台上歇了一回，从前没有过。你把复查的日子记在本子上：他这边，怕是得有人搭把手。", textDist: { far: "这一年，你爸的身体露出点苗头。体检报告上有几项被圈出来，拍照发到了你手机上，你对着那几行字看了好几遍。没过几天电话又来，说他回家上楼，在二楼平台上歇了一回，从前没有过。你在电话里把复查的日子问清楚，记在自己的日历上：他这边，怕是得有人搭把手。" }, textState: { mom: { dead: "这一年，你爸的身体露出点苗头。陪他去体检，报告上有几项被圈出来，他摆摆手说没事。回家上楼，他在二楼平台上歇了一回，从前没有过。你把复查的日子记在本子上：他这边，怕是得有人搭把手。" } },
     effects: { relation: 1 } },
-  { id: "proc_mom_signal", min: 22, max: 80, procOnly: true, text: "这一年，你妈的身体露出点苗头。去买菜，那兜菜她半路歇了两回才提回家，嘴上说天热，腿上是真没劲了。夜里起来，她也要扶着墙站一会儿。你把这事记在心里：往后她这边，怕是得有人搭把手。", textState: { dad: { dead: "这一年，你妈的身体露出点苗头。去买菜，那兜菜她半路歇了两回才提回家，嘴上说天热，腿上是真没劲了。夜里起来，她也要扶着墙站一会儿。你把这事记在心里：往后她这边，怕是得有人搭把手。" } },
+  { id: "proc_mom_signal", min: 22, max: 80, procOnly: true, text: "这一年，你妈的身体露出点苗头。去买菜，那兜菜她半路歇了两回才提回家，嘴上说天热，腿上是真没劲了。夜里起来，她也要扶着墙站一会儿。你把这事记在心里：往后她这边，怕是得有人搭把手。", textDist: { far: "这一年，你妈的身体露出点苗头。体检报告上有几项被圈出来，拍照发到了你手机上，你对着那几行字看了好几遍。没过几天电话又来，说她拎着菜上楼，在楼道里歇了一回才到家。你在电话里把复查的日子问清楚，记在自己的日历上：她这边，怕是得有人搭把手。" }, textState: { dad: { dead: "这一年，你妈的身体露出点苗头。去买菜，那兜菜她半路歇了两回才提回家，嘴上说天热，腿上是真没劲了。夜里起来，她也要扶着墙站一会儿。你把这事记在心里：往后她这边，怕是得有人搭把手。" } },
     effects: { relation: 1 } },
-  { id: "proc_dad_hosp", min: 22, max: 80, procOnly: true, text: "你爸住院了。病房里六张床，他靠窗。医生说先住下来观察，该做的检查一样一样做。你在走廊的长椅上坐了一夜，天亮的时候去楼下买了粥。",
+  { id: "proc_dad_hosp", min: 22, max: 80, procOnly: true, text: "你爸住院了。病房里六张床，他靠窗。医生说先住下来观察，该做的检查一样一样做。你在走廊的长椅上坐了一夜，天亮的时候去楼下买了粥。", textDist: { far: "你爸住院了。电话打过来的时候，你手边的事还没放下。往回赶的路上，电话一个接一个，检查结果一样一样报给你听。赶到病房时他已经睡了，床头柜上放着白天做完的检查单。你在走廊的长椅上坐了一夜，天亮的时候去楼下买了粥。" },
     choices: [
       { label: "在医院陪床，晚上就睡陪护椅", set: "care_self", effects: { relation: 3, health: -2, money: -2 }, echo: "陪护椅睡得腰酸。可他半夜醒来，看见你在，心里是定的。" },
-      { label: "请护工帮着，自己每天去看一趟", set: "care_hired", effects: { money: -4, relation: 1 }, echo: "护工白班夜班地换。你每天先去病房坐一会儿，把当天的检查结果听完再走。" },
+      { label: "请护工帮着，自己每天去看一趟", set: "care_hired", effects: { money: -4, relation: 1 }, echo: "护工白班夜班地换。你每天先去病房坐一会儿，把当天的检查结果听完再走。", echoDist: { far: "护工白班夜班地换。你每天往医院打几个电话，把当天的检查结果问清楚，钱按时打过去。" } },
     ] },
-  { id: "proc_mom_hosp", min: 22, max: 80, procOnly: true, text: "你妈住院了。病房里六张床，她靠窗。医生说先住下来观察，该做的检查一样一样做。你在走廊的长椅上坐了一夜，天亮的时候去楼下买了粥。",
+  { id: "proc_mom_hosp", min: 22, max: 80, procOnly: true, text: "你妈住院了。病房里六张床，她靠窗。医生说先住下来观察，该做的检查一样一样做。你在走廊的长椅上坐了一夜，天亮的时候去楼下买了粥。", textDist: { far: "你妈住院了。电话打过来的时候，你手边的事还没放下。往回赶的路上，电话一个接一个，检查结果一样一样报给你听。赶到病房时她已经睡了，床头柜上放着白天做完的检查单。你在走廊的长椅上坐了一夜，天亮的时候去楼下买了粥。" },
     choices: [
       { label: "在医院陪床，晚上就睡陪护椅", set: "care_self", effects: { relation: 3, health: -2, money: -2 }, echo: "陪护椅睡得腰酸。可她半夜醒来，看见你在，心里是定的。" },
-      { label: "请护工帮着，自己每天去看一趟", set: "care_hired", effects: { money: -4, relation: 1 }, echo: "护工白班夜班地换。你每天先去病房坐一会儿，把当天的检查结果听完再走。" },
+      { label: "请护工帮着，自己每天去看一趟", set: "care_hired", effects: { money: -4, relation: 1 }, echo: "护工白班夜班地换。你每天先去病房坐一会儿，把当天的检查结果听完再走。", echoDist: { far: "护工白班夜班地换。你每天往医院打几个电话，把当天的检查结果问清楚，钱按时打过去。" } },
     ] },
   { id: "proc_dad_dead", min: 22, max: 80, procOnly: true, stateAll: { dad: "alive" }, setState: { dad: "dead" }, text: "你爸走了。走得还算安稳。葬礼办完，亲戚们陆续散了，你一个人把他的屋子收拾了一遍：衣服叠好，工具摆齐，抽屉里有一本记了一辈子的账。",
     effects: { relation: -2, health: -1 } },
@@ -38,12 +38,12 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
   // —— dating 到期结算：处满 7 年未定，由进程拍给出三条路（推迟至多两次） ——
   { id: "proc_dating", min: 22, max: 80, procOnly: true, stateAll: { spouse: "dating" }, text: "处了这些年，周围人都默认你们是一对。可这事一直没个正式的说法。这一回，得有个决定了。",
     choices: [
-      { label: "把关系定下来，好好过日子", setState: { spouse: "partnered" }, effects: { relation: 4, freedom: -1 }, echo: "没办多大的排场，两家人吃了顿饭，日子就接着往下过了。回头看，这个决定下得晚，可不算错。" },
+      { label: "把关系定下来，好好过日子", set: "married", setState: { spouse: "partnered" }, effects: { relation: 4, freedom: -1 }, echo: "没办多大的排场，两家人吃了顿饭，日子就接着往下过了。回头看，这个决定下得晚，可不算错。" },
       { label: "好聚好散，各过各的", setState: { spouse: "single" }, effects: { freedom: 3, relation: -3 }, echo: "最后那顿饭吃得很平静。东西分好，钥匙还回去。走出那个门的时候，你知道这回是真的分开了。" },
       { label: "再处处看，不急着定", deferDating: true, effects: { relation: 1 }, echo: "话说开了，反倒松快些。定不定，以后再说——你们先这么处着。" },
     ] },
   // —— 职业入行拍与链后继（B5 语境门的事实来源） ——
-  { id: "e_med_start", ctx: { entry: true }, min: 24, max: 36, text: "县里卫生院贴出招人启事：招医护辅助，先培训再上岗。去问的人不多，门口没排队。管事的说，这行当熬人，可饭碗稳。",
+  { id: "e_med_start", ctx: { entry: true }, forbidRoute: "abroad", min: 24, max: 36, text: "县里卫生院贴出招人启事：招医护辅助，先培训再上岗。去问的人不多，门口没排队。管事的说，这行当熬人，可饭碗稳。",
     choices: [
       { label: "去，先学起来（往后就是医护这一行的人）", set: "med_work", effects: { growth: 4, money: -1 }, echo: "培训了三个月，你学会了量血压、换药、认常用药名。头一回独立值班，你手心全是汗。" },
       { label: "不去，手头的活先干着", effects: {}, echo: "你把启事看了一眼，又贴了回去。日子照旧过。" },
@@ -64,7 +64,7 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
     effects: { relation: 3 } },
   { id: "e_half_echo", min: 28, max: 46, require: "half_grown", text: "小时候半读半帮工落下的那些课，这些年你一点一点补。账本、说明书、招工告示，从前要人念的，如今你自己看。",
     effects: { growth: 3 } },
-  { id: "e_work_echo", min: 26, max: 40, state: { track: "work" }, text: "出来打工快十年了。流水线、后厨、工地，能干的你都干过。手上的茧厚了，卡里也攒下了一点。",
+  { id: "e_work_echo", min: 26, max: 40, ctx: { mainLine: ["factory_work", "fab_work", "gig_work", "courier_work", "heavy_work", "miner_work", "craft_work"] }, text: "出来打工快十年了。流水线、后厨、工地，能干的你都干过。手上的茧厚了，卡里也攒下了一点。",
     effects: { money: 2, growth: 1 } },
   { id: "e_never_work", min: 24, max: 40, state: { schooling: "never" }, text: "招工的人看你干活利索，一听不认字，把头摇了摇。你转身去了不问文凭的那家：活更重，钱更少。",
     effects: { money: 1, health: -1 } },

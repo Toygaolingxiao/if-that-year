@@ -69,12 +69,54 @@
     return fallback;
   }
 
+  // 与父母距离变体（v0.24.4 AN-2）：textDist/echoDist 形状 { far: 文本 }——本局与父母距离派生
+  // （place.js distToParentsOf）为 far（出国定居）时取远版，未命中回落下一层原文。距离是硬事实，
+  // 位置与无单位变体同级（在年代/形态/状态变体之外）；只有父母住院/信号拍声明此字段，
+  // 其余条目恒等回落、行为一字不变。主线与影子轨共用（解析时 IFY.S 指向当前 Track）。
+  function distVariant(map, fallback) {
+    if (!map) return fallback;
+    const d = typeof IFY.distToParentsOf === "function" ? IFY.distToParentsOf(IFY.S) : "unknown";
+    return d === "far" && map.far != null ? map.far : fallback;
+  }
+
+  // 居所近远派生（AN-3 D-7）：按账本流转现算最终居所（与 place.js residenceTrailOf 的 home/非home 判定同口径：
+  // back_to_city 与 abroad 映射只影响 city/abroad 之别，不翻转 home 判定；对受控 Track 现算）——账本路线拍与 back_home_stay/near_family/moved_city/stayed_city
+  // 流转定的最终居所；place=home 视为「近」（人在老家一带，父母多半也在老家）。
+  // 账本无记录时按路线默认（与 residenceOf 的缺省分支一致）。
+  function nearHome() {
+    const S = IFY.S;
+    if (!S) return false;
+    let place = null;
+    for (const e of (Array.isArray(S.ledger) ? S.ledger : [])) {
+      if (e.kind === "route") place = e.id === "abroad" ? "abroad" : (e.id === "home" || e.id === "gap") ? "home" : "city";
+      else if (e.set === "back_home_stay" || e.set === "near_family") place = "home";
+      else if (e.set === "moved_city" || e.set === "stayed_city") place = "city";
+    }
+    if (!place) place = !S.route ? "home" : S.route.id === "abroad" ? "abroad" : (S.route.id === "home" || S.route.id === "gap") ? "home" : "city";
+    return place === "home";
+  }
+
   function echoText(c) {
     // 无当前单位变体（v0.20.1 W7 补 W2 遗留）：选项声明 echoNoUnit 且本局无当前单位事实
     // （work.js noCurrentUnit：买断离厂后无新入行/返聘事实）时优先于形态/状态变体——
     // fork58 选「退」的回响靠它（分岔没有进程拍的 applyRetireVariant 通道）。
     if (c && c.echoNoUnit && typeof IFY.noCurrentUnit === "function" && IFY.noCurrentUnit()) return c.echoNoUnit;
-    return flagVariant(c && c.echoFlag, eraVariant(c && c.echoEra, formVariant(c && c.echoForm, stateVariant(c && c.echoState, (c && c.echo) || ""))));
+    // 近居变体（AN-3 D-7）：选项声明 echoNear 且本局居所派生为老家（近）时启用，压过
+    // 年代/形态/状态变体——治「住在父母十来分钟路程内，还写路上的时间变多了、
+    // 请了长假住回家里」类距离轴预设。未声明 echoNear 的选项一字不动。
+    if (c && c.echoNear && nearHome()) return c.echoNear;
+    const rest = eraVariant(c && c.echoEra, formVariant(c && c.echoForm, stateVariant(c && c.echoState, (c && c.echo) || "")));
+    const flagged = flagVariant(c && c.echoFlag, rest);
+    if (flagged !== rest) return distVariant(c && c.echoDist, flagged);
+    // 未入行中性变体（AN-3 D-1）：echoFlag 层未命中、本局尚无任何入行事实、且形态
+    // 只是路线断言或默认（public/employee——备考期/未入行期）时，用选项声明的
+    // echoNotEmployed 中性回响，压过形态变体——治 fork25「留下」在备考期被回响成
+    // 「组里的老人」。已有生计形态（farm/self/flex）的人不走此层，形态变体照旧。
+    if (c && c.echoNotEmployed && typeof IFY.isEmployed === "function" && !IFY.isEmployed()) {
+      const f = typeof IFY.formOf === "function" ? IFY.formOf() : "employee";
+      if (f === "employee" || f === "public") return c.echoNotEmployed;
+    }
+    return distVariant(c && c.echoDist, flagged);
   }
 
   // 选项标签形态变体（v0.20.0 M2 收尾）：labelForm 形状同 echoForm——先按 spouse 变体取标签，
@@ -103,7 +145,7 @@
     // 例外：条目带 textAgain 且本局已全退过时，再退变体优先（与 applyRetireVariant 同序）。
     if (item && item.textNoUnit && typeof IFY.noCurrentUnit === "function" && IFY.noCurrentUnit()
         && !(item.textAgain && typeof IFY.hasRetiredBefore === "function" && IFY.hasRetiredBefore())) return retireYearsText(item, item.textNoUnit);
-    return retireYearsText(item, flagVariant(item && item.textFlag, eraVariant(item && item.textEra, formVariant(item && item.textForm, stateVariant(item && item.textState, (item && item.text) || "")))));
+    return retireYearsText(item, distVariant(item && item.textDist, flagVariant(item && item.textFlag, eraVariant(item && item.textEra, formVariant(item && item.textForm, stateVariant(item && item.textState, (item && item.text) || ""))))));
   }
 
   // WP2（补丁稿 wp2-scheduler-year-patch，合并二期落）: textFact 枚举事实文本变体 { 事实名: { 值: 文本 } };

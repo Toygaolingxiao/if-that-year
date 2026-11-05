@@ -40,6 +40,9 @@
       "你出生那年，家里买了台彩电，是全巷子头一台。你满月那天，亲戚挤了满满一屋子，电视开着，声音很大，你睡你的，谁也吵不醒你。",
       "你上头有个姐姐，差你六岁。你出生那天她上小学，回来趴在小床边看了你半天，说要去跟同学讲。你的小名是她起的，一喊就是一辈子。",
     ],
+    // fix3 B1（子类 1a/1b）：开场白场景标签与手足断言登记（与 originOpen 同序）——第 4 款断言姐姐。
+    originOpenSetting: ["urban", "rural", null, null],
+    originOpenAssert: [null, null, null, { siblings: "elderSister" }],
     originLB: "你爸妈去了外地打工，你跟着爷爷奶奶过。想说话要去镇上打公用电话，排着队，一分钟不便宜，说上两句就得挂，剩下的事等过年回家再说。",
     marks: {
       mark_case85: { shadow: "两条路上都一样的是，同桌那个铁皮文具盒摆在桌上，铅笔削得整整齐齐，他分了你一支。" },
@@ -57,7 +60,8 @@
       6: { text: "六岁那年，你学会了自己系鞋带。鞋带是红色的，你系成死结，你妈蹲下来解，一边解一边说，这手得练，急不得。", effects: {} },
       8: { text: "这一年没什么大事。你的乳牙掉了一颗，你爸说扔到房顶上，站得直、长得正。你扔了，仰着脖子看了半天，也不知道落哪儿了。", effects: {} },
       10: { text: "十岁那年，家里装了电话。号码你背得滚瓜烂熟，挨个给亲戚打了一遍。月底话费单寄来，你妈说，再这么打，就把电话锁起来。", effects: {} },
-      14: { text: "初二这一年，你的个子蹿了一截，校服短了一截。你妈把校服接了一截布，颜色差不多，你穿着去上了学，自己觉得看不出来。", effects: {} },
+      14: { text: "初二这一年，你的个子蹿了一截，校服短了一截。你妈把校服接了一截布，颜色差不多，你穿着去上了学，自己觉得看不出来。", effects: {},
+        textByLeftBehind: "初二这一年，你的个子蹿了一截，校服短了一截。奶奶把校服接了一截布，颜色差不多，你穿着去上了学，自己觉得看不出来。" },
       19: { text: "这一年过得平。你换了部新手机，把旧号里的联系人导过来，少了几个，你也没太在意。旧手机给了你爸，他学了三天，才会发短信。", effects: {} },
     },
     acts: [
@@ -70,7 +74,7 @@
             text: "开学第一天，你背着书包站在教室门口，手心全是汗。老师按个子排座，同桌桌上摆着铁皮文具盒，铅笔削得整整齐齐，分了你一支。你在课本第一页写下名字，描了三遍才端正。" },
           { key: "flag", log: "开学第一天", set: "mark_flag85", mark: "mark_flag85",
             text: "开学第一天有升旗仪式。你站在队伍里，头一回跟着唱国歌，唱错了两句词。同桌个子比你矮，站你前头，红领巾系得比你正，你偷偷学他的系法，他当场给你重系了一遍。" },
-          { key: "cover", log: "开学第一天", set: "mark_cover85", mark: "mark_cover85",
+          { key: "cover", log: "开学第一天", set: "mark_cover85", mark: "mark_cover85", setting: "factory",
             text: "你上的是子弟小学，校门口有卖棉花糖的，一朵五毛钱。老师发了新课本，你就把书皮包上了，用的是去年的挂历纸，边角折得整整齐齐。你帮同桌也包了一本，手把手教他折角。" },
         ] },
       { id: "pr_child2", age: 9, log: "一兜玻璃球",
@@ -134,22 +138,25 @@
         },
         choices: [
           { label: "把念头压下去，先把眼前的题做完", effects: { growth: 1 }, itch: "study", echo: "你把写了念头的那页纸夹进课本里，再没翻开过。" },
-          { label: "跟家里旁敲侧击提了一回，看看大人的反应", effects: { relation: 1 }, itch: "out", echo: "你妈说，等你中考完再说。你爸没接话，把电视声音调小了一格。" },
+          { label: "跟家里旁敲侧击提了一回，看看大人的反应", effects: { relation: 1 }, itch: "out", echo: "你妈说，等你中考完再说。你爸没接话，把电视声音调小了一格。",
+            echoLB: "你奶奶说，等你中考完再说。你爷爷没接话，把电视声音调小了一格。" },
         ],
         choicesBySchooling: {
           never: [
             { label: "把念头压下去，先把手边的活干完", effects: { growth: 1 }, itch: "study", echo: "你把心思收回来，先干眼前的活。那个念头压在心里，没再跟人提过。" },
-            { label: "跟家里旁敲侧击提了一回，看看大人的反应", effects: { relation: 1 }, itch: "out", echo: "你妈说，等你再长大些再说。你爸没接话，把电视声音调小了一格。" },
+            { label: "跟家里旁敲侧击提了一回，看看大人的反应", effects: { relation: 1 }, itch: "out", echo: "你妈说，等你再长大些再说。你爸没接话，把电视声音调小了一格。",
+              echoLB: "你奶奶说，等你再长大些再说。你爷爷没接话，把电视声音调小了一格。" },
           ],
           left: [
             { label: "把念头压下去，先把手边的活干完", effects: { growth: 1 }, itch: "study", echo: "你把心思收回来，先干眼前的活。书是放下了，可日子还得一天一天往前过。" },
-            { label: "跟家里旁敲侧击提了一回，看看大人的反应", effects: { relation: 1 }, itch: "out", echo: "你妈说，等你再长大些再说。你爸没接话，把电视声音调小了一格。" },
+            { label: "跟家里旁敲侧击提了一回，看看大人的反应", effects: { relation: 1 }, itch: "out", echo: "你妈说，等你再长大些再说。你爸没接话，把电视声音调小了一格。",
+              echoLB: "你奶奶说，等你再长大些再说。你爷爷没接话，把电视声音调小了一格。" },
           ],
         } },
       // F85 中考分岔（蓝图 §3.2 F85）：普高主选项形；examBand 在本拍打开时经考试场景掷定（rollExamBand，补丁稿调用点），
       // bandText 为切单子的呈现句（本代自写说法）；study 只对 high/mid 亮（requiresFact 门，WP1 E3 已落机制）；
       // 中专并入 craft 普通口，不再有尖子形——与 c1978 的差异写在 craft 回声里。
-      { id: "pr_fork16", age: 16, title: "16 岁 · 往哪条道上走", log: "初中毕业，分了道", examBand: true, bandSkipSchooling: ["left", "never"],
+      { id: "pr_fork16", age: 16, title: "16 岁 · 往哪条道上走", log: "初中毕业，分了道", logBySchooling: { never: "分了道", left: "分了道" }, examBand: true, bandSkipSchooling: ["left", "never"],
         text: "这个夏天过后，一块儿玩的那些人要散到不同的地方去了。你得选一条道，先走起来。",
         bandText: {
           high: "分数出来，你的名字在前头。单子是整张的，上不上高中，这回是你自己挑。",
@@ -243,7 +250,7 @@
       { id: "pool_laidoff85", kind: "pool", log: "厂里发不出工资了", familyBeat: true, familyFact: "famLaidOff85", axisMust: true,
         window: [11, 15], weightPerYear: 0.13, eligible: "notLeftBehind", calendarWindow: [1995, 2002],
         variants: [
-          { band: [11, 13], log: "厂里发不出工资了",
+          { band: [11, 13], familyFact: "famArrears85", log: "厂里发不出工资了", // AN-5 R5(b)：弱档自立旗——本变体正文停留在「停发工资、找零活」未下岗落定，不得与 14–15 岁买断档共用 famLaidOff85
             text: "这年秋天，你爸的厂子发不出工资了，先是拖，后来是停。再后来，他把工作证收进抽屉，天不亮就出去找零活。你妈把账本摊在饭桌上，算了又算。",
             echo: "打那以后，家里说话都压着声。你妈买菜开始捡蔫了的，说蔫的便宜，炖一炖一样吃。",
             choices: [
@@ -355,7 +362,7 @@
     sitActs: {
       half: [
         { id: "pr_half1", age: 10, log: "半天学校半天家", sit: "half",
-          text: "你上学断断续续：农忙请假，家里忙就搭把手。老师知道情况，作业晚交，也不说你。落下的课靠同桌笔记补，补得吃力。",
+          text: "你上学断断续续：家里一忙就请假，回去搭把手。老师知道情况，作业晚交，也不说你。落下的课靠同桌笔记补，补得吃力。",
           tail: "课本揣在书包里，路上背得磕磕绊绊，进校门前顺下来了。",
           choices: null },
         { id: "pr_half2", age: 14, log: "还读不读", sit: "half", title: "14 岁 · 还读不读",
@@ -364,7 +371,7 @@
             { label: "咬咬牙，继续读下去", effects: { growth: 2, money: -1 }, echo: "你接着读了。家里的活没少干，觉睡得更少了。" },
             { label: "就读到这儿，回家帮工", setState: { schooling: "left" }, effects: { relation: 1, money: 1 }, echo: "退学那天，你把课本摞好，放在柜子顶上。往后，就是全天帮工的人了。" },
           ] },
-        { id: "pr_half3", age: 19, log: "半大的手艺", sit: "half",
+        { id: "pr_half3", age: 19, log: "半大的手艺", sit: "half", whenState: { track: "work" },
           text: "这些年书读得不全，手上的活倒是齐全。镇上的厂子招工，你去试了试，人家看你手脚利索、账算得清，当场让你下周来上班，签了字。",
           choices: [
             { label: "去厂里上工，把活干稳", set: "half_grown", effects: { growth: 2 }, echo: "你成了班组里手最稳的一个。家里人说，这孩子算是站住了。" },
@@ -374,6 +381,10 @@
       never: [
         { id: "pr_never1", age: 8, log: "没进过校门", sit: "never",
           text: "你家在山里，学校在镇上，山路要走一个多钟头。报名那几天，家里没人顾得上，你也没去。你每天放羊、看妹妹。",
+          textByFact: { siblingForm: {
+            only: "你家在山里，学校在镇上，山路要走一个多钟头。报名那几天，家里没人顾得上，你也没去。你每天放羊、割草。",
+            sisterAndBrother: "你家在山里，学校在镇上，山路要走一个多钟头。报名那几天，家里没人顾得上，你也没去。你每天放羊、看弟弟。",
+          } },
           tail: "羊吃草时，你坐在坡上看山那边的学校，旗升起来，又落下去。",
           choices: null },
         { id: "pr_never2", age: 15, log: "夜校的灯", sit: "never", title: "15 岁 · 夜校开课",

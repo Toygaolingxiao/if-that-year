@@ -6,9 +6,12 @@
    special/verdict/comboKey/flags/route/track）——任一局不一致即 FAIL 并指出种子与首个差异点。
    另含一条 WP4 登记的常设断言：「两处事实来源清单全等」——src/views/shadow.js 的
    GLIMPSE_FACT_SOURCES 与 sim 工作区 scripts/glimpse-provenance.js 的 SOURCES 是同一份清单的
-   两处抄写（有意双抄、互相校验），四组清单（OWNED_FLAGS / MORTGAGE_SETTER_IDS /
-   MORTGAGE_ONGOING_IDS / HEALTH_ALERT_IDS）逐项全等才算过；此断言放在本工具里（quality-gate
+   两处抄写（有意双抄、互相校验），逐项全等才算过；此断言放在本工具里（quality-gate
    经本工具一并执行），因为它要同时读游戏树与 sim 工作区两侧。
+   v0.24.4（AN-2 生活事实源）：OWNED_FLAGS 与两组 MORTGAGE id 清单随住房派生化退役——
+   瞥视住房行改读 place.js housingOf 单一源，产品侧不再持有这三组清单；断言一相应改为：
+   退役三组必须在树侧缺席（防手维清单回潮）、HEALTH_ALERT_IDS 仍与 sim 侧双抄全等。
+   sim 工作区 scripts/glimpse-provenance.js 的 SOURCES 退役同步在集成阶段做（不在本树内）。
    定位：IFY_SIM_DIR 指定 sim 工作区 scripts（默认 ~/workspace/sim-v021/scripts）；
    基线默认取该工作区 ../baseline/baseline-mainline.json（IFY_BASELINE 可覆盖）。 */
 "use strict";
@@ -48,10 +51,12 @@ function main() {
     const fromTree = ctx.window.IFY.GLIMPSE_FACT_SOURCES;
     const prov = require(path.join(SIM_DIR, "glimpse-provenance.js"));
     const fromTool = prov.SOURCES;
-    const keys = ["OWNED_FLAGS", "MORTGAGE_SETTER_IDS", "MORTGAGE_ONGOING_IDS", "HEALTH_ALERT_IDS"];
+    const keys = ["HEALTH_ALERT_IDS"];
+    const retired = ["OWNED_FLAGS", "MORTGAGE_SETTER_IDS", "MORTGAGE_ONGOING_IDS"]; // v0.24.4 退役：树侧必须缺席
     const bad = keys.filter((k) => JSON.stringify(fromTree && fromTree[k]) !== JSON.stringify(fromTool && fromTool[k]));
-    if (bad.length) { failures++; console.log(`parity-shadow: FAIL — 事实来源清单两处登记不一致：${bad.join(", ")}`); }
-    else console.log(`parity-shadow: 事实来源清单双抄全等 PASS（${keys.join(" / ")}）`);
+    const back = retired.filter((k) => fromTree && fromTree[k] !== undefined);
+    if (bad.length || back.length) { failures++; console.log(`parity-shadow: FAIL — 事实来源清单两处登记不一致：${[...bad, ...back.map((k) => k + "(已退役却仍在树侧)")].join(", ")}`); }
+    else console.log(`parity-shadow: 事实来源清单双抄全等 PASS（${keys.join(" / ")}；退役三组树侧缺席）`);
   }
 
   // ---- 断言二：冻结集逐局逐字 parity ----

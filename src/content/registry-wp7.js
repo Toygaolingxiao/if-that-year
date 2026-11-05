@@ -17,7 +17,7 @@ window.GAME_REGISTRY_EXTRA = (window.GAME_REGISTRY_EXTRA || []).concat([{
     "mark_car85": { "setters": ["pr_child4"], "note": "童年记号（c1985）：四驱车马达；成年回响 echo_car85" },
     // 家庭事实回响条目自身不立新旗，只登记回响 id 的归属说明（消费点登记，G3）
     "echo_lb85": { "setters": ["echo_lb85"], "note": "成年回响（c1985）：require originLB，消费 L85-留 的家庭事实旗（旗本体已在 registry 本体 familyFacts 登记）" },
-    "echo_laidoff85": { "setters": ["echo_laidoff85"], "note": "成年回响（c1985）：require famLaidOff85，消费 L85-岗 的家庭事实旗（旗本体已在 registry 本体 familyFacts 登记）" },
+    "echo_laidoff85": { "setters": ["echo_laidoff85"], "note": "成年回响（c1985）：any famLaidOff85/famArrears85（AN-5 R5 后两档同消费——账本在下岗变体与停发变体里都在），消费 L85-岗 的家庭事实旗（旗本体已在 registry 本体 familyFacts 登记）" },
     // 搬家旗舰（蓝图 §3.6）中段记号：发放点＝pool_move85 中段变体的 markGrant（池调度 P5），不进记号位抽选
     "mark_move85": { "setters": ["pool_move85"], "note": "童年记号（c1985）：搬家带走的文具盒（盖内侧抄着老同桌地址）；成年回响 echo_addr85，影子句见 prologue-c1985.js pool_move85 markGrant；never 分文：影子句 markGrant.shadowBySchooling.never、中段选项组 choicesBySchooling.never、成年回响 echo_addr85 textState.schooling.never" },
     "echo_move85": { "setters": ["echo_move85"], "note": "成年回响（c1985）：require movedHome85，消费旗舰「搬家」的学籍线事实旗" },

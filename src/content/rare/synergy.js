@@ -10,11 +10,11 @@ window.GAME_SYNERGY = {
     { id: "cb_family3", kidAgeMin: 3, kidAgeMax: 6, all: ["bought_house"], stateAll: { spouse: "partnered", kids: "has" }, min: 40, max: 55, text: "周六早上，孩子在客厅地板上搭积木，搭到第三层塌了，又从头来。对方在厨房煎蛋，鸡蛋是昨晚超市买的，一盒12个，小票上18块9，够吃四天。你在阳台给那盆薄荷浇完水，把水壶放回窗台。早饭三个人吃了二十分钟，煎蛋有点糊。", effects: { relation: 3, health: 1 } },
     { id: "cb_solo_free", stateAll: { spouse: "single" }, stats: [{ k: "freedom", gt: 68 }], min: 40, max: 58, text: "你一个人去看了场午夜场电影，会员票 45，座位随便挑，你坐了正中间。散场时整条街都是刚下班的年轻人，你在路边摊买了份炒粉，15 块，加了个蛋，边走边吃，到家十二点四十。", effects: { freedom: 2, health: 1 } },
     { id: "cb_care_near", all: ["care_self", "near_family"], stateAll: { dad: "alive" }, min: 53, max: 64, text: "父亲半夜胃不舒服，电话打过来，你开车七分钟就到了。急诊抽血、做心电图，折腾到凌晨三点，医生说先留观。你在走廊的自助机上交了 480，自费部分。他看见缴费单，先说的是：把你折腾起来了。你说，没事，我住得近。", effects: { relation: 3, health: -1 } },
-    { id: "cb_dink_plan", stateAll: { spouse: "partnered", kids: "none" }, stats: [{ k: "money", gt: 58 }], min: 44, max: 58, text: "你和对方把养老的账认真算了一遍，列了张表：养老金还要交几年、存款够花几年、现在这套小房子的月供还剩多少。算完你们去吃了顿火锅，两个人 178。计划表压在茶几玻璃板下面，压了两年，一直没动过。", effects: { money: 1, freedom: 2 } },
+    { id: "cb_dink_plan", stateAll: { spouse: "partnered", kids: "none" }, ctx: { house: "owned" }, stats: [{ k: "money", gt: 58 }], min: 44, max: 58, text: "你和对方把养老的账认真算了一遍，列了张表：养老金还要交几年、存款够花几年、现在这套小房子的月供还剩多少。算完你们去吃了顿火锅，两个人 178。计划表压在茶几玻璃板下面，压了两年，一直没动过。", effects: { money: 1, freedom: 2 } },
     { id: "cb_old_couple", all: ["retired_full"], stateAll: { spouse: "partnered" }, min: 59, max: 64, text: "退休后第一个长假，你和对方报了个慢团，六天，一个人 4200，全程没赶过景点，中午还回酒店睡午觉。团里另一对老夫妻跟你们拼了四次饭，散团那天互相加了微信，约好明年还走这一条线。", effects: { relation: 2, health: 2, money: -2 } },
     { id: "cb_sandwich", kidAgeMin: 6, kidAgeMax: 15, all: ["care_self"], stateAll: { kids: "has", dad: "alive" }, min: 53, max: 60, minYear: 2013, text: "这一天你两头跑：上午请了半天假，去学校坐最后一排开家长会；下午赶到医院，父亲的复查号是提前一周在手机上抢的，取报告、排队缴费，来回打车 63。晚上回家，你把成绩单和复查单夹进同一个文件夹，放在抽屉第二层。", effects: { relation: 2, health: -2 } },
-    { id: "cb_rent_free", all: ["renting", "less_work"], stats: [{ k: "freedom", gt: 63 }], min: 45, max: 60, minYear: 2012, text: "房东在微信上问：续三年就不涨租，续一年要涨 100。你回：先续一年吧。签完你把合同塞进抽屉，抽屉里还有前两年的合同，三份叠在一起，租金那一栏一年比一年高一点。你给阳台那几盆花浇了水，明年住哪，到时候再说。", effects: { freedom: 2, wisdom: 5 } },
-    { id: "cb_hop_viral_base", all: ["job_hop", "side_start"], min: 30, max: 45, minYear: 2016, text: "跳槽面试聊到一半，面试官把手机转过来：这个账号也是你做的？那是你下班更新的小账号，粉丝不多，置顶那条有两万多播放。后面又聊了四十分钟，聊的全是它，岗位本身只占了十分钟。临走对方说，账号别停更。", effects: { growth: 2, relation: 1 } },
+    { id: "cb_rent_free", all: ["renting", "less_work"], ctx: { house: "renting" }, stats: [{ k: "freedom", gt: 63 }], min: 45, max: 60, minYear: 2012, text: "房东在微信上问：续三年就不涨租，续一年要涨 100。你回：先续一年吧。签完你把合同塞进抽屉，抽屉里还有前两年的合同，三份叠在一起，租金那一栏一年比一年高一点。你给阳台那几盆花浇了水，明年住哪，到时候再说。", effects: { freedom: 2, wisdom: 5 } },
+    { id: "cb_hop_viral_base", ctx: { form: ["employee", "public"] }, all: ["job_hop", "side_start"], min: 30, max: 45, minYear: 2016, text: "跳槽面试聊到一半，面试官把手机转过来：这个账号也是你做的？那是你下班更新的小账号，粉丝不多，置顶那条有两万多播放。后面又聊了四十分钟，聊的全是它，岗位本身只占了十分钟。临走对方说，账号别停更。", effects: { growth: 2, relation: 1 } },
   ],
   rare: [
     // —— 创业轨迹链：side_start + side_job 凑齐 build，三环骰子相乘 ——
@@ -30,7 +30,7 @@ window.GAME_SYNERGY = {
       ] },
     { id: "r_ipo", label: "敲钟那天", clue: "西装衬衫是前一天熨好的，锣声里站着不动的人。", min: 45, max: 60, chain: "r_funding", require: "traj_funded", stats: [{ k: "money", gt: 54 }], chance: 0.05, text: "敲钟那天，你西装里的衬衫是对方前一天熨的。锣声一响，身边的人都在喊，你站在原地，想起了书桌前那张白纸。", effects: { money: 25, growth: 3 }, set: "traj_ipo" },
     // —— 神药轨迹链：study 路线 + 高成长 ——
-    { id: "r_drug1", ctx: { eduGate: true }, label: "十年起步的课题", clue: "在实验记录本第一页写下日期，说『那就十年』的人。", min: 30, max: 42, route: "study", stats: [{ k: "growth", gt: 61 }], chance: 0.022, text: "你牵头的课题立项了：一种针对罕见病的药。评审专家说，这条路线很难，十年起步。你说，那就十年。",
+    { id: "r_drug1", ctx: { eduGate: true, gradGate: true }, label: "十年起步的课题", clue: "在实验记录本第一页写下日期，说『那就十年』的人。", min: 30, max: 42, route: "study", stats: [{ k: "growth", gt: 61 }], chance: 0.022, text: "你牵头的课题立项了：一种针对罕见病的药。评审专家说，这条路线很难，十年起步。你说，那就十年。",
       choices: [
         { label: "接。十年就十年", effects: { growth: 5, money: -2, health: -2 }, set: "traj_drug1", echo: "实验室的灯，那天亮到很晚。你在实验记录本的第一页写了日期。" },
         { label: "换个容易出成果的题目", effects: { growth: 2, money: 2 }, echo: "新题目稳妥得多。只是有时候路过那间实验室，你会慢下来。" },
@@ -80,7 +80,7 @@ window.GAME_SYNERGY = {
         { label: "转岗。从头学新产线", effects: { money: -5, growth: 3, health: -1 }, echo: "新产线的活你干得比年轻人慢，笔记却记了三大本。工资条矮了一截，饭还得照吃。" },
         { label: "拿补偿。先歇一阵再说", effects: { money: -4, freedom: 2, health: -1, wisdom: 2 }, echo: "补偿款到账那天，你把工牌放进抽屉。歇了半个月，人是缓过来了，下一步还没想好。" },
       ] },
-    { id: "r_oldfriend_gone", label: "同桌的葬礼", clue: "开车两个多小时去邻县，在花圈里找自己那个的人。", min: 42, max: 55, minYear: 2012, chance: 0.007, w: 2, text: "初中同桌去世的消息，是同学群里转发的。你上次见对方还是五年前同学聚会，散场时约了下次，对方说忙完这阵就约。葬礼在邻县，你请了一天假，开车两个多小时过去，在花圈里找到自己送的那个，站着看了一会儿上面的挽联。", effects: { relation: -2, health: -1, money: -1, wisdom: 4 } },
+    { id: "r_oldfriend_gone", label: "同桌的葬礼", clue: "开车两个多小时去邻县，在花圈里找自己那个的人。", min: 42, max: 55, minYear: 2012, ctx: { car: "now" }, chance: 0.007, w: 2, text: "初中同桌去世的消息，是同学群里转发的。你上次见对方还是五年前同学聚会，散场时约了下次，对方说忙完这阵就约。葬礼在邻县，你请了一天假，开车两个多小时过去，在花圈里找到自己送的那个，站着看了一会儿上面的挽联。", effects: { relation: -2, health: -1, money: -1, wisdom: 4 } },
     { id: "r_friend_debt", label: "发小那笔借款", clue: "把聊天记录翻到转账那一页，停了一会儿的人。", min: 36, max: 50, minYear: 2005, stats: [{ k: "money", gt: 50 }], chance: 0.011, w: 2, text: "发小开口借钱周转，说三个月就还。你转过去一笔，是你攒了两年的数。三个月变半年，半年变一年，电话从秒接变成隔天回。最后一次见面在茶馆，两杯茶没喝完，话先说僵了。",
       choices: [
         { label: "认了。钱不要了，人也断了", effects: { money: -6, relation: -3, wisdom: 3 }, echo: "你把聊天记录翻到转账那一页，停了一会儿，还是退了出来。" },
@@ -111,9 +111,12 @@ window.GAME_SYNERGY = {
     { id: "end_bigfamily", clue: "六十五岁生日摆了两桌，吹蜡烛时被一屋子人喊、称呼各不相同的人。", tier: "epic", stateAll: { spouse: "partnered", kids: "has" }, stats: [{ k: "relation", gt: 89 }, { k: "health", gt: 58 }], title: "子孙满堂", evidence: [["p14_028","p14_030","p14_031","p14_032","p14_034","p16_059","p16_070","p23_066","p25_006","p25_017","p25_027","p25_037","p25_042","p25_063","p26_013","p29_019","e55_044","e55_050"],["c_partner","cb_old_couple","c_has_kid"]],
       text: "65 岁生日那天，家里摆了两桌。孩子带着孩子，孩子又带着更小的孩子。吹蜡烛的时候一屋子人喊你，称呼各不相同。你眯着眼睛看了一圈，心想：这一屋子，都是从那一年开始的。",
       textThree: "65 岁生日那天，家里摆了两桌。孩子带着孩子，一屋子人挤得满满当当。吹蜡烛的时候一屋子人喊你，称呼各不相同。你眯着眼睛看了一圈，心想：这一屋子，都是从那一年开始的。",
-      textFull: "65 岁生日那天，家里摆了两桌。一家人都到齐了，孩子坐在你旁边，另一半在对面。吹蜡烛的时候一屋子人喊你，称呼各不相同。你眯着眼睛看了一圈，心想：这一屋子，都是从那一年开始的。" },
+      textFull: "65 岁生日那天，家里摆了两桌。一家人都到齐了，孩子坐在你旁边，另一半在对面。吹蜡烛的时候一屋子人喊你，称呼各不相同。你眯着眼睛看了一圈，心想：这一屋子，都是从那一年开始的。",
+      // AN-5 R6：textFull 的无伴侣兜底变体（settlement.js 选文在终局 spouse 非 partnered 时取此变体）——
+      // 只保留文案可验证的承重事实（65 岁、两桌、孩子在旁、称呼各不相同），不提伴侣、不称子孙满堂、语气不降格。
+      textFullSolo: "65 岁生日那天，家里摆了两桌。孩子坐在你旁边，挨个给你夹菜。吹蜡烛的时候一屋子人喊你，称呼各不相同。你眯着眼睛看了一圈，心想：这一屋子，都是从那一年开始的。" },
     { id: "end_traveler", clue: "冰箱上贴满各地磁铁，说『剩下的时间慢慢走回程』的人。", tier: "epic", all: ["retired_full"], stats: [{ k: "freedom", gt: 76 }, { k: "money", gt: 54 }], title: "环游世界", evidence: [["retired_full"],["e_trip","cb_old_couple","c_no_kid","p14_059","p14_061"]],
-      text: "退休金、存款、说走就走的身体，你都凑齐了。护照上的章一个挨一个，冰箱上贴满了各地的磁铁。有人问你还差哪没去，你说：不差了，剩下的时间，慢慢走回程。" },
+      text: "退休金、存款、说走就走的身体，你都凑齐了。护照一直备着，行李箱就搁在柜子顶上，说走就能走。冰箱上贴着你从外头带回来的磁铁，空着的地方还多。有人问你还差哪没去，你说：不差了，剩下的时间，慢慢走回程。" }, // AN-5 R8(ii)：证据组一枚只证「至少走过一趟」，原句把一趟说成走遍——弱化到证据可证：「随时能走＋已经在走」；clue 引用的收束句原样保留
     { id: "end_standard", clue: "看到那份文件，总在心里默默改错别字的人。", tier: "epic", all: ["stay_put"], any: ["factory_work", "fab_work", "traj_craft"], stats: [{ k: "growth", gt: 94 }], title: "定标准的人", evidence: [["stay_put"],[{"stat":{"k":"growth","gt":94}}]],
       text: "行业里那份用了很多年的标准，起草人名单里有你。年轻人入行学的第一课，写的就是你定的规矩。你没跟人提过这事，只是每次看到那份文件，都把错别字在心里默默改一遍。" },
     { id: "end_localfounder", clue: "招工启事贴出去，来应聘的有小学同学孩子的人。", tier: "epic", route: "home", all: ["side_job"], any: ["shop_work"], forbid: ["moved_city"], stats: [{ k: "money", gt: 71 }], title: "县城企业家", evidence: [["side_job"],["c_side",{"stat":{"k":"money","gt":71}}]],

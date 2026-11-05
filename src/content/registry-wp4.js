@@ -36,8 +36,7 @@ window.GAME_REGISTRY_EXTRA = (window.GAME_REGISTRY_EXTRA || []).concat([{
     "c1978": {
       "school": { "high": 58, "mid": 27, "low": 15 },
       "half": { "high": 32, "mid": 36, "low": 32 },
-      "never": { "high": 6, "mid": 26, "low": 68 },
-      "note": "c1978 定版（v0.23 WP4）：examBand 三档分布是设计参数、无统计出处（蓝图 §3.2 总则②注）；按处境分表，处境在先、band 在后；消费点＝pr_fork16 选项门，单调性自查见 logs/wp4/",
+      "note": "c1978 定版（v0.23 WP4）：examBand 三档分布是设计参数、无统计出处（蓝图 §3.2 总则②注）；按处境分表，处境在先、band 在后；消费点＝pr_fork16 选项门，单调性自查见 logs/wp4/。fix3 B1（子类 3a）：never 行删除——没进过校门的人不掷 band（与 c1985/c1995 口径对齐，另由 pr_fork16 的 bandSkipSchooling 在引擎侧兜底）",
     },
   },
   prologueForks: [

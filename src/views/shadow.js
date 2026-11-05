@@ -89,28 +89,11 @@ return { main, others};
 const GLIMPSE_AGES_ALL = [30, 40, 50]; // 与 engine.js GLIMPSE_AGES 键集同口径：stage 0/1/2 → 30/40/50
 
 // ---- 现状事实表的来源登记（蓝图 6.2：清单即事实的边界——无登记来源就不出该行，宁缺不编） ----
-// 自有房旗标（registry 登记的 setters 在括号内）：
-// bought_house（e78_006 / fork33 / p17_021 / p17_024 / p18_049）、bought_fangai（e65_026 房改买断）、
-// bought_commodity（e65_027 商品房）、jizi_house（e65_020 集资建房）。
-// 「房贷还着」只认两组证据：①买房落账本身带月供口径的来源 id（fork33「算了三遍月供」/ e78_006
-// 「月供占工资一半」/ p17_024「月供占工资一半」/ p18_049「月供从下个月开始扣·三十年还款表」；
-// p17_021 的买房文本没提月供，不入此组）；②事后仍在还贷的条目（c_house 提前还一笔房贷 /
-// p12_067 房贷还剩二十多年 / p2_056 存量房贷利率 / p2_060 房贷换经营贷，另加旗 loan_swap 本身 /
-// cb_dink_plan 月供还剩多少；WP4 修复轮全池复核补 19 条：p1_076 存量房贷 / p2_046 月供七千二 /
-// p2_048 该还多少月供还是多少 / p2_057 月供降到五千八 / p2_058 还剩十一年 / p2_059 月供少扣一截 /
-// p2_061 算结清（当时仍欠）/ p3_051 心里算月供（家计）/ p12_054 月供商贷 / p12_059 记账表房贷 /
-// p12_068 月供利息账 / p12_070 还剩最后两年 / p18_052 月供照扣 / p18_055 父母问月供数（期房）/
-// p18_057 家计排月供 / p27_002 贷款还剩九十六万 / p30_011 月供按月扣 / e65_028 房贷办下来每月还 /
-// e78_007 房贷短信排月供。自有房旗 4 个与买房 setter 8 个同轮复核无漏，未动）。
-// 「房贷清了」全池无任何可靠来源（只有判词片段的 needs 门，不是落账事实）——故永不出此行。
-// 独立的非房贷债务「有笔债在还」同样无可靠的现状来源（r_guarantee_trap 是替人代偿、且只持续
-// 大半年，落账之后是否还在还无从判定；r_friend_debt 是借出不是借入）——故永不单独出此行。
-const OWNED_FLAGS = ["bought_house", "bought_fangai", "bought_commodity", "jizi_house"];
-const MORTGAGE_SETTER_IDS = ["fork33", "e78_006", "p17_024", "p18_049"];
-const MORTGAGE_ONGOING_IDS = ["c_house", "p12_067", "p2_056", "p2_060", "cb_dink_plan",
-"p1_076", "p2_046", "p2_048", "p2_057", "p2_058", "p2_059", "p2_061", "p3_051", "p12_054",
-"p12_059", "p12_068", "p12_070", "p18_052", "p18_055", "p18_057", "p27_002", "p30_011",
-"e65_028", "e78_007"];
+// 住房行（v0.24.4 AN-2 改）：住房事实改读派生层 place.js housingOf（购房旗全集在那边写死一处，
+// 含 boughtReform 半截链口径），本文件不再自备旗子集。旧版的「房贷还着」靠两组手维 id 清单
+// （买房来源 id + 事后还贷条目 id）拼凑，其中混着本身无门的条目，是循环论证——且全游戏没有
+// 「房贷还清/还在还」的事实源（结清证明只是文本），故此半句整句退役：住房行只断言到「有自己的
+// 房子」为止，还没还清交给还贷链自己的文本去说。独立的非房贷债务同样无可靠现状来源，永不单独出此行。
 // 警报来源 = 健康危机落账（账本 kind=crisis、id=health，即 crisisUsed.health 的账本形）
 // + 健康线死亡落账本身（账本 kind=death、id=health，即引擎死因分类 type=health、rollDeath 的
 // rec("death", type) 形）：影子走健康线离世时死亡条目本身即警报来源，悼念/回望的 health 行读
@@ -156,8 +139,8 @@ const HEALTH_ALERT_IDS = ["e_body", "r_health_operation", "p12_002", "p10_009", 
 const FACT_WORDS = {
 spouse: { partnered: "成家了", divorced: "成过家，后来离了", widowed: "成过家，对方先走了", none: "还没成家", single: "还没成家", dating: "还没成家"},
 kids: { has: "有了孩子", none: "没要孩子"}, // undecided 不出此行
-houseOwnedMortgage: "有自己的房子，房贷还着",
 houseOwned: "有自己的房子",
+houseUnit: "住着单位分的房",
 houseRenting: "租着房子住",
 healthAlert: "身体出过警报",
 healthNone: "没听说身体有什么异常", // 否定形以「没听说」收口：那是瞥视者的信息边界，不是体检结论
@@ -191,42 +174,10 @@ const entry = ses.tracks[key];
 return entry && entry.state? { key, entry}: null;
 }
 
-// 居所轨迹（place.js residenceTrail 的同口径只读复刻，对任意 Track 的 state 现算；结算侧仍用原函数读受控 Track）
-function residenceOf(B, endAge) {
-const spans = { home: 0, city: 0, abroad: 0};
-let place = null, since = IFY.START_AGE || 22;
-const move = (age, p) => { if (place && p!== place) { spans[place] += Math.max(0, age - since); place = p; since = age;} else if (!place) { place = p; since = age;}};
-for (const e of (Array.isArray(B.ledger)? B.ledger: [])) {
-if (e.kind === "route") move(e.age, e.id === "abroad"? "abroad": (e.id === "home" || e.id === "gap")? "home": "city");
-else if (e.set === "back_home_stay" || e.set === "near_family") move(e.age, "home");
-else if (e.set === "moved_city" || e.set === "stayed_city") move(e.age, "city");
-}
-if (!place) place =!B.route? "home": B.route.id === "abroad"? "abroad": (B.route.id === "home" || B.route.id === "gap")? "home": "city";
-spans[place] += Math.max(0, endAge - since);
-return { final: place, spans};
-}
-
-// 活计形态（work.js formOf 的同口径只读复刻，对任意 Track 的 state 现算；R1–R5 规则与 tie 表序与 work.js 同步，改那边须同步这边）
-function formOfState(B) {
-const FORM_OF_FLAG = IFY.FORM_OF_FLAG || {};
-const TIE = ["farm", "public", "self", "flex", "employee"];
-const F = B.flags || {};
-let best = null;
-for (const [flag, form] of Object.entries(FORM_OF_FLAG)) {
-if (!F[flag]) continue;
-const age = B.flagAges && typeof B.flagAges[flag] === "number"? B.flagAges[flag]: 22;
-let idx = -1;
-if (Array.isArray(B.ledger)) for (let i = B.ledger.length - 1; i >= 0; i--) { if (B.ledger[i].set === flag) { idx = i; break;}}
-const cand = { flag, form, age, idx};
-if (!best || cand.age > best.age || (cand.age === best.age && cand.idx > best.idx) ||
-(cand.age === best.age && cand.idx === best.idx && TIE.indexOf(cand.form) < TIE.indexOf(best.form))) best = cand;
-}
-if (best) return best.form;
-if (["side_job", "xiahai"].some((f) => F[f])) return "self";
-if (B.route && B.route.id === "home") return "public";
-if (B.state && B.state.track === "home") return "farm";
-return "employee";
-}
+// 居所轨迹与活计形态（v0.24.4 AN-2 改）：本文件原有的两份手抄复刻（residenceOf / formOfState）已删——
+// 轨迹直接调 place.js residenceTrailOf 本体（手抄版漏了 p11_041 回城特判，与结算同屏打架），
+// 形态直接调 work.js formOf(B) 本体（formOf/mainEntryOf 已通用化为可传任意 Track 的 state）。
+// 单一实现，今后规则只在一处改。
 
 // 现状事实表（蓝图 6.2）：入参 = 不受控 Track 的 state 与定格年龄（活着 = 本瞥视岁；已故 = 去世岁）。
 // 每一行只从该 Track 的 state/账本/旗标里读真事，无数字、无预后、无与受控 Track 的比较句。
@@ -238,21 +189,19 @@ const inLed = (pred) => led.some((e) => e.age <= atAge && pred(e));
 if (B.route && B.route.name) out.push({ slot: "route", text: `走的是「${B.route.name}」那条路`});
 if (FACT_WORDS.spouse[st.spouse]) out.push({ slot: "spouse", text: FACT_WORDS.spouse[st.spouse]});
 if (FACT_WORDS.kids[st.kids]) out.push({ slot: "kids", text: FACT_WORDS.kids[st.kids]});
-// 房贷/债务行：来源登记见上方 OWNED/MORTGAGE 两组清单；无登记来源时整行不出（只出居所行）。
-const owned = OWNED_FLAGS.some((f) => F[f]) || inLed((e) => OWNED_FLAGS.includes(e.set));
-if (owned) {
-const mortgage = inLed((e) => (e.set === "bought_house" && MORTGAGE_SETTER_IDS.includes(e.id)) || MORTGAGE_ONGOING_IDS.includes(e.id)) ||!!F.loan_swap;
-out.push({ slot: "house", text: mortgage? FACT_WORDS.houseOwnedMortgage: FACT_WORDS.houseOwned});
-} else if (F.renting || inLed((e) => e.set === "renting")) {
-out.push({ slot: "house", text: FACT_WORDS.houseRenting});
-}
-const res = residenceOf(B, atAge);
+// 住房行：读派生 housingOf(B)（place.js）——已购房才说「有自己的房子」（只断言到此为止，
+// 房贷半句已退役，见文件上方登记注）；单位房单说；当前在私租才说租着住；都没有来源时整行不出（宁缺不编）。
+const housing = typeof IFY.housingOf === "function"? IFY.housingOf(B): null;
+if (housing && housing.owned) out.push({ slot: "house", text: FACT_WORDS.houseOwned});
+else if (housing && housing.unit) out.push({ slot: "house", text: FACT_WORDS.houseUnit});
+else if (housing && housing.rentingNow) out.push({ slot: "house", text: FACT_WORDS.houseRenting});
+const res = typeof IFY.settledOf === "function"? IFY.settledOf(B, atAge): IFY.residenceTrailOf(B, IFY.START_AGE || 22, atAge);
 out.push({ slot: "residence", text: res.final === "abroad"? FACT_WORDS.residenceAbroad
 : res.final === "city"? FACT_WORDS.residenceCity
 : (res.spans.city + res.spans.abroad) > 0? FACT_WORDS.residenceHomeBack: FACT_WORDS.residenceHomeAlways});
 const dadAlive = st.dad!== "dead", momAlive = st.mom!== "dead";
 out.push({ slot: "parents", text: dadAlive && momAlive? FACT_WORDS.parentsBoth: (dadAlive || momAlive)? FACT_WORDS.parentsOne: FACT_WORDS.parentsNone});
-out.push({ slot: "work", text: FACT_WORDS.workForm[formOfState(B)] || FACT_WORDS.workForm.employee});
+out.push({ slot: "work", text: FACT_WORDS.workForm[typeof IFY.formOf === "function"? IFY.formOf(B): "employee"] || FACT_WORDS.workForm.employee});
 if (FACT_WORDS.phase[st.workPhase]) out.push({ slot: "phase", text: FACT_WORDS.phase[st.workPhase]});
 const alert = inLed((e) => (e.kind === "crisis" && e.id === "health") || (e.kind === "death" && e.id === "health") || HEALTH_ALERT_IDS.includes(e.id));
 out.push({ slot: "health", text: alert? FACT_WORDS.healthAlert: FACT_WORDS.healthNone});
@@ -512,6 +461,6 @@ Object.assign(IFY, {
 shadowRoute, shadowStageText, shadowCostText, shadowFinalText, shadowCompareLines, renderGlimpse,
 // WP4 取材层导出（供出处检查工具与断言复用同一套登记表与纯函数；呈现层之外不消费它们做决策）
 glimpseFactLines, glimpsePick, glimpseSkeleton, glimpseDeathLine, uncontrolledEntry, glimpseTakeForTest, glimpseMarkLineNext,
-GLIMPSE_FACT_SOURCES: { OWNED_FLAGS, MORTGAGE_SETTER_IDS, MORTGAGE_ONGOING_IDS, HEALTH_ALERT_IDS, FACT_WORDS},
+GLIMPSE_FACT_SOURCES: { HEALTH_ALERT_IDS, FACT_WORDS}, // v0.24.4：OWNED_FLAGS 与两组 MORTGAGE id 清单随派生化退役（住房改读 housingOf 单一源）
 });
 })(window.IFY);

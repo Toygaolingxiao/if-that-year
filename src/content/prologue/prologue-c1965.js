@@ -5,7 +5,7 @@
 // ---- CALIB 头（本代设计参数登记）----
 // examBand 三档分布（F65-b 小升初分层）：设计参数，无统计出处，只受阈值单调性与可玩性约束
 // （蓝图 §3.2 总则②、附录 B）。精确值经 registry-wp3.js 的 examBandTables.c1965 合入：
-//   school { high 35, mid 40, low 25 } / half { high 20, mid 40, low 40 } / never { high 10, mid 30, low 60 }。
+//   school { high 35, mid 40, low 25 } / half { high 20, mid 40, low 40 }（fix3 B1 子类 3a：never 行已删——没进过校门的人不掷 band，pr_child4 另带 bandSkipSchooling 兜底）。
 // band 只影响 16 岁考学路的口吻与去向口（fork16 的 band 门控 study 选项），不切选项面：
 // 低档仍可选 study（回声降级），阈值单调不反转。本代 band 不管 16 岁够格面（与 F95/F00 的切面形不同，登记在此）。
 // 掷定点：pr_child4（12 岁，小升初）带 rollBand 标记——现行 prologue.js 无调用点，
@@ -86,6 +86,9 @@
       "你出生那年，家里添了台缝纫机，是你妈置办下的。你小时候的衣裳，都是在那台机子上踩出来的，边角料给你拼了个书包，背了很多年。",
       "你上头有个姐姐。你出生那天，你爸骑车去公社卫生院请大夫，回来时车胎还扎了。你姐趴在窗台上看了你半天，说你小得跟猫似的。",
     ],
+    // fix3 B1（子类 1a/1b）：开场白场景标签与手足断言登记（与 originOpen 同序）——第 4 款断言姐姐。
+    originOpenSetting: ["urban", "rural", null, null],
+    originOpenAssert: [null, null, null, { siblings: "elderSister" }],
     originLB: "你爸去了外地做工，你跟着爷爷奶奶过。家里有事，就去大队部打长途，排到了也说不上几句，话筒里的声音远得很。",
     marks: {
       mark_pencil65: { shadow: "两条路上都一样的是，你那支只剩个头的铅笔一直用到小学毕业，最后短得捏不住，才收进抽屉。" },
@@ -104,10 +107,12 @@
       mark_move65: { shadow: "两条路上都一样的是，搬过一回家的孩子，认生认得快——新地方的路，你总是头一个摸熟的。" },
     },
     flatsByAge: {
-      6: { text: "六岁那年，你学会了自己系鞋带。红鞋带是你姐退下来的，你系得慢，可从那天起，出门不用人帮了。", effects: {} },
+      6: { text: "六岁那年，你学会了自己系鞋带。红鞋带是你姐退下来的，你系得慢，可从那天起，出门不用人帮了。", effects: {},
+        textByFact: { siblingForm: { only: "六岁那年，你学会了自己系鞋带。鞋带是你妈拆了旧布条搓的，你系得慢，可从那天起，出门不用人帮了。" } } },
       8: { text: "这一年，你家买了个暖水瓶，红的，印着牡丹花。你妈说这是贵重东西，只许大人倒水。你偷偷摸过一回瓶身，烫得缩回了手。", effects: {} },
       10: { text: "十岁那年，村里拉上了电线，队屋先亮了灯。你站在门口看了半天，觉得那灯比煤油灯亮十倍，回家还惦记自家啥时候能安上。", effects: {} },
-      14: { text: "初二这一年，你的个子往上蹿，裤腿短了一截。你妈把你爸的旧裤子改了给你，腰上多收了两针，你穿着去上了学。", effects: {} },
+      14: { text: "初二这一年，你的个子往上蹿，裤腿短了一截。你妈把你爸的旧裤子改了给你，腰上多收了两针，你穿着去上了学。", effects: {},
+        textByLeftBehind: "初二这一年，你的个子往上蹿，裤腿短了一截。奶奶把压箱底的一条旧裤子改了给你，腰上多收了两针，你穿着去上了学。" },
       19: { text: "这一年过得平。你攒钱买了块电子表，夜里能发光。你没事就按着看，觉得稀奇，睡觉都舍不得摘。", effects: {} },
     },
     acts: [
@@ -116,20 +121,20 @@
         text: "" },
       { id: "pr_child1", age: 7, log: "开学第一天",
         variants: [
-          { key: "pencil", log: "开学第一天", set: "mark_pencil65", mark: "mark_pencil65",
+          { key: "pencil", log: "开学第一天", set: "mark_pencil65", mark: "mark_pencil65", setting: "rural",
             text: "村小是复式班，一个老师教两个年级。你坐在后排，练习本头一页写名字，字歪，你描了三遍。你的铅笔只剩个头，还舍不得扔。" },
-          { key: "eraser", log: "开学第一天", set: "mark_eraser65", mark: "mark_eraser65",
+          { key: "eraser", log: "开学第一天", set: "mark_eraser65", mark: "mark_eraser65", setting: "factory",
             text: "你家楼下就是子弟小学。开学第一天，你自己背着书包去，点名时答「到」的声音最大。同桌是转学来的，橡皮是三角形的，你头一回见。放学时你们约好，明天楼门口见。" },
-          { key: "river", log: "开学第一天", set: "mark_river65", mark: "mark_river65",
+          { key: "river", log: "开学第一天", set: "mark_river65", mark: "mark_river65", setting: "rural",
             text: "学校离家三里地，中间过一条小河，涨水就得绕桥。头一天上学，你妈送你到河边，看你过了桥，站了好一会儿才回去。哪块石头滑，你都记下了。" },
         ] },
       { id: "pr_child2", age: 9, log: "滚铁环",
         variants: [
-          { key: "hoop", log: "谁先到老槐树", set: "mark_hoop65", mark: "mark_hoop65",
+          { key: "hoop", log: "谁先到老槐树", set: "mark_hoop65", mark: "mark_hoop65", setting: "rural",
             text: "放学路上滚铁环比赛，谁先滚到村口老槐树谁赢。你的环是你爸托人焊的钢筋圈，滚起来哗啦响，老远就知道是你来了。那天你赢了全场。" },
-          { key: "movie", log: "占座", set: "mark_movie65", mark: "mark_movie65",
+          { key: "movie", log: "占座", set: "mark_movie65", mark: "mark_movie65", setting: "rural",
             text: "放映队来村里放电影，大队包场，不卖票，幕布挂在场院里，两面都能坐人。你早早搬小板凳占了地方。没去成的奶奶问起，你从头讲给她听。" },
-          { key: "wheat", log: "拾麦穗换画书", set: "mark_wheat65", mark: "mark_wheat65",
+          { key: "wheat", log: "拾麦穗换画书", set: "mark_wheat65", mark: "mark_wheat65", setting: "rural",
             text: "麦收以后，你跟几个孩子去地里拾麦穗，拾满一篮，换来两分钱。村口的租书摊，厚的连环画两分、薄的一分，你坐在小板凳上看了一下午，摊主都认识你了。" },
         ] },
       // L65-衔已按蓝图 §3.6 换算入池（见 pack.pool 首条）：窗 7–15、保底 15，不再占固定幕位。
@@ -142,7 +147,7 @@
       // child4 变体序：tree 款置首——never 覆写（路过校门口）强制对齐首款记号，照 c2000 母本口径。
       // F65-b 落本拍：rollBand 标记＝小升初考试在本拍内落定（掷定点见文件头 CALIB 与补丁稿）；
       // 小选是复习条件（effects 小、立记号），band 的消费点在 pr_fork16 的 study 选项门与回声。
-      { id: "pr_child4", age: 12, log: "校门口的老槐树", rollBand: true,
+      { id: "pr_child4", age: 12, log: "校门口的老槐树", rollBand: true, bandSkipSchooling: ["left", "never"],
         variants: [
           { key: "tree", log: "老槐树", set: "mark_tree65", mark: "mark_tree65",
             text: "小学门口有棵老槐树，树下有个修鞋摊。你毕业那年，学校要修围墙，树留不留争了一阵，后来留下了，修鞋摊挪到墙根另一头。你问大爷还来不来，他说，来，摊子在哪我在哪。" },
@@ -157,10 +162,12 @@
           { label: "起早贪黑，自己挤时间背书", effects: { growth: 1 }, set: "mark_dawn65",
             echo: "你早上起来背书，嗓子哑了两天，你妈给你冲了碗糖水，放在桌边。" },
         ] },
-      { id: "pr_teen1", age: 13, log: "升初中", eraText: true,
+      { id: "pr_teen1", age: 13, log: "升初中", logBySchooling: { never: "十三岁", left: "十三岁" }, eraText: true,
         variants: [
-          { key: "dorm", text: "升初中那年，学校在公社，离家远了，你开始住校。铺盖卷好，米和粮票交到食堂，蒸饭的笼屉上贴着你的名字。你和同村的伴儿分过一回桃酥，被说了一学期。" },
-          { key: "backteam", text: "一起毕业的，有一半没再念，回队里帮工。开学那天你在村口碰见他们扛着锄头下地。你说，等放假回来还一块玩。他笑笑：行，你别嫌地里活脏。" },
+          { key: "dorm", text: "升初中那年，学校在公社，离家远了，你开始住校。铺盖卷好，米和粮票交到食堂，蒸饭的笼屉上贴着你的名字。你和同村的伴儿分过一回桃酥，被说了一学期。",
+            textBySchooling: { never: "升初中那年，村里的孩子去公社上学，离家远，要住校。开学前一晚，他们在家收拾铺盖卷。你帮着把一个人的被子捆好，站在院门口看他们商量谁跟谁一个宿舍。" } },
+          { key: "backteam", text: "一起毕业的，有一半没再念，回队里帮工。开学那天你在村口碰见他们扛着锄头下地。你说，等放假回来还一块玩。他笑笑：行，你别嫌地里活脏。",
+            textBySchooling: { never: "一起长大的，有一半去了公社初中，一半回队里帮工。你没进过校门，放牛、砍柴，日子照旧。他说，等放假回来还一块玩。你笑笑：行，你别嫌地里活脏。" } },
         ] },
       // L65-家（15–18 家庭拍）与 pr_teen2 同拍两段：变体先把事实摆到场景里——
       // retire 款：父母办退休、顶替表发下（立 famRetire65）；working 款：父母离退还早（立 famWorking65，
@@ -195,7 +202,8 @@
           { label: "把话咽回去，先顾全家里", effects: { relation: 1 }, set: "famYield65",
             echo: "你爸看出来了，第二天给你订了双过冬棉鞋，说家里别的地方补你，这话当场落了地。" },
           { label: "听爸妈的，没吭声", effects: { wisdom: 1 },
-            echo: "你回屋收拾了书包。第二天照常出门，只是那天的晚饭，你吃得格外慢。" },
+            echo: "你回屋收拾了书包。第二天照常出门，只是那天的晚饭，你吃得格外慢。",
+            echoLB: "你回屋躺下，没睡着。第二天照常出门，只是那天的晚饭，你吃得格外慢。" },
         ] },
       // fork16 本代形（F65-a）：study 按 examBand 分口（high/mid 各含中专形、low 降级口吻）；
       // work 两形：顶替进厂形仅 quotaHolder=mine 亮（专属形），等招工形不设门——归属给兄姐/无人可顶/
@@ -204,19 +212,25 @@
       // 缺省读法、不是一个值），故不靠 absent 门、也不设 absent 兜底单——本片（S-3）以归属/掷档补丁
       // 合并为上线前提，无补丁呈现不在支持面内。名额给了兄姐者，顶替路不亮——事实链已在 pr_teen2 的
       // textByQuota/echoByQuota 里摆过，不另发通知句；本拍不带 gateNote（默认不提门）。
-      { id: "pr_fork16", age: 16, title: "16 岁 · 往哪条道上走", log: "初中毕业，分了道",
+      { id: "pr_fork16", age: 16, title: "16 岁 · 往哪条道上走", log: "初中毕业，分了道", logBySchooling: { never: "分了道", left: "分了道" },
         text: "初中毕业。这个夏天过后，一块儿玩的那些人要散到不同的地方去了。你得选一条道，先走起来。",
+        textBySchooling: {
+          never: "这个夏天过后，一块儿玩的那些人要散到不同的地方去了。你的日子没在学校里过，往下这条道，也得选一条先走起来。",
+          left: "这个夏天过后，一块儿玩的那些人要散到不同的地方去了。你的书已经放下了，往下这条道，也得选一条先走起来。",
+        },
         choices: [
-          { label: "接着考学，去念高中", setState: { track: "study" }, setFact: { studyForm: "putong" }, requiresFact: { examBand: "high" }, effects: { growth: 2 },
+          { label: "接着考学，去念高中", setState: { track: "study" }, setFact: { studyForm: "putong" }, requiresFact: { examBand: "high" }, requiresState: { schooling: ["school", "half"] }, effects: { growth: 2 },
             echo: "榜放出来那天，你的名字在前头。你妈放了一小挂鞭炮，说这一步，算是迈出去了。" },
-          { label: "读中专，包分配的那种", setState: { track: "study" }, setFact: { studyForm: "zhongzhuan" }, requiresFact: { examBand: "high" }, effects: { growth: 2 },
+          { label: "读中专，包分配的那种", setState: { track: "study" }, setFact: { studyForm: "zhongzhuan" }, requiresFact: { examBand: "high" }, requiresState: { schooling: ["school", "half"] }, effects: { growth: 2 },
             echo: "中专的录取信到家，你爸把信读了两遍：这一步迈出去，户口和饭碗都有了着落。" },
-          { label: "接着考学，去念高中", setState: { track: "study" }, setFact: { studyForm: "putong" }, requiresFact: { examBand: "mid" }, effects: { growth: 2 },
+          { label: "接着考学，去念高中", setState: { track: "study" }, setFact: { studyForm: "putong" }, requiresFact: { examBand: "mid" }, requiresState: { schooling: ["school", "half"] }, effects: { growth: 2 },
             echo: "你考上了普通高中。学校远了些，家里给你买了辆旧自行车，擦得锃亮。" },
-          { label: "读中专，早点定下来", setState: { track: "study" }, setFact: { studyForm: "zhongzhuan" }, requiresFact: { examBand: "mid" }, effects: { growth: 3 },
+          { label: "读中专，早点定下来", setState: { track: "study" }, setFact: { studyForm: "zhongzhuan" }, requiresFact: { examBand: "mid" }, requiresState: { schooling: ["school", "half"] }, effects: { growth: 3 },
             echo: "中专的名额争的人多，你赶上了末一班。家里商量了一晚，说这条路稳当。" },
-          { label: "接着考学", setState: { track: "study" }, setFact: { studyForm: "putong" }, requiresFact: { examBand: "low" }, effects: { growth: 3 },
+          { label: "接着考学", setState: { track: "study" }, setFact: { studyForm: "putong" }, requiresFact: { examBand: "low" }, requiresState: { schooling: ["school", "half"] }, effects: { growth: 3 },
             echo: "分数只够普通口的学校。你还是去了，报到那天把行李捆得紧紧的，没回头。" },
+          { label: "打听补录的口子，再回学校", setState: { track: "study" }, setFact: { studyForm: "zhongzhuan" }, requiresState: { schooling: ["left"] }, effects: { growth: 2 },
+            echo: "你跑了两趟学校，先补考，再报名，赶在开学前把学籍续上了。落下的课，得自己一页一页追。" },
           { label: "顶替进厂，接爸的班", setState: { track: "work" }, set: "took_quota65", requiresFact: { quotaHolder: "mine" }, effects: { money: 3 },
             echo: "报到那天你穿着爸的旧工装，袖口长了一截。车间主任说，你爸的手艺，你得接得住。" },
           { label: "等招工的信儿", setState: { track: "work" }, effects: { money: 2 },
@@ -233,9 +247,9 @@
           craft: "学手艺第二年，师傅让你独立接活了。头一回给人家修好拖拉机，队长当场给你记了双倍工分，还留你吃了顿饭，饭桌上夸了你两回。",
           home: "分田这一年，你成了家里的主劳力。种子、化肥都得自己买，你蹲在供销社门口算了半天账，买了两袋化肥，先紧着好地用。",
         },
-        trackAlt: {
-          study: "中专第二年，你穿的还是学生装，可家里人看你的眼神不一样了——这一步迈出去，户口和饭碗都有了着落。你把课本看得格外认真。",
-        },
+        factAlt: { fact: "studyForm", texts: {
+          zhongzhuan: "中专第二年，你穿的还是学生装，可家里人看你的眼神不一样了——这一步迈出去，户口和饭碗都有了着落。你把课本看得格外认真。",
+        } },
         tail: "你给自己留了个小目标，写在日记本最后一页。",
         choices: null },
       { id: "pr_y18", age: 18, log: "十八岁",
@@ -245,9 +259,9 @@
           craft: "你快出师了。公社的机修站招人，你去报了名，师傅替你写了推荐信。出门那天，他把自己的旧工具箱给了你，说里头的东西，比新的顺手。",
           home: "这一年收成不错。你家卖了余粮，添了台缝纫机。集市上有人开始摆摊卖衣裳，你站着看了一会儿，心里盘算自家能不能也干点什么小的。",
         },
-        trackAlt: {
-          study: "中专快毕业了，分配去向还没定。你们宿舍里天天猜，谁能留城、谁回县里。你把那张表格填了又填，字写得比考试还认真。",
-        },
+        factAlt: { fact: "studyForm", texts: {
+          zhongzhuan: "中专快毕业了，分配去向还没定。你们宿舍里天天猜，谁能留城、谁回县里。你把那张表格填了又填，字写得比考试还认真。",
+        } },
         tail: "成年这天，你煮了碗面，卧了个鸡蛋。",
         choices: null },
       { id: "pr_y20", age: 20, log: "二十岁",
@@ -257,6 +271,9 @@
           craft: "你的手艺在县里出了点名气。这一年你带了第一个徒弟，是亲戚家的孩子。你教他的时候想起自己的师傅，话都不自觉地学他，连停顿都像。",
           home: "你成了村里头一批「专业户」：包下几亩果园，年景好的时候，收入比上班的还强。有人来取经，你把账本摊开给他看，说这里头没有巧，靠算。",
         },
+        factAlt: { fact: "studyForm", texts: {
+          zhongzhuan: "中专毕业，分配到了单位。你穿上工装那天，你妈把你的学生装叠好，收进箱底。头一个月工资发下来，你先给家里寄了一半。",
+        } },
         choices: [
           { label: "挣的钱先存起来，存折上的数慢慢往上涨", effects: { money: 2 }, echo: "存折你藏在抽屉最里面，数到整数时，心里会稳一下。" },
           { label: "挣的钱先紧着家里，剩下的才是自己的", effects: { relation: 2, money: -1 }, echo: "你妈收下钱，转头给你买了双新鞋，说旧的那双早该扔了。" },
@@ -268,6 +285,9 @@
           craft: "二十一岁，你在行里站住了。有人劝你自己开个修理铺，租个门面。你算了算本钱，心里有了主意，还没跟家里说，想等准了再开口。",
           home: "二十一岁，村里给你介绍对象的人多起来。果园里的活离不开人，你心里清楚，往后的路多半围着这片地转——可这日子，是你自己选的，你认。",
         },
+        factAlt: { fact: "studyForm", texts: {
+          zhongzhuan: "进了单位第二年，你算站住了。带你的师傅说你手稳，车间里有活先想起你。宿舍是八个人的，你的床靠窗，窗台上摆着一盆葱。",
+        } },
         choices: null },
     ],
     // ===== 童年随时事件池（蓝图 §3.6；调度归集成步，本包只给条目数据，调度规格见 work/wp3-prologue-patch.md 补丁 3）=====
@@ -286,7 +306,7 @@
           echo: "后来你想起那年，头一个想起的总是饭桌——少了一副碗筷，或者多了一副。",
           text: "那年家里的大事，都摆在饭桌上。",
           variants: [
-            { key: "away", log: "饭桌上少一副碗筷", set: "sibAway65", notFamily: ["cf_11"],
+            { key: "away", log: "饭桌上少一副碗筷", set: "sibAway65", notFamily: ["cf_11", "cf_06"],
               text: "你哥下乡三年了，没回来过。晚饭桌上他那副碗筷还摆在你妈手边，谁也不去动。你妈盛汤，先往那只空碗里添一勺，又慢慢倒回去。",
               stageText: {
                 low: "你哥下乡那年你还小，只记得走那天他摸了摸你的头。晚饭桌上他那副碗筷还摆着，你妈盛汤，先往空碗里添一勺。你问哥什么时候回来，没人答得上来。",
@@ -298,7 +318,7 @@
                 low: "你姐回来了，铺盖卷就堆在堂屋角上，白天出去找活，晚上回来。你帮着摆碗筷，摆到她那副，心里高兴——桌上的人齐了，就是饭要多煮一碗。",
                 exam: "你姐返城快一年了，招工的信儿还是没来。晚饭她帮着摆碗筷，手脚比从前慢。你想起明年就轮到自己毕业，心里掠过一个念头，又赶紧压下去了。",
               } },
-            { key: "married", log: "一封家信", set: "sibMarried65", notFamily: ["cf_11"],
+            { key: "married", log: "一封家信", set: "sibMarried65", notFamily: ["cf_11", "cf_06"],
               text: "你哥在乡下成了家，信里说嫂子人勤快，孩子都会走了。你妈把信读了三遍，晚饭多炒了个鸡蛋，说就当给他们添的，隔着这么远。",
               stageText: {
                 exam: "你哥在乡下成了家，孩子都满地跑了。信还是按月来，你妈看完收进柜子。晚饭多炒了个鸡蛋，你知道，明年自己的路，家里得另作打算了。",
@@ -327,9 +347,9 @@
           echo: "后来你想起那回搬家，心里先浮起来的，是新地方的模样。",
           poolSetByStage: { low: "moved_school65", mid: "moved_school65", exam: "moved_exam65" },
           stageText: {
-            low: "你爸单位调动，家搬到城另一头的厂区宿舍。走那天你抱着自己的搪瓷碗，坐在板车上看院子越来越小。老院子的枣树、井台，都留在后头了。",
-            mid: "家里搬了。你爸调到新厂，房子分在那边。走前一天，你把常玩的那几个地方走了一遍：校门口的摊子、河边的台阶。新学校那头，一个人都不认识。",
-            exam: "偏偏这个时候搬。你爸调动，学籍跟着转到新学校，升学要在哪边考、卷子往哪边送，都得重新打听。家里跑了好几趟，你的复习计划全乱了。",
+            low: "家里要搬了，大人的活换了地方，家搬到城另一头。走那天你抱着自己的搪瓷碗，坐在板车上看院子越来越小。老院子的枣树、井台，都留在后头了。",
+            mid: "家里搬了，大人的活换到新地方，住处也跟着换了。走前一天，你把常玩的那几个地方走了一遍：校门口的摊子、河边的台阶。新学校那头，一个人都不认识。",
+            exam: "偏偏这个时候搬。家里换了地方，学籍跟着转到新学校，升学要在哪边考、卷子往哪边送，都得重新打听。家里跑了好几趟，你的复习计划全乱了。",
           },
           stageEcho: {
             low: "后来你想起搬家，先想起的是板车上的那只搪瓷碗。",
@@ -366,7 +386,7 @@
     sitActs: {
       half: [
         { id: "pr_half1", age: 10, log: "半天学校半天家", sit: "half",
-          text: "你上学三天两头缺课：农忙请假，平时放学先下地。老师把落下的课指给你，让你抄同桌的本子。你抄得认真，字比上课时还整齐。",
+          text: "你上学三天两头缺课：家里一忙就得请假，回去搭把手。老师把落下的课指给你，让你抄同桌的本子。你抄得认真，字比上课时还整齐。",
           tail: "课文背得磕磕绊绊，放下书包前总能顺下来。",
           choices: null },
         { id: "pr_half2", age: 14, log: "还读不读", sit: "half", title: "14 岁 · 还读不读",
@@ -375,7 +395,7 @@
             { label: "咬咬牙，继续读下去", effects: { growth: 2, money: -1 }, echo: "你接着读了。家里的活没少干，觉睡得更少了。" },
             { label: "就读到这儿，回家帮工", setState: { schooling: "left" }, effects: { relation: 1, money: 1 }, echo: "退学那天，你把课本摞好，放在柜子顶上。往后，就是全天帮工的人了。" },
           ] },
-        { id: "pr_half3", age: 19, log: "半大的手艺", sit: "half",
+        { id: "pr_half3", age: 19, log: "半大的手艺", sit: "half", whenState: { track: "work" },
           text: "这些年书没念全，手上的本事倒齐全。这一年，乡里办起了企业，招工的人看你算账利索、手脚勤快，喊你去试了试。",
           choices: [
             { label: "去乡里的企业上工，稳稳当当干", set: "half_grown", effects: { growth: 2 }, echo: "你成了厂里最年轻的组长候选。家里人说，这孩子算是站住了。" },
@@ -385,6 +405,9 @@
       never: [
         { id: "pr_never1", age: 8, log: "没进过校门", sit: "never",
           text: "你家孩子多，你排中间。报名那几天，家里没人提送你去，你也没吭声。你背着弟弟站在村口，看背书包的孩子往学校走。",
+          textByFact: { siblingForm: {
+            only: "你家就你一个。报名那几天，家里没人提送你去，你也没吭声。你站在村口，看背书包的孩子往学校走。",
+          } },
           tail: "牛吃草时，你坐在坡上，看村口的旗升起来，又落下去。",
           choices: null },
         { id: "pr_never2", age: 15, log: "冬学的灯", sit: "never", title: "15 岁 · 冬学开课",

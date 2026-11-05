@@ -52,7 +52,38 @@
       const S = IFY.S;
       const onHome = S && S.route && (S.route.id === "home" || (S.state && S.state.track === "home"));
       if (onHome && S.age >= 22 && S.age <= 28 && !hasFact("exam_passed") && !hasFact("exam_landed") && !hasFact("exam_failed")) return false;
+      // study 在读窗（AN-3 D-2b，与 home 考试窗对称的路线未决窗）：深造路线 22–27 岁
+      // 默认在读，其他行当的纯入行拍不可抽——邀约只能缺席，不得抢先落成主入行旗
+      // 把「在读」叙事顶掉。带 ctx.studyLine 的条目是深造线自己的入行拍（如立研究旗
+      // 的课题组拍），豁免本窗；28 岁起自动失效，毕业去向照常放行。
+      if (S && S.route && S.route.id === "study" && S.age >= 22 && S.age < 28 && !ctx.studyLine) return false;
+      // corp 开局窗（AN-3 D-2c）：单位路线 22–24 岁是路线自带的入职叙事期，其他
+      // 行当的纯入行拍不可抽（挡「大厂开局第一年还在进小作坊学徒」类串行）；25 岁
+      // 起自动失效，跳槽/转行叙事照常。
+      if (S && S.route && S.route.id === "corp" && S.age >= 22 && S.age <= 24) return false;
     }
+    // 在职门（AN-3 D-1）：ctx.employed=true 须本局已有入行事实（work.js isEmployed）；
+    // ctx.notEmployed=true 反之。治「叙事旗冒充就业事实」：只落 job_hop/stay_put 的人
+    // 仍是未入行，工龄/单位/在职口径文本不得命中他。
+    if (ctx.employed && !(typeof IFY.isEmployed === "function" && IFY.isEmployed())) return false;
+    if (ctx.notEmployed && typeof IFY.isEmployed === "function" && IFY.isEmployed()) return false;
+    // 主线工龄门（AN-3 D-4）：ctx.tenureIn=[lo,hi]——当前主线工龄（work.js tenureYears
+    // 派生）须落在闭区间内；无主线或落点年龄缺失（tenureYears=null）一律不过
+    // （fail-closed：旧档不硬凑工龄）。
+    if (ctx.tenureIn) {
+      const t = typeof IFY.tenureYears === "function" ? IFY.tenureYears() : null;
+      if (t == null || t < ctx.tenureIn[0] || t > ctx.tenureIn[1]) return false;
+    }
+    // 换线时窗门（AN-3 D-4）：ctx.lineSwitchWithin=n——主线切换落点距今 ≤ n 年才可抽
+    // （「刚换线」回响专用）；从没换过线（entrySwitchAge=null）不过。
+    if (ctx.lineSwitchWithin != null) {
+      const sw = typeof IFY.entrySwitchAge === "function" ? IFY.entrySwitchAge() : null;
+      if (sw == null || IFY.S.age - sw > ctx.lineSwitchWithin) return false;
+    }
+    // 研究在行门（AN-3 D-5c）：ctx.gradGate=true——须已立研究旗 grad_work，或旧档宽门：
+    // 已走过药研轨迹旗 traj_drug1/traj_drug2。grad_work 是新立的旗，旧档局内年龄窗已过、
+    // 永远补不上立旗拍，只认新旗会把旧档研究者终身挡在实验室文本之外，故留轨迹旗回落。
+    if (ctx.gradGate && !hasFact("grad_work") && !hasFact("traj_drug1") && !hasFact("traj_drug2")) return false;
     // 反主线门（v0.20.1 W6）：ctx.notMainLine 为入行旗 id 数组——当前主线命中任一即拦
     // （如医护在行期间不出「回公司开会」口径的公司纹理；形态派生分不出医护与公司同为 employee 时用它）。
     if (ctx.notMainLine) {
@@ -83,6 +114,34 @@
         (hasFact("care_self") || hasFact("care_hired") || hasFact("care_rotate"));
       const spouseTarget = (st.spouse === "partnered" || st.spouse === "dating") && hasFact("care_hired_spouse");
       if (!parentTarget && !spouseTarget) return false;
+    }
+    // 生活事实门（v0.24.4，AN-2）：住房/车辆/定居三类当前事实只许问派生层（place.js 的
+    // housingOf/carOf/settledOf，纯函数现算、不进存档），不许条目再直接认单面旗——这正是
+    // 「买过商品房的人被房东收房」一族的病根（旗只增不减、每处读点各读一个子集）。
+    //   ctx.house："owned" 已购房（own/reform/commodity 任一形态；单位分房不算买下）/
+    //     "renting" 当前确实在私租（租旗在身且未购房未住单位房）/"unit" 当前住单位房口径
+    //     （含 c1955 公房纠偏）/"any" 三者居其一。
+    //   ctx.car："now" 现在有车（买过且没卖）/"ever" 曾经有过车/"none" 从没买过车。
+    //   ctx.settle："home"|"city"|"abroad"——当前定居地（轨迹终点，settledOf）。
+    if (ctx.house) {
+      const h = typeof IFY.housingOf === "function" ? IFY.housingOf(IFY.S) : null;
+      if (!h) return false;
+      const ok = ctx.house === "owned" ? !!h.owned
+        : ctx.house === "renting" ? h.rentingNow
+        : ctx.house === "unit" ? h.unitLike
+        : ctx.house === "any" ? !!(h.owned || h.unitLike || h.rentingNow)
+        : false;
+      if (!ok) return false;
+    }
+    if (ctx.car) {
+      const c = typeof IFY.carOf === "function" ? IFY.carOf(IFY.S) : null;
+      if (!c) return false;
+      const ok = ctx.car === "now" ? c.now : ctx.car === "ever" ? c.ever : ctx.car === "none" ? !c.ever : false;
+      if (!ok) return false;
+    }
+    if (ctx.settle) {
+      const so = typeof IFY.settledOf === "function" ? IFY.settledOf(IFY.S) : null;
+      if (!so || so.final !== ctx.settle) return false;
     }
     return true;
   }

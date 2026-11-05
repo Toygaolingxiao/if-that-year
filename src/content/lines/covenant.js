@@ -26,7 +26,7 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
   // —— 童年记号回响 ——
   { id: "echo_deskmate", min: 24, max: 40, require: "mark_deskmate", text: "小学同桌要结婚了，喜帖寄到时，你先想起的是开学第一天那半块橡皮。你随了份子，人也去了。席间你们说起当年分橡皮的事，对方说，那块橡皮是他妈让他分的，他当时还有点舍不得。",
     effects: { relation: 2 } },
-  { id: "echo_river", min: 25, max: 42, require: "mark_river", text: "回老家办事，车过桥的时候你往下看了一眼：河沟填平了一半，剩下的那段水还是浅的，几个孩子在桥洞底下，不知在摸什么。你把车停在路边站了一会儿，才重新上路。",
+  { id: "echo_river", min: 25, max: 42, require: "mark_river", ctx: { car: "now" }, text: "回老家办事，车过桥的时候你往下看了一眼：河沟填平了一半，剩下的那段水还是浅的，几个孩子在桥洞底下，不知在摸什么。你把车停在路边站了一会儿，才重新上路。",
     effects: { freedom: 1, wisdom: 1 } },
   { id: "echo_tree", min: 26, max: 45, require: "mark_tree", text: "路过小学门口，你特意慢了一步：那棵梧桐还在，树底下修鞋摊换成了摊主的儿子，工具摆的位置都没变。你站着看了会儿，有个小孩跑出来喊师傅修鞋，答应声从摊子后头传出来，跟你小时候听的一样。",
     effects: { relation: 1, wisdom: 1 } },
@@ -39,7 +39,7 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
     effects: { freedom: 1 } },
   { id: "echo_hoop", min: 25, max: 42, require: "mark_hoop", text: "回老家，巷口那块空地盖了楼，楼下停满了电动车。你绕着车走进巷子，脚下就是小时候滚铁环的地方。",
     effects: { freedom: 1 } },
-  { id: "echo_corn", min: 26, max: 44, require: "mark_corn", text: "开车路过一片玉米地，赶上长得最盛的时候。你把车停下，站在地边看了一会儿。叶子比人高，风一吹哗啦啦响，跟你九岁那年一个动静。",
+  { id: "echo_corn", min: 26, max: 44, require: "mark_corn", ctx: { car: "now" }, text: "开车路过一片玉米地，赶上长得最盛的时候。你把车停下，站在地边看了一会儿。叶子比人高，风一吹哗啦啦响，跟你九岁那年一个动静。",
     effects: { health: 1 } },
   { id: "echo_icepop", min: 24, max: 40, require: "mark_icepop", text: "天热，你在便利店买了根冰棍，包装花花绿绿，价钱是小时候的几十倍。你站在店门口吃完才发现，这根从头到尾是你一个人吃的，没人跟你分。",
     effects: { relation: 1 } },

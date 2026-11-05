@@ -97,32 +97,56 @@
         { key: "classphoto", log: "毕业照", set: "mark_classphoto", mark: "mark_classphoto",
           text: "毕业照在升旗台前拍的。后排的站上台阶，你在最边上的一级，站得脚发酸。校长站在中间，说了句，以后常回来看看。快门响的时候，你正眯着眼。" },
       ] },
-    { id: "pr_teen1", age: 13, log: "升初中", eraText: true,
+    { id: "pr_teen1", age: 13, log: "升初中", logBySchooling: { never: "十三岁", left: "十三岁" }, eraText: true,
       variants: [
-        { key: "route", text: "升初中那年，学校离家远了，你每天都得提前半小时出门。你把上学的路线骑熟了，单程三十五分钟，哪个路口要等灯，闭着眼都知道。" },
-        { key: "bus", text: "升初中那年，你开始自己坐车上学。头一回坐车你睡过了头，一睁眼到了终点站，只好再坐回来。" },
+        { key: "route", text: "升初中那年，学校离家远了，你每天都得提前半小时出门。你把上学的路线骑熟了，单程三十五分钟，哪个路口要等灯，闭着眼都知道。",
+          textBySchooling: { never: "跟你一起长大的升初中了，学校离家远，每天得提前半小时出门。开学那天他们在巷口集合，书包一个比一个鼓。你站在边上看了一会儿，转身回去帮家里干活。" } },
+        { key: "bus", text: "升初中那年，你开始自己坐车上学。头一回坐车你睡过了头，一睁眼到了终点站，只好再坐回来。",
+          textBySchooling: { never: "跟你一起长大的开始自己坐车上学了。头一回有人睡过了头，坐到终点站，又坐了回来，成了笑了半个月的话。你没坐过那趟车，听他们讲，也跟着笑。" } },
       ] },
     { id: "pr_teen2", age: 15, log: "十五岁的念头",
       text: "十五岁那年，你开始想一件事：往后的日子，是接着念书，还是早点出去挣钱。想归想，日子还是一天一天过——作业要交，饭要照吃。",
+      textBySchooling: {
+        never: "十五岁那年，你开始想一件事：往后的日子，是守着家里这一摊，还是早点出去挣钱。想归想，日子还是一天一天过——活要干，饭要照吃。",
+        left: "十五岁那年，你开始想一件事：书已经放下了，往后的日子，是守着家里这一摊，还是早点出去挣钱。想归想，日子还是一天一天过——活要干，饭要照吃。",
+      },
       choices: [
         { label: "把念头压下去，先把眼前的试考好", effects: { growth: 1 }, itch: "study", echo: "你把那页写了念头的纸夹进课本里，再没翻开过。" },
-        { label: "跟家里旁敲侧击提了一回，看看大人的反应", effects: { relation: 1 }, itch: "out", echo: "你妈说，等你初中毕业再说。你爸没接话，把电视声音调小了一格。" },
-      ] },
+        { label: "跟家里旁敲侧击提了一回，看看大人的反应", effects: { relation: 1 }, itch: "out", echo: "你妈说，等你初中毕业再说。你爸没接话，把电视声音调小了一格。",
+          echoLB: "你奶奶说，等你初中毕业再说。你爷爷没接话，把电视声音调小了一格。" },
+      ],
+      choicesBySchooling: {
+        never: [
+          { label: "把念头压下去，先把手边的活干完", effects: { growth: 1 }, itch: "study", echo: "你把念头压下去，手里的活没停。那个念头在心里搁着，没再跟人提过。" },
+          { label: "跟家里旁敲侧击提了一回，看看大人的反应", effects: { relation: 1 }, itch: "out", echo: "你妈说，等你再长大些再说。你爸没接话，把电视声音调小了一格。",
+            echoLB: "你奶奶说，等你再长大些再说。你爷爷没接话，把电视声音调小了一格。" },
+        ],
+        left: [
+          { label: "把念头压下去，先把手边的活干完", effects: { growth: 1 }, itch: "study", echo: "你把念头压下去，手里的活没停。书是放下了，可日子还得一天一天往前过。" },
+          { label: "跟家里旁敲侧击提了一回，看看大人的反应", effects: { relation: 1 }, itch: "out", echo: "你妈说，等你再长大些再说。你爸没接话，把电视声音调小了一格。",
+            echoLB: "你奶奶说，等你再长大些再说。你爷爷没接话，把电视声音调小了一格。" },
+        ],
+      } },
     // v0.23 WP5（F00 fork16 升级）：bandFork=true 的分岔拍在 present 时走专属呈现（见 WP5 段 forkPresent）——
     // band 在拍内经考试场景落定并切单子（bandText 三档说法为本代自写，不与他代同句）；craft 带 bandForms
     // （中职分班形：缺省双口形，mid 换对口升学班形、low 换就业班形，出口在回声里分）；「回老家读高中」
     // 只对立过 migrantExam 的随迁家庭亮（requiresFlag，L00-考 落地后才有此旗；无旗者选项面与升级前一致）。
     // 新老选项 setState 目标一律不变（仍是四轨），不触发存档迁移。
-    { id: "pr_fork16", age: 16, title: "16 岁 · 往哪条道上走", log: "初中毕业，分了道", bandFork: true,
+    { id: "pr_fork16", age: 16, title: "16 岁 · 往哪条道上走", log: "初中毕业，分了道", logBySchooling: { never: "分了道", left: "分了道" }, bandFork: true, bandSkipSchooling: ["left", "never"],
       text: "初中毕业。这个夏天过后，一块儿玩的那些人要散到不同的地方去了。你得选一条道，先走起来。",
+      textBySchooling: {
+        never: "这个夏天过后，一块儿玩的那些人要散到不同的地方去了。念书的等榜，你等的是另一回事：往下的道，得自己选一条先走起来。",
+        left: "这个夏天过后，一块儿玩的那些人要散到不同的地方去了。念书的等榜，你的书已经放下了，往下的道，得自己选一条先走起来。",
+      },
       bandText: {
         high: "中考分数贴在学校门口的墙上，你的名字在普高那一栏里，是圈出来的。这个夏天过后，大家要散到不同的地方去，你得选一条道，先走起来。",
         mid: "成绩贴出来，普高那条线你差了一截。单子上还剩中职的对口升学班、打工和留家这几行。考上普高的同桌在人堆里朝你挥手，你也抬了抬手。",
         low: "榜贴出来那天，你从头看到尾，没找着自己的名字。剩下的路在单子下半张：中职就业班、打工、留家。考上的人被围在中间，你先挤出去了。",
       },
       choices: [
-        { label: "接着念高中，往下考", setState: { track: "study" }, echo: "录取通知书到家那天，你妈放了一小挂鞭炮。书包还是旧的，里头换了新课本。" },
+        { label: "接着念高中，往下考", setState: { track: "study" }, requiresState: { schooling: ["school", "half"] }, echo: "录取通知书到家那天，你妈放了一小挂鞭炮。书包还是旧的，里头换了新课本。" },
         { label: "回老家读高中", setState: { track: "study" }, requiresFlag: "migrantExam", echo: "开学前，你坐了大半天的车回老家。县城边上的高中，宿舍是上下铺，你的铺位靠窗，行李先塞在床底下。" },
+        { label: "去学校问补录，再回去念", setState: { track: "study" }, requiresState: { schooling: ["left"] }, echo: "你去学校问了补录的口子，人家让你先跟班试读。落下的功课得自己一页一页补，你赶在开学前把名报上了。" },
         { label: "去中职，学门能吃饭的手艺", setState: { track: "craft" }, echo: "开学先分班：想再往上考的进对口升学班，先学手艺的进就业班。你站在名单前看了一会儿，先去把工具领了。",
           bandForms: {
             mid: { label: "去中职对口升学班，还往上考", echo: "这个班照着往上考的路子教，科目精些。班主任说，往年也有从这个班考出去的，就看你自己沉不沉得住气。" },
@@ -445,7 +469,7 @@
           // 由 present 池幕段按呈现时 schooling 换文（退学在 14 岁、晚于调度点）；留守局 text 先读
           // textLBBySchooling[P.situation]（低龄/中段呈现龄 schooling 与开局处境恒等，按处境选精确），
           // 未命中回落 textLB/text 原口径；未声明这些字段的变体行为一字不变。
-          const pseudo = { id: e.id, age: trig, log: va.log || e.log || "家里的一桩事", familyBeat: true, familyFact: e.familyFact || undefined,
+          const pseudo = { id: e.id, age: trig, log: va.log || e.log || "家里的一桩事", familyBeat: true, familyFact: va.familyFact || e.familyFact || undefined, // AN-5 R5(a)：变体级 familyFact 透传（bands 路已支持、无变体声明时与原行为逐字一致）——同一条目两档强度不得共用一旗
             text: (P.leftBehind && va.textLBBySchooling && va.textLBBySchooling[P.situation]) ? va.textLBBySchooling[P.situation]
               : ((P.leftBehind && va.textLB) ? va.textLB : va.text), echo: va.echo || null, choices: va.choices || null, poolEntry: e.id,
             poolExtraFact: va.extraFact || null,
@@ -565,6 +589,9 @@
     let band = factOf(S, "examBand");
     if (!legacy && band === "absent") { rollExamBand(S, act); band = factOf(S, "examBand"); }
     let text = act.text;
+    // fix3 B1（子类 3b）：bandFork 拍同样吃幕级 textBySchooling——离校者题面不预设「初中毕业」；
+    // band 已掷定者仍以下方 bandText 为准（band 与 left/never 互斥，bandSkipSchooling 保证不掷）。
+    if (act.textBySchooling && S.state && act.textBySchooling[S.state.schooling]) text = act.textBySchooling[S.state.schooling];
     if (!legacy && band !== "absent" && act.bandText && act.bandText[band]) text = act.bandText[band];
     if (P.itch === "out") text += "\n十五岁那年你跟家里提过的那件事，今天要定下来了。";
     let choices = act.choices;
@@ -580,13 +607,23 @@
 
   // 间隔年只在 child/teen/youth 段出现（act 年龄表）：5→7→9→11→12→13→15→16→17→18→20→21，空档为 6/8/10/14/19。处境幕并入后，落在处境幕年龄上的平年不再重复出现。
 
+  // 场景标签互斥（fix3 B1 子类 1a/2a）：rural 与 urban/factory 互斥（同一屏不许既村里又城里/厂区）；
+  // urban 与 factory 相容（厂区本就在城里）；town 与任何标签都不构成硬断言，不入互斥表。
+  const SETTING_CONFLICT = { rural: ["urban", "factory"], urban: ["rural"], factory: ["rural"] };
+  function settingConflict(a, b) { return !!(a && b && (SETTING_CONFLICT[a] || []).includes(b)); }
+
   // 变体发放：只走序章自有流（prng），一格不碰主 RNG。notFamily 粗分在此过滤（如河沟款不发厂区大院家底）。
   function pickVariants(S) {
     const P = S.prologue, out = {};
+    const C = cards();
+    const famCard = C && P.family && C.byId[P.family] ? C.byId[P.family] : null;
+    const famSetting = famCard && famCard.setting;
     for (const act of packFor(S.era).acts) {
       if (!act.variants) continue;
       // fix2（opt-in）：变体可带 notMigrant，随迁局不发该款（如农村专属款）；未声明的变体过滤结果不变。
-      const pool = act.variants.filter((v) => !(v.notFamily && P.family && v.notFamily.includes(P.family)) && !(v.notMigrant && P.migrantChild));
+      let pool = act.variants.filter((v) => !(v.notFamily && P.family && v.notFamily.includes(P.family)) && !(v.notMigrant && P.migrantChild));
+      // fix3 B1（2a）：变体带 setting 时与家底牌场景标签互斥的款不发（过滤后为空回落未过滤池）；每幕仍只掷一次、流位不变。
+      if (famSetting) { const sp = pool.filter((v) => !settingConflict(famSetting, v.setting)); if (sp.length) pool = sp; }
       out[act.id] = pool[Math.floor(prng(S) * pool.length)].key;
     }
     return out;
@@ -624,6 +661,11 @@
     // 留守是家底底色（地基 v2.1），不占处境值：父母不在身边长大的孩子各处境都有，half 最多。只改质地（来历幕/童年幕文本），不发数值。
     const LB = { school: 0.18, half: 0.45, never: 0.30 };
     S.prologue.leftBehind = prng(S) < (LB[sit] || 0);
+    // fix3 B1（子类 1c）：留守掷定后按家底牌面校正——cf_09 的牌面本身就是「爸妈在外地那些年」，
+    // 恒为留守；cf_01（柜台后头，你爸在店里）/cf_03（院子作坊，你爸在院里）牌面父母俱在，恒不留守。
+    // 双通道（掷骰 vs 牌面）在此收成一个事实源头；校正不消费流、不改掷点。
+    if (S.prologue.family === "cf_09") S.prologue.leftBehind = true;
+    else if (S.prologue.family === "cf_01" || S.prologue.family === "cf_03") S.prologue.leftBehind = false;
     // 随迁发放（WP8 接线，合并二期落）：只对带 calib95 的包（c1995）掷一次（按处境概率，序章流），
     // 定版写入 P.migrantChild；无 calib95 的包不消费流（其余五代一格不变）。
     // fix3 三修（opt-in）：calib95 声明 migrantNotWhenLeftBehind 的包，随迁只对非留守者掷——
@@ -704,10 +746,36 @@
       if (act.id === "pr_origin") {
         // fix3（opt-in）：pack.originOpenNotWithFamily 按开场白下标登记与家底互斥的条目
         // （如独生句×手足家底 cf_06）——抽中互斥条时顺延一款（不另消费流），未声明的包行为不变。
+        // fix3 B1（子类 1a/1b）：顺延判据扩为三路合并——既有家底互斥表＋开场白场景标签
+        // （pack.originOpenSetting）与家底牌 setting 的互斥＋开场白手足断言（pack.originOpenAssert）
+        // 与家底手足形的互斥；顺延改为有界环查（逐款试到首个不冲突者，全冲突回落原抽中款），仍不消费流。
         let openIdx = Math.floor(prng(S) * pack.originOpen.length);
-        const openGate = pack.originOpenNotWithFamily && pack.originOpenNotWithFamily[openIdx];
-        if (openGate && P.family && openGate.includes(P.family)) openIdx = (openIdx + 1) % pack.originOpen.length;
+        const famCard0 = P.family && C && C.byId[P.family] ? C.byId[P.family] : null;
+        const openConflict = (idx) => {
+          const g = pack.originOpenNotWithFamily && pack.originOpenNotWithFamily[idx];
+          if (g && P.family && g.includes(P.family)) return true;
+          const os = pack.originOpenSetting && pack.originOpenSetting[idx];
+          if (settingConflict(famCard0 && famCard0.setting, os)) return true;
+          const oa = pack.originOpenAssert && pack.originOpenAssert[idx];
+          if (oa) {
+            if (P.family === "cf_11" && oa.siblings) return true; // 独生家底 × 任何兄姐断言
+            if (P.family === "cf_06" && (oa.only || oa.siblings === "elderBrothers")) return true; // 姐＋弟家底 × 独生句/两个哥哥
+          }
+          return false;
+        };
+        if (openConflict(openIdx)) {
+          for (let k = 1; k < pack.originOpen.length; k++) {
+            const cand = (openIdx + k) % pack.originOpen.length;
+            if (!openConflict(cand)) { openIdx = cand; break; }
+          }
+        }
         const open = pack.originOpen[openIdx];
+        // fix3 B1（子类 1b）：手足形在来历幕定版写入枚举事实 siblingForm（家底牌自带形优先，
+        // 其次开场白的独生断言，其余 unspecified）——后续平年/处境幕的手足句一律按此事实分文，不再各自断言。
+        if (factOf(S, "siblingForm") === "absent") {
+          const oaF = pack.originOpenAssert && pack.originOpenAssert[openIdx];
+          setFact(S, "siblingForm", P.family === "cf_06" ? "sisterAndBrother" : (P.family === "cf_11" || (oaF && oaF.only)) ? "only" : "unspecified");
+        }
         const fam = P.family && C && C.byId[P.family] ? C.byId[P.family].text : "";
         const lb = P.leftBehind ? "\n" + pack.originLB : "";
         // fix2（opt-in）：originMigrantBySit 按处境换随迁来历行（如 never 者随迁但没报上名，与 pr_child1 口径对齐）；未声明的包行为不变。
@@ -741,7 +809,10 @@
         P.curText = bt + (act.tail || "");
         P.curChoices = act.choices || null;
       } else if (act.eraText) {
-        let era = P.eraCard && C && C.byId[P.eraCard] ? C.byId[P.eraCard].text : "";
+        const eraCard = P.eraCard && C && C.byId[P.eraCard] ? C.byId[P.eraCard] : null;
+        // fix3 B1（子类 2b）：时代牌带 needsSchooling 时，当前 schooling 不在列则不拼牌文
+        // （牌文是第一人称传记预付，没进过校门的人读到即自相矛盾）；牌的数值/钩子在 22 岁汇入结算，不在此处。
+        let era = eraCard && !(eraCard.needsSchooling && S.state && !eraCard.needsSchooling.includes(S.state.schooling)) ? eraCard.text : "";
         // fix2（opt-in）：变体带 textBySchooling 命中当前 schooling 时整段换文，且不再拼时代牌
         // （时代牌文本可能预设在校，与换文处境相冲）；未命中时拼牌口径不变。
         const sitAlt = (v && v.textBySchooling && S.state && v.textBySchooling[S.state.schooling]) || (act.textBySchooling && S.state && act.textBySchooling[S.state.schooling]);
@@ -768,11 +839,17 @@
         // fix2（opt-in）：schooling 分文——变体级/幕级 textBySchooling 命中当前 schooling 时整段换文
         // （如 never 的童年拍、half 退学后的少年拍不预设在校）；未声明的幕行为不变。
         if (v && v.textBySchooling && S.state && v.textBySchooling[S.state.schooling]) t = v.textBySchooling[S.state.schooling];
-        if (act.textBySchooling && S.state && act.textBySchooling[S.state.schooling]) t = act.textBySchooling[S.state.schooling];
         // fix3（opt-in）：act.textByMigrant——随迁者整段换文（如 never 随迁者的 pr_never1 读城市形，不读老家山村形）；未声明的幕行为不变。
         if (act.textByMigrant && P.migrantChild) t = act.textByMigrant;
         // 城镇家底的整幕替换文本（c1955 性子相关拍 textTown；仅当家底在本包 townFamilies 内）
         if (act.textTown && P.family && pack.special.townFamilies.includes(P.family)) t = act.textTown;
+        // fix3 B1（子类 3b）：幕级 textBySchooling 移到 textTown 之后应用——处境事实优先于家底替换
+        // （城镇×离校者的分岔题面不许被 textTown 的「初中毕业」盖回去）；现行内容无任何一幕同时带
+        // textTown 与 textBySchooling，此移动对既有呈现逐字不变。
+        if (act.textBySchooling && S.state && act.textBySchooling[S.state.schooling]) t = act.textBySchooling[S.state.schooling];
+        // fix3 B1（子类 1b）：幕级 textByFact 整段换文（与 textByTrack 分支同形）——处境幕的手足句
+        // （如 pr_never1 的「看妹妹」）按 siblingForm 分文，置于 textTown 之后使事实分文优先于家底替换。
+        if (act.textByFact) for (const [fn, map] of Object.entries(act.textByFact)) { const fv = factOf(S, fn); if (map && map[fv]) t = map[fv]; }
         // factText：按枚举事实（如 examBand）追加场景行（如看榜），不消费流。
         if (act.factText && act.factText.texts) { const fv = factOf(S, act.factText.fact || "examBand"); if (act.factText.texts[fv]) t += "\n" + act.factText.texts[fv]; }
         // examBand 掷定＋band 分文（WP7 P1／WP8 §2.5，合并二期合流）：带 examBand 的分岔拍在呈现点掷档一次（序章流）；
@@ -838,6 +915,9 @@
       // v0.23 WP1（E3/E4）：选项门统一在此过一遍（无门字段的幕 gateChoices 原样返回，消费点不变）；
       // familyBeat 幕级家庭事实旗在呈现即立（与 act.set 同拍口径），回声字段随 view 带出供呈现/结算读。
       if (P.curChoices) P.curChoices = gateChoices(S, P.curChoices);
+      // fix3 B1（子类 1d）：选项带 echoLB 时，留守局的回声换祖辈口吻呈现（原句由不在身边的父母
+      // 说出即穿帮）；只换呈现、不动 effects/set/itch，全分支在此一处收口，不消费流。
+      if (P.leftBehind && P.curChoices) P.curChoices = P.curChoices.map((c) => (c.echoLB ? Object.assign({}, c, { echo: c.echoLB }) : c));
       // fix3（opt-in）：池伪条目带 factBySchooling 时家庭事实按呈现时 schooling 取值（键存在且为 null＝不立旗，
       // 如退学者不再立 migrantExam）；未声明的幕仍按 act.familyFact 原样立旗。
       let effFamFact = act.familyFact;
@@ -897,7 +977,11 @@
       const f = packFor(S.era).flatsByAge[a];
       if (!f) continue;
       // fix2（opt-in）：平年文可带 textBySchooling 按当前 schooling 整段换文（未声明的平年行为不变）。
-      const fText = (f.textBySchooling && S.state && f.textBySchooling[S.state.schooling]) || f.text;
+      let fText = (f.textBySchooling && S.state && f.textBySchooling[S.state.schooling]) || f.text;
+      // fix3 B1（子类 1b/1d）：平年文可带 textByFact（按枚举事实，如手足形）与 textByLeftBehind
+      // （留守口吻）整段换文，优先级 留守＞事实＞处境＞原文；均不消费流。
+      if (f.textByFact) for (const [fn, map] of Object.entries(f.textByFact)) { const fv = factOf(S, fn); if (map && map[fv]) fText = map[fv]; }
+      if (P.leftBehind && f.textByLeftBehind) fText = f.textByLeftBehind;
       S.log.push(`${a} 岁 · ${fText}`);
       if (!flatMute) for (const [k, v] of Object.entries(f.effects || {})) gapFx[k] = (gapFx[k] || 0) + v;
     }

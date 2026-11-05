@@ -20,7 +20,7 @@ window.GAME_DATA = {
       choices: [
         // 留置（内容修复批登记）：下条 echoFlag.exam_passed 变体在 v0.24.1 时序下不可达（考试落点最早 27 岁，晚于本岔口 25 岁的回响语境；X-1 轮时序证明）——文本本身无误，本批不动，待时序口径变更时再议。
         { label: "跳槽，换个活法", labelEra: { c1955: "想法子调动，换个地方", c1965: "停薪留职，下海试试" }, labelForm: { farm: "换个活法，去别处试试", self: "换个摊子，换个活法", flex: "换个站点，换个活法" }, effects: { growth: 6, money: 4, freedom: 2, relation: -2 }, set: "job_hop", temp: 5, echo: "新单位入职第一天，你提前二十分钟到，坐在空会议室里把流程表看了一遍又一遍。", echoFlag: { exam_passed: "换工作的事你先记下了——录取还没落定，你不想两头落空。现在这摊活，你比谁都熟。", exam_shortlist: "换工作的事你先记下了——名单上还没有你最后的名字，你不想两头落空。现在这摊活，你比谁都熟。" }, echoEra: { c1955: "调动手续跑了小半年，新地方报到那天，你提前二十分钟到，把各屋的人先认了一圈。", c1965: "手续办下来那天，你请科里人吃了顿饭。师兄那句话应了景：档案先挂着，人先出去闯。头一个月，账算了三遍。" }, echoForm: { farm: "新活计上手第一天，你天没亮就醒了，把新地方的规矩在心里过了一遍又一遍。", self: "新摊子开张第一天，你提前二十分钟到，把货架上的价签看了一遍又一遍。", flex: "新站点报到第一天，你提前二十分钟到，把那片区的路线在心里过了一遍又一遍。" } },
-        { label: "留下，把手头的事做深", effects: { growth: 4, money: 2, health: -2 }, set: "stay_put", temp: -4, echo: "你慢慢成了组里的老人，新来的同事有问题先来敲你的桌子，问那套老系统怎么查。", echoForm: { farm: "你慢慢成了老人，新来的年轻人有事先来问你，问那摊活的脾气怎么摸。", self: "你慢慢成了这条街的老人，新开摊的有事先来问你，问这片的人流和行情怎么看。", flex: "你慢慢成了站里的老人，新来跑单的有事先来问你，问那片区的单子怎么跑最顺。" } },
+        { label: "留下，把手头的事做深", effects: { growth: 4, money: 2, health: -2 }, set: "stay_put", temp: -4, echo: "你慢慢成了组里的老人，新来的同事有问题先来敲你的桌子，问那套老系统怎么查。", echoFlag: { exam_passed: "留下的事你先记下了——录取还没落定，你不想两头落空。眼下这摊活，你先稳稳担着。", exam_shortlist: "留下的事你先记下了——名单上还没有你最后的名字，你不想两头落空。眼下这摊活，你先稳稳担着。", exam_retry: "留下的事你先记下了——下一场还没考，你不想两头落空。眼下这摊活，你先稳稳担着。" }, echoNotEmployed: "先不挪窝。你把手头的日子过稳，慢慢看清自己想往哪儿走。", echoForm: { farm: "你慢慢成了老人，新来的年轻人有事先来问你，问那摊活的脾气怎么摸。", self: "你慢慢成了这条街的老人，新开摊的有事先来问你，问这片的人流和行情怎么看。", flex: "你慢慢成了站里的老人，新来跑单的有事先来问你，问那片区的单子怎么跑最顺。" } },
         { label: "工作照旧，下班折腾点自己的事", labelForm: { farm: "手头的活照旧，收工折腾点自己的事", self: "店里的活照旧，打烊折腾点自己的事", flex: "单照旧跑，收工折腾点自己的事" }, effects: { freedom: 5, growth: 3, health: -3 }, set: "side_start", temp: 4, echo: "下班后的摊子刚铺开，头个月只挣了三百多，你把那笔钱单独记在账本最后一页。", echoForm: { farm: "收工后的摊子刚铺开，头个月只挣了三百多，你把那笔钱单独记在账本最后一页。", self: "打烊后的摊子刚铺开，头个月只挣了三百多，你把那笔钱单独记在账本最后一页。", flex: "收工后的摊子刚铺开，头个月只挣了三百多，你把那笔钱单独记在账本最后一页。" } },
       ] },
     { id: "fork28", age: 28, forbidRoute: "home", title: "28 岁 · 回不回老家", text: "过年回家，母亲包饺子时说起，邻居家的孩子考回了县里。夜里你躺在小时候的床上，天花板还是那块天花板。你第无数次想：如果当年选了另一条呢？",
@@ -33,7 +33,7 @@ window.GAME_DATA = {
     // 留置（内容修复批登记）：下条 textFlag.exam_passed 变体在 v0.24.1 时序下不可达（落点拍在 29 岁，晚于本岔口 28 岁；X-1 轮时序证明，3,400 局 0 次）——文本本身无误，本批不动，待时序口径变更时再议。
     { id: "fork28m", age: 28, route: "home", title: "28 岁 · 出不出去", text: "在县里待了这些年，工作熟了，人也熟了。过年同学聚会，外头回来的讲起外面的世界，你听着，心里有个地方动了一下：要不要出去看看？", textFlag: { exam_passed: "在县里等录取的这些年，工作熟了，人也熟了。过年同学聚会，外头回来的讲起外面的世界，你听着，心里有个地方动了一下：要不要出去看看？", exam_shortlist: "备考这几年，书桌和出租屋把日子填满了。过年同学聚会，外头回来的讲起外面的世界，你听着，心里有个地方动了一下。你也清楚，这一走，备考那头就断了。要不要出去看看？", exam_retry: "备考这几年，书桌和出租屋把日子填满了。过年同学聚会，外头回来的讲起外面的世界，你听着，心里有个地方动了一下。你也清楚，这一走，备考那头就断了。要不要出去看看？" },
       choices: [
-        { label: "出去闯几年，看看外面的世界", effects: { money: 4, growth: 6, freedom: 5, relation: -3, health: -1 }, set: "moved_city", echo: "走那天，你妈把行李箱塞得满满的，说外头不比家里，钱省着点花。车开出县城的时候，你回头看了一眼。" },
+        { label: "出去闯闯，看看外面的世界", effects: { money: 4, growth: 6, freedom: 5, relation: -3, health: -1 }, set: "moved_city", echo: "走那天，你妈把行李箱塞得满满的，说外头不比家里，钱省着点花。车开出县城的时候，你回头看了一眼。" },
         { label: "不去。把县里的日子过扎实", effects: { relation: 5, money: 2, health: 2, freedom: -3, growth: -1 }, set: "near_family", echo: "你把心思收回来，工作上多担了些事。日子不热闹，可每一步都踩得稳。" },
         { label: "不去，但每年出去走一趟，开开眼", effects: { freedom: 3, growth: 3, money: -1 }, echo: "你给自己定了个规矩：每年至少出去一趟，走远点，看新鲜的。县里的日子照过，眼睛没关上。" },
       ] },
@@ -45,7 +45,7 @@ window.GAME_DATA = {
       ] },
     { age: 33, title: "33 岁 · 住在哪儿", text: "住的事，又到了要拿主意的时候。房价在涨，房租也在涨，中介的橱窗里，贴满了「最后的机会」。",
       eraFrame: {
-        c1955: { text: "住的事，又到了要拿主意的时候。单位分房的名单一茬茬贴出来，你的名字还没排到。最近又听说，老房往后兴许能买下来，可眼下还没影。", choices: [
+        c1955: { text: "住的事，又到了要拿主意的时候。单位分房的名单一茬茬贴出来，贴出来一回，楼里就议论一回。最近又听说，老房往后兴许能买下来，可眼下还没影。", choices: [
           { label: "把单位这套买下来，往后就是自己的了", forbid: "bought_house", minYear: 1998, effects: { money: -8, freedom: -4, health: -2 }, set: "bought_house", echo: "手续办完那晚，你把房本看了两遍，又算了算往后每月从工资里扣的那点钱，心里反倒踏实了。" },
           { label: "先不买，公房先住着", forbid: "bought_house", effects: { money: 4, freedom: 4, relation: -1 }, set: "renting", echo: "房租还是按月从工资里扣，数目不大。你把钱留在手里，心里那本账总算不天天催你了。" },
           { label: "现在这套住着挺好，不折腾", require: "bought_house", effects: { money: 2, freedom: 2, health: 1 }, echo: "你把换房的心思收了。周末把阳台收拾出来，添了把椅子，住着比先前还顺心了几分。" },
@@ -80,7 +80,7 @@ window.GAME_DATA = {
     { age: 52, anyParentAlive: true, title: "52 岁 · 父母需要人了", text: "父母那边传来消息：住院了。手术不大，但医生说，以后身边离不了人。", textState: { dad: { dead: "你妈那边传来消息：住院了。手术不大，但医生说，以后身边离不了人。" }, mom: { dead: "你爸那边传来消息：住院了。手术不大，但医生说，以后身边离不了人。" } },
       textCare: "这一年，你已经在照护里了：医院跑了多少趟，你自己都记不清。52 岁这年，得把往后的照护正式排一排了。",
       choices: [
-        { label: "调整工作，自己多回去陪", labelForm: { farm: "把手里的活托给人，自己多回去陪", self: "把手头的事托给人，自己多回去陪", flex: "把单停下大半，自己多回去陪" }, effects: { relation: 7, money: -4, freedom: -3, health: -2 }, set: "care_self", echo: "你请了长假住回家里，夜里老人起夜，你在客厅听见动静就醒了，比闹钟还准。", echoForm: { farm: "你把地里的活托给人搭手，住回家里。夜里老人起夜，你在客厅听见动静就醒了，比闹钟还准。", self: "你把手头的事托给人看着，住回家里。夜里老人起夜，你在客厅听见动静就醒了，比闹钟还准。", flex: "你把单停了大半，住回家里。夜里老人起夜，你在客厅听见动静就醒了，比闹钟还准。" } },
+        { label: "调整工作，自己多回去陪", labelForm: { farm: "把手里的活托给人，自己多回去陪", self: "把手头的事托给人，自己多回去陪", flex: "把单停下大半，自己多回去陪" }, effects: { relation: 7, money: -4, freedom: -3, health: -2 }, set: "care_self", echo: "你请了长假住回家里，夜里老人起夜，你在客厅听见动静就醒了，比闹钟还准。", echoNear: "你请了长假，白天黑夜守在跟前。夜里老人起夜，你听见动静就醒了，比闹钟还准。", echoForm: { farm: "你把地里的活托给人搭手，住回家里。夜里老人起夜，你在客厅听见动静就醒了，比闹钟还准。", self: "你把手头的事托给人看着，住回家里。夜里老人起夜，你在客厅听见动静就醒了，比闹钟还准。", flex: "你把单停了大半，住回家里。夜里老人起夜，你在客厅听见动静就醒了，比闹钟还准。" } },
         { label: "请靠谱的护工，自己出钱出力协调", effects: { money: -5, relation: 3 }, set: "care_hired", echo: "护工第一周每天发三条消息，几点吃饭几点量血压，你在手机里建了个专门的文件夹存着。" },
         { label: "和兄弟姐妹排班，一人一段", any: ["hook_siblings"], effects: { relation: 5, freedom: -2 }, set: "care_rotate", echo: "排班表贴在老家冰箱上，一人一段用不同颜色标好，谁临时有事就先打个电话说一声。" },
       ] },
@@ -141,13 +141,13 @@ window.GAME_DATA = {
       ] },
     { id: "e_parents_check", min: 35, max: 55, stateAll: { dad: "alive", mom: "alive" }, text: "你给父母约了全面体检，陪他们跑了一天医院。报告出来，几项指标要复查。", effects: { relation: 2, money: -2, health: -1 } },
     { id: "e_house_watch", minYear: 1998, min: 32, max: 48, text: "你关注的楼盘又涨了。你把计算器按了一遍，首付、月供、剩下的生活费，一项项对。", effects: { health: -1, growth: 1 } },
-    { id: "e_reshuffle", min: 35, max: 50, text: "公司架构调整，你的部门被拆开重组。新工位在窗边，就是离茶水间远了点。",
+    { id: "e_reshuffle", ctx: { employed: true }, min: 35, max: 50, text: "公司架构调整，你的部门被拆开重组。新工位在窗边，就是离茶水间远了点。",
       textForm: { public: "单位机构调整，你们科室被拆开重组。新办公室在窗边，就是离水房远了点。", self: "市场里调整摊位，你的铺子被挪了地方。新摊位靠着通道，就是离水房远了点。", farm: "村里把活计重新分了工，你那摊活换了地方。新地块靠着路边，就是离水渠远了点。", flex: "平台把派单的片区重新划了，你常跑的那片换给了别人。新片区离住处远了点，头几天总走错路。" },
       choices: [
         { label: "主动争取想去的组", effects: { growth: 3, freedom: 1 }, echo: "你头一回为这种事开口。说完发现，也没那么难。" },
         { label: "随安排，先看看", effects: { health: 1, growth: -1 }, echo: "新组里有个老同事，你们中午开始搭伙吃饭。", echoForm: { public: "新科室里有个老同事，你们中午开始搭伙吃饭。", self: "隔壁摊位是个老熟人，你们中午开始搭伙吃饭。", farm: "新搭班里有个老伙计，你们晌午开始搭伙吃饭。", flex: "新片区有个老搭档，你们中午开始搭伙吃饭。" } },
       ] },
-    { id: "e_mentor", min: 38, max: 55, text: "带过你的前辈退休了。告别饭上他说：别光顾着往前跑，偶尔也看看谁还在旁边。", effects: { relation: 2, wisdom: 5 } },
+    { id: "e_mentor", min: 38, max: 55, forbid: ["unit_gone"], text: "带过你的前辈退休了。告别饭上他说：别光顾着往前跑，偶尔也看看谁还在旁边。", effects: { relation: 2, wisdom: 5 } },
     { id: "e_body", min: 32, max: 58, text: "体检报告上有两个箭头朝上。医生说，没大事，但得当回事。",
       choices: [
         { label: "办了张卡，开始规律锻炼", effects: { health: 5, money: -1, freedom: -1 }, echo: "头一个月最难。后来跑步机旁边的大爷成了你的固定搭子。" },
@@ -170,7 +170,7 @@ window.GAME_DATA = {
     { id: "r_home_dinner", route: "home", min: 25, max: 50, text: "镇上办事，饭桌上坐了一圈熟人。你发现小时候觉得天大的事，现在都是下酒的话。", effects: { relation: 2 } },
     { id: "r_abroad_exam", route: "abroad", min: 23, max: 35, text: "语言考试前一晚，你在出租屋里对着墙自言自语。楼下便利店的店员，已经能听懂你的口音了。", effects: { growth: 3, health: -1 } },
     { id: "r_abroad_pr", route: "abroad", min: 30, max: 50, text: "永住手续批下来那天，你去吃了顿好的。服务员问要不要庆祝一下，你说，不用，就和平常一样。", effects: { freedom: 3, relation: 1, money: -2 } },
-    { id: "r_study_reject", ctx: { eduGate: true }, route: "study", min: 23, max: 32, text: "投稿被拒，审稿意见写了整整两页。你在实验室坐到保安来催，才把意见又看了一遍。", effects: { growth: 3, health: -2 } },
+    { id: "r_study_reject", ctx: { eduGate: true, gradGate: true }, route: "study", min: 23, max: 32, text: "投稿被拒，审稿意见写了整整两页。你在实验室坐到保安来催，才把意见又看了一遍。", effects: { growth: 3, health: -2 } },
     { id: "r_study_student", ctx: { eduGate: true }, route: "study", min: 32, max: 50, text: "你带的学生第一次在组会上讲清楚了自己的课题。你在后面听着，想起自己第一次讲的那回。", effects: { growth: 1, relation: 2, wisdom: 5 } },
     { id: "r_gap_work", route: "gap", min: 23, max: 30, text: "打工换宿的那家店，老板娘教你认山里的菌子。哪种能吃，哪种要命，她说得比课本清楚。", effects: { health: 2, freedom: 2, growth: 1, wisdom: 3 } },
     { id: "r_gap_print", route: "gap", min: 30, max: 55, text: "你把停年时拍的照片洗了出来，贴在书桌对面。忙起来抬头看一眼，还行。", effects: { freedom: 2, health: 1 } },
@@ -182,7 +182,7 @@ window.GAME_DATA = {
     { id: "c_care_self", require: "care_self", min: 55, max: 64, stateAll: { dad: "alive" }, text: "陪护那阵子过去之后，你和父亲的关系变了。他开始跟你说他年轻时候的事，有些你从没听过。", effects: { relation: 3, health: -1, wisdom: 5 } },
     { id: "c_care_hired", require: "care_hired", min: 55, max: 64, stateAll: { dad: "alive" }, text: "护工阿姨发来一段视频：父亲今天自己走了一圈。她说，老人家念叨你呢。你把视频看了三遍。", effects: { relation: 2, money: -1 } },
     { id: "c_house", require: "bought_house", min: 40, max: 55, text: "你提前还了一笔房贷。柜员说可以少还不少利息。你走出银行，脚步比进去时轻。", effects: { money: 3, freedom: 1 } },
-    { id: "c_rent", require: "renting", min: 40, max: 55, text: "房东要卖房，你又搬了一次家。东西越搬越少，最后只剩六个箱子。你想，这样也挺好。", effects: { freedom: 2, health: -1 } },
+    { id: "c_rent", require: "renting", ctx: { house: "renting" }, min: 40, max: 55, text: "房东要卖房，你又搬了一次家。东西越搬越少，最后只剩六个箱子。你想，这样也挺好。", effects: { freedom: 2, health: -1 } },
     { id: "c_side", require: "side_job", min: 50, max: 62, text: "副业那摊子事，居然慢慢成了气候。不大，但每个月都有一笔钱，是睡着觉也在进的。", effects: { money: 3, growth: 2 } },
     { id: "c_partner", state: { spouse: "partnered" }, min: 40, max: 58, text: "你们吵了一架，为的还是那些老问题。冷战两天，最后是对方先把热水递了过来。日子就是这么续上的。", effects: { relation: 2, freedom: -1 } },
     { id: "c_single", state: { spouse: "single" }, min: 40, max: 58, text: "一个人过年，你给自个儿做了四个菜。电视里放着春晚，你吃得很慢，觉得这样也不差。", effects: { freedom: 2, health: 1 } },
@@ -342,7 +342,7 @@ window.GAME_DATA = {
       { t: "请人照护老人那几年，钱一笔一笔花出去，你自己的存钱计划往后推了好几年。", needs: { flag: "care_hired" } },
       { t: "供孩子出国那几年，钱一笔笔汇出去，你自己的存钱计划往后推了好几年。", needs: { flag: "kid_abroad" } },
       { t: "退休金算下来只够日常开销，看病和修房子要动老本，每动一次你都记一笔。", needs: { anyFlag: ["bought_house", "back_home_stay"], state: { workPhase: ["retired", "part"] } } },
-      { t: "年轻时错过的那次买房机会，往后租了好多年房，搬家的单子留了一沓。", needs: { flag: "renting", notFlag: "bought_house" } },
+      { t: "年轻时错过的那次买房机会，往后租了好多年房，搬家的单子留了一沓。", needs: { flag: "renting", notAnyFlag: ["bought_house", "boughtReform", "unitHousing"] } }, // AN-5 R1：与结算 s7 租房支的 WP9 守卫逐字同口径——任一自有住房旗（买房/房改/单位分房）在场即不出此句
     ],
     relation: [
       "你帮人搬家随叫随到，轮到自己家搬柜子，你一个人踩着凳子弄到天黑，没好意思打电话喊人。",

@@ -93,7 +93,7 @@ function checkEffects(item, at) {
     else for (const fv of v) if (!FORM_VALUES.includes(fv)) err(`${at} ctx.${fld} 含非法形态值 ${fv}`);
   }
   // 主线门（v0.20.0 M2 第二批）：ctx.mainLine 形状与 validate-state 同口径（入行旗 id 或其非空数组）。
-  const ENTRY_FLAGS = ["farm_work", "exam_landed", "shop_work", "gig_work", "courier_work", "care_work", "write_work", "factory_work", "fab_work", "craft_work", "heavy_work", "miner_work", "truck_work", "med_hosp", "med_work", "nurse_work", "img_work", "teach_work", "acct_work", "fin_work", "press_work", "dev_work", "driver_taxi"];
+  const ENTRY_FLAGS = ["farm_work", "exam_landed", "shop_work", "gig_work", "courier_work", "care_work", "write_work", "factory_work", "fab_work", "craft_work", "heavy_work", "miner_work", "truck_work", "med_hosp", "med_work", "nurse_work", "img_work", "teach_work", "acct_work", "fin_work", "press_work", "dev_work", "driver_taxi", "grad_work"];
   if (item.ctx && item.ctx.mainLine !== undefined) {
     const v = item.ctx.mainLine;
     const arr = Array.isArray(v) ? v : [v];

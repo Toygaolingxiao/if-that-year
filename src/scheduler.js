@@ -26,6 +26,7 @@
     if (!needs) return true;
     if (needs.flag && !IFY.S.flags[needs.flag]) return false;
     if (needs.notFlag && IFY.S.flags[needs.notFlag]) return false;
+    if (needs.notAnyFlag && needs.notAnyFlag.some((f) => IFY.S.flags[f])) return false; // AN-5 R1：多旗负向门（与单旗 notFlag 对偶）——判词租房句与 s7 的 WP9 住房三旗守卫同口径靠它表达
     if (needs.anyFlag && !needs.anyFlag.some((f) => IFY.S.flags[f])) return false;
     if (needs.state) for (const [dom, vals] of Object.entries(needs.state)) if (!vals.includes(IFY.S.state[dom])) return false;
     if (needs.stateNot) for (const [dom, vals] of Object.entries(needs.stateNot)) if (vals.includes(IFY.S.state[dom])) return false;
@@ -246,11 +247,39 @@
     if (e.max - IFY.S.age <= 1) s += 2; // 关窗加成（v3 定版取 2：16000 局后残余新零命中集中在关窗即死的窄窗/晚年条目，1 分不够顶进权重前列）
     return s;
   }
+  // 路线开局配额（AN-3 D-3B）：study/gap/corp 路线在 22–27 岁的开局年里，若本路线
+  // 专属条目（route===本路线，或 routeIn 恰为单值本路线）抽得太少——24 岁起应 ≥1、
+  // 27 岁起应 ≥2——未抽过的专属条目权重 ×4。只加权不点名：池里有就显著占先，
+  // 池里没有不硬造（与平淡年机制不冲突）；home 专属池深、abroad 专属池深且与
+  // abroad 全面禁入行拍（D-2a）相冲，不设配额。已抽计数只读 usedEvents/usedRare
+  // 现算，不进存档。
+  const ROUTE_QUOTA_ROUTES = { study: true, gap: true, corp: true };
+  let _routeItemById = null;
+  function routeItemById(id) {
+    if (!_routeItemById) {
+      _routeItemById = {};
+      for (const coll of [IFY.D.events, IFY.D.rare]) if (Array.isArray(coll)) for (const e of coll) if (e && e.id) _routeItemById[e.id] = e;
+    }
+    return _routeItemById[id] || null;
+  }
+  function routeDebtBoost(e) {
+    const S = IFY.S;
+    if (!S || !S.route || !ROUTE_QUOTA_ROUTES[S.route.id]) return false;
+    if (S.age < 22 || S.age > 27) return false;
+    const rid = S.route.id;
+    const specific = (x) => !!x && (x.route === rid || (Array.isArray(x.routeIn) && x.routeIn.length === 1 && x.routeIn[0] === rid));
+    if (!specific(e)) return false;
+    const used = [...(S.usedEvents || []), ...(S.usedRare || [])];
+    if (used.includes(e.id)) return false;
+    const drawn = used.filter((id) => specific(routeItemById(id))).length;
+    const want = (S.age >= 24 ? 1 : 0) + (S.age >= 27 ? 1 : 0);
+    return drawn < want;
+  }
   function pickSaliency(pool) {
     if (!pool.length) return null;
     const weighted = [];
     for (const e of pool) {
-      const n = baseWeight(e) * (1 + Math.round(saliencyScore(e)));
+      const n = baseWeight(e) * (1 + Math.round(saliencyScore(e))) * (routeDebtBoost(e) ? 4 : 1);
       for (let i = 0; i < n; i++) weighted.push(e);
     }
     return weighted[Math.floor(IFY.rngA() * weighted.length)];

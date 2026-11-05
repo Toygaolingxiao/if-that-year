@@ -31,8 +31,7 @@ examBandTables: {
 "c2000": {
 "school": { "high": 45, "mid": 35, "low": 20},
 "half": { "high": 25, "mid": 35, "low": 40},
-"never": { "high": 10, "mid": 30, "low": 60},
-"note": "c2000 定版（v0.23 WP5）：设计参数，无统计出处；与 registry.js 本体同值，本体为先登记者、本表作定版对账"
+"note": "c2000 定版（v0.23 WP5）：设计参数，无统计出处；与 registry.js 本体同值，本体为先登记者、本表作定版对账。fix3 B1（子类 3a）：never 行与本体同步删除——没进过校门的人不掷 band"
 },
 },
 prologueForks: [

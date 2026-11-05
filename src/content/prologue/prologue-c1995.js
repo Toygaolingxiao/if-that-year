@@ -42,6 +42,10 @@
     // fix3 三修（呈现门）：originOpen 第 4 条是独生句（「家里就你一个孩子」），与手足家底 cf_06 同屏互斥——
     // 抽中该条且家底为 cf_06 时引擎顺延一款。cf_11（家里就你一个）与该条同向，不在门内。
     originOpenNotWithFamily: { "3": ["cf_06"] },
+    // fix3 B1（子类 1a/1b）：开场白场景标签与手足断言登记（与 originOpen 同序）——第 4 款为独生断言，
+    // 与上方呈现门同源（引擎顺延判据合并三路）；siblingForm 据最终款定版（cf_11 或独生款＝only）。
+    originOpenSetting: ["urban", "rural", null, null],
+    originOpenAssert: [null, null, null, { only: true }],
     // L95-留 · 来历段质地（留守形，三道门版）：决定是家里算完账做的，孩子只听见结果。
     originLB: "爸妈去外地打工那年，家里算过账：带你去，借读费、赞助费一道道门，子弟学校还说办说关。最后你留在了爷爷奶奶家，座机就摆在堂屋，晚上他们打来。",
     // L95-留 · 来历段质地（随迁形）：接线侧在 migrantChild 为真时用此文替换 originLB 呈现（见补丁稿）。
@@ -129,16 +133,16 @@
         },
         choices: [
           { label: "把念头压下去，先把眼前的题做完", effects: { growth: 1 }, itch: "study", echo: "你把写了念头的那页纸夹进课本里，再没翻开过。" },
-          { label: "跟家里旁敲侧击提了一回，看看大人的反应", effects: { relation: 1 }, itch: "out", echo: "你妈说，等你中考完再说。说完又叮嘱了你几句，才把这事放下。" },
+          { label: "跟家里旁敲侧击提了一回，看看大人的反应", effects: { relation: 1 }, itch: "out", echo: "你妈说，等你中考完再说。说完又叮嘱了你几句，才把这事放下。", echoLB: "你奶奶说，等你中考完再说。说完又叮嘱了你几句，才把这事放下。" },
         ],
         choicesBySchooling: {
           never: [
             { label: "把念头压下去，先把手边的活干完", effects: { growth: 1 }, itch: "study", echo: "你把心思收回来，先干眼前的活。念头压在心里，没再跟人提。" },
-            { label: "跟家里旁敲侧击提了一回，看看大人的反应", effects: { relation: 1 }, itch: "out", echo: "你妈说，等你再长大些再说。说完又叮嘱了你几句，才把这事放下。" },
+            { label: "跟家里旁敲侧击提了一回，看看大人的反应", effects: { relation: 1 }, itch: "out", echo: "你妈说，等你再长大些再说。说完又叮嘱了你几句，才把这事放下。", echoLB: "你奶奶说，等你再长大些再说。说完又叮嘱了你几句，才把这事放下。" },
           ],
           left: [
             { label: "把念头压下去，先把手边的活干完", effects: { growth: 1 }, itch: "study", echo: "你把心思收回来，先干眼前的活。念头压在心里，没再跟人提。" },
-            { label: "跟家里旁敲侧击提了一回，看看大人的反应", effects: { relation: 1 }, itch: "out", echo: "你妈说，等你再长大些再说。说完又叮嘱了你几句，才把这事放下。" },
+            { label: "跟家里旁敲侧击提了一回，看看大人的反应", effects: { relation: 1 }, itch: "out", echo: "你妈说，等你再长大些再说。说完又叮嘱了你几句，才把这事放下。", echoLB: "你奶奶说，等你再长大些再说。说完又叮嘱了你几句，才把这事放下。" },
           ],
         } },
       // F95 半张单子（蓝图 §3.2 F95）：examBand 在本拍打开时经考试场景掷定（rollExamBand，补丁稿调用点，随 WP7 同形）；

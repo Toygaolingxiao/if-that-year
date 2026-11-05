@@ -40,6 +40,18 @@
      care_rotate 任一事实在账），或伴侣在场（partnered/dating）且有伴侣照护事实
      （care_hired_spouse 在账）；求值在 record.js ctxOk，与 ctx.entry 同为派生量、不进存档；
      tools/validate-state.js 核对形状（出现时须为 true）。
+   - ctx.house / ctx.car / ctx.settle（条目级，v0.24.4 AN-2 登记）：生活事实门——住房/车辆/
+     定居三类当前事实只许问派生层（src/world/processes/place.js 的 housingOf/carOf/settledOf，
+     纯函数现算、不进存档；旧旗只作存储层），不许条目再直接认单面旗。值域：house ∈
+     owned（已购房，own/reform/commodity 任一形态，单位分房不算）/ renting（当前在私租）/
+     unit（单位房口径，含 c1955 公房纠偏）/ any（三者居一）；car ∈ now（现在有车）/ ever
+     （曾经有过）/ none（从没买过）；settle ∈ home/city/abroad（当前定居地＝轨迹终点）。
+     求值在 record.js ctxOk；tools/validate-state.js 核对值域。
+   - textDist（条目级）/ echoDist（选项级，v0.24.4 AN-2 登记）：{ far: 文本 }——与父母距离变体：
+     本局与父母距离派生（place.js distToParentsOf）为 far（出国定居）时用此文本，未命中回落
+     原文。父母住院/信号拍的在场叙事专用（远版＝赶回去/电话问诊口径）；解析点 views/year.js
+     distVariant（formText/echoText 各叠一层，优先级与 textNoUnit 同级：硬事实先行）；
+     tools/validate-state.js 核对形状（far 须为非空文本）。
    - textForm（条目级）/ echoForm（选项级，v0.20.0 M2 登记）：{ 形态: 文本 }——呈现时按本局形态选文本
      （解析点与 textState 同一机制：views/year.js formText/echoText），未命中回落 textState 变体或原文。
    - labelForm（选项级，v0.20.0 M2 收尾登记）：{ 形态: 文本 }——分岔选项标签的形态变体，解析点 views/year.js
@@ -123,6 +135,14 @@ window.GAME_REGISTRY.milestones = {
     "p9_055"
    ]
   },
+  "asked_borrow": {
+   "setters": [
+    "p5_003",
+    "p5_007",
+    "p11_002"
+   ],
+   "note": "有人开口借过钱（时序回响修复段立）：事实是「开口问过」、与借没借无关，故立在呈现上——p5_007（朋友借三千）、p5_003（老同学借钱）、p11_002（表弟借钱周转）任一呈现即立。消费者：p5_010「朋友第二次开口借钱」的 require——无此旗不出，挡「没人开过口直接第二次」。人物口径从宽：三条任一出过即算「又一次有人开口」，严格同人分旗成本不值（分析报告登记）。旧存档失败关闭：中途局无此旗时 p5_010 本局可能不再出，不产生矛盾"
+  },
   "asked_leave": {
    "setters": [
     "e65_003"
@@ -136,10 +156,22 @@ window.GAME_REGISTRY.milestones = {
    ],
    "note": "回老家落脚（v0.20.1 面板急修补）：ab37_023 派遣项目结束选「回了」与 ab37_024 晚年选「回去在老家过」同立此旗，居所轨迹 residenceTrail 据此把终点写成 home，与 p11_040 同一写法"
   },
+  "back_to_city": {
+   "setters": [
+    "p11_041"
+   ],
+   "note": "回老家住一阵之后回城落定（v0.24.4 AN-2）：p11_041 条目级 set 落旗，居所轨迹 residenceTrailOf 只读此旗认回城（出国线记回 abroad）；旧存档无此旗，轨迹兼容读账本 p11_041 条目一个版本周期"
+  },
   "badminton_captain": {
    "setters": [
     "p10_025"
    ]
+  },
+  "band_member": {
+   "setters": [
+    "p19_015"
+   ],
+   "note": "年轻时组过乐队（时序回响修复段立）：起源只有 p19_015（组小乐队、年会上台）。消费者：p22_070 的 require——没组过乐队不出「年轻时组过的那个乐队又凑齐了人」。旧存档失败关闭"
   },
   "bookkeeping": {
    "setters": [
@@ -193,6 +225,12 @@ window.GAME_REGISTRY.milestones = {
     "p12_045",
     "p2_081"
    ]
+  },
+  "car_sold": {
+   "setters": [
+    "p12_049"
+   ],
+   "note": "车已卖掉（v0.24.4 AN-2）：p12_049 条目级 set 落旗；车辆派生 carOf 的 now = 买过且未卖。旧存档无此旗，now 回落为 ever（卖过车的老玩家再卖一次前仍按有车读，一次性偏差，版本说明登记）。p12_047 的「卖了换电车」是以旧换新、不落此旗"
   },
   "care_stage": {
    "setters": [
@@ -254,6 +292,15 @@ window.GAME_REGISTRY.milestones = {
     "p9_014"
    ]
   },
+  "cataract_done": {
+   "setters": [
+    "p14_043",
+    "p21_041",
+    "p25_024",
+    "p26_017"
+   ],
+   "note": "白内障手术做过（时序回响修复段立）：同题五条全按初诊初刀写、无一记账，两现即穿帮（审计 D F7 实锤）。四条首现者条目级自立＋互 forbid，谁先出谁占；p26_003 改作第二只眼后继拍（require 本旗＋flagAgeMin 1 年，不自立、不 forbid），白内障本就常两只眼分开做。旧存档有界放行：中途局已出过一条而旗未立时，最多再放行一条"
+  },
   "cert_study_started": {
    "setters": [
     "p20_005",
@@ -266,6 +313,15 @@ window.GAME_REGISTRY.milestones = {
     "p20_044",
     "p2_019"
    ]
+  },
+  "choir_member": {
+   "setters": [
+    "p14_017",
+    "p23_020",
+    "p24_013",
+    "p6_066"
+   ],
+   "note": "进过合唱团（时序回响修复段立）：起源四条——p14_017 社区合唱团、p23_020 县文化馆合唱团、p24_013 跨城合唱团、p6_066 老年大学合唱团名额，呈现即成员。消费者：p26_030 的 require（默认已在团里的排练拍）。c1955 年轻时厂/社区合唱团的四条回忆（p23_027、p23_065、p26_063、p26_065）全仓无年轻时期起源可接，已改文本降断言（主角降为听众/新加入者），不挂本旗。旧存档失败关闭"
   },
   "classmate_table": {
    "setters": [
@@ -429,6 +485,11 @@ window.GAME_REGISTRY.milestones = {
     "p10_021",
     "p25_036"
    ]
+  },
+  "grandkid_seen": {
+   "setters": [
+   ],
+   "note": "孙辈已在本局以在场人物出现过（时序回响修复段立）：孙辈没有出生状态域，只有 kidAgeMin 年龄代理，「第一次抱孙辈」类断言无从查证（G6 一轮 e95_009 实例）。本旗无数据层 setter：由 work.js 的 syncGrandkidSeen 扫账本——名单 21 条（p14_027、p14_028、p14_030、p14_031、p14_032、p14_034、p16_059、p16_070、p23_066、p25_006、p25_017、p25_027、p25_037、p25_042、p25_063、p26_013、p29_019、e55_044、e55_050、e55_069、e95_009，凡把孙辈写成主角自己的在场人物者）任一呈现即立，flagAges 记首次呈现年龄，与 syncPensionPaid 同型、setters 为空以本注记为准；新增同类条目须同步把 id 加进 work.js 的 GRANDKID_BEAT_IDS。消费者：p14_028、e55_044 的 forbid（第一次抱/有了孙辈的到来语义必须是真的第一次）。旧存档账本自愈"
   },
   "had_pager": {
    "setters": [
@@ -599,6 +660,20 @@ window.GAME_REGISTRY.milestones = {
     "p2_012"
    ]
   },
+  "spouse_hosp_done": {
+   "setters": [
+    "p14_049",
+    "p15_063",
+    "p16_063",
+    "p22_031",
+    "p23_057",
+    "p24_006",
+    "p24_024",
+    "p24_042",
+    "p25_008"
+   ],
+   "note": "配偶住过院（时序回响修复段立）：p24_024、p24_042 两条「另一半第一次住院」此前不设防，同代内任一配偶住院拍先出即成假话。九条配偶住院叙述者条目级自立（含两条第一次住院条目自身——呈现即住过院），两条第一次住院条目另加 forbid 本旗。p25_009（出院回家排班）另 require 本旗保证住过院。旧存档有界放行"
+  },
   "spouse_passed": {
    "setters": [
     "p28_001"
@@ -728,11 +803,6 @@ window.GAME_REGISTRY.milestones = {
    ],
    "note": "45 岁分岔选「再认真试一回」（v0.16.0），开启 pack34 链与 synergy 晚育稀有"
   },
-  "league_team": {
-   "setters": [
-    "p17_010"
-   ]
-  },
   "legacy_sharing_done": {
    "setters": [
     "p25_040",
@@ -776,6 +846,13 @@ window.GAME_REGISTRY.milestones = {
     "p20_001",
     "p9_003"
    ]
+  },
+  "money_rules_set": {
+   "setters": [
+    "p12_060",
+    "p13_016"
+   ],
+   "note": "婚后管钱规矩已经谈过/定过（时序回响修复段立）：p13_016（第一次为钱吵、选项当场定规矩）与 p12_060（认真谈了一回、没吵架）写同一件家务事，两条互不记账、窗口重叠 12 年，同局两现既重复又口径相反（B85-03 实例）。两条条目级自立＋互 forbid，先到者占。旧存档有界放行"
   },
   "monthly_sync_habit": {
    "setters": [
@@ -863,11 +940,6 @@ window.GAME_REGISTRY.milestones = {
     "p20_025"
    ]
   },
-  "p20_league_member": {
-   "setters": [
-    "p20_029"
-   ]
-  },
   "p20_newline_trained": {
    "setters": [
     "p20_016"
@@ -889,8 +961,11 @@ window.GAME_REGISTRY.milestones = {
    ]
   },
   "pension_paid": {
-   "setters": [],
-   "note": "养老金已到账已当众说过（内容修复批，退休进程三连）：唯一事实来源是 proc_retire_full 的正文/无单位变体（「退休的钱已经打进来了」）。落定载体的 set 位已被 retired_begun 占用、无空位可再立一旗，故由 work.js 的 syncPensionPaid 在账本出现 proc_retire_full 呈现记录时同步立旗、flagAges 记呈现年龄——与 retire_final_said 的引擎同步同型，故 setters 为空、以本注记为准。消费者：p12_019、p14_011 的 forbid——「第一次到账」类文本领过即不出。再退变体（textAgain）正文不提到账、口径从宽计入：p12_019 的 flagAgeWithin 两年窗在再退时点已过，不产生实际误伤"
+   "setters": [
+    "p12_019",
+    "p14_011"
+   ],
+   "note": "养老金已到账已当众说过（内容修复批，退休进程三连）：事实来源是 proc_retire_full 的正文/无单位变体（「退休的钱已经打进来了」）。落定载体的 set 位已被 retired_begun 占用、无空位可再立一旗，故由 work.js 的 syncPensionPaid 在账本出现 proc_retire_full 呈现记录时同步立旗、flagAges 记呈现年龄——与 retire_final_said 的引擎同步同型。消费者：p12_019、p14_011 的 forbid——「第一次到账」类文本领过即不出。再退变体（textAgain）正文不提到账、口径从宽计入：p12_019 的 flagAgeWithin 两年窗在再退时点已过，不产生实际误伤。时序回响修复段补：p12_019、p14_011 两条叙述者本身呈现时亦条目级自立此旗（两条 set 位本为空）——旧口径下走 node/auto 落定者此旗永不立、两条可先后各说一次第一次到账；自立后谁先出谁立、另一条被自身 forbid 挡住，setters 补登此二条，同步仍是 proc 落定路径的来源"
   },
   "parents_money_guard": {
    "setters": [
@@ -951,6 +1026,17 @@ window.GAME_REGISTRY.milestones = {
     "p26_057"
    ]
   },
+  "retired_checkup_done": {
+   "setters": [
+    "e55_047",
+    "p14_041",
+    "p14_047",
+    "p24_007",
+    "p24_028",
+    "p25_034"
+   ],
+   "note": "退休后体检已被叙述过（时序回响修复段立）：退休后体检的叙述者多条并存本身无碍，坏事的只有 p14_041「退休后第一次全面体检」的断言没人记账（批一盲审已抓它在别的体检拍之后出）。六条叙述者条目级自立，p14_041 自立＋forbid——第一次只能是真第一次。旧存档有界放行"
+  },
   "retired_full": {
    "setters": [
     "fork58"
@@ -986,6 +1072,14 @@ window.GAME_REGISTRY.milestones = {
    "setters": [
     "p9_023"
    ]
+  },
+  "self_hosp_done": {
+   "setters": [
+    "p21_039",
+    "p23_022",
+    "p27_007"
+   ],
+   "note": "主角本人住过院（时序回响修复段立）：此前「出院/病后恢复期」类文本（p25_028）没有任何住院事实可依，既能在从没住过院的局里凭空出院、也能在住院六年后还写近时态恢复期。设置者：p21_039（膝盖手术）、p23_022（县医院）、p27_007（胆结石）条目级自立；p26_003（白内障住院四天）的条目 set 位归 cataract_done 族占用，故另由 work.js 的 syncSelfHosp 扫账本四条 id 补立（含旧存档自愈）。注意 flagAges 口径与全仓不同：本旗记最近一次住院年龄（sync 每年按账本最近一条重算）——p25_028 的恢复期语义要读近时窗（require＋flagAgeWithin 2），首次口径会让它在第二次住院后仍被早年记录误挡，分析报告已登记此取舍。急诊不算住院：p3_030（半夜发烧急诊输液）不在名单"
   },
   "shop_closed": {
    "setters": [
@@ -1046,8 +1140,19 @@ window.GAME_REGISTRY.milestones = {
   },
   "team_captain": {
    "setters": [
-    "p22_010"
+    "p22_010",
+    "p23_003"
    ]
+  },
+  "team_member": {
+   "setters": [
+    "p15_004",
+    "p16_023",
+    "p17_010",
+    "p19_014",
+    "p20_029"
+   ],
+   "note": "进过球队（时序回响修复段立，统一履历旗）：此前三个起源旗互不通用（unit_team/league_team/p20_league_member 已退役摘除）＋p15_004/p19_014 不立旗，而五个回忆拍全无门预设球队履历。本旗设置者：p16_023 选项 1、p17_010 选项、p20_029 选项 1（旧三旗的立旗点平移）、p15_004 条目级（正文已在场上踢第一场）、p19_014 条目级（试训写进替补名单）。消费者：p16_024、p17_047、p20_030（旧三旗消费者平移）、p23_003、p22_054、p26_056 的 require。p23_003 呈现另立 team_captain 喂 p23_013。旧存档失败关闭：旧三旗不迁移，老局里回忆拍本局可能不再出，不产生矛盾"
   },
   "together": {
    "setters": [
@@ -1170,11 +1275,17 @@ window.GAME_REGISTRY.milestones = {
     "r_oldhouse"
    ]
   },
+  "trial_done": {
+   "setters": [
+   ],
+   "note": "单位球队试训发生过（时序回响修复段立）：p16_023 与 p19_014 写同一场试训（借鞋、大一号）、互不知晓，同局两现且鞋的来历打架（A F-13）。本旗无数据层 setter：由 work.js 的 syncTrialDone 扫账本，两条 id 任一呈现即立，与 syncPensionPaid 同型、setters 为空以本注记为准。消费者：两条自身的 forbid——试训一生一次。旧存档账本自愈"
+  },
   "tried_stock": {
    "setters": [
     "e65_008",
     "p17_028",
-    "p18_019"
+    "p18_019",
+    "p19_049"
    ]
   },
   "tutor_hard": {
@@ -1194,10 +1305,11 @@ window.GAME_REGISTRY.milestones = {
    ],
    "note": "关系紧张事实（v0.20.1 W5 立，W8 收紧）：只认「吵完没收尾」的留痕——p3_007 冷战一晚无和好收尾、p13_016 仅「各管各的」选项（立规矩和好的选项不立）。吵完和好/误会查清的事件不立此旗：c_partner（对方先递热水、日子续上）、p3_020（日期两边都记错、查清即收尾）已摘。p27_001 离婚以前情门 any[two_cities, rel_strained, long_dist] + 当前关系值门（stats relation<85）双认（v0.20.3 回调，用户裁定离婚更方便一点：窗口 30–58→28–60、加 w=800 提抽取可靠性、relation 门 70→85、any 增列 long_dist——p3_008「去吧，我这边稳住」的两地分开两年事实，与 two_cities 同类；前情事实门整段保留，无前情仍不可抽，rel_strained 的立旗标准不放宽）"
   },
-  "unit_team": {
+  "unit_gone": {
    "setters": [
-    "p16_023"
-   ]
+    "p22_010"
+   ],
+   "note": "单位没了（时序回响修复段立）：p22_010「单位早散了」此前只是随口一说、不记账，其后老领导送别会/前辈告别饭/单位口吻退休正文照旧出。p22_010 条目级自立（呈现即前提成立、与选项无关）；另由 work.js 的 syncUnitGone 扫账本同 id 补立，旧存档自愈。消费者：p9_026、e_mentor、p14_001、p14_002、p14_004、e55_045、p14_007 的 forbid，及 work.js 的 noCurrentUnit 扩读（进程落定正文走无单位变体）"
   },
   "video_addict": {
    "setters": [
@@ -1287,6 +1399,14 @@ window.GAME_REGISTRY.milestones = {
    ],
    "note": "焊工工种（内容修复批二轮）：焊工入行拍条目级立旗，与 craft_work 并置；点名焊工的文本以 craft_work+welder_work 双旗为门"
   },
+  "married": {
+   "setters": [
+    "p3_003",
+    "p3_086",
+    "proc_dating"
+   ],
+   "note": "结过婚（时序回响修复段立）：此前全系统只有 spouse 状态机到 partnered，「婚后」文本只能拿 partnered 当已婚用、时序靠年龄窗碰运气，「结婚第一年」反复跑到领证前头（跨四代实例）。设置者：p3_003 条目级（正文前提即领证之后）、p3_086 条目级（领证拍本体，补 fork31 直落 partnered 路径的结婚事实——实测曾 partnered 的局里两旧设置者皆无的占 11/13，不补则整族饿死）、proc_dating 选项 1「把关系定下来」（两家人吃饭定局）。fork31 选项 1 不立：文案是「往结婚的方向走」，未结。消费者：p3_004（require＋flagAgeWithin 1，第一年即距婚一年内）、p3_010、p13_016、p12_060（require）。旧存档失败关闭：中途局无此旗时四条消费者本局可能不再出，不产生矛盾"
+  },
   "mech_work": {
    "setters": [
     "p20_003"
@@ -1298,6 +1418,33 @@ window.GAME_REGISTRY.milestones = {
     "p20_008"
    ],
    "note": "家电维修工种（内容修复批二轮）：家电维修入行拍条目级立旗，与 craft_work 并置；点名家电维修的文本以 craft_work+appliance_work 双旗为门"
+  },
+  "grad_work": {
+   "setters": [
+    "e_grad_start"
+   ],
+   "note": "研究在行（AN-3 D-5c）：深造路线课题组入行拍立旗，与 exam_landed 并置同为 employee 形态入行旗；实验室/药研簇以 ctx.gradGate 为门（旧档以 traj_drug1/traj_drug2 宽门回落）"
+  },
+  "sew_work": {
+   "setters": [
+    "p15_003",
+    "p15_012"
+   ],
+   "note": "缝纫亚工种（AN-3 D-6）：pack15 缝纫组首抽条目级立旗，与 loom_work/assembly_work 互斥；旧档无此旗时三组首抽都够得着，首抽后自愈"
+  },
+  "loom_work": {
+   "setters": [
+    "p15_024",
+    "p15_030",
+    "p15_035"
+   ],
+   "note": "织造亚工种（AN-3 D-6）：pack15 织造组首抽条目级立旗，与 sew_work/assembly_work 互斥"
+  },
+  "assembly_work": {
+   "setters": [
+    "p15_047"
+   ],
+   "note": "装配亚工种（AN-3 D-6）：pack15 装配组首抽条目级立旗，与 sew_work/loom_work 互斥"
   },
   "miner_work": {
    "setters": [
@@ -1431,6 +1578,11 @@ window.GAME_REGISTRY.enumFacts = {
     "host": "schooling",
     "note": "读到哪儿的深度标（v0.23 E6）：full=读完高中段 / cut=短读 / none=没读；不新开状态域，按枚举事实登记、validate-state 按值集校验；F55-a 写、F55-c 的高考门按 depth 划（不按 track）"
   },
+  "siblingForm": {
+    "values": ["sisterAndBrother", "only", "unspecified"],
+    "host": "schooling",
+    "note": "手足形（fix3 B1 子类 1b）：来历线的伴随事实——序章来历幕物化点由引擎按家底牌（cf_06=sisterAndBrother / cf_11=only）与开场白独生断言（originOpenAssert.only）定版写入，写手只有引擎；平年/处境幕的手足句一律按此事实分文，不再各自断言兄姐弟妹；旧档无此键按 absent 读、分文回落原文"
+  },
   "sentdownForm": {
     "values": ["chadui", "changdui", "bingtuan"],
     "host": "track",
@@ -1455,7 +1607,8 @@ window.GAME_REGISTRY.familyFacts = {
   "originLB": { "beat": "L85-留/L95-留", "note": "留守来历（沿 PACK-SPEC 已定名）：父母外出，孩子留祖辈处；c1985/c1995 同名同义、参数分代" },
   "migrantExam": { "beat": "L95-考/L00-考", "note": "随迁升学议题已立：回原籍考还是留当地考，墙在升学端" },
   "famTight78": { "beat": "L78-家", "note": "家里的钱先紧起来（c1978）：父母下海/开店或下岗，紧的那一样落到孩子身上" },
-  "famLaidOff85": { "beat": "L85-岗", "note": "父母下岗（c1985）：家里的钱紧了，先紧孩子的哪一样" },
+  "famLaidOff85": { "beat": "L85-岗", "note": "你爸下岗（c1985，14–15 岁变体：厂子买断工龄）：家里的钱紧了，先紧孩子的哪一样" },
+  "famArrears85": { "beat": "L85-岗", "note": "你爸的厂子发不出工资（c1985，11–13 岁变体）：停发、找零活，家里的钱紧了" },
   "famRestructure95": { "beat": "L95-婚", "note": "父母离异后的日常安排（c1995）：跟谁住的日常尺寸事实，克制写事不写惨" },
   "famCare00": { "beat": "L00-护", "note": "看护翻转预告（c2000）：祖辈住院，孩子第一次在病房跑腿" },
   "famSentdownEcho": { "beat": "L65-衔", "note": "兄姐下乡/返城的衔接记号（c1965，只作记号不立新线）：饭桌上少一副/多一副碗筷" },
@@ -1468,8 +1621,7 @@ window.GAME_REGISTRY.examBandTables = {
   "c2000": {
     "school": { "high": 45, "mid": 35, "low": 20 },
     "half": { "high": 25, "mid": 35, "low": 40 },
-    "never": { "high": 10, "mid": 30, "low": 60 },
-    "note": "c2000 定版（v0.23 WP5）：数值是设计参数、无统计出处；WP1 占位值经 WP5 定版确认不改、即为定版（定版对账见 registry-wp5.js 同值登记）"
+    "note": "c2000 定版（v0.23 WP5）：数值是设计参数、无统计出处；WP1 占位值经 WP5 定版确认不改、即为定版（定版对账见 registry-wp5.js 同值登记）。fix3 B1（子类 3a）：never 行删除——没进过校门的人不掷 band（与 c1985/c1995 口径对齐，另由 pr_fork16 的 bandSkipSchooling 在引擎侧兜底）"
   },
 };
 
