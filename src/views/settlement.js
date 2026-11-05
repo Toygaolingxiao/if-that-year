@@ -466,13 +466,13 @@
   }
 
   // ---------- 结算纵轴立轴图（VISUAL-DESIGN 第四节裁定 + UX-MOTION §9.2 生长仪式） ----------
-  // 纵轴恒为 22→80 岁：走过的线居中成脊只画到实际终年，早夭的留白就是信息；未选支流按分岔序号左右交替。
+  // fix5 改：纵轴只画到本轨实际终局岁（22→end），不预设终点、不标 80；未选支流按分岔序号左右交替。
   function settlementMapHtmlLegacy() {
     const end = IFY.finalAge();
     const W = Math.min(460, Math.max(300, (window.innerWidth || 360) - 56));
     const cx = W / 2, pxY = 11, topPad = 34;
     const Y = (a) => topPad + (a - IFY.START_AGE) * pxY;
-    const H = Y(IFY.MAX_AGE) + 30;
+    const H = Y(end) + 30;
     const GROW_S = 1.05, GROW_DELAY = 0.36;
     // 标签按可用宽度截断：宽度单位（半角 0.55 / 全角 1）×字号 ≈ 实际像素，原型实测口径
     const units = (s) => [...s].reduce((a, ch) => a + (ch.charCodeAt(0) < 256 ? 0.55 : 1), 0);
@@ -485,7 +485,7 @@
     };
     const chosenOf = chosenOfFork;
     const faced = (IFY.D.forks || []).filter((f) => (!IFY.S.death || f.age < IFY.S.death.age) && (!f.state || chosenOf(f))); // v0.16.0：带门分岔没触发过的，不进结算对照（无门分岔照旧）
-    let g = `<line x1="${cx}" y1="${Y(IFY.START_AGE)}" x2="${cx}" y2="${Y(IFY.MAX_AGE)}" stroke="#DDD6C9" stroke-width="1.5"/>`;
+    let g = `<line x1="${cx}" y1="${Y(IFY.START_AGE)}" x2="${cx}" y2="${Y(end)}" stroke="#DDD6C9" stroke-width="1.5"/>`;
     g += `<path class="mapspine" style="--gd:${GROW_DELAY}s" pathLength="100" d="M ${cx} ${Y(IFY.START_AGE)} L ${cx} ${Y(end)}" fill="none" stroke="#2F4A3C" stroke-width="3" stroke-linecap="round"/>`;
     const labels = [];
     let prevBd = -1;
@@ -496,7 +496,7 @@
       if (prevBd >= 0) bd = Math.max(bd, prevBd + 0.09); // 早年分岔密集：延迟加 90ms 最小间隔下限，保住「依次」感（原型验证对策）
       prevBd = bd;
       IFY.S.unchosen.filter((u) => u.kind === "fork" && u.age === f.age).forEach((u, j) => {
-        const dx = side * (84 + j * 42), dy = (6 + j * 2.5) * pxY;
+        const dx = side * (84 + j * 42), dy = Math.min((6 + j * 2.5) * pxY, Y(end) + 24 - y0); // fix5 追加守卫：未选支末端不许探出画布底（画布已随 end 变矮，晚年分岔的多支会溢出）
         g += `<path class="mapbranch" style="--bd:${bd.toFixed(2)}s" d="M ${cx} ${y0} Q ${cx + dx * 0.72} ${y0 + dy * 0.5} ${cx + dx} ${y0 + dy}" fill="none" stroke="#8A948C" stroke-width="2" stroke-dasharray="4 4" stroke-linecap="round"/><circle cx="${cx + dx}" cy="${y0 + dy}" r="2" fill="#8A948C" opacity=".45"/>`;
       });
       g += `<circle cx="${cx}" cy="${y0}" r="4" fill="#2F4A3C"/>`;
@@ -507,13 +507,13 @@
     labels.push(`<text class="maplab" style="--bd2:.4s" x="${cx + 12}" y="${Y(IFY.START_AGE) + 4}" font-size="11.5" fill="#6E6A5E">22 岁 · ${IFY.esc(IFY.S.route.name)}</text>`);
     g += `<circle cx="${cx}" cy="${Y(end)}" r="4.5" fill="#2F4A3C"/>`;
     labels.push(`<text class="maplab" style="--bd2:${(GROW_DELAY + GROW_S + 0.1).toFixed(2)}s" x="${cx - 12}" y="${Y(end) + 4}" font-size="11.5" fill="#6E6A5E" text-anchor="end">${end} 岁</text>`);
-    if (end < IFY.MAX_AGE) labels.push(`<text x="${cx + 12}" y="${Y(IFY.MAX_AGE) + 4}" font-size="11" fill="#A39C8B">80 岁</text>`);
     // 差一步剪影层（v0.20.0 M2）：空心虚线圈 + 既有灰的虚线支，与已走节点（实心松绿）可区分；不新造配色
+    // fix5：剪影纵向一律钳在本轨终局 end 内（age 大于 end 的钳到 end 处），不许溢出画布
     nearMisses().forEach((n, i) => {
       const side = i % 2 === 0 ? -1 : 1;
-      const y0 = Y(Math.min(n.age, IFY.MAX_AGE));
+      const y0 = Y(Math.min(n.age, end));
       const dx = side * 84, dy = n.kind === "ending" ? -34 : 30;
-      const yy = Math.max(Y(IFY.START_AGE) + 8, Math.min(Y(IFY.MAX_AGE) - 4, y0 + dy));
+      const yy = Math.max(Y(IFY.START_AGE) + 8, Math.min(Y(end) - 4, y0 + dy));
       g += `<path class="mapbranch" style="--bd:${(GROW_DELAY + GROW_S + 0.15 + i * 0.09).toFixed(2)}s" d="M ${cx} ${y0} Q ${cx + dx * 0.72} ${(y0 + yy) / 2} ${cx + dx} ${yy}" fill="none" stroke="#8A948C" stroke-width="1.5" stroke-dasharray="3 4" stroke-linecap="round" opacity=".6"/><circle class="mapnear" cx="${cx + dx}" cy="${yy}" r="4" fill="none" stroke="#8A948C" stroke-width="1.5" stroke-dasharray="3 3" opacity=".75"/>`;
       const lab = n.kind === "ending" ? `差一步 · ${n.title}：${n.miss}` : `差一步 · ${n.age} 岁：${n.miss}`;
       labels.push(`<text class="maplab" style="--bd2:${(GROW_DELAY + GROW_S + 0.25 + i * 0.09).toFixed(2)}s" x="${cx + dx + (side === 1 ? 9 : -9)}" y="${yy + 4}" font-size="11" fill="#A39C8B" text-anchor="${side === 1 ? "start" : "end"}">${IFY.esc(fitW(lab))}</text>`);
@@ -537,10 +537,11 @@
     const view = playerFacts();
     const meta = IFY.session.meta, swapAge = meta.swap.age;
     const end = IFY.finalAge();
+    const outEnd = view.segments[0].state.death ? view.segments[0].state.death.age : IFY.MAX_AGE; // fix5：交出轨自己的终局岁（事实），其虚线须完整落在画布内
     const W = Math.min(460, Math.max(300, (window.innerWidth || 360) - 56));
     const cx = W / 2, pxY = 11, topPad = 34;
     const Y = (a) => topPad + (a - IFY.START_AGE) * pxY;
-    const H = Y(IFY.MAX_AGE) + 30;
+    const H = Y(Math.max(end, outEnd)) + 30; // fix5：主轴只到 end；画布高容下两轨各自的事实终局，不标预设终点
     const GROW_S = 1.05, GROW_DELAY = 0.36;
     const units = (s) => [...s].reduce((a, ch) => a + (ch.charCodeAt(0) < 256 ? 0.55 : 1), 0);
     const fitW = (t) => {
@@ -564,7 +565,7 @@
         break;
       }
     }
-    let g = `<line x1="${cx}" y1="${Y(IFY.START_AGE)}" x2="${cx}" y2="${Y(IFY.MAX_AGE)}" stroke="#DDD6C9" stroke-width="1.5"/>`;
+    let g = `<line x1="${cx}" y1="${Y(IFY.START_AGE)}" x2="${cx}" y2="${Y(end)}" stroke="#DDD6C9" stroke-width="1.5"/>`;
     g += `<path class="mapspine" style="--gd:${GROW_DELAY}s" pathLength="100" d="M ${cx} ${Y(IFY.START_AGE)} L ${cx} ${Y(end)}" fill="none" stroke="#2F4A3C" stroke-width="3" stroke-linecap="round"/>`;
     const labels = [];
     let prevBd = -1;
@@ -575,7 +576,7 @@
       if (prevBd >= 0) bd = Math.max(bd, prevBd + 0.09);
       prevBd = bd;
       (seg.state.unchosen || []).filter((u) => u.kind === "fork" && u.age === f.age).forEach((u, j) => {
-        const dx = side * (84 + j * 42), dy = (6 + j * 2.5) * pxY;
+        const dx = side * (84 + j * 42), dy = Math.min((6 + j * 2.5) * pxY, Y(Math.max(end, outEnd)) + 24 - y0); // fix5 追加守卫：未选支末端不许探出画布底
         g += `<path class="mapbranch" style="--bd:${bd.toFixed(2)}s" d="M ${cx} ${y0} Q ${cx + dx * 0.72} ${y0 + dy * 0.5} ${cx + dx} ${y0 + dy}" fill="none" stroke="#8A948C" stroke-width="2" stroke-dasharray="4 4" stroke-linecap="round"/><circle cx="${cx + dx}" cy="${y0 + dy}" r="2" fill="#8A948C" opacity=".45"/>`;
       });
       g += `<circle cx="${cx}" cy="${y0}" r="4" fill="#2F4A3C"/>`;
@@ -586,24 +587,22 @@
     labels.push(`<text class="maplab" style="--bd2:.4s" x="${cx + 12}" y="${Y(IFY.START_AGE) + 4}" font-size="11.5" fill="#6E6A5E">22 岁 · ${IFY.esc(startRoute)}</text>`);
     g += `<circle cx="${cx}" cy="${Y(end)}" r="4.5" fill="#2F4A3C"/>`;
     labels.push(`<text class="maplab" style="--bd2:${(GROW_DELAY + GROW_S + 0.1).toFixed(2)}s" x="${cx - 12}" y="${Y(end) + 4}" font-size="11.5" fill="#6E6A5E" text-anchor="end">${end} 岁</text>`);
-    if (end < IFY.MAX_AGE) labels.push(`<text x="${cx + 12}" y="${Y(IFY.MAX_AGE) + 4}" font-size="11" fill="#A39C8B">80 岁</text>`);
     // ---- 交叉点：接管路线虚线（22 岁 → 交叉点）+ 交出路线虚线（交叉点 → 交出 Track 终局岁）+ 实心点与标签 ----
     const ySwap = Y(swapAge);
     const bdSwap = GROW_DELAY + ((swapAge - IFY.START_AGE) / Math.max(1, end - IFY.START_AGE)) * GROW_S;
     const dxIn = 84, dxOut = -84;
     g += `<path class="mapbranch" style="--bd:${bdSwap.toFixed(2)}s" d="M ${cx + dxIn} ${Y(IFY.START_AGE)} Q ${cx + dxIn * 0.72} ${(Y(IFY.START_AGE) + ySwap) / 2} ${cx} ${ySwap}" fill="none" stroke="#8A948C" stroke-width="2" stroke-dasharray="4 4" stroke-linecap="round"/>`;
-    const outSeg = view.segments[0];
-    const outEnd = outSeg.state.death ? outSeg.state.death.age : IFY.MAX_AGE;
     g += `<path class="mapbranch" style="--bd:${bdSwap.toFixed(2)}s" d="M ${cx} ${ySwap} Q ${cx + dxOut * 0.72} ${(ySwap + Y(outEnd)) / 2} ${cx + dxOut} ${Y(outEnd)}" fill="none" stroke="#8A948C" stroke-width="2" stroke-dasharray="4 4" stroke-linecap="round"/><circle cx="${cx + dxOut}" cy="${Y(outEnd)}" r="2" fill="#8A948C" opacity=".45"/>`;
     g += `<circle cx="${cx}" cy="${ySwap}" r="4.5" fill="#2F4A3C"/>`;
     // 交叉标签是定稿整句，不走 fitW 截断（截了就不是那句话了）；居中锚在脊线上，窄屏也放得下整句
     labels.push(`<text class="maplab" style="--bd2:${(bdSwap + 0.1).toFixed(2)}s" x="${cx}" y="${ySwap - 10}" font-size="11.5" fill="#6E6A5E" text-anchor="middle">${IFY.esc(`${swapAge} 岁 · 换到了「${meta.swap.to}」那条路`)}</text>`);
     // 差一步剪影层：与原图同画法（nearMisses 的 faced 已按 merged log 判，见 nearMisses 内注）
+    // fix5：剪影纵向钳在主轨终局 end 内（age 大于 end 的钳到 end 处），不许溢出画布
     nearMisses().forEach((n, i) => {
       const side = i % 2 === 0 ? -1 : 1;
-      const y0 = Y(Math.min(n.age, IFY.MAX_AGE));
+      const y0 = Y(Math.min(n.age, end));
       const dx = side * 84, dy = n.kind === "ending" ? -34 : 30;
-      const yy = Math.max(Y(IFY.START_AGE) + 8, Math.min(Y(IFY.MAX_AGE) - 4, y0 + dy));
+      const yy = Math.max(Y(IFY.START_AGE) + 8, Math.min(Y(end) - 4, y0 + dy));
       g += `<path class="mapbranch" style="--bd:${(GROW_DELAY + GROW_S + 0.15 + i * 0.09).toFixed(2)}s" d="M ${cx} ${y0} Q ${cx + dx * 0.72} ${(y0 + yy) / 2} ${cx + dx} ${yy}" fill="none" stroke="#8A948C" stroke-width="1.5" stroke-dasharray="3 4" stroke-linecap="round" opacity=".6"/><circle class="mapnear" cx="${cx + dx}" cy="${yy}" r="4" fill="none" stroke="#8A948C" stroke-width="1.5" stroke-dasharray="3 3" opacity=".75"/>`;
       const lab = n.kind === "ending" ? `差一步 · ${n.title}：${n.miss}` : `差一步 · ${n.age} 岁：${n.miss}`;
       labels.push(`<text class="maplab" style="--bd2:${(GROW_DELAY + GROW_S + 0.25 + i * 0.09).toFixed(2)}s" x="${cx + dx + (side === 1 ? 9 : -9)}" y="${yy + 4}" font-size="11" fill="#A39C8B" text-anchor="${side === 1 ? "start" : "end"}">${IFY.esc(fitW(lab))}</text>`);

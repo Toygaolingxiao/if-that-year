@@ -161,14 +161,22 @@
 
   function roadSvg() {
     const W = 640, pad = 14, end = IFY.finalAge();
-    const X = (a) => pad + ((a - IFY.START_AGE) / (end - IFY.START_AGE)) * (W - pad * 2);
+    const lead = 64; // fix5 追加修正：序章引线宽（全宽 10%，象征段，不参与成人段比例）——人生从 5 岁起，22 岁只是选路的汇合站，不是路的端点
+    const x0 = pad + lead;
+    const X = (a) => x0 + ((a - IFY.START_AGE) / (end - IFY.START_AGE)) * (W - pad - x0); // 成人段比例不变：先扣引线宽，再按 22..end 标尺算
+    const alive = !IFY.S.death; // fix5：游玩中终局未定——右端不标岁数（不预设终点），底线末段渐隐成开放式；终局已定后右端标真实终局岁（事实）
     let s = "";
     const forkFired = (f) => IFY.S.log.some((l) => l.startsWith(`${f.age} 岁 · `) && f.choices.some((c) => l.endsWith(`：${c.label}`)));
     (IFY.D.forks || []).filter((f) => f.age < end && !(f.state && IFY.S.age > f.age && !forkFired(f))).forEach((f) => { // v0.16.0：带门分岔没轮到这位玩家时不画（未到龄仍照常淡显）
       const on = IFY.S.age >= f.age, col = on ? "#2F4A3C" : "#C4BCA9";
       s += `<line x1="${X(f.age)}" y1="30" x2="${X(f.age) + 13}" y2="13" stroke="${col}" stroke-width="1.6" stroke-dasharray="3 3"/><circle cx="${X(f.age)}" cy="30" r="3" fill="${col}"/>`;
     });
-    return `<svg class="road" viewBox="0 0 ${W} 52" width="100%" aria-hidden="true"><line x1="${pad}" y1="30" x2="${W - pad}" y2="30" stroke="#D8D2C2" stroke-width="2"/>${s}<line x1="${pad}" y1="30" x2="${X(IFY.S.age)}" y2="30" stroke="#2F4A3C" stroke-width="2.5"/><circle class="nowdot" cx="${X(IFY.S.age)}" cy="30" r="5" fill="#2F4A3C"/><text x="${pad}" y="49" font-size="10" fill="#8A8378">22 岁</text><text x="${W - pad}" y="49" font-size="10" fill="#8A8378" text-anchor="end">${end} 岁</text></svg>`;
+    const leadIn = `<line x1="${pad}" y1="30" x2="${x0}" y2="30" stroke="#C4BCA9" stroke-width="2" stroke-dasharray="2 4"/><circle cx="${pad}" cy="30" r="3" fill="none" stroke="#C4BCA9" stroke-width="1.6"/>`;
+    const track = alive
+      ? `<defs><linearGradient id="roadfade" gradientUnits="userSpaceOnUse" x1="${x0}" y1="30" x2="${W - pad}" y2="30"><stop offset=".55" stop-color="#D8D2C2"/><stop offset="1" stop-color="#D8D2C2" stop-opacity="0"/></linearGradient></defs><line x1="${x0}" y1="30" x2="${W - pad}" y2="30" stroke="url(#roadfade)" stroke-width="2"/>`
+      : `<line x1="${x0}" y1="30" x2="${W - pad}" y2="30" stroke="#D8D2C2" stroke-width="2"/>`;
+    const endLab = alive ? "" : `<text x="${W - pad}" y="49" font-size="10" fill="#8A8378" text-anchor="end">${end} 岁</text>`;
+    return `<svg class="road" viewBox="0 0 ${W} 52" width="100%" aria-hidden="true">${leadIn}${track}${s}<line x1="${x0}" y1="30" x2="${X(IFY.S.age)}" y2="30" stroke="#2F4A3C" stroke-width="2.5"/><circle cx="${x0}" cy="30" r="3.5" fill="#2F4A3C"/><circle class="nowdot" cx="${X(IFY.S.age)}" cy="30" r="5" fill="#2F4A3C"/><text x="${pad}" y="49" font-size="10" fill="#8A8378">5 岁</text><text x="${x0}" y="49" font-size="10" fill="#8A8378" text-anchor="middle">22 岁</text>${endLab}</svg>`;
   }
 
   function head(note, bare) {
