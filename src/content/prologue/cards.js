@@ -60,24 +60,24 @@
   ];
   const TEMPER = [
     // —— 好 4 ——
-    { id: "ct_01", name: "打小坐不住", text: "你小时候板凳上像有钉子，为这个挨过不少说。可爬墙上树你从来都是第一个，摔下来的次数也数不清，胳膊上的疤一直都在。", effects: { health: 3, freedom: 2, growth: -1 }, set: "hook_sporty" },
-    { id: "ct_02", name: "坐得住", text: "你从小坐得住。一本书能从天亮看到天黑，家里人喊吃饭要喊三遍。为这个你近视来得早，眼镜片一年比一年厚。", effects: { growth: 3, wisdom: 1, health: -1 } },
-    { id: "ct_03", name: "嘴甜，会来事", text: "你从小嘴甜，见人先打招呼。亲戚都喜欢你，过年压岁钱总比哥哥多几张。你也早早学会了：话说得好听，路就宽一点。", effects: { relation: 2, growth: 1 } },
-    { id: "ct_04", name: "手巧", text: "你手巧，拆过的闹钟能装回去，坏了的插线板也敢修。邻居家电器出毛病，先敲你家的门。你为此得意了好多年。", effects: { growth: 2, relation: 1 } },
+    { id: "ct_01", name: "板凳上像有钉子", text: "你小时候板凳上像有钉子，为这个挨过不少说。可爬墙上树你从来都是第一个，摔下来的次数也数不清，胳膊上的疤一直都在。", effects: { health: 3, freedom: 2, growth: -1 }, set: "hook_sporty" },
+    { id: "ct_02", name: "眼镜片一年比一年厚", text: "你从小坐得住。一本书能从天亮看到天黑，家里人喊吃饭要喊三遍。为这个你近视来得早，眼镜片一年比一年厚。", effects: { growth: 3, wisdom: 1, health: -1 } },
+    { id: "ct_03", name: "见人先打招呼", text: "你从小嘴甜，见人先打招呼。亲戚都喜欢你，过年压岁钱总比哥哥多几张。你也早早学会了：话说得好听，路就宽一点。", effects: { relation: 2, growth: 1 } },
+    { id: "ct_04", name: "拆过的闹钟能装回去", text: "你手巧，拆过的闹钟能装回去，坏了的插线板也敢修。邻居家电器出毛病，先敲你家的门。你为此得意了好多年。", effects: { growth: 2, relation: 1 } },
     // —— 权衡 8 ——
-    { id: "ct_05", name: "慢性子", text: "你干什么都不紧不慢。作业写到最后，饭吃到最后，可交到你手里的事很少出错。急脾气的老师点过你几回名，后来也习惯了。", effects: { growth: 2, freedom: -1, relation: -1 } },
-    { id: "ct_06", name: "心直口快", text: "你心里存不住话，高兴不高兴都写在脸上。为此得罪过人，也交下几个真朋友——他们说，跟你打交道不用猜。", effects: { relation: 2, freedom: -2 } },
-    { id: "ct_07", name: "爱较真", text: "你认死理。账算不清你能对一晚上，理说不通你能跟人争到脸红。为这个家里人说你倔，可交给你的数字从没出过大错。", effects: { growth: 2, relation: -2 } },
-    { id: "ct_08", name: "怕生", text: "你小时候怕见生人，家里来客你就躲屋里。长大些好些了，可当众说话还是心跳得厉害，要提前在心里排练好几遍。", effects: { growth: 2, wisdom: 1, relation: -2 } },
-    { id: "ct_09", name: "贪玩", text: "你小时候心思不在书本上，弹珠、卡片、河沟里的鱼，哪样都比课本有意思。成绩单拿回家，你爸的脸比锅底还黑。", effects: { growth: -2, freedom: 1, health: 1 } },
-    { id: "ct_10", name: "懂事得早", text: "你比同龄人懂事得早。大人说话你听得懂一半，就学会看脸色。家里有事，你是第一个被喊去商量的，也是第一个睡不着的。", effects: { relation: 2, wisdom: 1, health: -1, freedom: -2 } },
-    { id: "ct_11", name: "上台不怵", text: "学校汇演，老师总点你上台。你不怯场，报幕、朗诵都行，台下坐多少人都不慌。奖状没得几张，这份胆量你带了半辈子。", effects: { growth: 2, freedom: -1, relation: -1 }, set: "hook_stage" },
-    { id: "ct_12", name: "胆子大", text: "你胆子大，敢爬最高的树，敢一个人走夜路。为此摔过、丢过、被找过，家里人的心跟着你提了十几年。", effects: { freedom: 2, health: -2 } },
+    { id: "ct_05", name: "饭吃到最后", text: "你干什么都不紧不慢。作业写到最后，饭吃到最后，可交到你手里的事很少出错。急脾气的老师点过你几回名，后来也习惯了。", effects: { growth: 2, freedom: -1, relation: -1 } },
+    { id: "ct_06", name: "心里存不住话", text: "你心里存不住话，高兴不高兴都写在脸上。为此得罪过人，也交下几个真朋友——他们说，跟你打交道不用猜。", effects: { relation: 2, freedom: -2 } },
+    { id: "ct_07", name: "账算不清，对一晚上", text: "你认死理。账算不清你能对一晚上，理说不通你能跟人争到脸红。为这个家里人说你倔，可交给你的数字从没出过大错。", effects: { growth: 2, relation: -2 } },
+    { id: "ct_08", name: "家里来客就躲屋里", text: "你小时候怕见生人，家里来客你就躲屋里。长大些好些了，可当众说话还是心跳得厉害，要提前在心里排练好几遍。", effects: { growth: 2, wisdom: 1, relation: -2 } },
+    { id: "ct_09", name: "河沟里的鱼", text: "你小时候心思不在书本上，弹珠、卡片、河沟里的鱼，哪样都比课本有意思。成绩单拿回家，你爸的脸比锅底还黑。", effects: { growth: -2, freedom: 1, health: 1 } },
+    { id: "ct_10", name: "第一个睡不着", text: "你比同龄人懂事得早。大人说话你听得懂一半，就学会看脸色。家里有事，你是第一个被喊去商量的，也是第一个睡不着的。", effects: { relation: 2, wisdom: 1, health: -1, freedom: -2 } },
+    { id: "ct_11", name: "老师总点你上台", text: "学校汇演，老师总点你上台。你不怯场，报幕、朗诵都行，台下坐多少人都不慌。奖状没得几张，这份胆量你带了半辈子。", effects: { growth: 2, freedom: -1, relation: -1 }, set: "hook_stage" },
+    { id: "ct_12", name: "一个人走夜路", text: "你胆子大，敢爬最高的树，敢一个人走夜路。为此摔过、丢过、被找过，家里人的心跟着你提了十几年。", effects: { freedom: 2, health: -2 } },
     // —— 坏 4（净负，带智慧补偿）——
     { id: "ct_13", name: "病历本比课本厚", text: "你小时候三天两头往医院跑，病历本摞起来比课本还厚。体育课你多半坐在边上看，看着看着，就把课本从头翻到尾了。", nameBySchooling: { never: "病历本摞得老高" }, textBySchooling: { never: "你小时候三天两头往医院跑，病历本摞起来老厚一叠。别人在外头疯跑，你多半坐在边上看，看着看着，倒把大人的话记得比谁都全。" }, effects: { health: -4, growth: 1, wisdom: 1 }, set: "hook_frail" },
-    { id: "ct_14", name: "性子闷", text: "你性子闷，三句问不出一句。家里来客你打个招呼就回屋，同学聚会你总坐在边上。好多事你心里明白，就是不说。", effects: { relation: -3, growth: -1, wisdom: 1 } },
-    { id: "ct_15", name: "急脾气", text: "你脾气急，话赶话就上头，事后又后悔。为这个，你跟人红过脸，也跟自己生过闷气，胃就是那时候落下的毛病。", effects: { relation: -2, health: -2, wisdom: 1 } },
-    { id: "ct_16", name: "念书不开窍", text: "你念书不开窍，同一道题别人一遍会，你要三遍。老师说你不用功，你在台灯底下坐到半夜，只有你自己知道。", nameBySchooling: { never: "学东西慢半拍" }, textBySchooling: { never: "你学东西不开窍，同一件活别人看一遍就会，你得上手三遍。大人说你不用心，你在灯底下练到半夜，只有你自己知道。" }, effects: { growth: -3, wisdom: 1 } },
+    { id: "ct_14", name: "三句问不出一句", text: "你性子闷，三句问不出一句。家里来客你打个招呼就回屋，同学聚会你总坐在边上。好多事你心里明白，就是不说。", effects: { relation: -3, growth: -1, wisdom: 1 } },
+    { id: "ct_15", name: "话赶话就上头", text: "你脾气急，话赶话就上头，事后又后悔。为这个，你跟人红过脸，也跟自己生过闷气，胃就是那时候落下的毛病。", effects: { relation: -2, health: -2, wisdom: 1 } },
+    { id: "ct_16", name: "一道题做三遍", text: "你念书不开窍，同一道题别人一遍会，你要三遍。老师说你不用功，你在台灯底下坐到半夜，只有你自己知道。", nameBySchooling: { never: "一件活上手三遍" }, textBySchooling: { never: "你学东西不开窍，同一件活别人看一遍就会，你得上手三遍。大人说你不用心，你在灯底下练到半夜，只有你自己知道。" }, effects: { growth: -3, wisdom: 1 } },
   ];
   const ERAS = {
     c1955: [

@@ -489,7 +489,7 @@
         }
       }
     }
-    // WP8 形（c1995 pool95）：调度序固定 leave→move→wed→exam（exam 在同局与 wed 互斥时让位）；计划截前 2
+    // WP8 形（c1995 pool95）：调度序固定 leave→move→wed→exam→qzone（exam 在同局与 wed 互斥时让位）；计划截前 2
     if (Array.isArray(pack.pool95)) {
       const byId = {}; for (const e of pack.pool95) byId[e.id] = e;
       const plan = [];
@@ -530,6 +530,10 @@
       if (wed && !sitBlocked(wed)) { const t = hazard(wed); if (t != null) { const va = (wed.variants || []).find((v) => v.segment === segOf(t)); if (va) { plan.push(mkPseudo(wed, t, va)); wedFired = true; } } }
       const exam = byId.pr_pool95_exam;
       if (exam && !sitBlocked(exam) && !wedFired && P.migrantChild) { const t = hazard(exam); if (t != null) { const va = (exam.variants || []).find((v) => v.segment === segOf(t)); if (va) plan.push(mkPseudo(exam, t, va)); } }
+      // 语气轮新增（第五条目 pr_pool95_qzone「空间说说」）：无状态门、纯 hazard，与 move/wed 同形接线，
+      // 序位在 exam 之后——家庭四条目优先，计划仍截前 2，本条目只在家庭条目未占满时落位。
+      const qzone = byId.pr_pool95_qzone;
+      if (qzone && !sitBlocked(qzone)) { const t = hazard(qzone); if (t != null) { const va = (qzone.variants || []).find((v) => v.segment === segOf(t)); if (va) plan.push(mkPseudo(qzone, t, va)); } }
       for (const pseudo of plan.slice(0, 2)) pushAgeSorted(pseudo);
     }
   }

@@ -870,7 +870,7 @@
     else s1 = housing.form === "reform" ? "最后落脚在住惯了的这座城，住的还是房改那会儿买下的那套房。" : housing.unit ? "最后落脚在住惯了的这座城，住的还是单位分的那套房。" : "最后落脚在住惯了的这座城。";
     slots.push(["落脚", s1]);
     let s2;
-    if (ST.spouse === "partnered") s2 = "另一半陪着走到了最后。吵过，也和好过，饭还是一起吃。";
+    if (ST.spouse === "partnered") s2 = "另一半陪着走到了最后。几十年里吵过，也和好过，到老了还是一张桌上吃饭。";
     else if (ST.spouse === "widowed") s2 = "另一半先走了一步。最后一段路，是自己走完的。";
     else if (ST.spouse === "divorced") s2 = "中间那段婚姻散了。后来的日子，各过各的。";
     else if (ST.spouse === "dating") s2 = "身边一直有个人，没领证，也没散，就这么处到了老。";
@@ -879,8 +879,8 @@
     // 之前已成家的情形，流转不在段切片内，按其全账本回放进段值补认）。
     else if (view && (view.stateWitnessed("spouse", "partnered") || segEntrySpouse(view, "partnered"))) s2 = "前一段日子里成了家，身边有过人。换了路以后一直是一个人，饭自己吃，也过来了。";
     else if (view && (view.stateWitnessed("spouse", "dating") || segEntrySpouse(view, "dating"))) s2 = "前一段日子里，身边处过一个人。换了路以后没再遇上谁，饭自己吃，日子自己过，也过来了。";
-    else if (ST.spouse === "single") s2 = "这一生没和谁凑成一对。日子自己过，饭自己吃，也过来了。";
-    else s2 = "没遇上要凑成一对的人。一个人，也把日子过完了。";
+    else if (ST.spouse === "single") s2 = "这一生没和谁凑成一对。日子自己过，饭自己吃，屋里一直是一个人。";
+    else s2 = "没遇上要凑成一对的人。一个人过日子，饭桌上一直是一副碗筷。";
     slots.push(["陪伴", s2]);
     const m = IFY.S.stats.money;
     let s3;
@@ -904,8 +904,8 @@
     else if (F.side_business || F.side_job || F.side_start) s4 = g >= 60 ? "正职之外还干出过一份副业，后来成了日子里的一块。" : "正职之外试过副业，成没成另说，手没闲着。";
     else if (g >= 75) s4 = occ.none ? "手里的事干到了顶。碰上难事，身边的人会先来问你。" : "手里的活儿干到了顶。行里的人碰上难事，会来问你。";
     else if (g >= 50) s4 = occ.drift ? "干过的活儿不止一样。中间换过行当，新活儿从头学起，饭碗换了几次，都端住了。" : occ.single ? "一辈子就干这一行。活儿拿得出手，饭吃得安稳。" : "手里的活儿拿得出手，饭吃得安稳。";
-    else if (g >= 30) s4 = "活儿干得不算出色，胜在没出过大错。一天一天，也就过来了。";
-    else s4 = "没在活儿上争过什么高低。日子过得平，活儿也干得平。";
+    else if (g >= 30) s4 = "活儿干得不算出色，胜在没出过大错。经手的事，没误过一件大的。";
+    else s4 = "没在活儿上争过什么高低。活儿不好不坏，到点去，到点回，就这么干了一年又一年。";
     slots.push(["手艺事业", s4]);
     // 自检补修：子女槽「长成了大人」须有年龄算术支撑——子女在终局（死亡岁数，未死按 80）时须已满 18；
     // 还没长成的只说还在长。落点锚与子孙满堂同源（kidsBornAt ?? kidsAt），读不到锚按没长成处理（只少说不多说）。
@@ -935,12 +935,12 @@
         else s5 = view.flagWitnessed("kid_abroad") ? "孩子大了，去了远方。逢年过节，电话那头热闹。" : kidPresenceSentence();
       }
       else if (hasIdx.length === 1) s5 = kidSent(hasIdx[0], 0);
-      else if (view.domainEnd("kids") === "none") { const covK = view.covenant(); s5 = covK && covK.kind === "none" ? "孩子的事，38 岁那年就定下了：不要。后来照着这个安排过。" : "这一生没要孩子。屋里清静，日子是另一种过法。"; }
+      else if (view.domainEnd("kids") === "none") { const covK = view.covenant(); s5 = covK && covK.kind === "none" ? "孩子的事，38 岁那年就定下了：不要。后来照着这个安排过。" : "这一生没要孩子。别人家围着孩子转的那些年，你这儿没这一摊事。"; }
       else s5 = "孩子的事一直没正式定下来。拖着拖着，就到了这岁数。";
     }
     else if (F.late_parent) s5 = "孩子来得晚。别人抱孙辈的年纪，你还在给孩子开家长会。";
     else if (ST.kids === "has") s5 = F.kid_abroad ? "孩子大了，去了远方。逢年过节，电话那头热闹。" : kidPresenceSentence();
-    else if (ST.kids === "none") s5 = IFY.S.covenant && IFY.S.covenant.kind === "none" ? "孩子的事，38 岁那年就定下了：不要。后来照着这个安排过。" : "这一生没要孩子。屋里清静，日子是另一种过法。";
+    else if (ST.kids === "none") s5 = IFY.S.covenant && IFY.S.covenant.kind === "none" ? "孩子的事，38 岁那年就定下了：不要。后来照着这个安排过。" : "这一生没要孩子。别人家围着孩子转的那些年，你这儿没这一摊事。";
     else s5 = "孩子的事一直没正式定下来。拖着拖着，就到了这岁数。";
     slots.push(["子女", s5]);
     // 父母槽：交换局 dad/mom 取 domainEnd 的见证终局、照护三旗按见证口径；未交换局读终局身体与本局旗（原读法）。
@@ -950,7 +950,7 @@
     if (dadD && momD) s6 = careSelf ? "爸妈都送走了。需要人那几年，你回去陪过一阵。" : careHired ? "爸妈都送走了。走之前请了人照护，你管钱，也管事。" : careRotate ? "爸妈都送走了。需要人那几年，兄妹几个排着班，一人陪一段。" : "爸妈都送走了。最后那一程，赶上了。";
     else if (dadD) s6 = "爸先走了，妈还在。逢年过节，先给妈打电话。";
     else if (momD) s6 = "妈先走了，爸还在。老两口剩一个，屋里空了一半。";
-    else s6 = "到这一生走完，爸妈都还健在。这样的情形，不多。";
+    else s6 = "到这一生走完，爸妈都还健在。这一辈子，你没送走过他们。";
     // 父母线供料（v0.23 WP9）：家庭事实旗（GAME_REGISTRY.familyFacts）中父母线五旗按下方优先表至多取一条，
     // 追加在终局句之后。句子只写小时候/那几年的人生过程（那时家里的事），不写终局断言，与 dad/mom 终局不冲突。
     // 读法与本槽照护三旗同口径：交换局按段视图见证判（view.flagWitnessed），未交换局读本局旗。
@@ -986,9 +986,9 @@
     else if (!view && F.cov_solo_done && ST.kids === "undecided") s7 = "38 岁挂起的那份账，45 岁你一个人对完了。孩子的事没落定，可那份约不算悬着了。";
     else if (!view && IFY.S.covenant && IFY.S.covenant.kind === "wait" && ST.kids === "undecided") s7 = "38 岁挂起的那份账，到最后也没正式对完。";
     else if (!view && F.late_tried && !F.late_parent) s7 = "想要孩子那几年，试过，也跑过医院，最后没等来。这事放下了，就是偶尔还想起。";
-    else if ((IFY.playerMeta().glimpsesSkipped || 0) >= 2 && !(IFY.playerMeta().glimpsesSeen > 0)) s7 = "另一条路有几回摆在眼前，你都没去细看。不知道的，就让它不知道下去。"; // v0.21 WP1：瞥视计数改读 session.meta（蓝图 3.1）；v0.22.1 F8：看过至少一次的人不许判「都没去细看」，计数口径与文案对齐（审计 run-13）
+    else if ((IFY.playerMeta().glimpsesSkipped || 0) >= 2 && !(IFY.playerMeta().glimpsesSeen > 0)) s7 = "另一条路有几回摆在眼前，你都没去细看。那边后来什么样，你一直不知道。"; // v0.21 WP1：瞥视计数改读 session.meta（蓝图 3.1）；v0.22.1 F8：看过至少一次的人不许判「都没去细看」，计数口径与文案对齐（审计 run-13）
     else if (housing.rentingNow) s7 = "买房的事提过几回，最后没办成，一直租着住。"; // v0.24.4：改读派生 rentingNow——旧版三旗排除漏了 bought_commodity/bought_fangai/jizi_house，商品房买家照样出「一直租着住」（侦察 c1965 rec-05 实锤）
-    else s7 = "没什么悬着的大事。该办的办了，办不了的，也放下了。";
+    else s7 = "没什么悬着的大事。手头的事都料理完了，没留下一桩拖到最后的。";
     slots.push(["没办完的事", s7]);
     // 第八槽（v0.22 WP7 交换局真账化；v0.22.1 F7 扩到未交换局）：只要本局有不受控 Track
     // （新局恒有），就读它的真实账本——终局一句 + shownFacts 揭价一句（取材与硬线见
@@ -1003,11 +1003,11 @@
       const mainU = (IFY.S.unchosen || []).find((u) => u.kind === "route");
       const sh = mainU && IFY.D.shadows ? IFY.D.shadows[mainU.id] : null;
       const cost = sh ? IFY.shadowCostText(sh).replace(/^代价也清楚：/, "") : "";
-      slots.push(["另一条路", cost ? `没走的那条路，代价在那边：${cost}` : "没走的那几条路，各有各的走法，没法放在一起称。"]);
+      slots.push(["另一条路", cost ? `没走的那条路，代价在那边：${cost}` : "没走的那几条路，你没走过，那边是什么日子，你不知道。"]);
     }
     const reflArr = IFY.playerMeta().reflections || []; const refl = reflArr.length ? reflArr[reflArr.length - 1].text : ""; // v0.21 WP1：第九槽 reflections 改读 session.meta（蓝图 3.1）
     const flatLife = !(IFY.S.usedRare || []).length && (Array.isArray(IFY.S.ledger) ? IFY.S.ledger.filter((e) => e.kind === "event").length : 99) < 30;
-    slots.push(["你留的话", refl ? `「${refl}」` : flatLife ? "这一生没留下认领的话。平淡是平淡，可一年一年都是真的——平淡，也是完整的一生。" : "这一生没留下认领的话。就这么走完了。"]);
+    slots.push(["你留的话", refl ? `「${refl}」` : flatLife ? "这一生没留下认领的话。没撞上什么稀罕事，年表里记着的，都是过日子的小事。" : "这一生没留下认领的话。话没留，事都在年表里记着。"]);
     return slots;
   }
 
@@ -1032,7 +1032,7 @@
     // 自动推进提示（v0.17.0 定案）：默认关的玩家，完局后只在这页提示一次可开平年自动；提示过就落 prefs，不再重复
     const showAutoHint = IFY.prefs.mode === "off" && !IFY.prefs.autoHintSeen;
     if (showAutoHint) { IFY.prefs.autoHintSeen = true; IFY.savePrefs(); }
-    const skippedLine = IFY.playerMeta().glimpsesSkipped ? `<p>你有 ${IFY.playerMeta().glimpsesSkipped} 次没有去细看另一条路。这样也好，有些事不知道，更睡得着。</p>` : ""; // v0.21 WP1：瞥视计数改读 meta
+    const skippedLine = IFY.playerMeta().glimpsesSkipped ? `<p>你有 ${IFY.playerMeta().glimpsesSkipped} 次没有去细看另一条路。那几条路后来走成了什么样，你没看过。</p>` : ""; // v0.21 WP1：瞥视计数改读 meta
     const reflHtml = IFY.playerMeta().reflections.length
       ? `<h3>你留给自己的话</h3>` + IFY.playerMeta().reflections.map((r) => `<p class="refl">「${IFY.esc(r.text)}」（${r.age} 岁）</p>`).join("") : ""; // v0.21 WP1：reflections 改读 meta
     // fix7：结算年表改读分段合并视图（playerFacts，与分岔图/九槽同源）：交换局按 controlLog 段窗拼玩家实际控制过的
@@ -1043,7 +1043,7 @@
     IFY.app().innerHTML = `<section class="card">${IFY.head(null, true)}
       <div class="rev" style="--d:0s">
       <h2>${IFY.finalAge()} 岁 · 这一局走完了</h2>
-      ${IFY.S.death ? `<p>这一生停在了 ${IFY.S.death.age} 岁：${IFY.esc(IFY.S.death.text)}</p>` : ""}
+      ${IFY.S.death ? `<p>${IFY.S.death.age} 岁那年，你走了。${IFY.esc(IFY.S.death.text)}</p>` : ""}
       ${sp ? `<div class="special"><p class="rare-tag">${IFY.TIER_LABEL[sp.tier]}</p><p class="special-title">${IFY.esc(sp.title)}</p><p>${IFY.esc(sp.text)}</p></div>` : ""}
       </div>
       <div class="rev" style="--d:.12s">
