@@ -680,7 +680,8 @@
     "dog>home": "养了条狗", "dog>gone": "狗没了", "cat>home": "养了只猫", "cat>gone": "猫没了",
   };
 
-  // 结算快进（蓝图 7.4）：不受控条目存在、未 finalized、且未死未满 80 时，无头步进到死亡或 80（上限 70 次防死循环），
+  // 结算快进（蓝图 7.4）：不受控条目存在、未 finalized、且未终局时，无头步进到死亡或保险丝
+  // （v0.32.0：上限 130 次——22 岁起最长 88 年到保险丝 110，旧 70 次会把长寿影子截在半路），
   // 置条目 finalized=true。幂等：renderEnd 入口与第八槽/交叉点图都会先调它，重复调用在 finalized 后恒为空转。
   function fastForwardUncontrolled() {
     const ses = IFY.session;
@@ -688,8 +689,9 @@
     const key = ses.controlTrack === "A" ? "B" : "A";
     const entry = ses.tracks[key];
     if (!entry || !entry.state || entry.finalized) return;
+    if (!entry.state.death && entry.state.age >= (IFY.MAX_AGE || 110)) IFY.stepUncontrolled(); // 及保险丝无死亡的边界档：stepUncontrolled 内部补保险丝终局（while 的 age 条件进不去）
     let steps = 0;
-    while (!entry.state.death && entry.state.age < (IFY.MAX_AGE || 80) && steps < 70) { IFY.stepUncontrolled(); steps++; }
+    while (!entry.state.death && entry.state.age < (IFY.MAX_AGE || 110) && steps < 130) { IFY.stepUncontrolled(); steps++; }
     entry.finalized = true;
   }
 
@@ -704,7 +706,7 @@
     const B = uncontrolledState();
     if (!B || !B.route) return "";
     fastForwardUncontrolled();
-    return B.death ? `另一条路（${B.route.name}）走到了 ${B.death.age} 岁` : `另一条路（${B.route.name}）活到了 ${IFY.MAX_AGE || 80} 岁`;
+    return B.death ? `另一条路（${B.route.name}）走到了 ${B.death.age} 岁` : `另一条路（${B.route.name}）走到了最后`; // v0.32.0：无 death 只剩快进被截断的理论边界，兜底句不许再把任何岁数写成终点
   }
 
   // 第八槽终局一句：早夭（<60 岁）用 glimpseSkeleton 全生骨架压缩成一句（去掉与槽头重复的路线句），不缩水成光杆终局。
@@ -715,7 +717,7 @@
       if (parts.length) return `另一条路（${routeName}）在 ${B.death.age} 岁走完了：${parts.join("，")}。`;
     }
     if (B.death) return `另一条路（${routeName}）走到了 ${B.death.age} 岁，在那一年走完了。`;
-    return `另一条路（${routeName}）活到了 ${IFY.MAX_AGE || 80} 岁。`;
+    return `另一条路（${routeName}）走到了最后。`; // v0.32.0：同 uncontrolledFinalLine 兜底口径，不写岁数
   }
 
   // 第八槽揭价一句（硬线）：揭价对象只能从 meta.shownFacts 里 type:"material" 的素材选，且必须能在它
@@ -916,7 +918,7 @@
     else if (g >= 30) s4 = "活儿干得不算出色，胜在没出过大错。经手的事，没误过一件大的。";
     else s4 = "没在活儿上争过什么高低。活儿不好不坏，到点去，到点回，就这么干了一年又一年。";
     slots.push(["手艺事业", s4]);
-    // 自检补修：子女槽「长成了大人」须有年龄算术支撑——子女在终局（死亡岁数，未死按 80）时须已满 18；
+    // 自检补修：子女槽「长成了大人」须有年龄算术支撑——子女在终局（死亡岁数）时须已满 18；
     // 还没长成的只说还在长。落点锚与子孙满堂同源（kidsBornAt ?? kidsAt），读不到锚按没长成处理（只少说不多说）。
     const kidGrownAtEnd = () => {
       const bornAt = typeof IFY.S.kidsBornAt === "number" ? IFY.S.kidsBornAt : (typeof IFY.S.kidsAt === "number" ? IFY.S.kidsAt : null);
@@ -1021,14 +1023,14 @@
   }
 
   function renderEnd() {
-    // 结算快进（v0.22 WP7，蓝图 7.4）：clearSave 之前先把不受控 Track 步进到死亡或 80 并置 finalized——
+    // 结算快进（v0.22 WP7，蓝图 7.4）：clearSave 之前先把不受控 Track 步进到死亡或保险丝（110）并置 finalized——
     // 只置内存位、不另行 save：本函数随后即 clearSave() 清档，终局屏之后没有续读路径，落盘无意义
     // （与蓝图「并 save」的出入及理由记 wp7 日志；若日后出现终局后续读入口，此处须改真 save）。
     fastForwardUncontrolled();
     // 住房变现落账（v0.30.0）：两条 Track 都已定案——在 verdict/特殊结局/九槽文案等任何读终值的
     // 判定之前，各调一次 houseSettleDue（houseSettled 防重；资产只在此刻进流动金钱）。
-    // v0.30.3：主角轨若经死亡屏，落账已在 renderDeath 提前发生，此处对主角轨为空转；
-    // 80 岁未死（无死亡屏）的主角轨与影子轨仍在此处落账。
+    // v0.30.3：主角轨终局必经死亡屏，落账已在 renderDeath 提前发生，此处对主角轨为空转；
+    // 影子轨仍在此处落账（v0.32.0 起影子终局同样必有 death）。
     if (typeof IFY.houseSettleDue === "function") {
       IFY.houseSettleDue(IFY.S);
       const sesH = IFY.session;

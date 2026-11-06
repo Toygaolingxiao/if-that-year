@@ -381,20 +381,26 @@
 
   // ---------- stepUncontrolled（蓝图 5.1 挂点） ----------
   // advance() 在受控 Track 未终局时调用：切进不受控 Track 跑它的一年——
-  // age+1（80 封顶与受控 advance 同口径：到 80 不再掷死亡、不再步进）→ 它自己的 rollDeath()
-  // （它自己的进程流 + 同一年代参数表，health.js 原样）→ 掷中落 death 并冻结（此后每年直接跳过）；
-  // 未死则 stepYearHeadless() 过完这一年（WP2）。
+  // age+1 → 它自己的 rollDeath()（它自己的进程流 + 同一年代参数表，health.js 原样）→
+  // 掷中落 death 并冻结（此后每年直接跳过）；未死则 stepYearHeadless() 过完这一年（WP2）。
+  // v0.32.0 片 C：与受控 advance 同口径废顶——逐年掷死亡直到掷中或触保险丝（MAX_AGE=110，
+  // 触顶由 forceFuseDeath 强制终局）；旧档里停在 80 的影子状态由此自动续活，不再冻结。
   function stepUncontrolled() {
     const session = IFY.session;
     if (!session) return;
     const other = session.tracks[session.controlTrack === "A" ? "B" : "A"];
     if (!other || !other.state) return;
     const st = other.state;
-    if (st.death || st.age >= IFY.MAX_AGE) return; // 已终局/已封顶：冻结
+    if (st.death) return; // 已终局：冻结
+    if (st.age >= IFY.MAX_AGE) { // 已及保险丝却无死亡（只可能来自构造/边界档）：补一次保险丝终局，不许留无终局状态进结算
+      withLife(other, () => { if (typeof IFY.forceFuseDeath === "function") IFY.forceFuseDeath(); });
+      return;
+    }
     withLife(other, () => {
       IFY.S.age += 1;
-      if (IFY.S.age >= IFY.MAX_AGE) { IFY.S.age = IFY.MAX_AGE; return; }
+      if (IFY.S.age > IFY.MAX_AGE) IFY.S.age = IFY.MAX_AGE;
       if (IFY.rollDeath()) return; // death 已由 rollDeath 落进本 Track 的账本与流水；冻结靠上方 death 检查
+      if (IFY.S.age >= IFY.MAX_AGE) { if (typeof IFY.forceFuseDeath === "function") IFY.forceFuseDeath(); return; }
       stepYearHeadless();
     });
   }

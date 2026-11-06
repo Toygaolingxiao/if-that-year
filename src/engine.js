@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.31.2 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.32.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -24,7 +24,7 @@ window.IFY = window.IFY || {};
 
   const ANA = window.GAME_ANALYTICS || { track() {}, flush() {} }; // 匿名埋点（v0.13.1，src/analytics.js；默认关闭、关闭时无操作，口径见 docs/ANALYTICS.md）
 
-  const START_AGE = 22, MAX_AGE = 80;
+  const START_AGE = 22, MAX_AGE = 110; // v0.32.0 片 C：MAX_AGE 只保留机制语义＝保险丝（110 岁仍未掷中死亡才强制终局）；80 不再是任何终点，呈现轴一律按真实终局岁画（settlement 道路图 fix5 已如此），任何文案不许把某个岁数写成终点
 
   // 维度定义表：[键, 名, 初始值]。所有渲染（游玩数值条、分享卡）都从这张表生成，不写死根数——加新维度只改这里与数据。
   // v0.9.0 第六维「智慧」：成长=本事（学与练，前半生为主），智慧=判断（阅历与吃亏换来，全程可涨）。
@@ -789,7 +789,7 @@ window.IFY = window.IFY || {};
     if (IFY.S.phase === "prologue") { renderPrologue(); return IFY.mountStream(); } // 序章段有自己的推进循环（v0.17.0）
     if (IFY.S.mergePending && !IFY.S.route && !IFY.S.death) { renderRouteMerge(); return IFY.mountStream(); } // v0.24.0：无序章开局（及待选路存档续玩）先落 22 岁汇入拍；序章汇入走上面 renderPrologue 分支，不经此路
     if (IFY.S.death) return renderDeath();
-    if (IFY.S.age >= MAX_AGE) return IFY.renderEnd();
+    if (IFY.S.age >= MAX_AGE) { if (typeof IFY.forceFuseDeath === "function") IFY.forceFuseDeath(); return renderDeath(); } // v0.32.0：无死亡而岁数已及保险丝（只可能来自构造/旧档边界）→ 补一次保险丝终局再进死亡屏，不许裸进结算
     save();
     if (IFY.S.pendingFork && IFY.S.pendingFork.age === IFY.S.age) { IFY.renderForkEcho(); return IFY.mountStream(); } // 分岔复述拍未走时，续玩/重入都回到复述拍
     // 进程拍（v0.18.0，内核一期）：父母进程到期与 dating 到期结算排在分岔/瞥视之前，呈现完仍回到本年（不独占年份）
@@ -820,8 +820,9 @@ window.IFY = window.IFY || {};
   function advance() {
     if (IFY.S.death) return renderDeath();
     IFY.S.age += 1;
-    if (IFY.S.age >= MAX_AGE) { IFY.S.age = MAX_AGE; return step(); } // 受控到 80 = 终局口径：不受控 Track 不再步进（蓝图 5.1）
+    if (IFY.S.age > MAX_AGE) IFY.S.age = MAX_AGE;
     if (IFY.rollDeath()) { save(); return renderDeath(); } // 受控终局：不受控 Track 冻结在同龄处，不再步进（蓝图 5.1）
+    if (IFY.S.age >= MAX_AGE) { if (typeof IFY.forceFuseDeath === "function") IFY.forceFuseDeath(); save(); return renderDeath(); } // v0.32.0 保险丝：110 岁仍未掷中 → 强制终局，呈现与自然死亡无区别
     // v0.21 WP1（蓝图 5.1 唯一挂点）：受控未终局才步进不受控 Track——瞥视在 step() 呈现阶段读到的对面已是同龄最新状态。特性守卫：会话层不可用时跳过。
     if (typeof IFY.stepUncontrolled === "function") IFY.stepUncontrolled();
     step();
@@ -831,7 +832,7 @@ window.IFY = window.IFY || {};
     // 终局变现提前落账（v0.30.3）：死亡既已定案、死亡屏渲染之前（顶栏六维在此屏同显），
     // 主角轨先落 houseSettleDue——死亡屏、结算、分享卡从此同读变现后的数值；houseSettled
     // 防重，结算处（renderEnd）再调为空转。影子轨没有自己的死亡屏，仍在结算处落账，
-    // 结算时两条轨都已落账，口径不冲突。80 岁未死者不经此屏，在 renderEnd 落账，路径不变。
+    // 结算时两条轨都已落账，口径不冲突。v0.32.0 起主角轨终局必经此屏（含保险丝终局），无「未死进结算」的路径。
     if (typeof IFY.houseSettleDue === "function") IFY.houseSettleDue(IFY.S);
     IFY.curKind = "death";
     IFY.clearAutoContext();
