@@ -225,7 +225,7 @@
     if (typeof st.houseSettled !== "boolean") st.houseSettled = false;
     if (st.houseTier == null) {
       const h = typeof IFY.housingOf === "function" ? IFY.housingOf(st) : null;
-      if (h && h.owned) {
+      if (h && h.owned && h.owned !== "selfbuilt") { // 自建房不进资产账：houseTier 恒 null，回填也不许给它派市场档
         if (h.owned === "reform") st.houseTier = "R";
         else {
           const wt = typeof IFY.wageTierOf === "function" ? IFY.wageTierOf(st) : null;

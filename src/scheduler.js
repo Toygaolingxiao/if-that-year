@@ -76,8 +76,23 @@
     return ages;
   }
 
+  // --- 农民路线退出层关门（立项新增）：farm_left 立后，务农线条目整系退出抽取池 ---
+  // 判据派生而非逐条 forbid：给存量条目逐条加 forbid 键会抬高它们的 saliency 具体度，
+  // 把全部老路线的同种子抽取序搅乱（集成实测）；关门写在 met 一处，条目数据零改动。
+  // 覆盖：pack29 全系（id 前缀）＋带 farmLine 标记／routeIn 含 farm／require 含
+  // farm_work·township_work 的条目（pack35 与 p23_009 这类挂种地旗的条目）。
+  function isFarmLineItem(e) {
+    if (!e) return false;
+    if (typeof e.id === "string" && e.id.startsWith("p29_")) return true;
+    if (e.ctx && e.ctx.farmLine) return true;
+    if (Array.isArray(e.routeIn) && e.routeIn.includes("farm")) return true;
+    const req = e.require ? (Array.isArray(e.require) ? e.require : [e.require]) : [];
+    return req.includes("farm_work") || req.includes("township_work");
+  }
+
   // --- 统一条件求值：路线/标记组合/数值形状/前置链 ---
   function met(e) {
+    if (IFY.S.flags && IFY.S.flags.farm_left && isFarmLineItem(e)) return false; // 退出层：全家进城后土地线关门
     if (e.procOnly) return false; // 进程条目只由进程呈现，不进普通抽取池（v0.18.0）
     if (e.ctx && !IFY.ctxOk(e.ctx)) return false; // 职业语境门（v0.18.0）
     if (e.anyParentAlive && IFY.S.state.dad !== "alive" && IFY.S.state.mom !== "alive") return false;
@@ -253,7 +268,7 @@
   // 池里没有不硬造（与平淡年机制不冲突）；home 专属池深、abroad 专属池深且与
   // abroad 全面禁入行拍（D-2a）相冲，不设配额。已抽计数只读 usedEvents/usedRare
   // 现算，不进存档。
-  const ROUTE_QUOTA_ROUTES = { study: true, gap: true, corp: true };
+  const ROUTE_QUOTA_ROUTES = { study: true, gap: true, corp: true, farm: true }; // farm（农民路线立项补）：入口拍 routeIn 恰单值 farm，22–27 未抽到时 ×4 保线成立；本函数对非 farm 路线恒早退，老路线零影响
   let _routeItemById = null;
   function routeItemById(id) {
     if (!_routeItemById) {

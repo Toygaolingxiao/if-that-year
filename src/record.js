@@ -61,6 +61,12 @@
       // 行当的纯入行拍不可抽（挡「大厂开局第一年还在进小作坊学徒」类串行）；25 岁
       // 起自动失效，跳槽/转行叙事照常。
       if (S && S.route && S.route.id === "corp" && S.age >= 22 && S.age <= 24) return false;
+      // farm 种地窗（农民路线立项补，与 home 考试窗/study 在读窗同构）：留乡路线 22–26 岁
+      // 是下地立线的叙事期（22–28，与 home 考试窗同宽），farm_work 未落定前，其他行当的纯入行拍不可抽——挡「选了留
+      // 下来种地、开局却先被城里入行拍抢走主线，此后种地入口被入行防叠门永久关死」。
+      // 带 ctx.farmLine 的条目是种地线自己的入口拍（p29_001/p29_002 与 pack35 入口），豁免
+      // 本窗；farm_work 落定或 27 岁窗过后自动失效。
+      if (S && S.route && S.route.id === "farm" && S.age >= 22 && S.age <= 28 && !(S.flags && S.flags.farm_work) && !ctx.farmLine) return false;
     }
     // 在职门（AN-3 D-1）：ctx.employed=true 须本局已有入行事实（work.js isEmployed）；
     // ctx.notEmployed=true 反之。治「叙事旗冒充就业事实」：只落 job_hop/stay_put 的人

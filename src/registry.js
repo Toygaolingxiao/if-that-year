@@ -197,6 +197,7 @@ window.GAME_REGISTRY.milestones = {
    "setters": [
     "e78_006",
     "fork33",
+    "fork33f",
     "p17_021",
     "p17_024",
     "p18_049",
@@ -1376,6 +1377,8 @@ window.GAME_REGISTRY.milestones = {
   "factory_work": {
    "setters": [
     "p15_071"
+   ,
+    "farm_exit_settle"
    ],
    "note": "工厂制造入行（v0.19.0，职业语境门）：招工入行拍立旗，工厂主簇以此为门"
   },
@@ -1483,9 +1486,35 @@ window.GAME_REGISTRY.milestones = {
   "farm_work": {
    "setters": [
     "p29_001",
-    "p29_002"
+    "p29_002",
+    "farm_entry_new",
+    "farm_entry_main"
    ],
-   "note": "种地入行（v0.19.0）：分家单过/分地到户拍立旗，种地簇以此为门"
+   "note": "种地入行（v0.19.0）：分家单过/分地到户拍立旗，种地簇以此为门；农民路线立项后此旗为该路线立线旗（入口含 pack35 接班拍）"
+  },
+  "farm_returned": {
+   "setters": [
+    "farm_township_back"
+   ],
+   "note": "乡镇企业回落（立项新增）：厂散后回地里立旗——flagAges 只记首落点，重立 farm_work 翻不动活计形态，故用新旗承接回落落点，FORM_OF_FLAG 映射 farm，R1 按落点年龄把形态拽回"
+  },
+  "farm_left": {
+   "setters": [
+    "fork28f"
+   ],
+   "note": "农民路线退出层（立项新增）：28 岁分岔选「全家进城」立旗——scheduler.met 以派生判据把务农线条目整系关门（不逐条写 forbid，免抬 saliency 具体度扰动老路线抽取序），居所轨迹按 city 记账，人转入通用城市池"
+  },
+  "selfbuilt_house": {
+   "setters": [
+    "fork33f"
+   ],
+   "note": "农民路线自建房（立项新增）：33 岁分岔在宅基地上拆老房盖新房立旗——housingOf 读作 owned/selfbuilt（有房可住），不进 house.js 购房旗全集（无档、无月供、终局不变现，土地不进资产账）"
+  },
+  "township_work": {
+   "setters": [
+    "farm_township"
+   ],
+   "note": "乡镇企业入行（立项新增）：农民路线混合层——FORM_OF_FLAG 映射 employee、工资走 C 档；farm_work 旗不清，土地池保持开门；厂散回落由 farm_township_back 立 farm_returned 接回"
   },
   "teach_work": {
    "setters": [
@@ -1532,6 +1561,10 @@ window.GAME_REGISTRY.milestones = {
   "heavy_work": {
    "setters": [
     "p20_004"
+   ,
+    "farm_township_back"
+   ,
+    "farm_exit_settle"
    ],
    "note": "重工业入行（v0.19.0）：进钢铁厂入行拍立旗，钢铁/油田支以此为门（工厂线支线）"
   },

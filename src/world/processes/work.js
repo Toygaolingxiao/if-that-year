@@ -20,6 +20,7 @@
   function workForm() {
     if (WORK_FORMAL_FLAGS.some((f) => IFY.S.flags[f])) return "formal";
     if (IFY.S.route && IFY.S.route.id === "home") return "formal";
+    if (IFY.S.route && IFY.S.route.id === "farm") return "informal"; // 农民路线：未立 farm_work 旗前也按 informal 读（退休节点 63–68）
     if (WORK_INFORMAL_FLAGS.some((f) => IFY.S.flags[f])) return "informal";
     return "fallback";
   }
@@ -49,6 +50,8 @@
   const FORM_VALUES = ["farm", "public", "self", "flex", "employee"];
   const FORM_OF_FLAG = {
     farm_work: "farm",
+    township_work: "employee", // 乡镇企业入行（农民路线混合层）：离土不离乡——形态按受雇、工资 C 档；farm_work 旗不清，土地池不关门
+    farm_returned: "farm", // 厂散回落（farm_township_back 立）：落点年龄晚于 township_work，R1 按落点裁定把形态拽回 farm
     exam_landed: "public",
     shop_work: "self",
     gig_work: "flex", courier_work: "flex", care_work: "flex", write_work: "flex",
@@ -123,6 +126,10 @@
     if (lightEntry) return "flex";
     // R2：副业成型
     if (FORM_SIDE_FLAGS.some((f) => S.flags[f])) return "self";
+    // R3.5 农民路线兜底：路线本身就是留在土地上——未立任何入行旗时按 farm 读，
+    // 不让 22 岁选了这条路的人在入口条目抽到之前先被读成受雇者。入行旗仍由 R1 优先
+    // （进乡镇企业立 township_work 后按 employee；厂散回落拍重立 farm_work，按落点年龄再翻回）。
+    if (S.route && S.route.id === "farm") return "farm";
     // R4（降位后）：少年轨道只在成年路线没把人带离家乡时垫底定 farm
     if (S.state && S.state.track === "home" && (!S.route || S.route.id === "home" || S.route.id === "gap")) return "farm";
     // R5：默认受雇

@@ -17,6 +17,7 @@
       gap: { temp: 58, rhythm: "闯荡型" },
       study: { temp: 50, rhythm: "日常型" },
       home: { temp: 38, rhythm: "日常型" }, // 体制内低温：在平淡阈值（34）上方留一格——单次「安定」选择不改质地，叠加降温（降速+退休）才真正平淡下来
+      farm: { temp: 32, rhythm: "季节型" }, // 农民路线：季节型低温——农闲与等待本就是这条线的主线，平淡年占比由 derive 按季节型斜率派生
     },
     track: {
       study: { temp: 50, rhythm: "日常型" },

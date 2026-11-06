@@ -91,6 +91,12 @@
       { fork: "fork58", match: { set: "retired_full" }, bonus: 5, text: "58 岁退还是不退，这条路先偏向退下来，把欠自己的时间还给自己。" },
       { fork: "fork31", match: { setState: { spouse: "dating" } }, bonus: 4, text: "31 岁感情的路口，这条路先偏向不排斥也不将就，慢慢来。" },
     ]) },
+    // farm「留下来，种地」：stats 签名 relation+6/health+4/money-6/growth-2——亲和压在关系与健康上。
+    farm: { affinity: vec(2, 0.5, 0.5, 1, 2.5, 1.5), stances: Object.freeze([
+      { fork: "fork28f", match: { labelIncludes: "冬闲出去打短工" }, bonus: 5, text: "留下来种地这条路，28 岁问走不走，先偏向冬闲出去打短工、农忙回来——地不丢，外头的钱也挣一点。" },
+      { fork: "fork33f", match: { set: "selfbuilt_house" }, bonus: 6, text: "33 岁房子怎么办，这条路先偏向拆了老房、在原地基上盖新的，根不动。" },
+      { fork: "fork52", match: { set: "care_self" }, bonus: 6, text: "52 岁父母要人陪，这条路人就在跟前，先偏向自己多回去陪。" },
+    ]) },
   });
 
   // ---------- 入参归一化与只读视图（4.5 定义域补全） ----------

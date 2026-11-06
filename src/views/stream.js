@@ -37,8 +37,7 @@
 
   function autoEligible() {
     if (!IFY.autoText || !IFY.autoAction || IFY.prefs.mode === "off") return false;
-    // v0.20.4：序章没有「平年」——每一拍都是内容，平年模式下也不自动推进，停住等玩家点继续（上下文照常登记，局中切全程可立即 arm）
-    if (IFY.S && IFY.S.phase === "prologue" && IFY.prefs.mode === "plain") return false;
+    // v0.34.1（用户定）：自动推进从 0 岁起与成年同一套规矩——序章不再排除平年，无选项的幕按阅读时长自己往前走，选项幕照旧停住等玩家。
     return IFY.autoKind === "advance" || (IFY.autoKind === "choice" && IFY.prefs.mode === "full");
   }
 

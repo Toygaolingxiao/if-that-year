@@ -42,16 +42,17 @@
     const led = st && Array.isArray(st.ledger) ? st.ledger : [];
     for (const e of led) {
       if (typeof e.age === "number" && e.age > endA) continue;
-      if (e.kind === "route") move(e.age, e.id === "abroad" ? "abroad" : (e.id === "home" || e.id === "gap") ? "home" : "city");
+      if (e.kind === "route") move(e.age, e.id === "abroad" ? "abroad" : (e.id === "home" || e.id === "gap" || e.id === "farm") ? "home" : "city"); // farm（农民路线）：村里记在 home 段（轨迹只有家乡/城市/国外三段，村庄属家乡）
       else if (e.set === "back_home_stay" || e.set === "near_family") move(e.age, "home");
       // 出国线的人 stayed_city（fork28「不回，把现在的城市过成家」）与 moved_city 说的都是在国外
       // 当地落脚/换城，不是回国进城——路线盲读成 city 会把定居国外的人整段读没（侦察 B78-04 实锤：
       // 28 岁一落 stayed_city，轨迹终点翻成 city，结算与距离派生跟着全错）。回国另有 back_home_stay/
       // near_family 两个落点，不经此处。
       else if (e.set === "moved_city" || e.set === "stayed_city") move(e.age, st && st.route && st.route.id === "abroad" ? "abroad" : "city");
+      else if (e.set === "farm_left") move(e.age, "city"); // 农民路线退出层（fork28f 全家进城）：此后按城市记账
       else if (e.set === "back_to_city" || (e.kind === "event" && e.id === "p11_041")) move(e.age, st && st.route && st.route.id === "abroad" ? "abroad" : "city");
     }
-    if (!place) place = !st || !st.route ? "home" : st.route.id === "abroad" ? "abroad" : (st.route.id === "home" || st.route.id === "gap") ? "home" : "city";
+    if (!place) place = !st || !st.route ? "home" : st.route.id === "abroad" ? "abroad" : (st.route.id === "home" || st.route.id === "gap" || st.route.id === "farm") ? "home" : "city";
     addSpan(place, since, endA);
     return { final: place, spans };
   }
@@ -78,6 +79,7 @@
     { f: "bought_fangai", form: "reform" },
     { f: "bought_commodity", form: "commodity" },
     { f: "jizi_house", form: "own" },
+    { f: "selfbuilt_house", form: "selfbuilt" }, // 农民路线自建房（fork33f）：宅基地上的自家房——读作「有房可住」，但不进 house.js 购房旗全集（无档、无月供、终局不变现，土地不进资产账）
   ];
   function housingOf(st) {
     const F = (st && st.flags) || {};
@@ -122,7 +124,7 @@
   function settledOf(st, age) {
     const endA = typeof age === "number" ? age : (st && st.death ? st.death.age : (st && typeof st.age === "number" ? st.age : IFY.MAX_AGE));
     const t = residenceTrailOf(st, IFY.START_AGE, endA);
-    const start = !st || !st.route ? "home" : st.route.id === "abroad" ? "abroad" : (st.route.id === "home" || st.route.id === "gap") ? "home" : "city";
+    const start = !st || !st.route ? "home" : st.route.id === "abroad" ? "abroad" : (st.route.id === "home" || st.route.id === "gap" || st.route.id === "farm") ? "home" : "city";
     return { final: t.final, spans: t.spans, start, awayYears: t.spans.city + t.spans.abroad, abroadYears: t.spans.abroad };
   }
 

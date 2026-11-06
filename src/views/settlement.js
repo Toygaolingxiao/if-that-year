@@ -58,7 +58,7 @@
     else if (trail.final === "city") shape = "在异乡扎下根";
     else if (trail.final === "home" && F.near_family) shape = "守在家人近处";
     else if (F.often_back) shape = "一直没断了回老家的路";
-    else shape = { corp: "去大城市闯过", home: "留在家乡过日子", abroad: "去远方生活过", study: "多读了几年书", gap: "停过一年再出发" }[IFY.S.route.id] || "";
+    else shape = { corp: "去大城市闯过", home: "留在家乡过日子", abroad: "去远方生活过", study: "多读了几年书", gap: "停过一年再出发", farm: "留在村里种地" }[IFY.S.route.id] || "";
     if (shape) out.push(shape);
     const traj = [
       [used.includes("p11_054"), "送走过一条狗"],
@@ -83,7 +83,7 @@
       if (hk) t2 = HOB[hk] + "陪了大半辈子";
     }
     if (!t2 && IFY.S.state && IFY.S.state.dog !== "none") t2 = "养过一条狗"; // v0.12.0：旗标时代 dog_home 立后不清（在养/已离世都算养过），状态读法等价取 ≠none
-    if (!t2 && typeof IFY.housingOf === "function" && IFY.housingOf(IFY.S).owned) t2 = "供过一套房"; // v0.24.4：改读住房派生（旧版只认 bought_house 一面旗，商品房/房改/集资买家全漏）
+    if (!t2 && typeof IFY.housingOf === "function" && IFY.housingOf(IFY.S).owned) t2 = IFY.housingOf(IFY.S).owned === "selfbuilt" ? "亲手盖起一栋房" : "供过一套房"; // 自建房没「供」过——是自己动手盖起来的 // v0.24.4：改读住房派生（旧版只认 bought_house 一面旗，商品房/房改/集资买家全漏）
     if (t2) out.push(t2);
     const res = trail.final === "home" ? "家乡" : trail.final === "abroad" ? "异国" : "异乡"; // v0.18.0：「终老在异国」只在居所轨迹终点确为异国时才写
     let close = "";
@@ -868,7 +868,7 @@
     if (trail.final === "home" && trail.spans.city + trail.spans.abroad >= 5) s1 = s1ReturnDoubted ? S1_NEUTRAL : `在外头住了${trail.spans.city + trail.spans.abroad}年，最后还是回了老家落脚。`;
     else if (trail.final === "abroad") s1 = `最后落脚在异国，在那边住了${trail.spans.abroad}年。`;
     else if (trail.final === "city" && IFY.S.route && IFY.S.route.id === "home") s1 = `后来出了家乡，在外头落了脚，一住${trail.spans.city}年。`;
-    else if (trail.final === "home") s1 = s1NeverLeftDoubted ? S1_NEUTRAL : housing.form === "reform" ? "最后落脚在老家这边，住的还是房改那会儿买下的那套房。" : housing.unit ? "最后落脚在老家这边，住的还是单位分的那套房。" : "最后落脚在老家这边，住的还是熟门熟路的地方。";
+    else if (trail.final === "home") s1 = s1NeverLeftDoubted ? S1_NEUTRAL : housing.form === "reform" ? "最后落脚在老家这边，住的还是房改那会儿买下的那套房。" : housing.unit ? "最后落脚在老家这边，住的还是单位分的那套房。" : housing.form === "selfbuilt" ? "最后落脚在老家这边，住的还是自己动手盖起来的那栋房。" : "最后落脚在老家这边，住的还是熟门熟路的地方。";
     else s1 = housing.form === "reform" ? "最后落脚在住惯了的这座城，住的还是房改那会儿买下的那套房。" : housing.unit ? "最后落脚在住惯了的这座城，住的还是单位分的那套房。" : "最后落脚在住惯了的这座城。";
     slots.push(["落脚", s1]);
     let s2;
@@ -897,6 +897,7 @@
     const houseTier = IFY.S.houseTier || null;
     const houseM = houseTier && typeof IFY.houseMultipleOf === "function" ? IFY.houseMultipleOf(IFY.S, IFY.S.birthYear + (IFY.S.death ? IFY.S.death.age : IFY.S.age)) : null;
     if (houseTier === "R" || housing.owned === "reform") s3 = m >= 60 ? "房改那会儿把住着的单位房买下来了，手里还留着余钱，够花。" : "房改时把住着的单位房买了下来，钱多半填进了这套房里，日子紧巴巴地过。";
+    else if (housing.owned === "selfbuilt") s3 = m >= 40 ? "自己动手盖起来的房，没欠下月月要还的钱。地是村里的，房是自家的，手里还留着余钱，够花。" : "自己动手盖起来的房，没欠下月月要还的钱。地是村里的，房是自家的，日子紧巴巴地过。"; // 自建房支（农民路线）：无月供、无变现，只按手头宽紧分说
     else if (housing.owned === "own" || housing.owned === "commodity") {
       if (houseM != null && houseM >= 1.6) s3 = "当年买的那套房，涨上来了。终局算总账，房子这一笔是挣的。";
       else if (houseM != null && houseM < 0.9) s3 = "房子买在了价高的时候，后来一直没涨回来。钱多半填进了房子里。";
