@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.30.3 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.31.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -760,7 +760,9 @@ window.IFY = window.IFY || {};
         const ef = {};
         for (const id of cardIds) { const c = CARDS.byId[id]; if (!c) continue; for (const [k, v] of Object.entries(c.effects || {})) ef[k] = (ef[k] || 0) + v; if (c.set) IFY.S.flags[c.set] = true; }
         applyEffects(ef);
-        const names = cardIds.map((id) => (CARDS.byId[id] || {}).name || "").filter(Boolean);
+        // 选幕制片一（抉择 4）：出身行的性子段改印落账短语（幕名＋动作，如「过年那天躲进了里屋」），
+        // 不再印性子卡名；家底/时代保留事实名不变。旧档无 temperDeed 时回落卡名，行为与旧版一致。
+        const names = cardIds.map((id) => (id === P.temperPick && P.temperDeed) ? P.temperDeed : ((CARDS.byId[id] || {}).name || "")).filter(Boolean);
         if (names.length) IFY.S.log.push(`22 岁 · 出身：${names.join(" · ")}`);
         const temperIdx = P.temperPick ? P.temper.indexOf(P.temperPick) : -1;
         if (temperIdx >= 0) ANA.track("card_pick", { cat: "temper", pick: temperIdx, changed: temperIdx !== 0 }); // 序章里只有性子是真选择，埋点照口径只报这一类（家底是发放、时代是自动绑定）

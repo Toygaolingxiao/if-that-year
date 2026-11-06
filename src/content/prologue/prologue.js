@@ -88,8 +88,17 @@
           text: "放学路上，小卖部门口摆着个捂着棉被的泡沫箱，冰棍一毛钱一根。你把钱攥出汗，买了一根，掰成两半，跟同路的那个一人一半，化了的水顺着手往下滴。" },
       ] },
     { id: "pr_child3", age: 11, log: "性子", temperPick: true,
-      text: "十一岁这年，晚饭桌上说起你，大人嘴里总跑不掉一句。那句话，你耳朵都快听出茧子了。",
-      choices: [] }, // 选项在 present 时由所发的三张性子牌物化（真选择：选哪张，哪张的钩子与数值在 22 岁汇入时结算）
+      // 选幕制片一（性子）：正文走 frames 幕框（present 的 temperPick 支按所发三卡下标和取模定框），
+      // 流水账行改记幕名；选项由三卡的动作行物化，点选背后那张卡在 22 岁汇入时结算。
+      // cond＝条件钩子：框里预设具体动作的句子（买盐）只在本局真发到那张卡时才出，否则走 without 落点。
+      frames: [
+        { name: "过年那天", text: "过年那天，亲戚来了一屋子。茶几上摆着糖和瓜子，电视开着，没人正经看。",
+          cond: { card: "ct_12", with: "厨房里有人喊：「盐没了，谁去买？」", without: "厨房里有人喊盐没了。没一会儿，下楼买盐的大人回来了。" } },
+        { name: "家里请客那天", text: "周末，家里请客，爸的同事、妈的同学，挤了满满一屋。凉菜先上了桌，小孩被打发到小桌那一角。",
+          textLB: "周末，家里请客，爷爷的老伙计、奶奶的娘家人，挤了满满一屋。凉菜先上了桌，小孩被打发到小桌那一角。" },
+        { name: "堂哥搬家那天", text: "堂哥搬新家，请了两桌在新房里吃。屋里还有纸箱没拆完，大人围着看户型，小孩满屋子钻。" },
+      ],
+      choices: [] }, // 选项在 present 时由所发的三张性子牌的动作行物化（选哪下动作，背后哪张卡的钩子与数值在 22 岁汇入时结算）
     { id: "pr_child4", age: 12, log: "校门口的老梧桐",
       variants: [
         { key: "tree", log: "校门口的老梧桐", set: "mark_tree", mark: "mark_tree",
@@ -732,6 +741,25 @@
     }
     return out;
   }
+  // 选幕制片一（性子）：幕框由所发三张性子卡在 TEMPER 池中的下标之和取模定框——纯函数查表，
+  // 不掷骰、不消费任何随机流：同一手牌永远同一个框。包未带 frames 时回落单框（act.text）。
+  function temperFrameOf(S, act) {
+    const P = S.prologue;
+    const frames = (act && act.frames && act.frames.length) ? act.frames : [{ name: "那一天", text: (act && act.text) || "" }];
+    const C = cards();
+    let sum = 0;
+    if (C && C.temper) for (const cid of (P.temper || [])) { const i = C.temper.findIndex((c) => c.id === cid); if (i >= 0) sum += i; }
+    return frames[sum % frames.length];
+  }
+  // 旧档续跑补齐：存档里序列化下来的性子幕可能是旧版定义（带 texts、无 frames）。首次物化前
+  // 按 id 从当前代包把 frames 与流格标记补回这一幕，续跑的性子幕仍走幕式呈现与短语落账；
+  // 已物化过的幕用存档画面收尾、不经此路（出身行回落卡名，与旧档口径一致）。
+  function refreshTemperAct(S, act) {
+    if (!act || !act.temperPick || act.frames) return;
+    const pk = packFor(S.era);
+    const live = pk && pk.acts ? pk.acts.find((a) => a && a.id === act.id) : null;
+    if (live && live.frames) { act.frames = live.frames; if (live.consumesTextCell) act.consumesTextCell = true; }
+  }
   // 查本局定版的变体。P.variants 缺失（旧档中局换到新幕定义等边缘情形）时懒补一次并从此定版。
   function variantOf(S, act) {
     const P = S.prologue;
@@ -750,6 +778,7 @@
       family: dealt ? dealt.family[0] : null,
       temper: dealt ? dealt.temper.slice() : [],
       temperPick: null,
+      temperDeed: null, // 选幕制片一：所点动作的「幕名＋短语」，22 岁出身行性子段用（choose 落账）
       eraCard: dealt ? dealt.era[0] : null,
       situation: null, itch: null, done: false,
       pendingState: null, curText: null, curChoices: null, shadowMarkShown: false, shadowMarksShown: [], // WP9 A线：瞥视已示记号 id 表（轮换消费）；shadowMarkShown 保留作旧口径镜像（任一瞥视示句后置 true）
@@ -852,6 +881,7 @@
       // band 掷定：带 rollBand 的幕在物化点、选项门过滤之前掷定一次（序章自有流）；已掷定（续玩/读档）不重掷。
       if (act.rollBand && factOf(S, "examBand") === "absent") rollExamBand(S, act);
       // never 变体（v0.20.1 W6）：没进过校门的人，7 岁那拍不落同桌记号（mark_deskmate 的影子回响写的是开学事实，落了会自相矛盾）；12 岁那拍仍路过校门口，老梧桐记号照落。
+      refreshTemperAct(S, act); // 选幕制片一：旧档性子幕补齐 frames（须赶在落账行算框名之前；新局幕自带 frames、此调用空转）
       const neverAlt = P.situation === "never" && (act.id === "pr_child1" || act.id === "pr_child4");
       // 变体定版（v0.21.1）：记号/立旗/流水账行按本局抽中的款走；never 的 12 岁覆写文本写的是梧桐那一拍，记号与行强制回 v1 款对齐（W6 口径）。
       const v = act.variants ? variantOf(S, act) : null;
@@ -864,7 +894,8 @@
       // fix3（opt-in）：act.logBySchooling 按呈现时 schooling 换流水账行（如 never/left 局不记「升初中/初中毕业」）；
       // 未声明此字段的幕行为一字不变。
       const schLog = (act.logBySchooling && S.state && act.logBySchooling[S.state.schooling]) || null;
-      const baseLog = (neverAlt && act.id === "pr_child1") ? "开学那天，你没去" : ((effV && effV.log) || act.log);
+      // 选幕制片一：性子拍流水账改记幕名（如「过年那天」），不再记「性子」二字（act.log 只作无框兜底）。
+      const baseLog = (neverAlt && act.id === "pr_child1") ? "开学那天，你没去" : ((effV && effV.log) || (act.temperPick ? temperFrameOf(S, act).name : act.log));
       S.log.push(`${act.age} 岁 · ${schLog || baseLog}`);
       const C = cards();
       if (act.id === "pr_origin") {
@@ -920,13 +951,37 @@
         P.curText = (fam ? open + "\n" + fam : open) + lb + mig;
         P.curChoices = null;
       } else if (act.temperPick) {
-        // 性子拍呈现变体（新代包带 texts[] 时按序章流在物化点定版一款；c2000 只有单 text，不消费流）
-        // fix2（opt-in）：textsBySchooling 按当前 schooling 换一组候选文本，消费流口径与 texts[] 相同（一次）。
-        const tPool = (act.textsBySchooling && S.state && act.textsBySchooling[S.state.schooling]) || act.texts;
-        P.curText = tPool ? tPool[Math.floor(prng(S) * tPool.length)] : act.text;
+        // 选幕制片一（性子）：正文＝幕框（temperFrameOf 纯函数定框，不掷骰）；选项＝所发三卡的
+        // 动作行（cards.js 的 act 字段，never 处境换 actBySchooling 行）；回响＝卡的幕内回响
+        // actEcho（旧式「<卡名>」——家里人后来提起你……整体退役，屏上不再出现卡名）。
+        // 流口径（与基线逐格一致）：基线在本拍消费序章流一格（texts[] 物化掷选；带
+        // consumesTextCell 的五包），c2000 基线不消费。本拍仍按 consumesTextCell 消费一格、
+        // 不用其值，使此后全部序章流掷定（band/assignRoll/trackAlt 等）与基线逐格对齐。
+        if (act.consumesTextCell) prng(S);
+        const fr = temperFrameOf(S, act);
+        let ftext = (P.leftBehind && fr.textLB) ? fr.textLB : fr.text;
+        // 条件钩子（番頭审阅 1）：框里预设具体动作的句子只在本局真发到那张卡时出，否则走 without 落点，不许悬空。
+        if (fr.cond) {
+          const has = (P.temper || []).includes(fr.cond.card);
+          const line = P.leftBehind ? (has ? (fr.cond.withLB || fr.cond.with) : (fr.cond.withoutLB || fr.cond.without)) : (has ? fr.cond.with : fr.cond.without);
+          if (line) ftext += line;
+        }
+        P.curText = ftext;
+        const schNow = S.state && S.state.schooling;
         P.curChoices = P.temper.map((cid) => {
           const c = C && C.byId[cid];
-          return { label: c ? c.name : cid, card: cid, echo: c ? `「${c.name}」——家里人后来提起你，还总这么说。` : "", effects: {} };
+          if (!c) return { label: cid, card: cid, echo: "", effects: {} };
+          const nev = schNow === "never";
+          const out = {
+            label: (nev && c.actBySchooling && c.actBySchooling.never) || c.act || c.name,
+            card: cid,
+            echo: (nev && c.actEchoBySchooling && c.actEchoBySchooling.never) || c.actEcho || "",
+            effects: {},
+            // 出身行记法（抉择 4）：落账存「幕名＋动作短语」，22 岁出身行的性子段印短语不印卡名。
+            deed: fr.name + ((nev && c.deedBySchooling && c.deedBySchooling.never) || c.deed || ""),
+          };
+          if (c.actEchoLB) out.echoLB = c.actEchoLB; // 留守局回声换祖辈口吻（呈现层既有 echoLB 收口统一处理）
+          return out;
         });
       } else if (act.textByTrack) {
         let bt = act.textByTrack[S.state.track] || act.textByTrack.study;
@@ -1090,6 +1145,7 @@
     const ch = (P.curChoices || [])[i] || null;
     if (ch) {
       if (ch.card) P.temperPick = ch.card;
+      if (ch.card && ch.deed) P.temperDeed = ch.deed; // 选幕制片一：出身行性子段的短语落账（旧档无此字段＝出身行回落卡名）
       if (ch.itch) P.itch = ch.itch;
       // v0.23 WP1（E4/E11）：选项级枚举事实与家庭事实旗的落点——setFact 写 S.facts、familyFact 立旗。
       // familyBeat 的小应对永远不许写 quotaHolder（归属只能由 L65-家发放规则函数写）：在此拦截，
