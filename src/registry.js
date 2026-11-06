@@ -683,6 +683,11 @@ window.GAME_REGISTRY.milestones = {
    ],
    "note": "孩子升学费谁宽裕谁先垫（P1 立）：同上"
   },
+  "kid_debut": {
+   "setters": [
+   ],
+   "note": "孩子已首次正面露面（孩子线批次 S2 立）：无数据层 setter——由 spouse.js 的 syncKidDebut 扫账本同步立旗：出生年（kidsBornAt ?? kidsAt，与 scheduler 的 kidAgeTrue 同源；e_kid_settle/e_kid_final 同拍落定者认 kidsAt）起，首条孩子拍（state/stateAll 门 kids=has 或带 kidAgeMin/kidAgeMax 的条目；出生拍本体 p3_046/lk_born/e55_057 不算露面）呈现即立，flagAges 记呈现年龄，与 syncGrandkidSeen 同型、setters 为空以本注记为准。保底生产者：进程判定 kidDebutDue——出生满 3 年仍未露面，当年必达一条低龄孩子拍（kidAgeMax≤3 且 met、按 w 加权），无合格条目时呈现保底拍 proc_kid_debut（process-beats.js，其 kidAgeMax=3 使其呈现本身即被同步认作露面、闭环）；呈现当年即由 syncKidDebut 立旗，不等次年。消费者：结算判词批（读 flagAges.kid_debut 与出生年之差写孩子首次露面时点）。旧存档账本自愈"
+  },
   "kid_stayed_near": {
    "setters": [
     "e78_048"

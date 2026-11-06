@@ -35,6 +35,7 @@
     { id: "proc_dad_dead", who: "dad", beat: "dead" },
     { id: "proc_mom_dead", who: "mom", beat: "dead" },
     { id: "proc_dating", kind: "dating" },
+    { id: "proc_kid_debut", kind: "kidDebut" },
     { id: "proc_retire_node", kind: "retire" },
     { id: "proc_retire_full", kind: "retire" },
     { id: "proc_retire_auto", kind: "retire" },

@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.39.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.39.1 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -876,6 +876,11 @@ window.IFY = window.IFY || {};
     // 排在 dating 摊牌之前——摊牌可能在同年改伴侣状态（定下/分手），出生拍按状态取版，必须以立约时的状态为准。
     // 进程呈现不走池路的 usedEvents 记账（year.js 池路才推），在此补记，防 39–43 窗内池抽二次呈现同一出生。
     if (IFY.bornDue()) { const bit = D.events.find((e) => e.id === "p3_046"); if (bit) { if (!IFY.S.usedEvents.includes(bit.id)) IFY.S.usedEvents.push(bit.id); IFY.renderProcItem(bit); return IFY.mountStream(); } }
+    // 首次露面保底（孩子线批次 S2）：出生满 3 年孩子还没露过面，当年必达一条低龄孩子拍（选拍在
+    // spouse.js 的 kidDebutItem：kidAgeMax≤3 且 met 按 w 加权，无合格条目落保底拍 proc_kid_debut）。
+    // 排在 dating 摊牌之前与出生保送同理（候选拍按状态取版，以当下状态为准）。进程呈现不走池路的
+    // usedEvents 记账，在此补记；呈现后当场 syncKidDebut 立旗，防本年 step 重入二次保底。
+    if (IFY.kidDebutDue()) { const kit = IFY.kidDebutItem(); if (kit) { if (!IFY.S.usedEvents.includes(kit.id)) IFY.S.usedEvents.push(kit.id); IFY.renderProcItem(kit); IFY.syncKidDebut(); return IFY.mountStream(); } }
     if (IFY.datingDue()) { const dit = D.events.find((e) => e.id === "proc_dating"); if (dit) { IFY.renderProcItem(dit); return IFY.mountStream(); } }
     // 出国去向拍与退休相位拍（v0.19.0）：同为进程拍，呈现完回到本年；去向默认推断先于去向拍检查之外的年份静默补值
     IFY.settleAbroadDefault();

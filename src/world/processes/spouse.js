@@ -24,6 +24,74 @@
     return S.age > S.covenant.since && S.age <= S.covenant.since + 2;
   }
 
+  // 首次露面保底（孩子线批次 S2）：出生之后，孩子不能一直只活在状态里——出生满 3 年还没有
+  // 任何一拍让孩子正面露过面，这一年由进程层必达一条低龄孩子拍（kidDebutDue / kidDebutItem，
+  // 呈现点在 engine.js step() 与 shadow-life.js stepYearHeadless() 的进程段，排在 dating 摊牌之前，
+  // 与出生保送同位同理：候选拍按状态取版，要以当下状态为准）。
+  // 露面事实由引擎同步旗 kid_debut 记账（登记见 registry）：syncKidDebut 扫账本，出生年之后
+  // 首条孩子拍呈现即立旗、flagAges 记呈现年龄——与 work.js 的 syncGrandkidSeen 同型。
+  // 出生年口径与 scheduler 的 kidAgeTrue 同源：kidsBornAt ?? kidsAt（e_kid_settle / e_kid_final
+  // 同拍落定者 kidsBornAt 不落，认 kidsAt，不许只认一条出生路径）。
+  const KID_BORN_IDS = new Set(["p3_046", "lk_born", "e55_057"]); // 出生拍本体（与 apply.js BORN_BEATS 同名单）：是「出生」不是「露面」，不计
+  const KID_DEBUT_FALLBACK_ID = "proc_kid_debut"; // 保底拍（process-beats.js）：低龄池无合格条目时的兜底场面拍
+  let kidDefById = null; // 条目定义索引（懒建：内容装载完成后首调时建，之后只读）
+  function kidDefs() {
+    if (!kidDefById) { kidDefById = new Map(); for (const e of (IFY.D && IFY.D.events) || []) if (e && e.id) kidDefById.set(e.id, e); }
+    return kidDefById;
+  }
+  function kidBirthAge(S) { return S.kidsBornAt != null ? S.kidsBornAt : (S.kidsAt != null ? S.kidsAt : null); }
+  // 「孩子拍」口径（与细案普查 analyze.js 的 isKidBeat 同源）：state/stateAll 以 kids=has 为门，
+  // 或带 kidAgeMin/kidAgeMax 年龄门；出生拍本体除外。
+  function isKidBeatDef(e) {
+    if (!e || KID_BORN_IDS.has(e.id)) return false;
+    const hasGate = (o) => !!o && (o.kids === "has" || (Array.isArray(o.kids) && o.kids.includes("has")));
+    if (hasGate(e.state) || hasGate(e.stateAll)) return true;
+    return e.kidAgeMin != null || e.kidAgeMax != null;
+  }
+  // 引擎同步：出生年起（含出生当年——出生拍走进程层时同年内容槽仍可再出孩子拍，那是真露面）
+  // 首条孩子拍呈现即立 kid_debut。呈现种类认账本里一切呈现记录（event/rare/proc/crisis）。
+  function syncKidDebut() {
+    const S = IFY.S;
+    if (!S || !S.flags || S.flags.kid_debut) return;
+    const b = kidBirthAge(S);
+    if (b == null || !Array.isArray(S.ledger)) return;
+    const defs = kidDefs();
+    for (const le of S.ledger) {
+      if (le.age < b) continue;
+      if (le.kind !== "event" && le.kind !== "rare" && le.kind !== "proc" && le.kind !== "crisis") continue;
+      if (isKidBeatDef(defs.get(le.id))) {
+        S.flags.kid_debut = true;
+        if (!S.flagAges) S.flagAges = {};
+        if (!("kid_debut" in S.flagAges)) S.flagAges.kid_debut = le.age;
+        return;
+      }
+    }
+  }
+  // 到期判定：孩子已出生、还没露过面、出生满 3 年。判定前先同步——池抽已让孩子露过面的局
+  // 在此自清，不进保底；判定本身不掷骰、不动随机流（未到期局与旧行为逐字一致）。
+  function kidDebutDue() {
+    syncKidDebut();
+    const S = IFY.S;
+    if (!S || !S.state || S.state.kids !== "has") return false;
+    if (!S.flags || S.flags.kid_debut) return false;
+    const b = kidBirthAge(S);
+    if (b == null) return false;
+    return S.age >= b + 3;
+  }
+  // 选拍：低龄孩子拍（kidAgeMax ≤3）里 met 过的按现行权重（w，缺省 1）掷一条——到期当年
+  // kidAge 恰为 3，年龄门实际只放行 kidAgeMax=3 的几条；一条都不合格时落保底拍。
+  // 已呈现过的（usedEvents）不重选；出生拍本体与进程专属拍不进候选。
+  function kidDebutItem() {
+    const S = IFY.S, D = IFY.D;
+    if (!S || !D || !Array.isArray(D.events)) return null;
+    const cands = D.events.filter((e) => e && e.kidAgeMax != null && e.kidAgeMax <= 3 && !e.procOnly && !KID_BORN_IDS.has(e.id) && !(S.usedEvents || []).includes(e.id) && IFY.met(e));
+    if (!cands.length) return D.events.find((e) => e.id === KID_DEBUT_FALLBACK_ID) || null;
+    let total = 0; for (const e of cands) total += (e.w || 1);
+    let r = IFY.rngA() * total;
+    for (const e of cands) { r -= (e.w || 1); if (r < 0) return e; }
+    return cands[cands.length - 1];
+  }
+
   // 分岔文案状态感知（v0.13.1，B2）：选项可带 labelBySpouse/echoBySpouse 变体——partnered 用原文字段，
   // dating 优先 dating 变体、其余状态（single/none/divorced/widowed）用 solo 变体，缺变体回落原文。
   function spouseText(c, kind) {
@@ -162,5 +230,5 @@
       : "38 岁挂起的那份账，45 岁说再试一回。可医院没正经跑起来，日子推着人往前走，孩子的事就一直没落定。";
     return "38 岁挂起的那份账，到这一生走完，也没正式对完。";
   }
-  Object.assign(IFY, { datingDue, bornDue, spouseText, registerCovenant, covenantSettleLine });
+  Object.assign(IFY, { datingDue, bornDue, syncKidDebut, kidDebutDue, kidDebutItem, spouseText, registerCovenant, covenantSettleLine });
 })(window.IFY);
