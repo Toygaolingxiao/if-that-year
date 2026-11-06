@@ -354,7 +354,7 @@
   }
 
   // 无头年步进本体：决策序与 engine.js step() 严格对齐（蓝图 5.1/5.2）——
-  // 进程拍（父母 → dating → 出国去向 → 退休相位）→ 分岔 →（瞥视跳过）→ planYear 内容槽。
+  // 进程拍（父母 → 出生保送 → dating → 出国去向 → 退休相位）→ 分岔 →（瞥视跳过）→ planYear 内容槽。
   // 父母进程已在出生时建好，这里只调 parentsDue()，且至多一件/年（蓝图 5.3，两条人生节奏同构）。
   // 不受控 Track 不瞥视、无反思、无呈现：GLIMPSE_AGES 年龄直接落进 planYear，与受控 Track 的
   // 瞥视年不同——瞥视是玩家层的观看动作，不占被瞥视者的年份（它在那一年照常过日子）。
@@ -363,6 +363,9 @@
     if (!S || !S.route) return;
     const pdue = IFY.parentsDue();
     if (pdue) { const pit = D.events.find((e) => e.id === pdue.item); if (pit) resolveProcHeadless(pit, pdue.who, pdue.beat); }
+    // 出生保送（孩子线批次 S1）：与受控 step() 同位同规——立约「要」次年必达 p3_046，排在 dating 摊牌之前；
+    // 无头进程解决同样不推 usedEvents（池路 resolvePlanHeadless 才推），在此补记防池抽二次呈现。
+    if (IFY.bornDue()) { const bit = D.events.find((e) => e.id === "p3_046"); if (bit) { if (!S.usedEvents.includes(bit.id)) S.usedEvents.push(bit.id); resolveProcHeadless(bit); } }
     if (IFY.datingDue()) { const dit = D.events.find((e) => e.id === "proc_dating"); if (dit) resolveProcHeadless(dit); }
     IFY.settleAbroadDefault();
     const akd = IFY.abroadKindDue();

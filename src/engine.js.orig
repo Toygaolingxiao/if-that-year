@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.38.1 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.38.2 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -181,7 +181,7 @@ window.IFY = window.IFY || {};
       stats: Object.fromEntries(STAT_META.map(([k, , init]) => [k, init])),
       route: null, unchosen: [], log: [], reflections: [], // v0.21 WP1：reflections 是玩家层字段——本字段只为 Track 同形保留、恒不作数，权威在 session.meta（蓝图 3.1）
       usedEvents: [], flags: {}, state: IFY.initialState(), crisisUsed: {}, microUsed: [], usedRare: [], cards: [],
-      glimpsesSeen: 0, glimpsesSkipped: 0, lastDelta: "", // v0.21 WP1：glimpsesSeen/glimpsesSkipped 同上——同形保留、恒不作数，权威在 session.meta（蓝图 3.1）
+      glimpsesSeen: 0, glimpsesSkipped: 0, lastDelta: "", wageDelta: "", // wageDelta：工资年结的标注通道（fx-fix）——wageDue 每年结算时刷新（非零整数落账记「工资 ±N」、否则清空），deltaLine 与 lastDelta 拼行呈现；旧档无此字段按空读
       healthCrisisSeen: false, death: null, pendingFork: null,
       // v0.17.0 地基字段：阶段机 phase/stage（origin/child/teen/youth/adult/late）、温度 temp（0–100）与节奏型 rhythm（只管质地，不做玩家可见数值）、
       // 童年记号 marks、fork38 立约 covenant、序章运行态 prologue、平年合并 flatCarry 与温度平淡年计数 flatYears
@@ -450,7 +450,15 @@ window.IFY = window.IFY || {};
   function applyEffects(ef) {
     if (!ef) { IFY.S.lastDelta = ""; return; }
     const parts = [];
-    for (const [k, label] of STAT_META) if (ef[k]) { IFY.S.stats[k] = clamp(IFY.S.stats[k] + ef[k]); parts.push(`${label} ${ef[k] > 0 ? "+" : ""}${ef[k]}`); }
+    // 标注印钳制后的实际落值（fx-fix 定根）：声明原值在触顶/触底时与条的实际动量对不上，
+    // 玩家按标注对账必然差一截。变化为 0 的维度不出现；全部为 0 时标注为空。
+    // lastDelta 同时是账本 fx 与 deltaLine 的唯一来源，改在此处三处同源。
+    for (const [k, label] of STAT_META) if (ef[k]) {
+      const before = IFY.S.stats[k];
+      IFY.S.stats[k] = clamp(before + ef[k]);
+      const d = Math.round((IFY.S.stats[k] - before) * 1e6) / 1e6; // 浮点保险：声明值恒为整数、钳界为整数，实际差额取整到 1e-6
+      if (d) parts.push(`${label} ${d > 0 ? "+" : ""}${d}`);
+    }
     IFY.S.lastDelta = parts.join(" · ");
   }
 
@@ -895,6 +903,7 @@ window.IFY = window.IFY || {};
   function advance() {
     if (IFY.S.death) return renderDeath();
     IFY.S.age += 1;
+    IFY.S.wageDelta = ""; // fx-fix：跨年先清工资标注——新一年的进程拍屏在工资结算之前呈，不许读到去年的；本年结算后由 wageDue 重记
     if (IFY.S.age > MAX_AGE) IFY.S.age = MAX_AGE;
     if (IFY.rollDeath()) { save(); return renderDeath(); } // 受控终局：不受控 Track 冻结在同龄处，不再步进（蓝图 5.1）
     if (IFY.S.age >= MAX_AGE) { if (typeof IFY.forceFuseDeath === "function") IFY.forceFuseDeath(); save(); return renderDeath(); } // v0.32.0 保险丝：110 岁仍未掷中 → 强制终局，呈现与自然死亡无区别

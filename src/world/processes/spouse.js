@@ -6,6 +6,24 @@
     return !!(IFY.S.state && IFY.S.state.spouse === "dating" && typeof IFY.S.datingSince === "number" && IFY.S.age - IFY.S.datingSince >= 7);
   }
 
+  // 出生保送（孩子线批次 S1）：立约「要」之后，出生这一幕不能再靠池抽碰运气——立约次年到期必达，
+  // 由进程层呈现 p3_046 本体（呈现点在 engine.js step() 与 shadow-life.js stepYearHeadless() 的进程段，
+  // 排在 dating 摊牌之前：立约时的伴侣状态还没被摊牌改动，出生拍按状态取的文本才对得上）。
+  // 只服务 covenant has 这一条「先表态、后出生」的线：e_kid_settle / e_kid_final 的「要」是同拍落定，
+  // kidsBornAt 按 apply.js 既有口径回落 kidsAt，不经此路；44 岁起才立的约不走出生保送（since 必须 <44），
+  // 那条路按设计归晚育链（fork45 的 late_try / lk 链），lk_born 的概率落定不在此列、不许改成必出。
+  // 旧存档无 covenant 字段时恒假，不炸。
+  function bornDue() {
+    const S = IFY.S;
+    if (!S || !S.covenant || S.covenant.kind !== "has") return false;
+    if (typeof S.covenant.since !== "number" || S.covenant.since >= 44) return false;
+    if (!S.state || S.state.kids !== "has") return false;
+    if (S.kidsBornAt != null) return false;
+    // 旧档上界（v0.39.0 集成时加）：新局每年必查、立约次年必达，上界不碰新局；
+    // 只挡本版之前的老档在立约多年后才载入时，把出生追演到四五十岁。
+    return S.age > S.covenant.since && S.age <= S.covenant.since + 2;
+  }
+
   // 分岔文案状态感知（v0.13.1，B2）：选项可带 labelBySpouse/echoBySpouse 变体——partnered 用原文字段，
   // dating 优先 dating 变体、其余状态（single/none/divorced/widowed）用 solo 变体，缺变体回落原文。
   function spouseText(c, kind) {
@@ -144,5 +162,5 @@
       : "38 岁挂起的那份账，45 岁说再试一回。可医院没正经跑起来，日子推着人往前走，孩子的事就一直没落定。";
     return "38 岁挂起的那份账，到这一生走完，也没正式对完。";
   }
-  Object.assign(IFY, { datingDue, spouseText, registerCovenant, covenantSettleLine });
+  Object.assign(IFY, { datingDue, bornDue, spouseText, registerCovenant, covenantSettleLine });
 })(window.IFY);
