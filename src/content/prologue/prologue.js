@@ -30,6 +30,12 @@
     "你出生那年，家里刚搬进新楼房，还没通暖气，冬天屋里生着炉子。你爸把你的小被子搭在炉子边上烘着，你在烟火气里睡得沉。",
     "你出生在镇上的卫生院。你妈说，那天走廊里全是人，就数你哭声大。回家那天，你爸把自行车骑得特别慢，怕颠着你。",
   ];
+  // 0 岁开局 B 案（出生一幕＋跳 5 岁）：来历幕拆两屏——出生叙事（各年代包自带的 originOpen，
+  // 六代各 4 款、已入库过审）先单独成出生幕（0 岁呈现，屏头即出生年本身），家底/留守/随迁行
+  // 留在 5 岁屏。框架句六代共用、按第一印象严线写（单句 ≤20 字）：头句交代叙述权（出生当天的
+  // 事是后来听家里人讲的，视角在此豁免），尾句收尾跳 5 岁。正文只演出生当年，不写 0–4 成长段。
+  const BIRTH_FRAME = "你出生那天的事，是后来听家里人讲的。\n";
+  const BIRTH_CLOSE = "日子一天天过，你长到五岁。";
   // 童年记号：小时候留下的具体事，成年段会有事件回响（pack35），影子瞥视里会以「两条路上共同的事实」出现一次。
   const MARKS = {
     mark_deskmate: { shadow: "两条路上都一样的是，开学第一天同桌分你的那半块橡皮，你用了大半年，磨得只剩一个小三角。" },
@@ -781,7 +787,8 @@
       temperDeed: null, // 选幕制片一：所点动作的「幕名＋短语」，22 岁出身行性子段用（choose 落账）
       eraCard: dealt ? dealt.era[0] : null,
       situation: null, itch: null, done: false,
-      pendingState: null, curText: null, curChoices: null, shadowMarkShown: false, shadowMarksShown: [], // WP9 A线：瞥视已示记号 id 表（轮换消费）；shadowMarkShown 保留作旧口径镜像（任一瞥视示句后置 true）
+      pendingState: null, curText: null, curChoices: null, birthPending: false, birthText: null, // 0 岁开局 B 案：出生幕待呈现标记与定版文本（来历幕物化时置位，choose 收幕时清；旧档无此二字段＝未置位、不补演出生幕）
+      shadowMarkShown: false, shadowMarksShown: [], // WP9 A线：瞥视已示记号 id 表（轮换消费）；shadowMarkShown 保留作旧口径镜像（任一瞥视示句后置 true）
       seq: null, leftBehind: false, variants: null,
       gapQueue: [], gapOn: null, // fix8：间隙平年待呈现队列（choose 算定入队、present 逐条呈现；旧档无此二字段，读取时按空队列/未呈现处理）
       bandArmed: true, seqRebuilt: null, // v0.23 WP5：bandArmed 只由本版开局写入（旧档无此字段＝按旧档呈现，证据包③）；seqRebuilt 记②的重建处置
@@ -948,7 +955,18 @@
         // fix2（opt-in）：originMigrantBySit 按处境换随迁来历行（如 never 者随迁但没报上名，与 pr_child1 口径对齐）；未声明的包行为不变。
         const migText = (pack.originMigrantBySit && pack.originMigrantBySit[P.situation]) || pack.originMigrant;
         const mig = P.migrantChild && migText ? "\n" + migText : ""; // WP8：随迁质地行（仅带 originMigrant 的包）
-        P.curText = (fam ? open + "\n" + fam : open) + lb + mig;
+        // 0 岁开局 B 案：拆屏只切已物化的文本——出生成出生幕（框架句＋open＋收尾句），
+        // 余下（家底＋留守行＋随迁行）留 5 岁屏。本分支的序章流消费仍只有上方 openIdx 一格，
+        // 拆分不掷骰、不改落账与 pendingState 的定时点（处境随出生幕的 view 带出，见 present 尾段），
+        // 同种子全下游逐格不变。余屏为空（无家底牌且非留守/随迁的沙箱）时不拆、与拆分前一字不变。
+        const restText = ((fam || "") + lb + mig).replace(/^\n+/, "");
+        if (restText) {
+          P.birthText = BIRTH_FRAME + open + "\n" + BIRTH_CLOSE;
+          P.birthPending = true;
+          P.curText = restText;
+        } else {
+          P.curText = (fam ? open + "\n" + fam : open) + lb + mig;
+        }
         P.curChoices = null;
       } else if (act.temperPick) {
         // 选幕制片一（性子）：正文＝幕框（temperFrameOf 纯函数定框，不掷骰）；选项＝所发三卡的
@@ -1124,6 +1142,14 @@
       if (act.familyBeat && effFamFact) S.flags[effFamFact] = true;
       if (act.poolExtraFact) S.flags[act.poolExtraFact] = true; // WP7（合并二期落）：池变体附加事实旗（临考转学）在呈现即立
     }
+    // 0 岁开局 B 案：出生幕先行——来历幕物化后、其本体（5 岁屏）之前先带出出生幕。
+    // 幕 id 仍归 pr_origin 一幕（view.id 用 pr_birth 只作呈现标记）；pendingState 随本屏带出，
+    // 使处境落定时点与拆分前同为「来历幕首次呈现」；无选项，玩家点继续由 choose 收幕。
+    // 重演（读档停在出生幕上）时 birthPending 仍在，照样先带出本屏，不重复物化、不重复落账。
+    if (act.id === "pr_origin" && P.birthPending) {
+      return { id: "pr_birth", age: 0, stage: stageFor(0), title: null, text: P.birthText, choices: null, pendingState: P.pendingState, isFork: false,
+        gateNote: null, familyBeat: false, echo: null, birth: true };
+    }
     return { id: act.id, age: act.age, stage: stageFor(act.age), title: act.title || null, text: P.curText, choices: P.curChoices, pendingState: P.pendingState, isFork: act.id === "pr_fork16",
       gateNote: gateNoteOf(S, act), familyBeat: !!act.familyBeat, echo: act.familyBeat ? ((act.poolEntry && P.poolEcho) || (act.echoByQuota && (act.echoByQuota[P.quotaEchoKey] || act.echoByQuota[factOf(S, "quotaHolder")])) || act.echo || null) : null };
   }
@@ -1133,6 +1159,13 @@
   function choose(S, i) {
     const P = S.prologue;
     if (!P.seq) P.seq = rebuildSeq(S, packFor(S.era)); // 同 present 的旧档处置（证据包②）
+    // 0 岁开局 B 案：当前画面是出生幕时，本次推进只收幕——幕次、年龄、落账都不动（来历幕的
+    // 落账已在其物化时发生，处境已由调用方在出生幕呈现时经 pendingState 落定）；收幕后下一次
+    // present 即带出 5 岁屏本体。不消费任何随机流（与 fix8 出队支同口径）。
+    if (P.birthPending) {
+      P.birthPending = false;
+      return { done: P.done, gapFx: {} };
+    }
     // fix8：当前画面是间隙平年时，本次推进只出队一格——幕次、年龄、落账都不动（该平年的流水账行
     // 与数值已在其呈现时落定）；队列排空且幕序已尽时才在此落 P.done（22 岁汇入排在最后一条平年之后）。
     if (P.gapOn != null && P.gapQueue && P.gapQueue.length) {
