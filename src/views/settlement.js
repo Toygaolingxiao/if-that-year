@@ -1081,8 +1081,8 @@
       </div>
       ${settlementMapHtml()}
       <div class="rev" style="--d:.55s">
-      <h3>这一生，年表</h3>
-      <div class="timeline">${tlLog.map((l) => { const m = l.match(/^(\d+) 岁 · ([\s\S]*)$/); const yr = m && IFY.S.birthYear ? `${IFY.S.birthYear + (+m[1])} 年 · ` : ""; return `<p>${IFY.esc(yr + l)}</p>`; }).join("")}</div>
+      <h3>这一生，年表<button type="button" class="newhint" id="tlhint" hidden>到最新一年 ↓</button></h3>
+      <div class="timeline" id="timeline">${tlLog.map((l) => { const m = l.match(/^(\d+) 岁 · ([\s\S]*)$/); const yr = m && IFY.S.birthYear ? `${IFY.S.birthYear + (+m[1])} 年 · ` : ""; return `<p>${IFY.esc(yr + l)}</p>`; }).join("")}</div>
       </div>
       <div class="row">
         <button class="ghost" id="copylink">复制同局链接（给朋友玩同一种子）</button>
@@ -1128,6 +1128,15 @@
       endSec.classList.add("shown");
       const mw = IFY.el("mapwrap"); if (mw) mw.classList.add("shown");
     });
+    // v0.31.1：年表跳底钮（形态与流水账 newhint 看齐）——年表盒 480px 高、整局 80 多行只露一小截，
+    // 滚离底部时出钮，点了瞬时跳到最新一年；贴底（距底 <40px）或内容不满一盒时不出。
+    const tlBox = IFY.el("timeline"), tlHint = IFY.el("tlhint");
+    if (tlBox && tlHint) {
+      const syncTlHint = () => { tlHint.hidden = (tlBox.scrollHeight - tlBox.scrollTop - tlBox.clientHeight) < 40; };
+      tlBox.addEventListener("scroll", syncTlHint);
+      syncTlHint();
+      tlHint.addEventListener("click", () => { tlBox.scrollTo({ top: tlBox.scrollHeight, behavior: "auto" }); syncTlHint(); });
+    }
     IFY.el("again-same").addEventListener("click", () => location.assign(IFY.sameSeedUrl()));
     IFY.el("again-new").addEventListener("click", () => location.assign(location.pathname));
     IFY.el("copylink").addEventListener("click", async () => {

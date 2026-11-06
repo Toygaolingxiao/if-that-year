@@ -365,16 +365,19 @@ if (mode === "memorial") entry.memorialShown = true; // 悼念呈现后才置位
 // 童年记号的影子回响（v0.17.0；v0.23 WP9 A线改轮换消费）：每次看瞥视按落账序附一句未示过的「两条路上共同的事实」——童年不进影子锚点，只留共同事实
 const markLine = glimpseMarkLineNext();
 const factsHtml = `<p class="hint">近况，一行一条：</p>` + facts.map((f) => `<p class="body">· ${IFY.esc(f.text)}</p>`).join("");
+// v0.31.1 归属行（bantou-diag2 定根）：引文与玩家自家流水账版式全同、屏上无归属标记，玩家会读成
+// 「游戏在引我的话还引错了」——引文与近况同属一区，区首加一行归属，只动呈现、不动取材与落账。
+const ledgerHead = `<p class="hint">另一条路上的你 · 他的账：</p>`;
 let detailHtml = "";
 if (mode === "normal") {
-detailHtml = `${pick.main? `<p class="body">「${IFY.esc(pick.main.text)}」</p>`: ""}${pick.second? `<p class="body">「${IFY.esc(pick.second.text)}」</p>`: ""}${factsHtml}`;
+detailHtml = `${ledgerHead}${pick.main? `<p class="body">「${IFY.esc(pick.main.text)}」</p>`: ""}${pick.second? `<p class="body">「${IFY.esc(pick.second.text)}」</p>`: ""}${factsHtml}`;
 } else if (mode === "memorial") {
-detailHtml = `<p class="body">「${IFY.esc(deathLine)}」</p>`
+detailHtml = `${ledgerHead}<p class="body">「${IFY.esc(deathLine)}」</p>`
 + skeleton.map((s) => `<p class="body">${IFY.esc(s)}</p>`).join("")
 + factsHtml
 + `<p class="body">那条路，在 ${B.death.age} 岁走完了。</p>`;
 } else { // retro 回望：定格事实表 + 收尾叙述第一句，不编新素材（蓝图 6.3）
-detailHtml = `${skeleton[0]? `<p class="body">${IFY.esc(skeleton[0])}</p>`: ""}${factsHtml}`;
+detailHtml = `${ledgerHead}${skeleton[0]? `<p class="body">${IFY.esc(skeleton[0])}</p>`: ""}${factsHtml}`;
 }
 // 交换提问（蓝图 7.1 时机 A+，二期 WP6）：只在 normal 屏、未交换过时出，位置在 detail 内容里、
 // 反思输入行之前；机会说明行只陈述机会存量，不劝换不劝留。悼念/回望 mode 天然不在 normal、不出；
@@ -382,7 +385,7 @@ detailHtml = `${skeleton[0]? `<p class="body">${IFY.esc(skeleton[0])}</p>`: ""}$
 const swapHtml = (mode === "normal" && !meta.swapped)
 ? `<div id="swapblock"><p class="hint">换过去，一生只能换这一次。这次不换，下次瞥视还能再想；换了，就再没有第二次。</p><div class="row"><button class="primary" id="swap-yes">换过去，过它接下来的日子</button><button class="ghost" id="swap-no">不换，继续过我的</button></div></div>`
 : "";
-IFY.el("detail").innerHTML = `${detailHtml}${markLine? `<p class="body">${IFY.esc(markLine)}</p>`: ""}${swapHtml}
+IFY.el("detail").innerHTML = `${detailHtml}${markLine? `<p class="hint">你们共同的童年：</p><p class="body">${IFY.esc(markLine)}</p>`: ""}${swapHtml}
 <label class="refl-label">给现实里的自己留一句话（写下的话，会原样出现在这一生的结算里）<input id="refl" type="text" maxlength="60" placeholder="一句就好"></label>
 <div class="row"><button class="primary" id="cont">记下，继续</button><button class="ghost" id="cont2">不写了，继续</button></div>`;
 document.querySelector(".row").remove();

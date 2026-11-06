@@ -260,11 +260,11 @@
     });
     requestAnimationFrame(() => {
       if (IFY.streamFollow) {
-        // §5.2 先回到上屏的滚动位置，再量剩余距离：贴底跟随平滑滚动；积压超过一屏则瞬时到位；减动效永远瞬时
+        // §5.2 先回到上屏的滚动位置再跟随到底。v0.31.1：程序跟随滚动一律瞬时到位——平滑滚动约 0.2 秒
+        // 的在飞窗口里最末一行会被盒子下缘切一截（bantou-diag1 定根）；玩家手动滚动与 newhint 钮行为不变。
         st.scrollTop = Math.min(IFY.streamTop, Math.max(0, st.scrollHeight - st.clientHeight));
-        const dist = st.scrollHeight - st.clientHeight - st.scrollTop;
         IFY.streamProgUntil = Date.now() + 450;
-        st.scrollTo({ top: st.scrollHeight, behavior: (IFY.reducedMotion() || dist > st.clientHeight) ? "auto" : "smooth" });
+        st.scrollTo({ top: st.scrollHeight, behavior: "auto" });
         IFY.streamSeen = IFY.S.log.length;
       } else {
         st.scrollTop = Math.min(IFY.streamTop, Math.max(0, st.scrollHeight - st.clientHeight));
