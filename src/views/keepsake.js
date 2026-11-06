@@ -73,6 +73,16 @@ houseGain = ent? Math.round(ent.actual): 0;
 } catch (e) {}
 const timeline = parseTimeline();
 const origin = timeline.find((e) => e.age === 22 && e.text.startsWith("出身：")) || null;
+const highlights = pickHighlights(timeline, origin);
+// 抓周一句（0–4 小段）：记号落账自带物件名，大事记里按原话提一句；已有 1 岁条目被选入时
+// 就地换成整句，没有则补入并按年龄归位（总数仍约十件）。旧局无此记号则整段跳过。
+const grabMark = (S.marks || []).find((m) => m && /^grab_/.test(m.id) && m.item);
+if (grabMark) {
+const ge = { age: 1, year: S.birthYear? S.birthYear + 1: null, text: `周岁那年，你抓了${grabMark.item}。`};
+const ex = highlights.find((h) => h.age === 1);
+if (ex) ex.text = ge.text;
+else { highlights.push(ge); highlights.sort((a, b) => a.age - b.age); if (highlights.length > 10) highlights.length = 10;}
+}
 // 影子小结：结构数从不受控 Track 的真实状态读（终龄/路线），句子用结算同源的终局句与第八槽
 let shadowAge = null, shadowRoute = "";
 try {
@@ -102,7 +112,7 @@ houseGain,
 houseLine: houseGain > 0? `房子最后折了 ${houseGain}，添进这一生的钱里。`: "",
 stats: IFY.STAT_META.map(([k, label]) => ({ key: k, label, value: Math.round(S.stats[k])})),
 origin,
-highlights: pickHighlights(timeline, origin),
+highlights,
 timeline,
 shadow: { finalAge: shadowAge, routeName: shadowRoute, finalLine: shadowFinalLine, slotText: slotMap["另一条路"] || "", compareMain: cmp.main || "", compareOthers: cmp.others || []},
 reflection: refl,

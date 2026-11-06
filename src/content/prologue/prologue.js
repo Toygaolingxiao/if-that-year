@@ -30,12 +30,15 @@
     "你出生那年，家里刚搬进新楼房，还没通暖气，冬天屋里生着炉子。你爸把你的小被子搭在炉子边上烘着，你在烟火气里睡得沉。",
     "你出生在镇上的卫生院。你妈说，那天走廊里全是人，就数你哭声大。回家那天，你爸把自行车骑得特别慢，怕颠着你。",
   ];
-  // 0 岁开局 B 案（出生一幕＋跳 5 岁）：来历幕拆两屏——出生叙事（各年代包自带的 originOpen，
+  // 0 岁开局 B 案（出生一幕＋0–4 小段＋5 岁屏）：来历幕拆屏——出生叙事（各年代包自带的 originOpen，
   // 六代各 4 款、已入库过审）先单独成出生幕（0 岁呈现，屏头即出生年本身），家底/留守/随迁行
   // 留在 5 岁屏。框架句六代共用、按第一印象严线写（单句 ≤20 字）：头句交代叙述权（出生当天的
-  // 事是后来听家里人讲的，视角在此豁免），尾句收尾跳 5 岁。正文只演出生当年，不写 0–4 成长段。
+  // 事是后来听家里人讲的，视角在此豁免）。
+  // 0–4 小段（用户 2026-11-06 晚批准）：出生幕后不再一句话跳到 5 岁——来历幕呈现链里串三幕
+  // 框架共用短拍（1 岁抓周＋3 岁＋4 岁，定义见 EARLY_ACTS），再落 5 岁屏。链只对本版 start()
+  // 武装（earlyArmed），旧档无此字段＝不补演；出生幕收尾句只作衔接，不再自报跳到几岁。
   const BIRTH_FRAME = "你出生那天的事，是后来听家里人讲的。\n";
-  const BIRTH_CLOSE = "日子一天天过，你长到五岁。";
+  const BIRTH_CLOSE = "日子一天天过。";
   // 童年记号：小时候留下的具体事，成年段会有事件回响（pack35），影子瞥视里会以「两条路上共同的事实」出现一次。
   const MARKS = {
     mark_deskmate: { shadow: "两条路上都一样的是，开学第一天同桌分你的那半块橡皮，你用了大半年，磨得只剩一个小三角。" },
@@ -50,7 +53,47 @@
     mark_shop: { shadow: "两条路上都一样的是，校门口那家小卖部，关门前一天，老板把剩下的糖分给了你们几个。" },
     mark_yearbook: { shadow: "两条路上都一样的是，毕业留言册上那句「勿忘我」，你到现在也没认出是谁写的。" },
     mark_classphoto: { shadow: "两条路上都一样的是，毕业照上你站在后排的边上，眯着眼，那张照片一直压在箱子底。" },
+    // 抓周记号（0–4 小段）：六族一局恰好落一个，落账/拷贝与上同规（影子出生同值拷贝、瞥视共用句）。
+    grab_wen: { shadow: "两条路上都一样的是，周岁那天你抓了念书的那一样，家里人笑了好一阵。" },
+    grab_cai: { shadow: "两条路上都一样的是，周岁那天你抓了算钱的那一样，家里人说，往后饿不着。" },
+    grab_gong: { shadow: "两条路上都一样的是，周岁那天你抓了干活的那一样，举起来晃，家里人直笑。" },
+    grab_shi: { shadow: "两条路上都一样的是，周岁那天你抓了吃的那一样，抓到手就往嘴里送。" },
+    grab_yin: { shadow: "两条路上都一样的是，周岁那天你抓了那枚印，攥得紧紧的，谁要都不给。" },
+    grab_wan: { shadow: "两条路上都一样的是，周岁那天你抓了玩的那一样，抱着不撒手。" },
   };
+  // ---------- 0–4 小段（框架共用，来历幕呈现链内串演，不入幕序） ----------
+  // 抓周物件面（按年代各 6 件、一族一件）：{ d: 屏上带量词的摆法, n: 记号落账与典藏用的物件名 }。
+  // 年代红线：晚物件只许出现在晚年代（计算器/绘本/电脑鼠标只在 c1995/c2000）。
+  const GRAB_FAMILIES = ["wen", "cai", "gong", "shi", "yin", "wan"];
+  const GRAB_SPREADS = {
+    c1955: { wen: { d: "一本书", n: "书" }, cai: { d: "一把算盘", n: "算盘" }, gong: { d: "一把尺子", n: "尺子" }, shi: { d: "一个鸡蛋", n: "鸡蛋" }, yin: { d: "一枚私章", n: "私章" }, wan: { d: "一个拨浪鼓", n: "拨浪鼓" } },
+    c1965: { wen: { d: "一支钢笔", n: "钢笔" }, cai: { d: "一把算盘", n: "算盘" }, gong: { d: "一把尺子", n: "尺子" }, shi: { d: "一块糖", n: "糖" }, yin: { d: "一枚印章", n: "印章" }, wan: { d: "一个铁皮玩具", n: "铁皮玩具" } },
+    c1978: { wen: { d: "一支钢笔", n: "钢笔" }, cai: { d: "一枚硬币", n: "硬币" }, gong: { d: "一把尺子", n: "尺子" }, shi: { d: "一个鸡蛋", n: "鸡蛋" }, yin: { d: "一枚私章", n: "私章" }, wan: { d: "一个拨浪鼓", n: "拨浪鼓" } },
+    c1985: { wen: { d: "一本书", n: "书" }, cai: { d: "一把算盘", n: "算盘" }, gong: { d: "一把小扳手", n: "小扳手" }, shi: { d: "一块糖", n: "糖" }, yin: { d: "一枚印章", n: "印章" }, wan: { d: "一块积木", n: "积木" } },
+    c1995: { wen: { d: "一本书", n: "书" }, cai: { d: "一把硬币", n: "硬币" }, gong: { d: "一把尺子", n: "尺子" }, shi: { d: "一块巧克力", n: "巧克力" }, yin: { d: "一枚印章", n: "印章" }, wan: { d: "一块积木", n: "积木" } },
+    c2000: { wen: { d: "一本绘本", n: "绘本" }, cai: { d: "一个计算器", n: "计算器" }, gong: { d: "一把尺子", n: "尺子" }, shi: { d: "一块小蛋糕", n: "小蛋糕" }, yin: { d: "一枚印章", n: "印章" }, wan: { d: "一个电脑鼠标", n: "电脑鼠标" } },
+  };
+  // 抓周揭晓段（六族框架共用、年代中性）：叙述只记事，判语都出自家里人的嘴（笑着当真，不算判命）。
+  const GRAB_REVEAL = {
+    wen: "你爬过去，抓住了{item}，低头翻来覆去地看。家里人笑，说这孩子往后怕是要念书的。",
+    cai: "你爬过去，东摸摸，西摸摸，最后抓住了{item}。家里人笑，说行，往后饿不着。",
+    gong: "你爬过去，抓住了{item}，举起来直晃。家里人笑，说手上有劲，是个干活的料。",
+    shi: "你爬过去，抓住了{item}，就往嘴里送。家里人笑得直拍手。",
+    yin: "你爬过去，抓住了{item}，攥得紧紧的。家里人笑，说这孩子，是个有主意的。",
+    wan: "你爬过去，抓住了{item}，抱着不撒手。家里人笑，说这孩子，玩的心重。",
+  };
+  // 三幕定义（不进 pack.acts/幕序，不占下标）：抓周幕的 variants 是族→旗/记号对照表——发放走
+  // start() 的独立派生流（种子+"#grab"，见 grabKeyFor）一掷定 key，序章自有流一格不消费
+  // （既有变体发放/性子发牌/池排期逐格与旧版相同）；正文在呈现链物化时按年代物件面拼（见 earlyView）。
+  // 3/4 岁两幕为共用层文本（年代中性、不用父母专名，留守局同读不穿帮）。全段零数值、零门、零路线锁。
+  const EARLY_ACTS = [
+    { id: "pr_grab", age: 1, log: "抓周", early: true, grab: true,
+      variants: GRAB_FAMILIES.map((f) => ({ key: f, set: "grab_" + f, mark: "grab_" + f })) },
+    { id: "pr_early3", age: 3, log: "学说话", early: true,
+      text: "三岁那年，你开始跟在大人后头学话。大人说一句，你跟一句，学得一本正经，音还咬不准。家里人笑，你也跟着笑，以为自己说得对极了。" },
+    { id: "pr_early4", age: 4, log: "开始记事", early: true,
+      text: "四岁那年，你开始记事了。谁给过你一块糖，谁答应的事没算数，你都记得。家里人说，这孩子记性好，往后吃不了亏。" },
+  ];
   // 间隔平年（幕之间的年份）：只记流水账一行，带一个具体小细节；数值至多 ±1（波动派生 <0.95 的轨道连这点也不动，见 choose）。
   const FLATS_BY_AGE = {
     6: { text: "六岁那年，你学会了自己系鞋带，头一回没让大人帮忙，就是系成了死结，最后还是大人蹲下来解的。", effects: {} },
@@ -855,6 +898,7 @@
       eraCard: dealt ? dealt.era[0] : null,
       situation: null, itch: null, done: false,
       pendingState: null, curText: null, curChoices: null, birthPending: false, birthText: null, // 0 岁开局 B 案：出生幕待呈现标记与定版文本（来历幕物化时置位，choose 收幕时清；旧档无此二字段＝未置位、不补演出生幕）
+      earlyArmed: true, earlyBuilt: false, earlyStep: 0, earlyOn: null, earlyText: null, grabKey: grabKeyFor(seedStr), // 0–4 小段：武装位与抓周族只由本版 start() 写入（旧档无 earlyArmed＝整链不演）；earlyBuilt/Step/On/Text 是呈现链状态（来历幕物化时建链、逐幕物化定版、choose 逐幕收）；grabKey 走独立派生流定版，读档不重掷
       shadowMarkShown: false, shadowMarksShown: [], // WP9 A线：瞥视已示记号 id 表（轮换消费）；shadowMarkShown 保留作旧口径镜像（任一瞥视示句后置 true）
       seq: null, leftBehind: false, variants: null,
       gapQueue: [], gapOn: null, // fix8：间隙平年待呈现队列（choose 算定入队、present 逐条呈现；旧档无此二字段，读取时按空队列/未呈现处理）
@@ -925,6 +969,43 @@
     if (sh != null) entry.shadow = sh;
     if (shBy != null) entry.shadowBySchooling = shBy;
     return entry;
+  }
+
+  // 抓周族发放（独立派生流，与 prng 同算法、种子另派生）：六族等权一掷定 key；start() 调用一次存 P.grabKey。
+  function grabKeyFor(seedStr) {
+    let a = seedFromString(String(seedStr) + "#grab") | 0;
+    a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return GRAB_FAMILIES[Math.floor((((t ^ (t >>> 14)) >>> 0) / 4294967296) * GRAB_FAMILIES.length)];
+  }
+
+  // 0–4 小段单幕物化（来历幕呈现链内）：首次呈现时定版——抓周幕按开局已发放的族拼正文
+  // （摆面按年代物件表、揭晓按族模板）并落记号（条目自带物件名，供典藏大事记与成年回指读）；
+  // 3/4 岁幕只落流水账。重演（读档停在本幕）读 earlyText 定版，不重复落账、不重掷。
+  function earlyView(S) {
+    const P = S.prologue;
+    const beat = EARLY_ACTS[P.earlyStep];
+    if (P.earlyOn !== beat.id) {
+      P.earlyOn = beat.id;
+      if (beat.grab) {
+        const v = (beat.variants || []).find((x) => x.key === P.grabKey) || beat.variants[0];
+        const spread = GRAB_SPREADS[S.era] || GRAB_SPREADS.c2000;
+        const sp = spread[v.key] || spread.wen;
+        if (v.set) S.flags[v.set] = true;
+        if (v.mark) { const e = markEntryWithShadow(v.mark, beat.age, null); e.item = sp.n; S.marks.push(e); }
+        const list = GRAB_FAMILIES.map((f) => spread[f].d).join("、");
+        P.earlyText = `你满周岁那天，家里人把东西摆了一地：${list}。大人把你抱到中间，让你自己抓。\n`
+          + (GRAB_REVEAL[v.key] || GRAB_REVEAL.wen).replace("{item}", sp.d);
+      } else {
+        P.earlyText = beat.text;
+      }
+      // 落账位置：来历幕的 5 岁行已在其物化时先落（拆屏机制使然），本链三行按岁插入它之前，
+      // 保住流水账/年表的年龄序（1→3→4→5）；5 岁行缺失的边缘情形才退回尾 append。
+      const line = `${beat.age} 岁 · ${beat.log}`;
+      const at = S.log.findIndex((l) => typeof l === "string" && l.startsWith("5 岁 · "));
+      if (at >= 0) S.log.splice(at, 0, line); else S.log.push(line);
+    }
+    return { id: beat.id, age: beat.age, stage: stageFor(beat.age), title: null, text: P.earlyText, choices: null, pendingState: null, isFork: false,
+      gateNote: null, familyBeat: false, echo: null, early: true };
   }
 
   // 物化当前幕：文本与选项只在首次呈现时定版（独立流的消费点固定，同种子复现）；顶层立旗/记号在此落，setState 暂存待调用方走 applyState。
@@ -1035,6 +1116,9 @@
           P.curText = (fam ? open + "\n" + fam : open) + lb + mig;
         }
         P.curChoices = null;
+        // 0–4 小段建链（与出生幕拆分同物化点）：只建链不落账——三幕各自在首次呈现时物化
+        // （抓周记号/流水账都在那时落，与幕级落账同口径）；旧档无 earlyArmed，链永不建。
+        if (P.earlyArmed && !P.earlyBuilt) { P.earlyBuilt = true; P.earlyStep = 0; P.earlyOn = null; P.earlyText = null; }
       } else if (act.temperPick) {
         // 选幕制片一（性子）：正文＝幕框（temperFrameOf 纯函数定框，不掷骰）；选项＝所发三卡的
         // 动作行（cards.js 的 act 字段，never 处境换 actBySchooling 行）；回响＝卡的幕内回响
@@ -1221,6 +1305,9 @@
       return { id: "pr_birth", age: 0, stage: stageFor(0), title: null, text: P.birthText, choices: null, pendingState: P.pendingState, isFork: false,
         gateNote: null, familyBeat: false, echo: null, birth: true };
     }
+    // 0–4 小段：出生幕收下后、5 岁屏本体之前，链上三幕逐幕带出（pendingState 已随出生幕带出，
+    // 本链各幕恒 null，不重复落定；无出生幕拆分的空余屏局同样先走完链再落 5 岁屏）。
+    if (act.id === "pr_origin" && P.earlyBuilt && P.earlyStep < EARLY_ACTS.length) return earlyView(S);
     return { id: act.id, age: act.age, stage: stageFor(act.age), title: act.title || null, text: P.curText, choices: P.curChoices, pendingState: P.pendingState, isFork: act.id === "pr_fork16",
       gateNote: gateNoteOf(S, act), familyBeat: !!act.familyBeat, echo: act.familyBeat ? ((act.poolEntry && P.poolEcho) || (act.echoByQuota && (act.echoByQuota[P.quotaEchoKey] || act.echoByQuota[factOf(S, "quotaHolder")])) || act.echo || null) : null };
   }
@@ -1235,6 +1322,14 @@
     // present 即带出 5 岁屏本体。不消费任何随机流（与 fix8 出队支同口径）。
     if (P.birthPending) {
       P.birthPending = false;
+      return { done: P.done, gapFx: {} };
+    }
+    // 0–4 小段收幕（与出生幕同口径）：当前画面是链上某一幕时，本次推进只进链一格——幕次、
+    // 年龄、落账都不动（记号与流水账已在该幕呈现时落定），链尽后下一次 present 落 5 岁屏。
+    if (P.earlyBuilt && P.earlyOn) {
+      P.earlyStep += 1;
+      P.earlyOn = null;
+      P.earlyText = null;
       return { done: P.done, gapFx: {} };
     }
     // fix8：当前画面是间隙平年时，本次推进只出队一格——幕次、年龄、落账都不动（该平年的流水账行
@@ -1314,7 +1409,7 @@
     wp5BeatFor, rebuildSeq, migrantFamilies: MIGRANT_FAMILIES, careFamilies: CARE_FAMILIES }; // v0.23 WP5：验收脚本读口（选拍与 seq 重建）
   // acts / marks 惰性合并全年代包：校验与影子瞥视按 id 查全集（id 跨代唯一，集成时核过）；无包文件被加载的环境（单文件校验沙箱）自动退回 c2000 集。
   Object.defineProperty(PRO_API, "acts", { enumerable: true, get() {
-    let out = ACTS.concat(SIT_ACTS.half, SIT_ACTS.never);
+    let out = ACTS.concat(EARLY_ACTS, SIT_ACTS.half, SIT_ACTS.never); // EARLY_ACTS：0–4 小段三幕（框架共用、不入任何包的幕序，仅供校验/登记口径入账）
     const P = window.GAME_PROLOGUE_PACKS || {};
     for (const k of Object.keys(P)) { const pk = P[k]; out = out.concat(pk.acts || [], (pk.sitActs && pk.sitActs.half) || [], (pk.sitActs && pk.sitActs.never) || []); }
     return out;

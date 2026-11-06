@@ -142,13 +142,29 @@
     return text.replace("没多久", rep);
   }
 
+  // 童年记号变体（0–4 小段抓周回指）：条目声明 textMark { 记号id: 文本 } 时，本局真落过
+  // 该记号（旗与 S.marks 条目都在）才整段换文；文本中的 {item} 以记号落账自带的物件名
+  // 替换（抓周抓到的那一样）。未声明此字段的条目恒等回落，既有解析一字不变。
+  function markVariant(map, fallback) {
+    if (!map) return fallback;
+    const S = IFY.S;
+    if (!S || !S.flags) return fallback;
+    for (const [mid, txt] of Object.entries(map)) {
+      if (!S.flags[mid] || typeof txt !== "string") continue;
+      const e = (S.marks || []).find((m) => m && m.id === mid);
+      if (!e) return fallback;
+      return txt.replace("{item}", e.item || "那样东西");
+    }
+    return fallback;
+  }
+
   function formText(item) {
     // 无当前单位变体（v0.20.1 W7）：条目声明 textNoUnit 且本局无当前单位事实时优先于
     // 形态/状态变体（fork58 开场靠它；进程拍另有 work.js applyRetireVariant 通道，口径一致）。
     // 例外：条目带 textAgain 且本局已全退过时，再退变体优先（与 applyRetireVariant 同序）。
     if (item && item.textNoUnit && typeof IFY.noCurrentUnit === "function" && IFY.noCurrentUnit()
         && !(item.textAgain && typeof IFY.hasRetiredBefore === "function" && IFY.hasRetiredBefore())) return retireYearsText(item, item.textNoUnit);
-    return retireYearsText(item, distVariant(item && item.textDist, flagVariant(item && item.textFlag, eraVariant(item && item.textEra, formVariant(item && item.textForm, stateVariant(item && item.textState, (item && item.text) || ""))))));
+    return retireYearsText(item, distVariant(item && item.textDist, markVariant(item && item.textMark, flagVariant(item && item.textFlag, eraVariant(item && item.textEra, formVariant(item && item.textForm, stateVariant(item && item.textState, (item && item.text) || "")))))));
   }
 
   // WP2（补丁稿 wp2-scheduler-year-patch，合并二期落）: textFact 枚举事实文本变体 { 事实名: { 值: 文本 } };

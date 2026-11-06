@@ -1182,6 +1182,42 @@ window.GAME_REGISTRY.milestones = {
    ],
    "note": "童年记号（v0.21.1 变体）：毕业照；成年回响 echo_classphoto，影子回响见 prologue.js MARKS"
   },
+  "grab_wen": {
+   "setters": [
+    "pr_grab"
+   ],
+   "note": "童年记号·抓周（0–4 小段）：周岁抓了文那一样（书/笔/绘本，按年代物件面）；六族一局恰好落一个、零数值零门；成年回指挂 p2_024 的 textMark 变体，影子回响见 prologue.js MARKS"
+  },
+  "grab_cai": {
+   "setters": [
+    "pr_grab"
+   ],
+   "note": "童年记号·抓周（0–4 小段）：周岁抓了财那一样（算盘/钱/计算器，按年代物件面）；成年回指挂 p5_086 的 textMark 变体，影子回响见 prologue.js MARKS"
+  },
+  "grab_gong": {
+   "setters": [
+    "pr_grab"
+   ],
+   "note": "童年记号·抓周（0–4 小段）：周岁抓了工那一样（尺子/小扳手，按年代物件面）；无干净成年宿主，只入典藏大事记与影子回响（prologue.js MARKS）"
+  },
+  "grab_shi": {
+   "setters": [
+    "pr_grab"
+   ],
+   "note": "童年记号·抓周（0–4 小段）：周岁抓了食那一样（鸡蛋/糖/巧克力/小蛋糕，按年代物件面）；只入典藏大事记与影子回响（prologue.js MARKS）"
+  },
+  "grab_yin": {
+   "setters": [
+    "pr_grab"
+   ],
+   "note": "童年记号·抓周（0–4 小段）：周岁抓了印那一样（私章/印章，按年代物件面）；只入典藏大事记与影子回响（prologue.js MARKS）"
+  },
+  "grab_wan": {
+   "setters": [
+    "pr_grab"
+   ],
+   "note": "童年记号·抓周（0–4 小段）：周岁抓了玩那一样（拨浪鼓/玩具/积木/电脑鼠标，按年代物件面）；只入典藏大事记与影子回响（prologue.js MARKS）"
+  },
   "late_tried": {
    "setters": [
     "lk_none",
