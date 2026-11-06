@@ -231,11 +231,87 @@ if (view && view.segments && view.segments.length) pExp.leftHome = view.segments
 else pExp.leftHome = leftHomeOf(S, 22, IFY.finalAge());
 const sExp = B? everFrom(B.ledger || [], B.state): null;
 if (B) sExp.leftHome = leftHomeOf(B, 22, B.death? B.death.age: B.age);
+// ---------- 类别型事实（玩家席审议单 #1）：既有四维之后再比三维粗类别 ----------
+// 全部只从本局记录派生：派生不出记 null、该维不参与对比，绝不从路线名或文案猜。
+// 落脚地：居所轨迹里「在不在家乡」这条轴已经由 leftHome 一维承担，重复计会把同一件
+// 事写两遍——这里只补它分不出的两格：在外过又回到家乡（终点 home 且在外年数>0）、
+// 去过国外（abroad 年数>0 且终点不在家乡）。一直在家乡与在城市落脚两格不另计。
+const resCatFromTrail = (t) => {
+if (!t || !t.spans) return null;
+const away = (t.spans.city || 0) + (t.spans.abroad || 0);
+if (!away) return null;
+if (t.final === "home") return { cat: "backHome", phrase: "走出去，又回了家乡"};
+if ((t.spans.abroad || 0) > 0) return { cat: "abroad", phrase: "去国外过日子"};
+return null;
+};
+const trailOf = (T, toAge) => { try { return IFY.residenceTrailOf(T, 22, toAge);} catch (e) { return null;}};
+const pResCat = (() => {
+if (view && view.segments && view.segments.length) {
+const spans = { home: 0, city: 0, abroad: 0};
+let fin = null, ok = false;
+for (const seg of view.segments) {
+const t = trailOf(seg.state, seg.toAge);
+if (t) { ok = true; fin = t.final; for (const k of ["home", "city", "abroad"]) spans[k] += t.spans[k] || 0;}
+}
+return ok? resCatFromTrail({ final: fin, spans }): null;
+}
+return resCatFromTrail(trailOf(S, IFY.finalAge()));
+})();
+const sResCat = B? resCatFromTrail(trailOf(B, B.death? B.death.age: B.age)): null;
+// 职业形态：只认账本里的主入行旗——与引擎 mainEntryOfState 同一套两层裁（正职层
+// 优先、机会层〈写稿/照护/零工/快递〉兜底，同层取最后落账的一面，年龄与账序定先后）。
+// 副业成型（side_job/xiahai）不是主线职业；没有主入行旗就记 null，不替他安行当。
+const WORK_CAT_PHRASE = { public: "在体制内做事", employee: "在企业里做事", flex: "靠接零活过日子", self: "自己开店做生意", farm: "靠种地过日子"};
+const workCatFromLedger = (ledger) => {
+try {
+const F = IFY.FORM_OF_FLAG;
+if (!F) return null;
+const OPP = IFY.ENTRY_OPPORTUNITY_FLAGS || [];
+const TIE = ["farm", "public", "self", "flex", "employee"];
+const beats = (a, b) =>!b || a.age > b.age || (a.age === b.age && a.idx > b.idx)
+|| (a.age === b.age && a.idx === b.idx && TIE.indexOf(a.form) < TIE.indexOf(b.form));
+let main = null, opp = null;
+for (const flag of Object.keys(F)) {
+let cand = null;
+const led = ledger || [];
+for (let i = 0; i < led.length; i++) if (led[i].set === flag) cand = { form: F[flag], age: typeof led[i].age === "number"? led[i].age: 22, idx: i};
+if (!cand) continue;
+if (OPP.includes(flag)) { if (beats(cand, opp)) opp = cand;}
+else if (beats(cand, main)) main = cand;
+}
+const best = main || opp;
+return best && WORK_CAT_PHRASE[best.form]? { cat: best.form, phrase: WORK_CAT_PHRASE[best.form]}: null;
+} catch (e) { return null;}
+};
+const pWorkCat = workCatFromLedger(pLedger);
+const sWorkCat = B? workCatFromLedger(B.ledger || []): null;
+// 居住方式：买过房只认住房派生（housingOf 的购房形态），主轨另加变现账一条；
+// 没买过房必须有单位房或赁屋的记录才成立，两样都没有记 null。影子读他自己的派生。
+const houseCatOf = (T, isMain) => {
+try {
+const h = typeof IFY.housingOf === "function"? IFY.housingOf(T): null;
+if (!h) return null;
+if (h.owned || (isMain && houseGain > 0)) return { cat: "bought", phrase: "买下自己的房"};
+if (h.unit || h.unitLike) return { cat: "notBought", phrase: "住着单位分的房子"};
+if (h.rentingEver) return { cat: "notBought", phrase: "一直租着房子住"};
+return null;
+} catch (e) { return null;}
+};
+const pHouseCat = houseCatOf(S, true);
+const sHouseCat = B? houseCatOf(B, false): null;
+const pCats = { res: pResCat, work: pWorkCat, house: pHouseCat};
+const sCats = { res: sResCat, work: sWorkCat, house: sHouseCat};
 const ABS_DEFS = [["partnered", "成家"], ["kids", "当父母"], ["leftHome", "离乡过日子"], ["retired", "退休"]];
-const absenceFor = (me, other) => {
+const CAT_DIM_ORDER = ["res", "work", "house"];
+const absenceFor = (me, other, myCats, otherCats) => {
 if (!other) return null;
-const items = ABS_DEFS.filter(([k]) => other[k] === true && me[k] === false).map(([, label]) => label).slice(0, 2);
-return items.length? items.join("、"): null;
+const items = ABS_DEFS.filter(([k]) => other[k] === true && me[k] === false).map(([, label]) => label);
+if (myCats && otherCats) for (const k of CAT_DIM_ORDER) {
+const a = myCats[k], b = otherCats[k];
+if (a && b && a.cat !== b.cat) items.push(b.phrase);
+}
+const out = items.slice(0, 2);
+return out.length? out.join("、"): null;
 };
 const shortLabel = (t) => { const s = String(t).replace(/。$/, ""); const cut = s.split(/[，。：；]/)[0]; return cut.length > 14? cut.slice(0, 14): cut;};
 const twinEvents = (hls) => {
@@ -249,6 +325,25 @@ const era = (IFY.ERAS || []).find((e) => e.id === S.era);
 const refl = IFY.playerMeta && IFY.playerMeta().reflections && IFY.playerMeta().reflections.length
 ? IFY.playerMeta().reflections[IFY.playerMeta().reflections.length - 1].text: "";
 const finalAge = IFY.finalAge();
+const twinMainEvents = twinEvents(highlights);
+const twinShadowEvents = twinEvents(shadow.highlights);
+const mainAbsence = absenceFor(pExp, sExp, pCats, sCats);
+const shadowAbsence = absenceFor(sExp, pExp, sCats, pCats);
+// 兜底换式：两边都没有缺席句、且两列大事标签逐件相同时，双生页改单栏收尾——
+// 只用记录拼：共同的大事标签、同一件事两边各自的年岁、两边终局岁数、两条路线名。
+let twinSolo = null;
+if (!mainAbsence && !shadowAbsence && shadow.available && shadow.finalAge != null) {
+const ml = twinMainEvents.map((e) => e.label), sl = twinShadowEvents.map((e) => e.label);
+if (ml.length && ml.length === sl.length && ml.every((l, i) => l === sl[i])) {
+let txt = `两条路，竟走得像：大事都是那几件——${ml.join("、")}。`;
+const diffs = [];
+twinMainEvents.forEach((e, i) => { if (e.age !== twinShadowEvents[i].age) diffs.push(`${e.label}，你 ${e.age} 岁，他 ${twinShadowEvents[i].age} 岁`);});
+if (diffs.length) txt += `只是年岁对不上：${diffs.join("；")}。`;
+if (finalAge !== shadow.finalAge) txt += `差的只是年岁——你走到 ${finalAge} 岁，他走到 ${shadow.finalAge} 岁。`;
+else txt += `连年岁都走到一处，差的只是路——你走的是「${S.route? S.route.name: ""}」，他走的是「${shadow.routeName}」。`;
+twinSolo = txt;
+}
+}
 return {
 v: 2,
 seed: S.seedStr,
@@ -274,8 +369,9 @@ axisMax: Math.max(90, Math.ceil(Math.max(finalAge, shadow.finalAge) / 10) * 10),
 mainNodes: arcNodes(highlights), shadowNodes: arcNodes(shadow.highlights),
 }: null,
 twin: {
-main: { events: twinEvents(highlights), absence: absenceFor(pExp, sExp)},
-shadow: { events: twinEvents(shadow.highlights), absence: absenceFor(sExp, pExp)},
+main: { events: twinMainEvents, absence: mainAbsence},
+shadow: { events: twinShadowEvents, absence: shadowAbsence},
+solo: twinSolo,
 },
 grabShadowText: grabMark && grabMark.shadow? grabMark.shadow: "",
 reflection: refl,
@@ -587,12 +683,17 @@ x.fillText("两条人生的形状", MX + CW / 2, y + 36);
 ksTracked(x, "0px"); x.textAlign = "left";
 y += 36;
 }
-// 双生页：两栏等宽，各自三件大事，栏底缺席对照（取不到可核事实就不写）
+// 双生页：通常两栏等宽，各自三件大事，栏底缺席对照（取不到可核事实就不写）；
+// 两边都没有缺席句且两列大事逐件相同时换单栏收尾式（d.twin.solo，数据层已拼好）
 y += 50;
 x.fillStyle = KS_GREY; x.font = "700 22px " + IFY.SANS; ksTracked(x, "5px");
 x.fillText("双生页", MX, y + 22);
 ksTracked(x, "0px");
 y += 46;
+if (d.twin.solo) {
+x.fillStyle = KS_INK; x.font = "27px " + IFY.SANS;
+y = IFY.wrapText(x, d.twin.solo, MX, y + 27, CW, 44) - 44;
+} else {
 const colW = (CW - 48) / 2;
 const cols = [
 { x0: MX, head: "你走的路", col: d.twin.main, absPrefix: "我没经历过的是："},
@@ -618,6 +719,7 @@ IFY.wrapText(x, `${c.absPrefix}${c.col.absence}。`, c.x0, cy + 18 + 24, colW, 3
 }
 }
 y += colH;
+}
 }
 }
 // ---- 页脚落款 ----
@@ -789,10 +891,10 @@ ${sh.highlights.length? `<p class="book-sub">大事记</p>${hlGroup(sh.highlight
 ${factHtml("落脚", sh.landing)}
 <div class="book-endblock">
 ${sh.stats? `<div class="book-shape">${shapeSvg(d)}<p class="book-shapecap">两条人生的形状</p></div>`: ""}
-<div class="book-twin">
+${d.twin.solo? `<p class="book-common">${esc(d.twin.solo)}</p>`: `<div class="book-twin">
 <div class="book-twin-col"><p class="book-twin-head">你走的路</p>${twinCol(d.twin.main)}${d.twin.main.absence? `<p class="book-abs">我没经历过的是：${esc(d.twin.main.absence)}。</p>`: ""}</div>
 <div class="book-twin-col"><p class="book-twin-head">没选的那条路</p>${twinCol(d.twin.shadow)}${d.twin.shadow.absence? `<p class="book-abs">他没经历过的是：${esc(d.twin.shadow.absence)}。</p>`: ""}</div>
-</div>
+</div>`}
 </div>`: `<p class="book-lead">${esc(sh.finalText)}</p>`}
 </section>`: "";
 // ---- 末页落款＋手记页 ----
