@@ -22,7 +22,7 @@
     // eraIn 仍读终局身体（状态类句子说的是终局形状，与九槽口径一致）。未交换局（view 为 null）
     // 走 IFY.factOk 原路，逐字不变。
     const view = playerFacts();
-    const factOkHere = view ? (needs) => {
+    const factOkSeg = view ? (needs) => {
       if (!needs) return true;
       const wit = (f) => view.hasFact(f) || view.flagWitnessed(f);
       if (needs.flag && !wit(needs.flag)) return false;
@@ -34,6 +34,17 @@
       if (needs.eraIn && !needs.eraIn.includes(IFY.S.era)) return false;
       return true;
     } : IFY.factOk;
+    // 判词批 B：singlePartner 门（片段级 needs 键，只判词消费）——预设「陪到老的另一半是
+    // 同一个人」的片段，伴侣史多任（partnerHistoryOf 回放 parts ≥ 2）的局不许抽。离婚在
+    // 现行旗里没有专属旗（旧旗 divorced / spouse_dead 是 v0.11 时代物，validate-state 已明令
+    // 数据不得再用），光靠片段上的 notFlag spouse_passed 只挡得住丧偶史，离异史须在此按账本
+    // 回放复合判定。历史不可知（无账本老档）时放行，与九槽老档回落现行文案的口径一致。
+    const phVerdict = partnerHistoryOf(view);
+    const factOkHere = (needs) => {
+      if (!factOkSeg(needs)) return false;
+      if (needs && needs.singlePartner && phVerdict.known && phVerdict.parts.length >= 2) return false;
+      return true;
+    };
     const tF = pickF(IFY.D.verdictTop[top]), cF = pickF(IFY.D.verdictCost[bottom]);
     IFY.S._verdict = { text: tF.text + cF.text, top, bottom, topIdx: tF.idx, costIdx: cF.idx };
     return IFY.S._verdict;
@@ -88,12 +99,35 @@
     const res = trail.final === "home" ? "家乡" : trail.final === "abroad" ? "异国" : "异乡"; // v0.18.0：「终老在异国」只在居所轨迹终点确为异国时才写
     let close = "";
     const ST = IFY.S.state || {}; // v0.12.0：收尾段改读状态矩阵（原旗标读法在离异/丧偶后因旗不清会误判，现按当前状态）
-    if (ST.spouse === "widowed") close = "老伴先走，最后一段自己过";
-    else if (ST.spouse === "divorced" && ST.kids === "has") close = "后来一个人把孩子带大";
-    else if (ST.spouse === "divorced") close = "后来一个人过";
-    else if (ST.spouse === "partnered" && F.kid_abroad) close = "和老伴相伴，儿女在远方";
-    else if (ST.spouse === "partnered" && ST.kids === "has") close = "和老伴、儿女一起走完";
-    else if (ST.spouse === "partnered") close = "和老伴走完这一生";
+    // 判词批 B：收尾段认伴侣史——多任史时单任口径（「和老伴走完这一生」「老伴先走」）会把
+    // 前任抹掉，按前任的终结方式改写；任一前任方式不可知、单任史、无账本老档，一律回落原句。
+    const phT = partnerHistoryOf(playerFacts());
+    const prevsT = phT.known && phT.parts.length >= 2 ? phT.parts.slice(0, -1) : null;
+    const prevsTok = prevsT && prevsT.every((p) => p.endKind === "widowed" || p.endKind === "divorced") ? prevsT : null;
+    const tW = prevsTok ? prevsTok.some((p) => p.endKind === "widowed") : false;
+    const tD = prevsTok ? prevsTok.some((p) => p.endKind === "divorced") : false;
+    const widowedClose = !prevsTok ? "老伴先走，最后一段自己过"
+      : prevsTok.length === 1 && tW ? "两位老伴都先走，最后一段自己过"
+      : prevsTok.length === 1 ? "头一段散了，后一位先走，最后一段自己过"
+      : tW && tD ? "有散的，也有先走的，最后一段自己过"
+      : tW ? "陪着的人都先走了，最后一段自己过"
+      : "前头几段都散了，后一位也先走，最后一段自己过";
+    const divorcedClose = (kids) => !prevsTok ? (kids ? "后来一个人把孩子带大" : "后来一个人过")
+      : prevsTok.length === 1 && tW ? (kids ? "老伴先走，后来一个人把孩子带大" : "老伴先走，后一段也散了，后来一个人过")
+      : prevsTok.length === 1 ? (kids ? "两段都散了，后来一个人把孩子带大" : "两段婚姻都散了，后来一个人过")
+      : (kids ? "几经离合，后来一个人把孩子带大" : "几经离合，后来一个人过");
+    const partneredPrefix = !prevsTok ? ""
+      : prevsTok.length === 1 && tW ? "送走过一位，后来"
+      : prevsTok.length === 1 ? "头一段散了，后来"
+      : tW && tD ? "几经离合，后来"
+      : tW ? "陪着的人都先走了，后来"
+      : "前头几段都散了，后来";
+    if (ST.spouse === "widowed") close = widowedClose;
+    else if (ST.spouse === "divorced" && ST.kids === "has") close = divorcedClose(true);
+    else if (ST.spouse === "divorced") close = divorcedClose(false);
+    else if (ST.spouse === "partnered" && F.kid_abroad) close = partneredPrefix + "和老伴相伴，儿女在远方";
+    else if (ST.spouse === "partnered" && ST.kids === "has") close = partneredPrefix + "和老伴、儿女一起走完";
+    else if (ST.spouse === "partnered") close = partneredPrefix + "和老伴走完这一生";
     else if (ST.kids === "has") close = "儿女陪着走完";
     else if (ST.spouse === "single") close = "一个人走完这一生";
     else close = IFY.S.death ? "最后住在" + res : "终老在" + res;
@@ -866,6 +900,112 @@
     });
   }
 
+  // ---------- 伴侣史派生（判词批 B）：账本 spouse 流转回放 ----------
+  // 事实源 = 账本里 kind:"state" 且 id 形如 "spouse>X" 的条目（applyState 是唯一执行点、
+  // 落账时 age 戳为流转当岁）。回放规则（边表见 world/state.js 的 spouse 域）：none→dating
+  // 是一任的相处期起点；dating→partnered 是同一任定下来，不是新人；divorced/widowed 之后
+  // 再 partnered 才是新一任；相处期散了的（dating→single）不算「任」，只记 datingBreakups
+  // ——现行文案对这类历史不断言错话，不动它。任数可以 >2。
+  // parts 每任记 { start, settledAge, endAge, endKind }，endKind 为 "widowed"/"divorced"/
+  // null（进行中）；段外终结的前任起止不全，相应字段记 null，文案侧遇 null 不写岁数、
+  // 方式不可知（endKind 记 "unknown"）时整槽回落现行文案，不编。
+  // 交换局按段读：段切片账本（view.segmentLedgers）按段序拼接，每段先以该 Track 全账本
+  // 回放到进段岁的配偶值补头（接管轨在交换前已成家的那段不在切片内，口径同 segEntrySpouse）。
+  // 无账本（v0.18.0 前老存档）→ known=false，调用方一律回落现行终局文案，一字不改。
+  // 纯派生：不掷骰、不读随机流、不写状态。
+  function partnerHistoryOf(view) {
+    const finalState = (IFY.S.state || {}).spouse;
+    const stream = [];
+    if (view) {
+      view.segments.forEach((seg, si) => {
+        let entry = "none";
+        for (const e of (Array.isArray(seg.state.ledger) ? seg.state.ledger : [])) {
+          if (e.kind === "state" && typeof e.id === "string" && e.id.startsWith("spouse>") && typeof e.age === "number" && e.age <= seg.fromAge) entry = e.id.slice(7);
+        }
+        stream.push({ age: seg.fromAge, to: entry, entryMark: true });
+        for (const e of (view.segmentLedgers[si] || [])) if (e.kind === "state" && typeof e.id === "string" && e.id.startsWith("spouse>")) stream.push({ age: e.age, to: e.id.slice(7) });
+      });
+    } else {
+      const led = Array.isArray(IFY.S.ledger) ? IFY.S.ledger : [];
+      for (const e of led) if (e.kind === "state" && typeof e.id === "string" && e.id.startsWith("spouse>")) stream.push({ age: e.age, to: e.id.slice(7) });
+    }
+    let cur = "none", open = null, datingBreakups = 0;
+    const parts = [];
+    const dropOpen = () => { // 未结的任在段界/账外收掉：定下来的记「方式不可知」，相处期的记散了
+      if (!open) return;
+      if (open.settled) { open.endKind = "unknown"; parts.indexOf(open) >= 0 || parts.push(open); }
+      else datingBreakups++;
+      open = null;
+    };
+    for (const ev of stream) {
+      const to = ev.to;
+      if (to === cur) continue;
+      if (ev.entryMark) { // 进段补头：先收上一段的未结任，再按进段值起头
+        dropOpen();
+        if (to === "partnered") { open = { start: null, settled: true, settledAge: null, endAge: null, endKind: null }; parts.push(open); }
+        else if (to === "dating") open = { start: null, settled: false, settledAge: null, endAge: null, endKind: null };
+        else if (to === "divorced" || to === "widowed") parts.push({ start: null, settled: true, settledAge: null, endAge: null, endKind: to });
+        cur = to;
+        continue;
+      }
+      if (to === "dating") {
+        if (cur === "partnered") continue; // 边表无此边，不据此改写正在进行的任
+        open = { start: ev.age, settled: false, settledAge: null, endAge: null, endKind: null };
+        cur = "dating";
+      } else if (to === "partnered") {
+        if (cur === "dating" && open) { open.settled = true; open.settledAge = ev.age; parts.push(open); }
+        else { open = { start: ev.age, settled: true, settledAge: ev.age, endAge: null, endKind: null }; parts.push(open); }
+        cur = "partnered";
+      } else if (to === "divorced" || to === "widowed") {
+        if (open && open.settled) { open.endAge = ev.age; open.endKind = to; open = null; }
+        else { if (open && !open.settled) { datingBreakups++; open = null; } parts.push({ start: null, settled: true, settledAge: null, endAge: ev.age, endKind: to }); }
+        cur = to;
+      } else if (to === "single") {
+        if (cur === "dating" && open && !open.settled) { datingBreakups++; open = null; }
+        cur = "single";
+      } else if (to === "none") {
+        cur = "none";
+      }
+    }
+    const hasEntries = stream.some((e) => !e.entryMark);
+    const known = view ? stream.length > 0 : (hasEntries || finalState === "none" || finalState === undefined);
+    return { known, parts, datingBreakups, finalState };
+  }
+
+  // 陪伴槽多任文案（判词批 B）：parts ≥ 2，或终局 dating 但此前成过家时，按任次分开写。
+  // 形状对不上、或任一相关任的终结方式不可知 → 返回 null，调用方回落现行文案，不编。
+  // 三任以上走压缩形：前任们合成一句（prevClause 的多任支），只单写最后一段的收尾。
+  function s2FromHistory(ph, final) {
+    const parts = ph.parts;
+    if (!parts.length) return null;
+    const curInParts = final === "partnered" || final === "widowed" || final === "divorced";
+    if (!curInParts && final !== "dating") return null;
+    const prevs = curInParts ? parts.slice(0, -1) : parts.slice(); // 终局 dating 时现任不在 parts 里，全部任都是前任
+    if (!prevs.length) return null; // 单任：回落现行
+    const last = curInParts ? parts[parts.length - 1] : null;
+    if (last) {
+      if (final === "partnered" && last.endKind) return null;
+      if (final === "widowed" && last.endKind !== "widowed") return null;
+      if (final === "divorced" && last.endKind !== "divorced") return null;
+    }
+    if (prevs.some((p) => p.endKind !== "widowed" && p.endKind !== "divorced")) return null;
+    const prevClause = () => {
+      if (prevs.length === 1) {
+        const p = prevs[0];
+        if (p.endKind === "widowed") return p.endAge ? `${p.endAge}岁那年，对方先走了一步。` : "先前那位另一半，先走了一步。";
+        return "先前那段婚姻，中途散了。";
+      }
+      const w = prevs.some((p) => p.endKind === "widowed"), d = prevs.some((p) => p.endKind === "divorced");
+      if (w && d) return "再往前的日子里，有人先走了一步，也有婚姻中途散了。";
+      if (w) return "再往前的日子里，陪着的人都先走了一步。";
+      return "再往前的婚姻，前后都散了。";
+    };
+    if (final === "partnered") return prevClause() + "后来遇上的这个，陪着走到了最后。到老了，还是一张桌上吃饭。";
+    if (final === "widowed") return prevClause() + "后来的这位，也先走了一步。最后一段路，是自己走完的。";
+    if (final === "divorced") return prevClause() + "后来的这段，也散了。后来的日子，各过各的。";
+    return prevClause() + "后来又遇上一个人，没领证，也没散，就这么处到了老。"; // final === "dating"
+  }
+
   // ---------- 结算九槽（v0.18.0，地基 §4.6/§4.7）：九个槽位全读状态与账本拼装 ----------
   // 落脚/陪伴/钱/手艺事业/子女线/父母线/没办完的事/影子代价/认领句；认领句（玩家在瞥视时留下的话）原样入槽；
   // 判词退为九槽之后的收尾一行。平淡轨（没撞上什么大事的一生）在认领槽有「平淡而完整」的写法。
@@ -915,7 +1055,14 @@
     else s1 = housing.form === "reform" ? "最后落脚在住惯了的这座城，住的还是房改那会儿买下的那套房。" : housing.unit ? "最后落脚在住惯了的这座城，住的还是单位分的那套房。" : "最后落脚在住惯了的这座城。";
     slots.push(["落脚", s1]);
     let s2;
-    if (ST.spouse === "partnered") s2 = "另一半陪着走到了最后。几十年里吵过，也和好过，到老了还是一张桌上吃饭。";
+    // 判词批 B：伴侣史认账——只读终局快照会把先逝/离异的前任整段抹掉（实证：第 13 局原配
+    // 61 岁病故、71 岁再结伴，旧文仍写「另一半陪着走到了最后」；番頭 B 局离异后被同支吞掉）。
+    // 账本可回放且是多任史时先按任次分开写（s2FromHistory）；单任史、历史不可知（无账本
+    // 老档）与形状对不上的，一律回落下方现行链，一字不改。
+    const phS2 = partnerHistoryOf(view);
+    const s2hist = phS2.known ? s2FromHistory(phS2, ST.spouse) : null;
+    if (s2hist) s2 = s2hist;
+    else if (ST.spouse === "partnered") s2 = "另一半陪着走到了最后。几十年里吵过，也和好过，到老了还是一张桌上吃饭。";
     else if (ST.spouse === "widowed") s2 = "另一半先走了一步。最后一段路，是自己走完的。";
     else if (ST.spouse === "divorced") s2 = "中间那段婚姻散了。后来的日子，各过各的。";
     else if (ST.spouse === "dating") s2 = "身边一直有个人，没领证，也没散，就这么处到了老。";
@@ -1242,5 +1389,7 @@
   }
   Object.assign(IFY, { verdict, lifeTags, specialEnding, settlementMapHtml, renderLives, settlementSlots, renderEnd, occupationTrail, kidPresenceCount, nearMisses, chosenOfFork,
     // v0.22 WP7 新增导出：段事实视图、段版分岔反查、对面终局短句与结算快进（分享卡与断言复用同一口径）
-    playerFacts, chosenOfForkIn, uncontrolledFinalLine, fastForwardUncontrolled });
+    playerFacts, chosenOfForkIn, uncontrolledFinalLine, fastForwardUncontrolled,
+    // 判词批 B 新增导出：伴侣史回放派生（断言与后续槽位复用同一口径）
+    partnerHistoryOf, s2FromHistory });
 })(window.IFY);
