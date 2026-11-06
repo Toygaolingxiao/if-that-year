@@ -144,6 +144,29 @@
     if (IFY.S) IFY.prevStats = { ...IFY.S.stats };
   }
 
+  // v0.31.2：选项效果落账后就地刷新数值条。事件/危机选项处理器只重写 #echo，头部条
+  // 原本停在进屏时的数——平时下一屏紧接着来没人察觉，终局下一屏换成结算页就对不上
+  // （ellie-diag-money80 定根）。这里按当刻 stats 原地改数与条宽、临界分级同步，
+  // prevStats 一并更新（下一整屏的入场动画不再从旧值起）。纯呈现：不动落账、随机流、状态。
+  function refreshStatsBar() {
+    if (!IFY.S) return;
+    const rows = document.querySelectorAll("#app .stats .stat");
+    IFY.STAT_META.forEach(([k], i) => {
+      const row = rows[i]; if (!row) return;
+      const cur = IFY.S.stats[k];
+      const bar = row.querySelector(".bar i");
+      if (bar) { bar.setAttribute("data-cur", String(cur)); bar.style.width = cur + "%"; }
+      const b = row.querySelector("b");
+      if (b) b.textContent = String(Math.round(cur));
+      const crit = cur < 30;
+      row.classList.toggle("crit", crit);
+      let dot = row.querySelector(".cdot");
+      if (crit && !dot) { dot = document.createElement("i"); dot.className = "cdot"; row.appendChild(dot); }
+      if (!crit && dot) dot.remove();
+    });
+    IFY.prevStats = { ...IFY.S.stats };
+  }
+
   // 渲染收尾：§1.1 分级入场（同类画面卡壳不动、只正文淡入）+ 数值条动画
   function finishRender() {
     const sec = IFY.app().querySelector("section.card");
@@ -293,6 +316,6 @@
   }
   Object.assign(IFY, { linePaint, lineStart, lineFreeze, lineResume, lineReset, autoEligible, clearAuto, clearAutoContext,
     autoDelay, startAuto, scheduleAuto, armAuto, pauseAuto, resumeAuto, speedButtonLabel, autoRowHtml,
-    refreshAutoRow, autoPanelHtml, refreshAutoPanel, setAutoMode, statsBar, animateBars, finishRender, roadSvg, head, streamHtml,
+    refreshAutoRow, autoPanelHtml, refreshAutoPanel, setAutoMode, statsBar, animateBars, refreshStatsBar, finishRender, roadSvg, head, streamHtml,
     mountStream, markStreamRead, deltaLine, choiceBeat });
 })(window.IFY);

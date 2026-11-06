@@ -228,6 +228,7 @@
         IFY.rec("crisis", c.key, { choice: ch.label, set: ch.set || null, fx: IFY.S.lastDelta });
         document.querySelector(".choices").remove();
         IFY.el("echo").innerHTML = `${IFY.deltaLine()}<p class="pickednote">已选「${IFY.esc(ch.label)}」</p><p class="echo">${IFY.esc(echoText(ch))}</p><button class="primary" id="cont">过一年</button>`;
+        IFY.refreshStatsBar(); // v0.31.2：效果已落账，头部数值条就地跟上真数
         IFY.save(); IFY.el("cont").addEventListener("click", IFY.advance);
       });
     }));
@@ -309,6 +310,7 @@
       if (autoSelected) IFY.S.log.push(`${IFY.S.age} 岁 · 自动选：${labelText(c)}`);
       document.querySelector(".choices").remove();
       IFY.el("echo").innerHTML = `${IFY.deltaLine()}${autoSelected ? `<p class="autonote">自动推进 · 已选「${IFY.esc(labelText(c))}」</p>` : `<p class="pickednote">已选「${IFY.esc(labelText(c))}」</p>`}<p class="echo">${IFY.esc(echoText(c))}</p><button class="primary" id="cont">过一年</button>`;
+      IFY.refreshStatsBar(); // v0.31.2：效果已落账，头部数值条就地跟上真数
       IFY.save(); IFY.el("cont").addEventListener("click", IFY.advance);
       if (autoSelected) IFY.armAuto(echoText(c) || c.label, IFY.advance, "advance");
     };

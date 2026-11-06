@@ -1035,6 +1035,14 @@
       const otherH = sesH && sesH.tracks ? sesH.tracks[sesH.controlTrack === "A" ? "B" : "A"] : null;
       if (otherH && otherH.state && otherH.state !== IFY.S) IFY.houseSettleDue(otherH.state);
     }
+    // 住房变现来历行（v0.31.2）：80 岁走完路径没有死亡屏先落这笔，结算页的钱凭空多出一截、
+    // 没一句话交代（ellie-diag-money80 定根）。从玩家本人 Track 的房子账本读 settle 条的实际
+    // 落账额（死亡/走完两条路径同读法；影子轨的账记在它自己的 state 上，不进这行），取整后
+    // >0 才出一行。纯呈现：只读账本，不动落账时刻与金额。
+    const settleEnt = typeof IFY.houseLedgerOf === "function"
+      ? IFY.houseLedgerOf(IFY.S).filter((e) => e.type === "settle").pop() : null;
+    const houseGain = settleEnt ? Math.round(settleEnt.actual) : 0;
+    const houseLine = houseGain > 0 ? `<p>房子最后折了 ${houseGain}，添进这一生的钱里。</p>` : "";
     IFY.curKind = "end";
     IFY.clearAutoContext();
     IFY.app().classList.remove("playwrap");
@@ -1068,6 +1076,7 @@
       <div class="rev" style="--d:.12s">
       <p class="lifetags">${IFY.esc(lifeTags())}</p>
       ${settlementSlots().map(([k, t]) => `<p class="slotline"><span class="slotk">${IFY.esc(k)}</span>${IFY.esc(t)}</p>`).join("")}
+      ${houseLine}
       <p class="verdict">${IFY.esc(v.text)}</p>
       <p>你走了这条路：${IFY.esc(IFY.S.route.name)}。</p>
       ${covLine ? `<p>${IFY.esc(covLine)}</p>` : ""}
