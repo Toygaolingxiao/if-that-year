@@ -324,7 +324,7 @@
     // registry-wp2 sources）／三段变体（low 5–9、mid 10–13、late 14–16）／长尾只落学籍线·亲疏·记号／
     // 本代两条均无保底／无公历门变体。两条同 mutexGroup：一局只搬一次家或只分一次居。
     poolActs: [
-      { id: "pool_move55", flagship: "move", log: "搬家", window: [5, 15], weight: 0.045, mutexGroup: "fam_move_split", familyBeat: true,
+      { id: "pool_move55", flagship: "move", log: "搬家", window: [5, 15], weight: 0.045, mutexGroup: "fam_move_split", familyBeat: true, splitMove: true,
         bands: {
           low: { familyFact: "movedSchool",
             text: "家里搬了家，大人的活换了地方，全家搬到新住处去。你转到新学校，原来的同桌在车开出去时还追了几步。旧院子、墙根下那副弹弓，都留下了。",

@@ -317,6 +317,44 @@
           choices: null },
       ],
     },
+    // 分家记账批新增（丙案第一步）：c1978 搬家拍——本代原无池，本条为 5–15 窗唯一的搬家候选（分家预约源头）。
+    // 账面事实（写前列定、逐条可验）：①搬家是大人决断（活计换地方/分房），孩子只有去/留应对；
+    // ②正文默认版不提学校（never/half 呈现时 schooling≠school 直接成立），school 变体才加学校句；
+    // ③留守形＝爸妈在外头站住脚、接不接孩子过去未定，选项去/留两形通用；
+    // ④长尾落选项级 familyFact（movedHome78/stayedHome78，residence 级）＋splitBranch 改写预约分支；
+    // effects 只用 familyBeat 白名单 relation/wisdom ±1。
+    pool: [
+      { id: "pool_move78", kind: "pool", log: "搬家", familyBeat: true, splitMove: true,
+        window: [5, 15], weightPerYear: 0.05, eligible: "all",
+        variants: [
+          { band: [5, 10], log: "搬家",
+            text: "家里商量了好些天，要搬。大人的活计换了地方，新住处在老远那边。搬不搬还没定死，妈让你先把自己的小东西归置归置。老院子你熟得闭着眼都能走，墙根下那块阴凉地、门口的老树，都是你的地盘。",
+            textBySchooling: { school: "家里商量了好些天，要搬。大人的活计换了地方，新住处在老远那边，连上学的地方都换了。搬不搬还没定死，妈让你先把自己的小东西归置归置。老院子你熟得闭着眼都能走，墙根下那块阴凉地、门口的老树，都是你的地盘。" },
+            textLB: "爸妈在外头站住了脚，捎信回来说，想接你过去一块儿住。新地方你没去过，只听他们在信里提过两句。去不去还没定，奶奶说，听你的。",
+            echo: "走还是留，那阵子家里饭桌上总提。",
+            choices: [
+              { label: "收拾好自己的小包袱，跟家里搬过去", familyFact: "movedHome78", splitBranch: "moved", effects: { relation: 1 },
+                echo: "新地方头一晚，你睡不着，听着窗外陌生的动静，想老院子的老树。" },
+              { label: "舍不得老院子，还是跟着搬了", familyFact: "movedHome78", splitBranch: "moved", effects: { wisdom: 1 },
+                echo: "临走那天，你在老院子里站了好一会儿。后来搬过几回你才发现，家在哪儿，人就往哪儿扎根。" },
+              { label: "家里商量定了，先不搬了", familyFact: "stayedHome78", splitBranch: "stayed", effects: { relation: 1 },
+                echo: "不搬了。包袱又打开，东西归回原处。日子照旧，你反倒踏实下来。" },
+            ] },
+          { band: [11, 15], log: "搬家",
+            text: "家里要搬，这回大人商量定了七八成，只差最后一句话。新住处离这边不近，搬过去，老相识就见得少了。妈问你乐不乐意，你想了想，没急着答。",
+            textBySchooling: { school: "家里要搬，这回大人商量定了七八成，只差最后一句话。新住处离这边不近，学校也得换，搬过去，老相识就见得少了。妈问你乐不乐意，你想了想，没急着答。" },
+            textLB: "爸妈在外头安顿下来了，来信说接你过去。老家这边，奶奶年纪大了，你走了，她身边就没人了。去不去，家里让你自己拿个主意。",
+            echo: "这回搬不搬，你头一回觉得自己也能说上话。",
+            choices: [
+              { label: "帮着收拾行李，跟家里搬过去", familyFact: "movedHome78", splitBranch: "moved", effects: { relation: 1 },
+                echo: "新地方的头一个月，你常走错路。后来路熟了，老地方在记忆里慢慢淡了下去。" },
+              { label: "舍不得，还是搬了", familyFact: "movedHome78", splitBranch: "moved", effects: { wisdom: 1 },
+                echo: "你把老院子的样子记在心里，好些年都没忘。后来才明白，人是跟着家走的。" },
+              { label: "家里商量定了，先不搬了", familyFact: "stayedHome78", splitBranch: "stayed", effects: { relation: 1 },
+                echo: "不搬了。日子照旧，你心里落了地——后来家里又提过两回搬，都没成。" },
+            ] },
+        ] },
+    ],
     special: {
       neverChild1Text: "开学那天，你没去。家里没人送你，你站在村口，看背书包的孩子往学校那边走。有个跟你一般大的，书包带子滑下来，又自己拽了上去。你看了一会儿，转身回家喂猪去了。",
       neverChild4Text: "跟你一般大的孩子小学毕业了。毕业照在校门口的老槐树底下拍，站了两排人，你路过看了一眼。你那天是来镇上送东西的，扁担还压在肩上。修鞋摊的大爷招手让你坐下歇会儿。",

@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.36.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.37.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -34,6 +34,26 @@ window.IFY = window.IFY || {};
   const STAT_META = [["health", "健康", 60], ["money", "金钱", 45], ["growth", "成长", 50], ["freedom", "自由", 50], ["relation", "关系", 50], ["wisdom", "智慧", 40]];
 
   const GLIMPSE_AGES = { 30: 0, 40: 1, 50: 2 };
+
+  // 分家记账（丙案第一步）：叙事分家点只活在存档字段 pendingSplit {age, eventId, label, source, branch?}——
+  // 它是记账不是机制：影子仍在 22 岁出生、重演与 RNG 一字不动。旧档无此字段一律按 22 岁路口默认读。
+  function splitPointOf(S) {
+    const p = S && S.pendingSplit;
+    if (p && typeof p.age === "number") return p;
+    return { age: START_AGE, eventId: "route", label: "", source: "route" };
+  }
+  // 第一瞥站位：三站 30/40/50 中第一个 ≥ 分家岁+5 的站；分家点 22 时恒为 30（与旧行为一致）。
+  function firstGlimpseAge(S) {
+    const need = splitPointOf(S).age + 5;
+    for (const a of [30, 40, 50]) if (a >= need) return a;
+    return null;
+  }
+  // 22 后换轨级岔口落账（renderFork 与影子无头结算共用）：全程只留最后一个（时间序覆盖），封顶 45 岁。
+  const SPLIT_FORKS = { fork28: "回不回老家", fork28m: "出不出去", fork28f: "走不走" };
+  function noteSplitFork(S, fork) {
+    if (!S || !fork || !(fork.id in SPLIT_FORKS) || fork.age > 45) return;
+    S.pendingSplit = { age: fork.age, eventId: fork.id, label: SPLIT_FORKS[fork.id], source: "fork" };
+  }
 
   const ERAS = [
     { id: "c1955", birth: 1955, label: "50年代出生", desc: "22 岁是 1977 年：恢复高考、返城、分房、下岗潮" },
@@ -812,9 +832,14 @@ window.IFY = window.IFY || {};
     applyEffects(route.stats); IFY.S.lastDelta = "";
     IFY.rec("route", route.id);
     IFY.S.log.push(`22 岁 · 出发：${route.name}`);
+    // 分家记账（丙案第一步）：22 岁路口是默认分家点——序章没有搬家预约时在此落默认笔；有预约时
+    // 不动它（预约是更早的路线级岔口，只有 22 后的换轨岔口能按时间序覆盖它）。出国路线的分家
+    // 标签不用选路说法，记「落地那天」（路线文案自带说法：落地那天，谁也不认识你）。
+    if (!IFY.S.pendingSplit) IFY.S.pendingSplit = { age: START_AGE, eventId: "route", label: route.id === "abroad" ? "落地那天" : route.name, source: "route" };
     // v0.21 WP1（蓝图裁定三施工注）：同 newGame 口径——落路线后、首次 save() 前显式 initParents（Track_A 传 rngW），随后 Track_B 出生
     IFY.initParents(IFY.rngW);
     if (typeof IFY.birthShadow === "function") IFY.birthShadow();
+    if (typeof IFY.applySplitFactToShadow === "function") IFY.applySplitFactToShadow(); // 分家记账：搬家预约的反面事实在影子出生同拍标到 B（只动事实层，出生机制一字不改）
     save();
     step();
   }
@@ -843,7 +868,14 @@ window.IFY = window.IFY || {};
     let fork = D.forks.find((f) => f.age === IFY.S.age && (!f.route || f.route === IFY.S.route.id) && (!f.forbidRoute || f.forbidRoute !== IFY.S.route.id) && (!f.forbid || !IFY.S.flags[f.forbid]) && (!f.anyParentAlive || IFY.S.state.dad === "alive" || IFY.S.state.mom === "alive") && (!f.state || IFY.met(f))); // v0.18.0 审计急修：分岔门接线补齐 route/forbidRoute/forbid/anyParentAlive（fork28 镜像、fork52 双亲已不在不出）；原 v0.16.0 口径只认 state 门 // v0.16.0：分岔可带状态门（如 fork45 只给 kids 未定且有伴侣的人）；无门分岔行为不变 // v0.20.0 M2 收尾：fork33 的 bought_house 门由分岔级改选项级（已购房者不再整岔口消失，只隐买/租两项，近家人项保留）
     if (fork && fork.age === 58 && typeof IFY.retireDecidedThisYear === "function" && IFY.retireDecidedThisYear()) fork = null; // v0.20.1 W2 互锁：退休进程拍已在当年落过决定（呈现过 node/full/auto 或 workPhase 当年已流转），58 岁分岔当年不再以未退口吻重问（同一年不许双决）；已全退者另由 fork58 自带 workPhase 状态门挡下
     if (fork) { IFY.renderFork(fork); return IFY.mountStream(); }
-    if (IFY.S.age in GLIMPSE_AGES) { IFY.renderGlimpse(GLIMPSE_AGES[IFY.S.age]); return IFY.mountStream(); }
+    if (IFY.S.age in GLIMPSE_AGES) {
+      // 分家记账（丙案第一步）：第一瞥漂移——三站不动，第一瞥改取三站中第一个 ≥ 分家岁+5 的站；
+      // 分家点 22（默认与旧档）时第一瞥仍是 30，与旧行为一致。早于第一瞥的站位不算一次瞥视：
+      // 与 renderGlimpse 入口同口径先消费叙事流恰好 1 抽（裁定二不变式），本年照常往下过。
+      const fg = IFY.firstGlimpseAge(IFY.S);
+      if (fg != null && IFY.S.age >= fg) { IFY.renderGlimpse(GLIMPSE_AGES[IFY.S.age]); return IFY.mountStream(); }
+      IFY.rng();
+    }
     // 内容时槽五层仲裁（v0.20.0 M2，src/scheduler.js 的 planYear）：L1 危机抢占 → L2 稀有/链推进
     // → 温度平淡年 → L3 saliency 事件 → L4 微年填充。step() 只按计划分发呈现，不再自行抽取。
     const plan = IFY.planYear();
@@ -917,5 +949,6 @@ window.IFY = window.IFY || {};
     streakLine, lastLifeLine, dailyFor, loadPrefs, savePrefs, rhythmOf, rhythmBase, applyTempDelta,
     applyEffects, finalAge, renderStart, clearSave0, newGame, STAGE_LABEL, newGamePrologue, prologueHead,
     renderPrologue, renderRouteMerge, mergeIntoRoute, step, advance, renderDeath, TIER_ORDER, TIER_LABEL,
+    splitPointOf, firstGlimpseAge, noteSplitFork, SPLIT_FORKS,
     SERIF, SANS, shareCurrent });
 })(window.IFY);

@@ -192,6 +192,7 @@
         IFY.applyTempDelta(c.temp); // 温度接点（v0.17.0）：选项可带 temp 增减，只改质地字段
         if (fork.age === 38) IFY.registerCovenant(c);
         fork.choices.forEach((o) => { if (o !== c) IFY.S.unchosen.push({ kind: "fork", age: fork.age, label: labelText(o) }); });
+        if (typeof IFY.noteSplitFork === "function") IFY.noteSplitFork(IFY.S, fork); // 分家记账（丙案第一步）：换轨级岔口覆盖分家点（只记账，不声称影子走了未选支）
         IFY.S.log.push(`${fork.age} 岁 · ${fork.title.split("·")[1].trim()}：${labelText(c)}`);
         IFY.rec("fork", fork.id || ("fork" + fork.age), { choice: labelText(c), set: c.set || null, fx: IFY.S.lastDelta });
         IFY.S.pendingFork = { age: fork.age, label: labelText(c), echo: echoText({ ...c, echo: IFY.spouseText(c, "echo") }) || null }; // §3.3 复述拍：先存下，续玩回到这一拍而不是重选

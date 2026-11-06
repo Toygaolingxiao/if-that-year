@@ -376,7 +376,7 @@
       // 中段记号最重、临考段学籍全转落「临考前转学」（moved_exam65——§3.6 口径下 migrantExam 的
       // 事实来源之一，读法归 WP9/集成，本包只生产）。小应对与回声按段各备一套（stageChoices/stageEcho）。
       { id: "pool_move65", window: [5, 15], weight: 0.055, flagship: "move",
-        act: { log: "搬家", familyBeat: true, familyFact: "famMove65",
+        act: { log: "搬家", familyBeat: true, familyFact: "famMove65", splitMove: true,
           text: "家里要搬了。大人的事，孩子只有跟着走的份。",
           echo: "后来你想起那回搬家，心里先浮起来的，是新地方的模样。",
           poolSetByStage: { low: "moved_school65", mid: "moved_school65", exam: "moved_exam65" },

@@ -381,7 +381,7 @@
       // 长尾：低龄/中段段落学籍线轻事实 transfer95（转过学）；中段记号最重（mark_palm95，手心里的旧地址）；
       // 临考段落 migrantExam 事实供给（§3.6 旗舰条：老家考试形家庭在此对接 migrantExam 的事实来源之一——供给≠写入归属，
       // fork16 的「回老家上高中」读 migrantExam，本变体与 L95-考同为其来源）。触发权重为设计参数（hazard 按年）。
-      { id: "pr_pool95_move", entry: "搬家", pool: true, window: [5, 15], guaranteeAge: null,
+      { id: "pr_pool95_move", entry: "搬家", pool: true, window: [5, 15], guaranteeAge: null, splitMove: true,
         trigger: { kind: "hazard", perYear: 0.022 },
         variants: [
           { segment: "low", familyBeat: true, familyFact: "transfer95", log: "搬家", factLB: null,

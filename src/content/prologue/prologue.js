@@ -393,6 +393,42 @@
                 echo: "事弄完了你也没再惦记。过了几天他剪了个小视频发你，你点开看完，见了面跟他说，还行。" },
             ] } },
         ] },
+      // 分家记账批新增（丙案第一步）：c2000 搬家拍——补齐本代 5–15 窗的搬家候选（分家预约源头）。
+      // 账面事实（写前列定、逐条可验）：①搬家是大人决断，孩子只有去/留应对（同代序章生态）；
+      // ②正文默认版不提学校（never/half 呈现时 schooling≠school 直接成立），school 变体才加转学句；
+      // ③留守形＝爸妈在上班的城市、接不接孩子过去未定，选项去/留两形通用；
+      // ④长尾落选项级 familyFact（movedHome00/stayedHome00，residence 级）＋splitBranch 改写预约分支；
+      // effects 只用 familyBeat 白名单 relation/wisdom ±1。
+      { id: "pool_move00", kind: "pool", log: "搬家", familyBeat: true, splitMove: true,
+        window: [5, 15], weightPerYear: 0.05, eligible: "all",
+        variants: [
+          { band: [5, 10], log: "搬家",
+            text: "家里商量着换房子。爸妈看中了一套大一点的，搬过去，你就有自己的小房间了。搬不搬还没定死，妈已经开始归置箱子了。老房子你从小住到大，楼道里的声控灯跺一脚就亮，你都摸熟了。",
+            textBySchooling: { school: "家里商量着换房子。爸妈看中了一套大一点的，搬过去，你就有自己的小房间了，就是学校也得跟着换。搬不搬还没定死，妈已经开始归置箱子了。老房子你从小住到大，楼道里的声控灯跺一脚就亮，你都摸熟了。" },
+            textLB: "爸妈在上班的城市租下了大一点的房子，来电话说，想接你过去一块儿住，老家这边就剩老人。去不去还没说死，电话里让你先想想。你在老家住惯了，那边的样子，你只在电话里听过。",
+            echo: "那阵子家里到处都是纸箱，你在箱子中间钻来钻去。",
+            choices: [
+              { label: "帮着打包，跟家里搬去新家", familyFact: "movedHome00", splitBranch: "moved", effects: { relation: 1 },
+                echo: "新家头一晚，你睡在自己的小房间里，听着窗外陌生的动静，半天没睡着。" },
+              { label: "舍不得老房子，还是搬了", familyFact: "movedHome00", splitBranch: "moved", effects: { wisdom: 1 },
+                echo: "临走你把楼道里的声控灯又跺亮了一回。后来你发现，新地方的灯跺一脚也亮，你慢慢就不想了。" },
+              { label: "家里最后没搬成，还住老房子", familyFact: "stayedHome00", splitBranch: "stayed", effects: { relation: 1 },
+                echo: "箱子又一个个拆开，东西归回原位。日子照旧，你反倒踏实下来。" },
+            ] },
+          { band: [11, 15], log: "搬家",
+            text: "家里这回搬得差不多了：爸妈把新住处定下了，就等打包。你在这个家住了十来年，屋里每样东西都顺手，楼下小卖部的老板都认得你。搬过去，等于从头熟悉一个地方。",
+            textBySchooling: { school: "家里这回搬得差不多了：爸妈把新住处定下了，就等打包，连转学的事都问好了。你在这个家住了十来年，屋里每样东西都顺手，楼下小卖部的老板都认得你。搬过去，等于从头熟悉一个地方。" },
+            textLB: "爸妈在外头的住处定下来了，来电话说，这回把你接过去，往后就在那边长住。老家这边剩下老人，你心里两头放不下。去不去，家里让你自己拿个主意。",
+            echo: "打包那几天，你才发现自己攒了这么多零碎。",
+            choices: [
+              { label: "帮着打包，跟家里搬去新家", familyFact: "movedHome00", splitBranch: "moved", effects: { relation: 1 },
+                echo: "新地方的头一个月，你走错过两回路。后来路熟了，老地方在记忆里慢慢淡了下去。" },
+              { label: "舍不得，还是搬了", familyFact: "movedHome00", splitBranch: "moved", effects: { wisdom: 1 },
+                echo: "你把老房子的门牌号记在心里，好些年都没忘。后来搬过几回你才明白，家在哪儿，人就往哪儿扎根。" },
+              { label: "家里商量定了，先不搬了", familyFact: "stayedHome00", splitBranch: "stayed", effects: { relation: 1 },
+                echo: "不搬了。收拾到一半的东西又摆回去，你心里落了地——后来家里又提过两回，都没成。" },
+            ] },
+        ] },
     ],
     special: {
       neverChild1Text: "开学那天，你没去。家里的事多，没人送你，你自己也知道，这个门这一回进不去了。你站在村口，看背书包的孩子往学校那边走，有个跟你一般大的，书包带子滑下来，又自己拽了上去。你看了一会儿，转身回家帮着干活去了。你跟家里提过一回，没说通，后来也就没再提。",
@@ -531,7 +567,8 @@
         const band = (e.bands || {})[bandKey] || {};
         pushAgeSorted({ id: e.id, age: trig, log: band.log || e.log || "搬家", familyBeat: true,
           familyFact: band.familyFact || e.familyFact || undefined, set: e.set || undefined, mark: band.mark || undefined,
-          text: band.text, echo: band.echo || null, choices: band.choices || null, poolEntry: e.id });
+          text: band.text, echo: band.echo || null, choices: band.choices || null, poolEntry: e.id,
+          splitMove: e.splitMove || undefined });
       }
     }
     // WP3/WP7 形（pool 数组，包内顺序即调度优先序）
@@ -604,6 +641,7 @@
           // textLBBySchooling[P.situation]（低龄/中段呈现龄 schooling 与开局处境恒等，按处境选精确），
           // 未命中回落 textLB/text 原口径；未声明这些字段的变体行为一字不变。
           const pseudo = { id: e.id, age: trig, log: va.log || e.log || "家里的一桩事", familyBeat: true, familyFact: va.familyFact || e.familyFact || undefined, // AN-5 R5(a)：变体级 familyFact 透传（bands 路已支持、无变体声明时与原行为逐字一致）——同一条目两档强度不得共用一旗
+            splitMove: e.splitMove || va.splitMove || undefined,
             text: (P.leftBehind && va.textLBBySchooling && va.textLBBySchooling[P.situation]) ? va.textLBBySchooling[P.situation]
               : ((P.leftBehind && va.textLB) ? va.textLB : va.text), echo: va.echo || null, choices: va.choices || null, poolEntry: e.id,
             poolExtraFact: va.extraFact || null,
@@ -646,7 +684,8 @@
         choices: (P.leftBehind && va.choicesLB) || (va.choicesBySit && va.choicesBySit[P.situation]) || va.choices || null,
         poolEntry: e.id, poolSegment: va.segment || segOf(trig),
         textBySchooling: va.textBySchooling || undefined, choicesBySchooling: va.choicesBySchooling || undefined,
-        echoBySchooling: va.echoBySchooling || undefined, factBySchooling: va.factBySchooling || undefined }); };
+        echoBySchooling: va.echoBySchooling || undefined, factBySchooling: va.factBySchooling || undefined,
+        splitMove: e.splitMove || va.splitMove || undefined }); };
       const sitBlocked = (e) => !!(e.notSit && e.notSit.includes(P.situation));
       const leave = byId.pr_pool95_leave;
       if (leave && !sitBlocked(leave)) {
@@ -1169,6 +1208,10 @@
       if (act.factBySchooling && S.state && Object.prototype.hasOwnProperty.call(act.factBySchooling, S.state.schooling)) effFamFact = act.factBySchooling[S.state.schooling] || null;
       if (act.familyBeat && effFamFact) S.flags[effFamFact] = true;
       if (act.poolExtraFact) S.flags[act.poolExtraFact] = true; // WP7（合并二期落）：池变体附加事实旗（临考转学）在呈现即立
+      // 分家记账（丙案第一步）：带 splitMove 的搬家池幕在呈现点落分家预约——与家庭事实同拍口径，
+      // 先默认「搬了」这一支（老拍都是搬家必发生形），带 splitBranch 的新拍选项在 choose 里改写分支。
+      // 预约只是叙事记账（pendingSplit），不碰任何流与机制；22 岁路口与 22 后换轨岔口按时间序覆盖它。
+      if (act.splitMove) S.pendingSplit = { age: act.age, eventId: act.poolEntry || act.id, label: "搬家", source: "move", branch: "moved" };
     }
     // 0 岁开局 B 案：出生幕先行——来历幕物化后、其本体（5 岁屏）之前先带出出生幕。
     // 幕 id 仍归 pr_origin 一幕（view.id 用 pr_birth 只作呈现标记）；pendingState 随本屏带出，
@@ -1216,6 +1259,8 @@
         setFact(S, name, value);
       }
       if (ch.familyFact) S.flags[ch.familyFact] = true;
+      // 分家记账（丙案第一步）：新搬家拍的选项带 splitBranch 时，把呈现点先记的预约分支改成本次实选支
+      if (ch.splitBranch && S.pendingSplit && S.pendingSplit.eventId === (act.poolEntry || act.id)) S.pendingSplit.branch = ch.splitBranch;
       // 选项 set 指向已登记记号时同步落记号（WP2，合并二期落）：池幕选项的 mark_* 记号在此补落（旗由调用方照常落）
       if (ch.set) {
         const allMarks = Object.assign({}, MARKS);

@@ -312,7 +312,7 @@
       // G6 修复（记号事实链对齐）：mark_move85 的定义事件（把老同桌地址抄在文具盒盖上）原只在低龄段小应对里、
       //   与发放段错位——处置取「移事件就发放段」：事件已写进中段变体 echo（呈现即当场发生，与发放同拍），
       //   低龄段的同名选择已撤（换成暑假之约），不再有「经历了事件却拿不到记号」的反向断裂；记号落点不动（§3.6 登记）。
-      { id: "pool_move85", kind: "pool", log: "搬家", familyBeat: true, familyFact: "movedHome85",
+      { id: "pool_move85", kind: "pool", log: "搬家", familyBeat: true, familyFact: "movedHome85", splitMove: true,
         window: [5, 15], weightPerYear: 0.055, eligible: "all",
         variants: [
           { band: [5, 9], log: "搬家",

@@ -266,6 +266,7 @@
     IFY.applyTempDelta(c.temp); // 温度接点：只改质地字段
     if (fork.age === 38) IFY.registerCovenant(c); // fork38 立约（流水行由 registerCovenant 先行落，与呈现层同序）
     fork.choices.forEach((o) => { if (o !== c) S.unchosen.push({ kind: "fork", age: fork.age, label: IFY.labelText(o) }); }); // 未选支进本 Track 自己的 unchosen
+    if (typeof IFY.noteSplitFork === "function") IFY.noteSplitFork(S, fork); // 分家记账（丙案第一步）：换轨级岔口在本轨也落同一笔（与呈现层同口径）
     S.log.push(`${fork.age} 岁 · ${fork.title.split("·")[1].trim()}：${IFY.labelText(c)}`);
     IFY.rec("fork", fork.id || ("fork" + fork.age), { choice: IFY.labelText(c), set: c.set || null, fx: S.lastDelta });
   }
@@ -572,9 +573,23 @@
     return flat;
   }
 
+  // 分家记账（丙案第一步）·B 的事实层：仅当分家点来自童年搬家预约时调用（mergeIntoRoute 在
+  // birthShadow 之后同拍调用本函数；birthShadow 本体与调用点一字不动）。做两件事，都只落在
+  // 事实/记号层：①童年是两条命共用的，预约同值落进 B 的存档（B 的分家记账与 A 同源）；
+  // ②按 A 实选的反面给 B 立一面记号旗（A 搬了→B 立 split_not_moved；A 没搬→B 立 split_moved）。
+  // 两面旗都无任何内容门读取，不影响 B 的人生走向与任何一股随机流。
+  function applySplitFactToShadow() {
+    const A = IFY.S;
+    const ses = IFY.session;
+    const B = ses && ses.tracks && ses.tracks.B && ses.tracks.B.state;
+    if (!A || !B || !A.pendingSplit || A.pendingSplit.source !== "move") return;
+    B.pendingSplit = { age: A.pendingSplit.age, eventId: A.pendingSplit.eventId, label: A.pendingSplit.label, source: "move", branch: A.pendingSplit.branch || "moved" };
+    B.flags[A.pendingSplit.branch === "stayed" ? "split_moved" : "split_not_moved"] = true;
+  }
+
   Object.assign(IFY, {
     seedShadowStreams, withLife, birthShadow, stepUncontrolled, stepYearHeadless, handControl,
     defaultMeta, playerMeta, buildSession, ensureSession,
-    serializeSession, adoptSessionSave, wrapLegacySession,
+    serializeSession, adoptSessionSave, wrapLegacySession, applySplitFactToShadow,
   });
 })(window.IFY);

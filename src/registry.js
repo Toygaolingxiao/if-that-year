@@ -1682,6 +1682,12 @@ window.GAME_REGISTRY.familyFacts = {
   "famRestructure95": { "beat": "L95-婚", "note": "父母离异后的日常安排（c1995）：跟谁住的日常尺寸事实，克制写事不写惨" },
   "famCare00": { "beat": "L00-护", "note": "看护翻转预告（c2000）：祖辈住院，孩子第一次在病房跑腿" },
   "famSentdownEcho": { "beat": "L65-衔", "note": "兄姐下乡/返城的衔接记号（c1965，只作记号不立新线）：饭桌上少一副/多一副碗筷" },
+  "movedHome78": { "beat": "L78-搬", "note": "小时候家里搬了家（c1978 搬家拍·搬支）：住处换了地方，落 residence 级记号；同拍也是分家预约源头（pendingSplit source=move）" },
+  "stayedHome78": { "beat": "L78-搬", "note": "小时候家里商量过搬、最后没搬（c1978 搬家拍·不搬支）：住处没动，落 residence 级记号" },
+  "movedHome00": { "beat": "L00-搬", "note": "小时候家里搬了家（c2000 搬家拍·搬支）：住处换了地方，落 residence 级记号；同拍也是分家预约源头（pendingSplit source=move）" },
+  "stayedHome00": { "beat": "L00-搬", "note": "小时候家里商量过搬、最后没搬（c2000 搬家拍·不搬支）：住处没动，落 residence 级记号" },
+  "split_moved": { "beat": "分家记账", "note": "分家记账（丙案第一步）：分家点来自童年搬家预约、且本命选了「不搬」那一支时，由 applySplitFactToShadow 在影子出生同拍标到影子轨的反面家庭事实——那条路上家里搬了。只作事实层记号，无任何内容门读取，不影响影子的人生走向；因立旗者是引擎代码而非内容条目，故登记在本表（家庭事实层）而非里程碑表" },
+  "split_not_moved": { "beat": "分家记账", "note": "分家记账（丙案第一步）：分家点来自童年搬家预约、且本命经历了这场搬家时，由 applySplitFactToShadow 在影子出生同拍标到影子轨的反面家庭事实——那条路上家里没搬。只作事实层记号，无任何内容门读取，不影响影子的人生走向；登记归属同 split_moved" },
 };
 
 // examBand 分布表（E5）：按代 × 处境登记三档权重——设计参数，无统计出处（蓝图 §3.2 总则②注）。
