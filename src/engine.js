@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.30.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.30.1 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -686,6 +686,7 @@ window.IFY = window.IFY || {};
     const view = PRO.present(IFY.S);
     if (!view) { renderRouteMerge(); return; }
     if (view.pendingState) { IFY.applyState({ setState: view.pendingState }); IFY.S.prologue.pendingState = null; } // 处境落定走状态边（pr_origin → schooling）
+    if (view.gapFx) applyEffects(view.gapFx); // fix8：间隙平年的数值在其画面呈现时结算（present 只在首次物化时带出 gapFx，重演同一画面不双计）
     save();
     app().innerHTML = `<section class="card">${prologueHead(view.age, view.stage)}${IFY.autoPanelHtml()}
       ${view.title ? `<h2>${esc(view.title)}</h2>` : ""}

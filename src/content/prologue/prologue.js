@@ -719,6 +719,7 @@
       situation: null, itch: null, done: false,
       pendingState: null, curText: null, curChoices: null, shadowMarkShown: false, shadowMarksShown: [], // WP9 A线：瞥视已示记号 id 表（轮换消费）；shadowMarkShown 保留作旧口径镜像（任一瞥视示句后置 true）
       seq: null, leftBehind: false, variants: null,
+      gapQueue: [], gapOn: null, // fix8：间隙平年待呈现队列（choose 算定入队、present 逐条呈现；旧档无此二字段，读取时按空队列/未呈现处理）
       bandArmed: true, seqRebuilt: null, // v0.23 WP5：bandArmed 只由本版开局写入（旧档无此字段＝按旧档呈现，证据包③）；seqRebuilt 记②的重建处置
     };
     // 处境发放（年代 × 家底的权重表按种子抽一次；本轮 school 权重 100，其余登记未开放）——发放即定，不重掷
@@ -791,10 +792,24 @@
   // 物化当前幕：文本与选项只在首次呈现时定版（独立流的消费点固定，同种子复现）；顶层立旗/记号在此落，setState 暂存待调用方走 applyState。
   function present(S) {
     const P = S.prologue;
-    if (!P || P.done) return null;
+    if (!P || (P.done && !(P.gapQueue && P.gapQueue.length))) return null;
     const pack = packFor(S.era);
     if (!P.seq) P.seq = rebuildSeq(S, pack); // v0.17 旧存档无幕序字段：按 act id 对齐重建（证据包②，见 WP5 段 rebuildSeq；处境恒 school，与旧局一致）
     if (P.leftBehind === undefined) P.leftBehind = false;
+    // fix8：间隙平年先行呈现——队列非空时先把队头平年作为独立画面带出（幕与 22 岁汇入都排在其后）。
+    // 落账与数值只在首次物化时发生（P.gapOn 记已呈现的平年岁）：续玩/重演同一画面不重复落账、不重复
+    // 结算；数值经 view.gapFx 交调用方在呈现时 applyEffects（与幕的 pendingState 同口径）。
+    if (P.gapQueue && P.gapQueue.length) {
+      const g = P.gapQueue[0];
+      let fx = null;
+      if (P.gapOn !== g.age) {
+        P.gapOn = g.age;
+        S.log.push(`${g.age} 岁 · ${g.text}`);
+        fx = g.effects || null;
+      }
+      return { id: "pr_gapflat", age: g.age, stage: stageFor(g.age), title: null, text: g.text, choices: null, pendingState: null, isFork: false,
+        gateNote: null, familyBeat: false, echo: null, gapFlat: true, gapFx: fx };
+    }
     const act = P.seq[P.idx];
     if (!act) return null;
     if (P.presented !== P.idx) {
@@ -1024,10 +1039,18 @@
   }
 
   // 记账并推进：调用方须先按现行顺序应用所选项的 effects / set（旗）/ setState，再调用本函数。
-  // 本函数负责：性子/念头/轨道基线（温度与节奏型）记账、幕次推进、间隔平年落账。返回 { done, gapFx }（gapFx 待调用方 applyEffects）。
+  // 本函数负责：性子/念头/轨道基线（温度与节奏型）记账、幕次推进、间隔平年排队待呈现（fix8：平年的落账与数值移至其画面呈现时，gapFx 恒空、保留回形兼容）。返回 { done, gapFx }。
   function choose(S, i) {
     const P = S.prologue;
     if (!P.seq) P.seq = rebuildSeq(S, packFor(S.era)); // 同 present 的旧档处置（证据包②）
+    // fix8：当前画面是间隙平年时，本次推进只出队一格——幕次、年龄、落账都不动（该平年的流水账行
+    // 与数值已在其呈现时落定）；队列排空且幕序已尽时才在此落 P.done（22 岁汇入排在最后一条平年之后）。
+    if (P.gapOn != null && P.gapQueue && P.gapQueue.length) {
+      P.gapQueue.shift();
+      P.gapOn = null;
+      if (!P.gapQueue.length && P.idx >= P.seq.length) P.done = true;
+      return { done: P.done, gapFx: {} };
+    }
     const act = P.seq[P.idx];
     const ch = (P.curChoices || [])[i] || null;
     if (ch) {
@@ -1067,6 +1090,10 @@
     const gapFx = {};
     const RH = window.GAME_RHYTHM;
     const flatMute = RH && typeof S.temp === "number" ? RH.derive(S.temp, S.rhythm).volatility < 0.95 : false;
+    // fix8：间隙平年不再在此直接写账——变体选择仍在此时按现行口径定版（定版时点与旧版写账时点
+    // 同一、状态同一），条目排进 P.gapQueue，由 present() 在下一幕之前逐条作为独立画面呈现，
+    // 落账与数值在各自画面呈现时发生；flatMute 判定仍在此按现行口径先定，静音的条目不带 effects。
+    if (!P.gapQueue) P.gapQueue = [];
     for (let a = act.age + 1; a < nextAge; a++) {
       const f = packFor(S.era).flatsByAge[a];
       if (!f) continue;
@@ -1076,12 +1103,12 @@
       // （留守口吻）整段换文，优先级 留守＞事实＞处境＞原文；均不消费流。
       if (f.textByFact) for (const [fn, map] of Object.entries(f.textByFact)) { const fv = factOf(S, fn); if (map && map[fv]) fText = map[fv]; }
       if (P.leftBehind && f.textByLeftBehind) fText = f.textByLeftBehind;
-      S.log.push(`${a} 岁 · ${fText}`);
-      if (!flatMute) for (const [k, v] of Object.entries(f.effects || {})) gapFx[k] = (gapFx[k] || 0) + v;
+      P.gapQueue.push({ age: a, text: fText, effects: flatMute ? null : (f.effects || null) });
     }
     S.age = nextAge;
     S.stage = stageFor(nextAge);
-    if (P.idx >= P.seq.length) P.done = true;
+    // fix8：幕序已尽但队列里还有平年时不在此落 P.done——延到队列排空（choose 出队支）才落定。
+    if (P.idx >= P.seq.length && !P.gapQueue.length) P.done = true;
     return { done: P.done, gapFx };
   }
 
