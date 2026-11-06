@@ -620,6 +620,42 @@ window.GAME_REGISTRY.milestones = {
    ],
    "note": "出身牌钩子（v0.13.0）：setter 为牌 id，消费事件 pack33"
   },
+  "hook_era_radio": {
+   "setters": [
+    "ce55_05"
+   ],
+   "note": "时代牌钩子（童年深度一期）：setter 为牌 id，消费事件 pack33"
+  },
+  "hook_era_tape": {
+   "setters": [
+    "ce65_04"
+   ],
+   "note": "时代牌钩子（童年深度一期）：setter 为牌 id，消费事件 pack33"
+  },
+  "hook_era_south": {
+   "setters": [
+    "ce78_04"
+   ],
+   "note": "时代牌钩子（童年深度一期）：setter 为牌 id，消费事件 pack33"
+  },
+  "hook_era_pager": {
+   "setters": [
+    "ce85_05"
+   ],
+   "note": "时代牌钩子（童年深度一期）：setter 为牌 id，消费事件 pack33"
+  },
+  "hook_era_olympic": {
+   "setters": [
+    "ce95_01"
+   ],
+   "note": "时代牌钩子（童年深度一期）：setter 为牌 id，消费事件 pack33"
+  },
+  "hook_era_lottery": {
+   "setters": [
+    "ce00_04"
+   ],
+   "note": "时代牌钩子（童年深度一期）：setter 为牌 id，消费事件 pack33"
+  },
   "house_contract_kept": {
    "setters": [
     "p26_069"
