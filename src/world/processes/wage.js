@@ -27,8 +27,6 @@
   const HIGH_GROUPS = { dev: 1, fin: 1, acct: 1, press: 1, med: 1, grad: 1 }; // med 含 med_work/med_hosp（同组前缀）
   const PENSION_RATE = { formal: 0.6, fallback: 0.45, informal: 0.3 };
   const SIDE_FULL = 0.15, SIDE_EARLY = 0.08;      // 稿 §四.3：side_job/xiahai 成型 / side_start 期
-  const MORTGAGE = -0.40, MORTGAGE_YEARS = 20;    // 稿 §四.2：购房后 20 年
-  const RENT_FREE = 0.30;                          // 还清后免租红利（无期限，稿 §四.2）
 
   // 逐年账本（仅内存，WeakMap 按 Track state 挂，不进存档）：验收归因与调试读
   // IFY.wageLedgerOf(state)——每条 {age, wage, pension, side, housing, gross, pay, actual}，
@@ -151,18 +149,9 @@
       else if (F.side_start) side = SIDE_EARLY;
     }
 
-    // —— 住房：按揭 −0.40/年×20（购房次年起算，还清后免租 +0.30/年）——
-    // owned 口径只认 own/commodity（place.housingOf）：reform 房改房不走按揭（单位福利分房
-    // 折价买断、无二十年按揭事实），unit 宿舍与 renting 不落账（租房成本已含在净额基线里）。
-    let housingLine = 0;
-    if (typeof IFY.housingOf === "function") {
-      const h = IFY.housingOf(S);
-      if (h && (h.owned === "own" || h.owned === "commodity") && typeof h.sinceAge === "number") {
-        const yrs = S.age - h.sinceAge;
-        if (yrs >= 1 && yrs <= MORTGAGE_YEARS) housingLine = MORTGAGE;
-        else if (yrs > MORTGAGE_YEARS) housingLine = RENT_FREE;
-      }
-    }
+    // —— 住房行（v0.30.0 让位 house.js）：月供/免租由 houseYearDue 按「档×地段×买入年」派生，
+    // 返回的钱行折进本年总额（结转与落账仍走下面同一纪律）；通勤自由行在 houseYearDue 内经 houseCarry 自结。
+    const housingLine = typeof IFY.houseYearDue === "function" ? (IFY.houseYearDue(S) || 0) : 0;
 
     const gross = wage + pension + side + housingLine;
     // —— 结转取整入账：应发＝当年净额＋上年余数，取整（向零）后经 applyEffects 落账 ——
@@ -177,8 +166,9 @@
       actual = S.stats.money - before;
     }
     if (!LEDGER.has(S)) LEDGER.set(S, []);
-    LEDGER.get(S).push({ age: S.age, wage, pension, side, housing: housingLine, gross, pay, actual });
+    LEDGER.get(S).push({ age: S.age, wage, pension, side, housing: housingLine, settle: 0, gross, pay, actual });
   }
 
-  Object.assign(IFY, { wageDue, wageTierOf, wageFallbackTierOf: fallbackTierOf, wageFallbackStartAge: fallbackStartAge, wageLedgerOf: ledgerOf, WAGE_TIERS: TIERS });
+  function ledgerPush(st, entry) { if (!LEDGER.has(st)) LEDGER.set(st, []); LEDGER.get(st).push(entry); } // house.js 终局变现落账口（settle 分项）
+  Object.assign(IFY, { wageDue, wageTierOf, wageFallbackTierOf: fallbackTierOf, wageFallbackStartAge: fallbackStartAge, wageLedgerOf: ledgerOf, wageLedgerPush: ledgerPush, WAGE_TIERS: TIERS });
 })(window.IFY);

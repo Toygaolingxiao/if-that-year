@@ -889,8 +889,17 @@
     // reform 走房改支（半截链 bought_fangai 也在此认账，旧版直读 boughtReform 会把这批人说成没买房），
     // unit 支只在未购房时走（住单位分的房、没在房子上掏大钱，余下按 money 四段分说）；多笔购房并存时
     // 形态取最早一次（housingOf 口径）。各支文案一字未动。
-    if (housing.owned === "own" || housing.owned === "commodity") s3 = m >= 60 ? "房子供下来了，手里还留着余钱，够花。" : "供下了一套房，钱多半填进了房子里，日子紧巴巴地过。";
-    else if (housing.owned === "reform") s3 = m >= 60 ? "房改那会儿把住着的单位房买下来了，手里还留着余钱，够花。" : "房改时把住着的单位房买了下来，钱多半填进了这套房里，日子紧巴巴地过。";
+    // 住房线（v0.30.0）：钱槽多读 houseTier 与涨幅倍数 M（现值/asset0，house.js 闭式派生）。
+    // R 档改按 houseTier 命中房改分支——fork33 年代框买家形态读 own 但档是 R，必须走房改文案；
+    // own/commodity 支先按 M 分说（涨上来了/买在高点），其余情形沿用原两句按变现后钱分档（m 已含变现额）。
+    const houseTier = IFY.S.houseTier || null;
+    const houseM = houseTier && typeof IFY.houseMultipleOf === "function" ? IFY.houseMultipleOf(IFY.S, IFY.S.birthYear + (IFY.S.death ? IFY.S.death.age : IFY.S.age)) : null;
+    if (houseTier === "R" || housing.owned === "reform") s3 = m >= 60 ? "房改那会儿把住着的单位房买下来了，手里还留着余钱，够花。" : "房改时把住着的单位房买了下来，钱多半填进了这套房里，日子紧巴巴地过。";
+    else if (housing.owned === "own" || housing.owned === "commodity") {
+      if (houseM != null && houseM >= 1.6) s3 = "当年买的那套房，涨上来了。终局算总账，房子这一笔是挣的。";
+      else if (houseM != null && houseM < 0.9) s3 = "房子买在了价高的时候，后来一直没涨回来。钱多半填进了房子里。";
+      else s3 = m >= 60 ? "房子供下来了，手里还留着余钱，够花。" : "供下了一套房，钱多半填进了房子里，日子紧巴巴地过。";
+    }
     else if (housing.unit) s3 = m >= 70 ? "住的是单位分的房，没在房子上掏过大钱，手里的钱攒下了，够用，还有富余。" : m >= 40 ? "住的是单位分的房，没在房子上掏过大钱。钱不多不少，够日常开销。" : m >= 20 ? "住的是单位分的房，没在房子上掏过大钱，可手头还是紧，钱这事操心了一辈子。" : "住的是单位分的房，没在房子上掏过大钱，到最后也没攒下什么。饭还是一顿一顿吃，觉也照常睡。";
     else if (m >= 70) s3 = "没买房，手里的钱倒是攒下了，够用，还有富余。";
     else if (m >= 40) s3 = "钱不多不少，够日常开销。遇上大事帮不上，小日子能过。";
@@ -1016,6 +1025,14 @@
     // 只置内存位、不另行 save：本函数随后即 clearSave() 清档，终局屏之后没有续读路径，落盘无意义
     // （与蓝图「并 save」的出入及理由记 wp7 日志；若日后出现终局后续读入口，此处须改真 save）。
     fastForwardUncontrolled();
+    // 住房变现落账（v0.30.0）：两条 Track 都已定案——在 verdict/特殊结局/九槽文案等任何读终值的
+    // 判定之前，各调一次 houseSettleDue（houseSettled 防重；资产只在此刻进流动金钱）。
+    if (typeof IFY.houseSettleDue === "function") {
+      IFY.houseSettleDue(IFY.S);
+      const sesH = IFY.session;
+      const otherH = sesH && sesH.tracks ? sesH.tracks[sesH.controlTrack === "A" ? "B" : "A"] : null;
+      if (otherH && otherH.state && otherH.state !== IFY.S) IFY.houseSettleDue(otherH.state);
+    }
     IFY.curKind = "end";
     IFY.clearAutoContext();
     IFY.app().classList.remove("playwrap");

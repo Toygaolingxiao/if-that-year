@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.29.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.30.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -137,6 +137,8 @@ window.IFY = window.IFY || {};
       retirePlan: null, partAt: null, partYears: null, retiredAt: null, retireDefers: 0,
       // 工资轮：年净额结转余数 wageCarry（小数攒够整数才入账）、养老金基数 wageLastNet（最近一个有活计年份的未打折档额）、已结算年龄戳 wageSettledAge（防 step 重入重复结算）
       wageCarry: 0, wageLastNet: 0, wageSettledAge: 0,
+      // 住房线：购房定档 houseTier/houseLoc（捕获时写死，终生不变）、变现落账标记 houseSettled、通勤自由结转 houseCarry（仿 wageCarry）
+      houseTier: null, houseLoc: null, houseSettled: false, houseCarry: 0,
       autoMode: DEFAULT_AUTO_MODE, speed: "mid", // 推进设定在本局的副本；权威来源是 localStorage 的 ify-prefs；v0.21 WP1：同形保留、恒不作数，存档时只进 session.meta（蓝图 3.1）
     };
   }
@@ -179,13 +181,17 @@ window.IFY = window.IFY || {};
     if (typeof t.wageSettledAge !== "number") t.wageSettledAge = 0;
   }
 
+  // 住房线旧档回填：已购房无 house 字段的存档，读入时按 §8.3 补档（形态 reform→R、其余按当刻档位、
+  // 地段默认 city、购房年取落旗年龄缺则 33 岁）。实现走 house.js 的 IFY.backfillHouse（形态/档位派生都在它那边）。
+  function backfillHouse(t) { if (typeof IFY.backfillHouse === "function") IFY.backfillHouse(t); }
+
   function loadSave() {
     try {
       const s = JSON.parse(localStorage.getItem(SAVE_KEY));
       if (!s) return null;
       // v2 的 Track 条目本体即平铺 state（route/flags 直挂条目上，与 backfillAdmitted 同口径）
-      if (s.tracks) { for (const k of Object.keys(s.tracks)) { backfillAdmitted(s.tracks[k]); backfillWage(s.tracks[k]); } const a = s.tracks[s.controlTrack || "A"] || s.tracks.A; return a && (a.route || a.mergePending || (a.phase === "prologue" && a.prologue)) ? s : null; }
-      backfillAdmitted(s); backfillWage(s);
+      if (s.tracks) { for (const k of Object.keys(s.tracks)) { backfillAdmitted(s.tracks[k]); backfillWage(s.tracks[k]); backfillHouse(s.tracks[k]); } const a = s.tracks[s.controlTrack || "A"] || s.tracks.A; return a && (a.route || a.mergePending || (a.phase === "prologue" && a.prologue)) ? s : null; }
+      backfillAdmitted(s); backfillWage(s); backfillHouse(s);
       return (s.route || s.mergePending || (s.phase === "prologue" && s.prologue)) ? s : null;
     } catch (e) { return null; }
   }

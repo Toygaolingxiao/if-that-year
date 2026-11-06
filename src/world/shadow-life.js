@@ -226,6 +226,7 @@
     S.flatCarry = null; // 进程年不是平年
     if (typeof IFY.advanceParentStage === "function") IFY.advanceParentStage(who, beat);
     if (item.set) S.flags[item.set] = true;
+    if (typeof IFY.houseOnBuyFlag === "function") IFY.houseOnBuyFlag(S, item.set, item);
     IFY.applyState(item);
     if (!item.choices) { IFY.applyEffects(item.effects); } else S.lastDelta = "";
     IFY.rec("proc", item.id, { set: item.set || null, fx: !item.choices ? S.lastDelta : null });
@@ -237,6 +238,7 @@
     if (!c) return;
     IFY.applyEffects(c.effects);
     if (c.set) S.flags[c.set] = true;
+    if (typeof IFY.houseOnBuyFlag === "function") IFY.houseOnBuyFlag(S, c.set, c);
     IFY.applyState(c);
     if (c.deferDating) { S.datingSince = S.age - 3; S.datingDefers = (S.datingDefers || 0) + 1; } // 推迟：时钟回拨，下次到期在约 4 年后
     if (c.deferRetire) { if (S.retirePlan) S.retirePlan.nodeAge = S.age + 3; S.retireDefers = (S.retireDefers || 0) + 1; } // 退休节点推迟：节点后移 3 年
@@ -259,6 +261,7 @@
     if (!c) return;
     IFY.applyEffects(c.effects);
     if (c.set) S.flags[c.set] = true;
+    if (typeof IFY.houseOnBuyFlag === "function") IFY.houseOnBuyFlag(S, c.set, c);
     IFY.applyState(c);
     IFY.applyTempDelta(c.temp); // 温度接点：只改质地字段
     if (fork.age === 38) IFY.registerCovenant(c); // fork38 立约（流水行由 registerCovenant 先行落，与呈现层同序）
@@ -278,6 +281,7 @@
     if (!ch) return;
     IFY.applyEffects(ch.effects); S.crisisUsed[crisis.key] = true;
     if (ch.set) S.flags[ch.set] = true; IFY.applyState(ch);
+    if (typeof IFY.houseOnBuyFlag === "function") IFY.houseOnBuyFlag(S, ch.set, ch);
     S.log.push(`${S.age} 岁 · ${crisis.title}：${ch.label}`);
     IFY.rec("crisis", crisis.key, { choice: ch.label, set: ch.set || null, fx: S.lastDelta });
   }
@@ -290,6 +294,7 @@
     S.usedRare.push(r.id);
     IFY.rec("rare", r.id, { set: r.set || null });
     if (r.set) S.flags[r.set] = true;
+    if (typeof IFY.houseOnBuyFlag === "function") IFY.houseOnBuyFlag(S, r.set, r);
     IFY.applyState(r);
     if (!r.choices) { IFY.applyEffects(r.effects); } else S.lastDelta = "";
     const rtext = IFY.procText(r); // 呈现走同一变体解析，流水句子与真呈现时一致
@@ -299,6 +304,7 @@
     if (!c) return;
     IFY.applyEffects(c.effects);
     if (c.set) S.flags[c.set] = true;
+    if (typeof IFY.houseOnBuyFlag === "function") IFY.houseOnBuyFlag(S, c.set, c);
     IFY.applyState(c);
     IFY.rec("rare", r.id, { choice: c.label, set: c.set || null, fx: S.lastDelta });
   }
@@ -330,6 +336,7 @@
     S.flatCarry = null; // 事件年：挂起的平年只留在流水账里（无头恒无挂起）
     S.usedEvents.push(e.id);
     if (e.set) S.flags[e.set] = true; // 顶层 set 呈现即立
+    if (typeof IFY.houseOnBuyFlag === "function") IFY.houseOnBuyFlag(S, e.set, e);
     IFY.applyState(e); // 状态流转与立旗同一时机
     if (!e.choices) { IFY.applyEffects(e.effects); } else S.lastDelta = "";
     IFY.rec("event", e.id, { set: e.set || null, fx: !e.choices ? S.lastDelta : null });
@@ -340,6 +347,7 @@
     if (!c) return;
     IFY.applyEffects(c.effects);
     if (c.set) S.flags[c.set] = true;
+    if (typeof IFY.houseOnBuyFlag === "function") IFY.houseOnBuyFlag(S, c.set, c);
     IFY.applyState(c);
     IFY.rec("event", e.id, { choice: c.label, set: c.set || null, fx: S.lastDelta });
   }

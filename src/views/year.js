@@ -7,6 +7,7 @@
     IFY.S.usedRare.push(r.id);
     IFY.rec("rare", r.id, { set: r.set || null });
     if (r.set) IFY.S.flags[r.set] = true; // 呈现即立旗（v0.11.0 起覆盖有选项事件：去世旗等必立旗靠它保证）
+    if (typeof IFY.houseOnBuyFlag === "function") IFY.houseOnBuyFlag(IFY.S, r.set, r);
     IFY.applyState(r); // v0.12.0：状态流转与立旗同一时机
     if (!r.choices) { IFY.applyEffects(r.effects); } else IFY.S.lastDelta = "";
     const rtext = procText(r); // v0.20.0 M2：呈现走变体解析（textState/textForm），与 sim 记录口径一致
@@ -22,6 +23,7 @@
       IFY.choiceBeat(b, () => {
         IFY.applyEffects(c.effects);
         if (c.set) IFY.S.flags[c.set] = true;
+        if (typeof IFY.houseOnBuyFlag === "function") IFY.houseOnBuyFlag(IFY.S, c.set, c);
         IFY.applyState(c);
         IFY.rec("rare", r.id, { choice: c.label, set: c.set || null, fx: IFY.S.lastDelta });
         document.querySelector(".choices").remove();
@@ -185,6 +187,7 @@
       IFY.choiceBeat(b, () => {
         IFY.applyEffects(c.effects);
         if (c.set) IFY.S.flags[c.set] = true;
+        if (typeof IFY.houseOnBuyFlag === "function") IFY.houseOnBuyFlag(IFY.S, c.set, c);
         IFY.applyState(c);
         IFY.applyTempDelta(c.temp); // 温度接点（v0.17.0）：选项可带 temp 增减，只改质地字段
         if (fork.age === 38) IFY.registerCovenant(c);
@@ -220,6 +223,7 @@
       IFY.choiceBeat(b, () => {
         IFY.applyEffects(ch.effects); IFY.S.crisisUsed[c.key] = true;
         if (ch.set) IFY.S.flags[ch.set] = true; IFY.applyState(ch); // v0.12.0：与其它选项路径统一（现行危机数据未用 set/setState，防未来内容轮）
+        if (typeof IFY.houseOnBuyFlag === "function") IFY.houseOnBuyFlag(IFY.S, ch.set, ch);
         IFY.S.log.push(`${IFY.S.age} 岁 · ${c.title}：${ch.label}`);
         IFY.rec("crisis", c.key, { choice: ch.label, set: ch.set || null, fx: IFY.S.lastDelta });
         document.querySelector(".choices").remove();
@@ -284,6 +288,7 @@
     IFY.S.flatCarry = null; // 事件年：挂起的平年只留在流水账里
     IFY.S.usedEvents.push(e.id);
     if (e.set) IFY.S.flags[e.set] = true; // 顶层 set 呈现即立（v0.9.2 补齐普通事件路径；v0.11.0 起覆盖有选项事件：去世旗等必立旗靠它保证）
+    if (typeof IFY.houseOnBuyFlag === "function") IFY.houseOnBuyFlag(IFY.S, e.set, e);
     IFY.applyState(e); // v0.12.0：状态流转与立旗同一时机
     if (!e.choices) { IFY.applyEffects(e.effects); } else IFY.S.lastDelta = "";
     IFY.rec("event", e.id, { set: e.set || null, fx: !e.choices ? IFY.S.lastDelta : null });
@@ -298,6 +303,7 @@
       IFY.clearAuto();
       IFY.applyEffects(c.effects);
       if (c.set) IFY.S.flags[c.set] = true;
+      if (typeof IFY.houseOnBuyFlag === "function") IFY.houseOnBuyFlag(IFY.S, c.set, c);
       IFY.applyState(c);
       IFY.rec("event", e.id, { choice: c.label, set: c.set || null, fx: IFY.S.lastDelta });
       if (autoSelected) IFY.S.log.push(`${IFY.S.age} 岁 · 自动选：${labelText(c)}`);

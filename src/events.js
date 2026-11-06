@@ -46,20 +46,21 @@ window.GAME_DATA = {
     { age: 33, title: "33 岁 · 住在哪儿", text: "住的事，又到了要拿主意的时候。房价在涨，房租也在涨，中介的橱窗里，贴满了「最后的机会」。",
       eraFrame: {
         c1955: { text: "住的事，又到了要拿主意的时候。单位分房的名单一茬茬贴出来，贴出来一回，楼里就议论一回。最近又听说，老房往后兴许能买下来，可眼下还没影。", choices: [
-          { label: "把单位这套买下来，往后就是自己的了", forbid: "bought_house", minYear: 1998, effects: { money: -8, freedom: -4, health: -2 }, set: "bought_house", echo: "手续办完那晚，你把房本看了两遍，又算了算往后每月从工资里扣的那点钱，心里反倒踏实了。" },
+          { label: "把单位这套买下来，往后就是自己的了", forbid: "bought_house", minYear: 1998, effects: { freedom: -4, health: -2 }, set: "bought_house", houseChannel: "reform", echo: "手续办完那晚，你把房本看了两遍，又算了算往后每月从工资里扣的那点钱，心里反倒踏实了。" },
           { label: "先不买，公房先住着", forbid: "bought_house", effects: { money: 1, freedom: 4, relation: -1 }, set: "renting", echo: "房租还是按月从工资里扣，数目不大。你把钱留在手里，心里那本账总算不天天催你了。" },
           { label: "现在这套住着挺好，不折腾", require: "bought_house", effects: { money: 2, freedom: 2, health: 1 }, echo: "你把换房的心思收了。周末把阳台收拾出来，添了把椅子，住着比先前还顺心了几分。" },
           { label: "想办法调到离家人近些，住单位分的房", effects: { relation: 5, money: 2, growth: -2 }, set: "near_family", echo: "搬完家第一顿饭在父母那儿吃的，汤是热的，你走回去只用了十分钟，路上没赶时间。", echoState: { dad: { dead: "搬完家，第一顿饭是一个人开的火，汤是热的。你走回去只用了十分钟，路上没赶时间。" }, mom: { dead: "搬完家第一顿饭在你爸那儿吃的，汤是热的，你走回去只用了十分钟，路上没赶时间。" } } },
         ] },
         c1965: { text: "住的事，又到了要拿主意的时候。单位的房改轮到你们这儿，老房能折价买下来；外头新盖的商品房也开始卖了，就是贵。", choices: [
-          { label: "把单位这套买下来，先安顿住", forbid: "bought_house", minYear: 1998, effects: { money: -8, freedom: -4, health: -2 }, set: "bought_house", echo: "手续办完那晚，你算了三遍往后要扣的钱，心里反倒踏实了些。房本上的名字，是你的。" },
+          { label: "把单位这套买下来，先安顿住", forbid: "bought_house", minYear: 1998, effects: { freedom: -4, health: -2 }, set: "bought_house", houseChannel: "reform", echo: "手续办完那晚，你算了三遍往后要扣的钱，心里反倒踏实了些。房本上的名字，是你的。" },
           { label: "先不买，等等再看", forbid: "bought_house", effects: { money: 1, freedom: 4, relation: -1 }, set: "renting", echo: "你把钱留在手里，房先住着。外头的商品房一天一个价，你看了两回，没敢下手。" },
           { label: "现在这套住着挺好，不折腾", require: "bought_house", effects: { money: 2, freedom: 2, health: 1 }, echo: "你把换房的心思收了。周末把阳台收拾出来，添了把椅子，住着比先前还顺心了几分。" },
           { label: "搬去离家人近的地方住", effects: { relation: 5, money: 2, growth: -2 }, set: "near_family", echo: "搬完家第一顿饭在父母那儿吃的，汤是热的，你走回去只用了十分钟，路上没赶时间。", echoState: { dad: { dead: "搬完家，第一顿饭是一个人开的火，汤是热的。你走回去只用了十分钟，路上没赶时间。" }, mom: { dead: "搬完家第一顿饭在你爸那儿吃的，汤是热的，你走回去只用了十分钟，路上没赶时间。" } } },
         ] },
       },
       choices: [
-        { label: "咬牙买一套，先上车", forbid: "bought_house", minYear: 1998, effects: { money: -8, freedom: -4, health: -2 }, set: "bought_house", echo: "签完合同那晚，你算了三遍月供，把下馆子的念头也掐了，回家路上买了个二手电饭煲。" },
+        { label: "咬牙买城里的一套，先上车", forbid: "bought_house", minYear: 1998, effects: { freedom: -4, health: -2 }, set: "bought_house", houseLoc: "city", echo: "签完合同那晚，你算了三遍月供，把下馆子的念头也掐了，回家路上买了个二手电饭煲。" },
+        { label: "买郊外的一套，先上车", forbid: "bought_house", minYear: 1998, effects: { freedom: -3, health: -3 }, set: "bought_house", houseLoc: "suburb", echo: "签完合同那晚，你算了三遍月供。房子离城里远，胜在宽敞，回家路上你把通勤的车次表存进了手机。" },
         { label: "继续租，把钱留在手里", forbid: "bought_house", effects: { money: 1, freedom: 4, relation: -1 }, set: "renting", echo: "续租合同签了一年，你把省下的首付拆成两笔存好，心里那本账总算不天天催你了。" },
         { label: "现在这套住着挺好，不折腾", require: "bought_house", effects: { money: 2, freedom: 2, health: 1 }, echo: "你把中介的名片收进了抽屉。周末把阳台收拾出来，添了把椅子，住着比先前还顺心了几分。" },
         { label: "搬去离家人近的地方住", effects: { relation: 5, money: 2, growth: -2 }, set: "near_family", echo: "搬完家第一顿饭在父母那儿吃的，汤是热的，你走回去只用了十分钟，路上没赶时间。", echoState: { dad: { dead: "搬完家，第一顿饭是一个人开的火，汤是热的。你走回去只用了十分钟，路上没赶时间。" }, mom: { dead: "搬完家第一顿饭在你爸那儿吃的，汤是热的，你走回去只用了十分钟，路上没赶时间。" } } },
