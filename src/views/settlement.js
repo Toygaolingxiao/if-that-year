@@ -466,40 +466,41 @@
     return hit;
   }
 
-  // ---------- 分家记账（丙案第一步）·结算图共用口径 ----------
-  // 返回 null＝不画任何新元素（分家点就是 22 岁路口本身的普通局，图与旧版逐字一致）。
-  // 画法照评估：分家岁加实心节点＋标签；影子（22 岁那条未选路线）以既有灰虚线自该点引回
-  // 22 岁节点本身——端点落在节点上（旧画法端点停在同高处旁开 84px，屏上看就是线没连上）；
-  // 脊线起点与 22 路线标签都保留；分家点在 22 前时纵轴原点改为 min(22, 分家岁)。
-  // 诚实口径：标签只说本命在哪儿分了岔（搬家/换轨岔口/落地），绝不声称影子走了岔口的未选支。
-  function splitMapOf(S) {
-    const sp = IFY.splitPointOf ? IFY.splitPointOf(S) : { age: IFY.START_AGE, source: "route" };
-    const abroad = !!(S && S.route && S.route.id === "abroad");
-    if (sp.source === "route" && !abroad) return null;
-    return { age: sp.age, label: sp.label || "", source: sp.source, abroad, origin: Math.min(IFY.START_AGE, sp.age) };
+  // ---------- 结算图纵轴口径（2026-11-06 裁定：图上不标分开点） ----------
+  // 两条命从头到尾各走各的，图上不标任何「分开点」：旧 splitMapOf/splitMapSvg（分开岁
+  // 实心点＋分家标签＋从分开点引回 22 岁节点的灰虚线）全删，出国/搬家/换轨局与普通局
+  // 同图口径、无任何按 source 分支的画法。分家记账（pendingSplit）仍在引擎层记账
+  // （瞥视站位等读它，与呈现无关），结算图不再消费它。
+  // 纵轴自 5 岁起：5→22 段压缩 4px/年，22 后维持 11px/年；两版图共用同一分段函数。
+  const MAP_ORIGIN = 5, MAP_PX_CHILD = 4, MAP_PX_ADULT = 11;
+  function mapScaleY(topPad) {
+    return (a) => topPad
+      + (Math.min(a, IFY.START_AGE) - MAP_ORIGIN) * MAP_PX_CHILD
+      + Math.max(0, a - IFY.START_AGE) * MAP_PX_ADULT;
   }
-  function splitMapSvg(sp, Y, cx, bd) {
-    const yS = Y(sp.age), y22 = Y(IFY.START_AGE);
-    if (sp.source === "route") { // 出国：分家点就是 22，只在起点左侧补「落地那天」的分家标签，不加节点不拉线
-      return `<text class="maplab mapsplit" style="--bd2:.4s" x="${cx - 12}" y="${y22 + 4}" font-size="11.5" fill="#6E6A5E" text-anchor="end">${IFY.esc(`${sp.age} 岁 · ${sp.label}`)}</text>`;
-    }
-    const dx = sp.source === "move" ? -84 : 84;
-    let s = `<path class="mapbranch mapsplit" style="--bd:${bd.toFixed(2)}s" d="M ${cx} ${yS} Q ${cx + dx * 0.72} ${(yS + y22) / 2} ${cx} ${y22}" fill="none" stroke="#8A948C" stroke-width="2" stroke-dasharray="4 4" stroke-linecap="round"/>`;
-    if (sp.source !== "fork") s += `<circle class="mapsplit" cx="${cx}" cy="${yS}" r="4" fill="#2F4A3C"/>`; // 换轨岔口岁已有分岔实心点，不重复画
-    s += `<text class="maplab mapsplit" style="--bd2:${(bd + 0.1).toFixed(2)}s" x="${cx}" y="${yS - 10}" font-size="11.5" fill="#6E6A5E" text-anchor="middle">${IFY.esc(`${sp.age} 岁 · ${sp.label}`)}</text>`;
-    return s;
+  // 5 岁起点节点＋标签（两版图同画法）：普通实心点，标签只写「5 岁」。
+  function mapOriginSvg(Y, cx) {
+    return {
+      node: `<circle cx="${cx}" cy="${Y(MAP_ORIGIN)}" r="4.5" fill="#2F4A3C"/>`,
+      label: `<text class="maplab" style="--bd2:.3s" x="${cx + 12}" y="${Y(MAP_ORIGIN) + 4}" font-size="11.5" fill="#6E6A5E">5 岁</text>`,
+    };
   }
 
   // ---------- 结算纵轴立轴图（VISUAL-DESIGN 第四节裁定 + UX-MOTION §9.2 生长仪式） ----------
-  // fix5 改：纵轴只画到本轨实际终局岁（22→end），不预设终点、不标 80；未选支流按分岔序号左右交替。
+  // fix5 改：纵轴只画到本轨实际终局岁，不预设终点、不标 80；未选支流按分岔序号左右交替。
+  // 新口径（2026-11-06）：纵轴自 5 岁起（5→22 压缩刻度），画布高容下两轨各自的事实终局。
   function settlementMapHtmlLegacy() {
     const end = IFY.finalAge();
     const W = Math.min(460, Math.max(300, (window.innerWidth || 360) - 56));
-    const cx = W / 2, pxY = 11, topPad = 34;
-    const spM = splitMapOf(IFY.S);
-    const origin = spM ? spM.origin : IFY.START_AGE; // 分家点在 22 前时纵轴自发家岁起（分家记账批）；普通局 origin=22 与旧图逐字一致
-    const Y = (a) => topPad + (a - origin) * pxY;
-    const H = Y(end) + 30;
+    const cx = W / 2, pxY = MAP_PX_ADULT, topPad = 34;
+    const origin = MAP_ORIGIN;
+    const Y = mapScaleY(topPad);
+    // 影子终局岁：只读第八槽同口径的既有结果（renderEnd 入口已 fastForwardUncontrolled，
+    // 本函数不推进影子步进、不新消费随机流）。无不受控 Track、或其 death 未定时，
+    // shEnd 为 null——该局整条影子线不画（见下方 shEnd 守卫）。
+    const shState = uncontrolledState();
+    const shEnd = shState && shState.death ? shState.death.age : null;
+    const H = Y(Math.max(end, shEnd == null ? end : shEnd)) + 30;
     const GROW_S = 1.05, GROW_DELAY = 0.36;
     // 标签按可用宽度截断：宽度单位（半角 0.55 / 全角 1）×字号 ≈ 实际像素，原型实测口径
     const units = (s) => [...s].reduce((a, ch) => a + (ch.charCodeAt(0) < 256 ? 0.55 : 1), 0);
@@ -532,9 +533,18 @@
     });
     g += `<circle cx="${cx}" cy="${Y(IFY.START_AGE)}" r="4.5" fill="#2F4A3C"/>`;
     labels.push(`<text class="maplab" style="--bd2:.4s" x="${cx + 12}" y="${Y(IFY.START_AGE) + 4}" font-size="11.5" fill="#6E6A5E">22 岁 · ${IFY.esc(IFY.S.route.name)}</text>`);
+    { const o5 = mapOriginSvg(Y, cx); g += o5.node; labels.push(o5.label); } // 5 岁起点节点＋标签（新口径）
     g += `<circle cx="${cx}" cy="${Y(end)}" r="4.5" fill="#2F4A3C"/>`;
     labels.push(`<text class="maplab" style="--bd2:${(GROW_DELAY + GROW_S + 0.1).toFixed(2)}s" x="${cx - 12}" y="${Y(end) + 4}" font-size="11.5" fill="#6E6A5E" text-anchor="end">${end} 岁</text>`);
-    if (spM) g += splitMapSvg(spM, Y, cx, GROW_DELAY + ((spM.age - origin) / Math.max(1, end - origin)) * GROW_S); // 分家记账：分家点节点＋标签＋引回 22 节点的影子虚线
+    // 影子的线（新口径）：既有灰虚线（与交换图交出线同画法）自 22 岁节点弯出到左侧
+    // （固定 -84）再直落到影子自己的终局岁，末端小点＋只写岁数的标签。不在 22 处新加
+    // 节点或标签，不写路线名、不写任何分开字样。shEnd 取不到时整条不画。
+    if (shEnd != null) {
+      const y22 = Y(IFY.START_AGE), ySh = Y(shEnd);
+      const bend = Math.min(66, Math.max(0, (ySh - y22) / 2)); // 弯出段纵距：长落差封顶 66px，短落差取半，余下全是直落
+      g += `<path class="mapbranch mapshadow" style="--bd:${(GROW_DELAY + 0.05).toFixed(2)}s" d="M ${cx} ${y22} Q ${cx - 84 * 0.72} ${y22 + bend * 0.5} ${cx - 84} ${y22 + bend} L ${cx - 84} ${ySh}" fill="none" stroke="#8A948C" stroke-width="2" stroke-dasharray="4 4" stroke-linecap="round"/><circle cx="${cx - 84}" cy="${ySh}" r="2" fill="#8A948C" opacity=".45"/>`;
+      labels.push(`<text class="maplab" style="--bd2:${(GROW_DELAY + 0.15).toFixed(2)}s" x="${cx - 84 - 9}" y="${ySh + 4}" font-size="11.5" fill="#6E6A5E" text-anchor="end">${shEnd} 岁</text>`);
+    }
     // 差一步剪影层（v0.20.0 M2）：空心虚线圈 + 既有灰的虚线支，与已走节点（实心松绿）可区分；不新造配色
     // fix5：剪影纵向一律钳在本轨终局 end 内（age 大于 end 的钳到 end 处），不许溢出画布
     nearMisses().forEach((n, i) => {
@@ -567,10 +577,9 @@
     const end = IFY.finalAge();
     const outEnd = view.segments[0].state.death ? view.segments[0].state.death.age : IFY.MAX_AGE; // fix5：交出轨自己的终局岁（事实），其虚线须完整落在画布内
     const W = Math.min(460, Math.max(300, (window.innerWidth || 360) - 56));
-    const cx = W / 2, pxY = 11, topPad = 34;
-    const spM = splitMapOf(IFY.S);
-    const origin = spM ? spM.origin : IFY.START_AGE; // 分家记账：分家点在 22 前时纵轴自发家岁起；普通局与旧图逐字一致
-    const Y = (a) => topPad + (a - origin) * pxY;
+    const cx = W / 2, pxY = MAP_PX_ADULT, topPad = 34;
+    const origin = MAP_ORIGIN; // 纵轴自 5 岁起（新口径，与普通图同一分段函数）
+    const Y = mapScaleY(topPad);
     const H = Y(Math.max(end, outEnd)) + 30; // fix5：主轴只到 end；画布高容下两轨各自的事实终局，不标预设终点
     const GROW_S = 1.05, GROW_DELAY = 0.36;
     const units = (s) => [...s].reduce((a, ch) => a + (ch.charCodeAt(0) < 256 ? 0.55 : 1), 0);
@@ -616,6 +625,7 @@
     g += `<circle cx="${cx}" cy="${Y(IFY.START_AGE)}" r="4.5" fill="#2F4A3C"/>`;
     const startRoute = view.segments[0].state.route ? view.segments[0].state.route.name : "";
     labels.push(`<text class="maplab" style="--bd2:.4s" x="${cx + 12}" y="${Y(IFY.START_AGE) + 4}" font-size="11.5" fill="#6E6A5E">22 岁 · ${IFY.esc(startRoute)}</text>`);
+    { const o5 = mapOriginSvg(Y, cx); g += o5.node; labels.push(o5.label); } // 5 岁起点节点＋标签（新口径）
     g += `<circle cx="${cx}" cy="${Y(end)}" r="4.5" fill="#2F4A3C"/>`;
     labels.push(`<text class="maplab" style="--bd2:${(GROW_DELAY + GROW_S + 0.1).toFixed(2)}s" x="${cx - 12}" y="${Y(end) + 4}" font-size="11.5" fill="#6E6A5E" text-anchor="end">${end} 岁</text>`);
     // ---- 交叉点：接管路线虚线（22 岁 → 交叉点）+ 交出路线虚线（交叉点 → 交出 Track 终局岁）+ 实心点与标签 ----
@@ -627,7 +637,6 @@
     g += `<circle cx="${cx}" cy="${ySwap}" r="4.5" fill="#2F4A3C"/>`;
     // 交叉标签是定稿整句，不走 fitW 截断（截了就不是那句话了）；居中锚在脊线上，窄屏也放得下整句
     labels.push(`<text class="maplab" style="--bd2:${(bdSwap + 0.1).toFixed(2)}s" x="${cx}" y="${ySwap - 10}" font-size="11.5" fill="#6E6A5E" text-anchor="middle">${IFY.esc(`${swapAge} 岁 · 换到了「${meta.swap.to}」那条路`)}</text>`);
-    if (spM) g += splitMapSvg(spM, Y, cx, GROW_DELAY + ((spM.age - origin) / Math.max(1, end - origin)) * GROW_S); // 分家记账：分家点节点＋标签＋引回 22 节点的影子虚线（与原图同画法）
     // 差一步剪影层：与原图同画法（nearMisses 的 faced 已按 merged log 判，见 nearMisses 内注）
     // fix5：剪影纵向钳在主轨终局 end 内（age 大于 end 的钳到 end 处），不许溢出画布
     nearMisses().forEach((n, i) => {
@@ -642,7 +651,9 @@
     return `<div class="mapwrap" id="mapwrap"><svg viewBox="0 0 ${W} ${H}" width="${W}" role="img" aria-label="这一生的分岔图">${g}${labels.join("")}</svg></div>`;
   }
 
-  // 「活过的人生」记录页（§B3）：已活到的给名与日期，未活到的只给一句线索；无完成度、无稀有度、无奖励（§B2.4 禁止项）
+  // 「活过的人生」记录页（§B3）：已活到的给名与日期；未活到的不给名、不印线索
+  // （clue 是结局本人的画像句，逐条印出等于把整个目录提前摊开——2026-11-06 裁定），
+  // 两段各收成一行汇总，只给总数；无完成度、无稀有度、无奖励（§B2.4 禁止项）
   function renderLives() {
     IFY.curKind = "lives";
     IFY.clearAutoContext();
@@ -657,10 +668,10 @@
       <p>结局活过 ${le.length} 种，稀有际遇撞过 ${lr.length} 件。每一种，都只是众多人生里的一种。</p>
       <h3>结局</h3>
       ${le.map((e) => `<p class="liverow"><b>${IFY.esc(e.title)}</b><span>${IFY.esc(rec.endings[e.id])}</span></p>`).join("")}
-      ${ue.map((e) => `<p class="clue">${IFY.esc(e.clue || "")}</p>`).join("")}
+      ${ue.length ? `<p class="clue">还有 ${ue.length} 种结局，等你活到。</p>` : ""}
       <h3>稀有际遇</h3>
       ${lr.map((r) => `<p class="liverow"><b>${IFY.esc(r.label || r.name)}</b><span>${IFY.esc(rec.rares[r.id])}</span></p>`).join("")}
-      ${ur.map((r) => `<p class="clue">${IFY.esc(r.clue || "")}</p>`).join("")}
+      ${ur.length ? `<p class="clue">还有 ${ur.length} 件际遇，等你撞上。</p>` : ""}
       <p class="hint">这份记录只存在这台设备的浏览器里，清掉浏览器数据就没了。</p>
       <div class="row">
         <button class="ghost" id="backstart">回开局</button>
