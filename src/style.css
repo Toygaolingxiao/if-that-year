@@ -215,3 +215,34 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
   *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
   .autodot{animation:none!important;opacity:1}
 }
+
+/* v0.33.0 人生纪录典藏：结算页一行安静入口＋导出面板（无横幅、无弹窗，呈现纪律见 paid-spec/SPEC.md） */
+.keepsake-line{margin:14px 0 0;font-size:13px}
+.keepsake-panel{margin-top:6px}
+.ks-block{border-top:1.5px dashed var(--line);margin-top:10px;padding-top:12px}
+.ks-intro{font-size:14.5px;margin:4px 0 6px}
+.ks-buy{text-decoration:none;display:inline-block}
+.keepsake-panel .cardpreview canvas{max-width:min(100%,330px)}
+/* 纪录册：屏上是整页浮层（暖纸同体系），打印时只出册子本身 */
+.ify-book{position:fixed;inset:0;overflow:auto;background:var(--paper);z-index:40;padding:22px 16px 60px}
+.ify-book .book-tools{max-width:660px;margin:0 auto 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.ify-book .book-page{max-width:660px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:28px 26px;box-shadow:0 4px 14px rgba(35,33,28,.05)}
+.ify-book .book-meta{font-size:13px;color:var(--mut)}
+.ify-book .book-ya{display:inline-block;min-width:9.5em;color:var(--mut);font-size:12.5px;font-family:Menlo,Consolas,monospace;margin-right:.6em}
+.ify-book .book-ev,.ify-book .book-tl{margin:3px 0;line-height:1.75;font-size:14.5px}
+.ify-book .book-foot{margin-top:26px;border-top:1px solid var(--line);padding-top:12px;font-size:13px;color:var(--mut)}
+.ify-book .book-wm{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:41}
+.ify-book .book-wm span{position:absolute;left:50%;font-size:44px;font-weight:700;color:rgba(47,74,60,.10);transform:translateX(-50%) rotate(-24deg);white-space:nowrap}
+.ify-book .book-wm span:nth-child(1){top:8%}.ify-book .book-wm span:nth-child(2){top:26%}.ify-book .book-wm span:nth-child(3){top:44%}
+.ify-book .book-wm span:nth-child(4){top:62%}.ify-book .book-wm span:nth-child(5){top:80%}.ify-book .book-wm span:nth-child(6){top:98%}
+@media print{
+  body.has-book .foot{display:none!important}
+  body.has-book #app{max-width:none;display:block;padding:0}
+  body.has-book #app>*:not(.ify-book){display:none!important}
+  body.has-book .ify-book{position:static;overflow:visible;padding:0;background:#fff}
+  body.has-book .ify-book .book-page{border:none;border-radius:0;box-shadow:none;max-width:none;padding:0}
+  body.has-book .ify-book .book-tools{display:none!important}
+  body.has-book .ify-book h3{break-before:page}
+  body.has-book .ify-book h3:first-of-type{break-before:auto}
+  body.has-book-preview .ify-book{display:none!important}
+}

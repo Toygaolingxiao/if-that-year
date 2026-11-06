@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>人生纪录典藏 · 订购 · 人生RESTART：如果那年</title>
+<meta name="description" content="把这一生订成一册：无水印全尺寸长图 + 可打印的翻页纪录册。一次买断，本机永久，每局可导。">
+<style>
+:root{--paper:#FAF8F4;--card:#FFFDF8;--ink:#23211C;--pine:#2F4A3C;--line:#DDD6C9;--mut:#6E6A5E}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"Hiragino Sans","Noto Sans SC",system-ui,sans-serif;line-height:1.8}
+.wrap{max-width:600px;margin:0 auto;padding:28px 18px 60px}
+.prodcredit{font-size:10px;letter-spacing:.24em;color:var(--mut);text-align:center;margin-top:14px}
+.eyebrow{font-size:12px;letter-spacing:.34em;color:var(--pine);text-align:center;margin-top:16px}
+h1{font-family:Georgia,"Songti SC","Noto Serif SC",serif;text-align:center;font-size:30px;margin:8px 0 4px}
+.sub{text-align:center;color:var(--mut);font-size:14px;margin:0 0 22px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 22px;box-shadow:0 4px 14px rgba(35,33,28,.05);margin-bottom:18px}
+.card h2{font-family:Georgia,"Songti SC","Noto Serif SC",serif;font-size:19px;margin:2px 0 10px}
+.card p{margin:6px 0;font-size:15px}
+.buybtn{display:block;text-align:center;background:var(--pine);color:#fff;text-decoration:none;border-radius:999px;padding:15px 20px;font-size:16.5px;margin:12px 0 6px;border:none;width:100%;cursor:pointer;font-family:inherit}
+.buybtn.disabled{background:#B9B2A2;cursor:not-allowed}
+.pricenote{text-align:center;color:var(--mut);font-size:13px;margin:0 0 4px}
+.qr{text-align:center}
+.qr img{width:180px;height:180px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:8px}
+.qr figcaption{font-size:13px;color:var(--mut);margin-top:6px}
+ul{margin:6px 0;padding-left:20px}
+li{font-size:14.5px;margin:4px 0}
+.hint{font-size:13px;color:var(--mut)}
+.backlink{display:block;text-align:center;margin-top:20px;color:var(--pine)}
+.legal{font-size:13px;color:var(--mut)}
+.legal dt{font-weight:700;margin-top:8px}
+.legal dd{margin:2px 0 0}
+.todo{border:1.5px dashed #B3573F;color:#8C3A2B;border-radius:10px;padding:10px 14px;font-size:13.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<p class="prodcredit">A TAKAE PRODUCTION</p>
+<p class="eyebrow">人生RESTART</p>
+<h1>人生纪录典藏</h1>
+<p class="sub">《如果那年》 · 把这一生订成一册带走</p>
+
+<section class="card">
+<h2>订的是什么</h2>
+<p>一局走完以后，把这一生导出成两件东西：一张长图——判词置顶，一生大事记，六维和落脚，还有另一条路的小结；和一本翻页纪录册——同样的内容，加上全量年表，能打印、能存成 PDF。</p>
+<p>游戏里能看到、能截的图，原样全免费，这一点不变。订购订的是这份排版好的、无水印的成品。</p>
+<p><strong>一次买断。</strong>付一次，这台设备永久解锁，往后每一局走完都能导出。不订阅，不按局收费。卖的是把这一生留下来——不改命，不卖好结局，这一条不变。</p>
+</section>
+
+<section class="card">
+<h2>订一册</h2>
+<a class="buybtn" id="buy-jpy" href="#" rel="noopener">用日元订 · ¥500</a>
+<p class="pricenote">信用卡等（Stripe 结账页）</p>
+<a class="buybtn" id="buy-cny" href="#" rel="noopener">用人民币订 · ¥25</a>
+<p class="pricenote">支付宝 / 微信支付（Stripe 结账页）</p>
+<p class="hint" id="pay-note"></p>
+<p class="hint">在微信里打开这一页的话：点上面按钮可能先跳出微信去浏览器结账，结完账照样跳到领码页；万一没跳回来，凭付款记录按下面「丢码补发」联系，照样给你码。</p>
+</section>
+
+<figure class="card qr">
+<img src="buy-qr.png" alt="购买页二维码" width="180" height="180">
+<figcaption>在电脑上玩的话，扫这个码，用手机打开订购页付钱；付完回电脑上的游戏结算页输码解锁。</figcaption>
+</figure>
+
+<section class="card">
+<h2>付款以后</h2>
+<ul>
+<li>付完款会自动跳到领码页，码很大，先点「回游戏自动解锁」。</li>
+<li>没跳回去也没关系：把码抄下来，回游戏结算页展开「把这一生订成册子带走」那一行，输码解锁。</li>
+<li>这台设备解锁一次就记住了，往后不用再输。</li>
+</ul>
+<h2>几条说在前面的话</h2>
+<ul>
+<li><strong>丢码补发：</strong>码丢了，凭付款订单（Stripe 发到邮箱的收据）到 <a href="https://github.com/Toygaolingxiao/if-that-year/issues">GitHub Issues</a> 留言，核对后补发新码。</li>
+<li><strong>换设备恢复：</strong>换了手机或电脑，在新设备上把码再输一次就行，不用再买。</li>
+<li><strong>退款：</strong>码还没用过、误购的，凭付款订单按上面方式联系，全额退。码已激活使用的，不支持退款——买之前可以先在结算页看带水印的免费预览。</li>
+</ul>
+</section>
+
+<section class="card legal">
+<h2>特定商取引法に基づく表記</h2>
+<p class="todo">下面带的几项要由运营本人填真实信息后本页才能正式收款（Stripe 对日本商家的网站要求，见上线清单）。</p>
+<dl>
+<dt>販売事業者</dt><dd></dd>
+<dt>所在地</dt><dd>（請求があった場合に遅滞なく開示します）</dd>
+<dt>連絡先</dt><dd></dd>
+<dt>販売価格</dt><dd>¥500（税込）／人民元档 ¥25（税込）</dd>
+<dt>商品代金以外の必要料金</dt><dd>なし（通信料はお客様のご負担です）</dd>
+<dt>支払方法・支払時期</dt><dd>Stripe によるクレジットカード／支付宝／微信支付。注文確定時に決済されます。</dd>
+<dt>商品の引渡時期</dt><dd>決済完了直後、引き換えコードを画面表示で交付します。</dd>
+<dt>返品・キャンセル</dt><dd>コード未使用の誤購入は全額返金します。コード使用後の返金はできません。</dd>
+</dl>
+</section>
+
+<a class="backlink" href="./">← 回游戏</a>
+</div>
+<script src="src/keepsake-config.js"></script>
+<script>
+(function () {
+var cfg = window.IFY_KEEPSAKE || {};
+var jpy = document.getElementById("buy-jpy");
+var cny = document.getElementById("buy-cny");
+var note = document.getElementById("pay-note");
+function arm(el, link) {
+if (link) {
+el.href = link;
+} else {
+el.removeAttribute("href");
+el.classList.add("disabled");
+el.setAttribute("aria-disabled", "true");
+el.textContent += "（通道开通中）";
+el.addEventListener("click", function (e) { e.preventDefault();});
+}
+}
+arm(jpy, cfg.payLinkJPY);
+arm(cny, cfg.payLinkCNY);
+if (!cfg.payLinkJPY &&!cfg.payLinkCNY) {
+note.textContent = "支付通道正在开通中，按钮暂时点不了。先在游戏结算页看免费预览，通道开了就能订。";
+}
+})();
+</script>
+</body>
+</html>

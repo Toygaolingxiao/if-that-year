@@ -1190,6 +1190,9 @@
       catch (e) { IFY.el("copytext").textContent = "复制失败，展开下面的文案预览手动复制"; }
     });
     refreshCard();
+    // v0.33.0 人生纪录典藏：分享台之后挂一行安静入口＋导出面板（keepsake.js）。结算原有呈现
+    // 一字不动，本钩子只做 DOM 追加；模块缺席（旧缓存）时静默跳过。
+    if (typeof IFY.mountKeepsakeDesk === "function") IFY.mountKeepsakeDesk();
   }
   Object.assign(IFY, { verdict, lifeTags, specialEnding, settlementMapHtml, renderLives, settlementSlots, renderEnd, occupationTrail, kidPresenceCount, nearMisses, chosenOfFork,
     // v0.22 WP7 新增导出：段事实视图、段版分岔反查、对面终局短句与结算快进（分享卡与断言复用同一口径）
