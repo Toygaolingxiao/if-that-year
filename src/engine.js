@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.42.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.42.1 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -63,6 +63,7 @@ window.IFY = window.IFY || {};
   }
 
   // 出生年窗口 win（出生年抽选）：逐代按内容公历锚审计定死——窗口内任何一年都不让任何一条锚文本说谎。
+  // c2000 例外走非连续集 winSet（用户 2026-11-07 裁定，文案不改）：8 岁那拍只认奥运年，2000/2004/2008 出生时 8 岁恰为 2008/2012/2016 三届夏季奥运，那拍文字只写「奥运那年」不写公历年号，三个年份都讲得圆。
   // 五代各有单龄硬锚钉在基准年：c1955 恢复高考@22=1977（e55_001/p19_035/ce55 牌）、c1965 海南建省@23=1988＋
   // 非典@38=2003＋二〇一五年五十岁（p23_040，年与龄同句）、c1978 非典@25=2003＋奥运@30=2008＋封控@42=2020、
   // c1985 五千点@30=2015＋非典@18（ce85 牌/pr_y18）、c1995 升初中=2008@13（pr_teen1 明文）＋北京奥运@13（ce95_01 牌）。
@@ -74,7 +75,7 @@ window.IFY = window.IFY || {};
     { id: "c1978", birth: 1978, win: [1978, 1978], label: "70年代出生", desc: "22 岁是 2000 年：互联网、非典、房价起飞" },
     { id: "c1985", birth: 1985, win: [1985, 1985], label: "80年代出生", desc: "22 岁是 2007 年：奥运前一年、网吧正盛、房价起步" },
     { id: "c1995", birth: 1995, win: [1995, 1995], label: "90年代出生", desc: "22 岁是 2017 年：共享单车、移动支付、短视频、毕业租房" },
-    { id: "c2000", birth: 2000, win: [2000, 2000], label: "2000年代出生", desc: "22 岁是 2022 年：现在这一代人的路" },
+    { id: "c2000", birth: 2000, win: [2000, 2008], winSet: [2000, 2004, 2008], label: "2000年代出生", desc: "奥运、手机、短视频：现在这一代人的路" },
   ];
 
   const SAVE_KEY = "ify-save-v2";
@@ -131,6 +132,7 @@ window.IFY = window.IFY || {};
     const lo = era.win[0], hi = era.win[1];
     if (hi <= lo) return lo;
     const st = { a: seedFromString(String(seedStr) + "#birth:" + era.id) };
+    if (era.winSet && era.winSet.length) return era.winSet[Math.floor(mulberry(st) * era.winSet.length)];
     return lo + Math.floor(mulberry(st) * (hi - lo + 1));
   }
 
@@ -663,19 +665,22 @@ window.IFY = window.IFY || {};
     // （birthOverride，本屏内有效），换年代/改种子即失效回到抽出的年份。没有重抽入口：种子不变，年份不变。
     let birthOverride = null;
     const eraObj = () => ERAS.find((e) => e.id === selEra()) || ERAS[ERAS.length - 1];
-    const shownBirth = () => { const e = eraObj(); return birthOverride != null && birthOverride >= e.win[0] && birthOverride <= e.win[1] ? birthOverride : drawBirthYear(effSeed(), e); };
+    const birthYears = () => { const e = eraObj(); if (e.winSet && e.winSet.length) return e.winSet.slice(); const ys = []; for (let y = e.win[0]; y <= e.win[1]; y++) ys.push(y); return ys; };
+    const shownBirth = () => { const ys = birthYears(); return birthOverride != null && ys.includes(birthOverride) ? birthOverride : drawBirthYear(effSeed(), eraObj()); };
     const syncBirth = () => {
       const e = eraObj(); if (!e.win) return;
+      const ys = birthYears();
       const y = shownBirth();
       const val = el("birthyear"); if (val) val.textContent = `${y} 年`;
-      const wide = e.win[1] > e.win[0];
+      const wide = ys.length > 1;
+      const i = ys.indexOf(y);
       const bm = el("birthminus"), bp = el("birthplus");
-      if (bm) { bm.hidden = !wide; bm.disabled = y <= e.win[0]; }
-      if (bp) { bp.hidden = !wide; bp.disabled = y >= e.win[1]; }
+      if (bm) { bm.hidden = !wide; bm.disabled = i <= 0; }
+      if (bp) { bp.hidden = !wide; bp.disabled = i >= ys.length - 1; }
       const bh = el("birthhint");
-      if (bh) bh.textContent = wide ? `选这个年代时替你抽好的。想改就拨，只能在 ${e.win[0]}–${e.win[1]} 年之间——那几年的事，这个年代都讲得圆。` : "就这一年。早一年、晚一年，这个年代的故事都有讲不圆的地方。";
+      if (bh) bh.textContent = !wide ? "就这一年。早一年、晚一年，这个年代的故事都有讲不圆的地方。" : (e.winSet ? `选这个年代时替你抽好的。想改就拨，只能在 ${ys.join("、")} 这几年里换——隔着一届奥运会，这个年代的故事都讲得圆。` : `选这个年代时替你抽好的。想改就拨，只能在 ${e.win[0]}–${e.win[1]} 年之间——那几年的事，这个年代都讲得圆。`);
     };
-    const stepBirth = (d) => { const e = eraObj(); birthOverride = Math.max(e.win[0], Math.min(e.win[1], shownBirth() + d)); syncBirth(); };
+    const stepBirth = (d) => { const ys = birthYears(); const i = ys.indexOf(shownBirth()); birthOverride = ys[Math.max(0, Math.min(ys.length - 1, i + d))]; syncBirth(); };
     const bmBtn = el("birthminus"), bpBtn = el("birthplus");
     if (bmBtn) bmBtn.addEventListener("click", () => stepBirth(-1));
     if (bpBtn) bpBtn.addEventListener("click", () => stepBirth(1));
