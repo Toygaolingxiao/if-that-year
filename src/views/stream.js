@@ -300,7 +300,17 @@
     if (st) st.querySelectorAll(".srow.new").forEach((r) => r.classList.remove("new"));
   }
 
-  function deltaLine() { return IFY.S.lastDelta ? `<p class="delta">${IFY.esc(IFY.S.lastDelta)}</p>` : ""; }
+  // fx-fix：标注行＝工资年结（S.wageDelta）＋本屏这一笔（S.lastDelta），两笔分开印。
+  // 工资在 step() 内进程拍之后、分岔/瞥视/事件之前结算，此前它的 lastDelta 总被后续
+  // 渲染覆盖或清空——钱跨屏变了却无标注，同岁事件的钱还会被它静默抵平。拼行后：
+  // 带标注行的屏（事件/分岔回响/危机/稀有/平年）当屏可见；瞥视/微年不走本函数，
+  // 靠 wageDue 同步写下的流水账一行留痕。本函数是 deltaLine 唯一的口径改动点。
+  function deltaLine() {
+    const parts = [];
+    if (IFY.S.wageDelta) parts.push(IFY.S.wageDelta);
+    if (IFY.S.lastDelta) parts.push(IFY.S.lastDelta);
+    return parts.length ? `<p class="delta">${IFY.esc(parts.join(" · "))}</p>` : "";
+  }
 
   // §3.2 选择留一拍：被选按钮先置选中态停留 250ms、其余变淡，然后才执行后续（回响/复述拍）
   function choiceBeat(btn, fn) {

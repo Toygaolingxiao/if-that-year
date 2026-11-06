@@ -115,6 +115,7 @@
         IFY.rec("proc", item.id, { choice: c.label, set: c.set || null, fx: IFY.S.lastDelta });
         document.querySelector(".choices").remove();
         IFY.el("echo").innerHTML = `${IFY.deltaLine()}<p class="pickednote">已选「${IFY.esc(c.label)}」</p>${IFY.echoText(c) ? `<p class="echo">${IFY.esc(IFY.echoText(c))}</p>` : ""}<button class="primary" id="cont">继续</button>`;
+        IFY.refreshStatsBar(); // fx-fix：进程拍选项落账后就地刷条（与事件/危机的 v0.31.2 修复对齐，此前漏了这一处，账落了条要等下一整屏才跟上）
         IFY.save(); IFY.el("cont").addEventListener("click", () => IFY.step());
       });
     }));

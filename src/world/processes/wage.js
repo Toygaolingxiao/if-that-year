@@ -6,7 +6,7 @@
  *  - 金额是既有派生状态（入行旗/formOf/任期/相位/住房/定居轨迹）的纯函数，零随机消耗——
  *    同种子逐字复现不许被本进程扰动（不读任何 rng 流）。
  *  - 小数不扔：结转字段 wageCarry 累积零头，攒够整数经 applyEffects 入账，
- *    钱的变化落在当年的数值变动行里看得见（lastDelta 口径与事件同源）。
+ *    落账的标注走 S.wageDelta＋流水账一行（fx-fix，见 wageDue 尾段），与事件标注同口径（实际落值）。
  *  - 主轨与影子轨同规：engine.step() 与 shadow-life.stepYearHeadless() 在 workPhaseDue()
  *    相邻处调同一个 wageDue()，靠 wageSettledAge 年龄戳保证每轨每年只结一次
  *    （step() 同一年会多次重入，年龄戳防重复结算）。
@@ -167,6 +167,18 @@
     }
     if (!LEDGER.has(S)) LEDGER.set(S, []);
     LEDGER.get(S).push({ age: S.age, wage, pension, side, housing: housingLine, settle: 0, gross, pay, actual });
+    // fx-fix：年结标注（纯呈现，不动数值/时机）——实际落账非零时记两处既有通道：
+    // ① S.wageDelta：deltaLine 拼在本年后续屏（分岔回响/事件/危机/稀有/平年）标注行的首位；
+    // ② 流水账一行：瞥视年/微年这类不渲染标注行的年份靠它留痕（流水账挂在每屏旁）。
+    // 数字以钳制后的实际落值 actual 为准，与 applyEffects 的标注同口径；本年无落账时
+    // wageDelta 清空，跨年清理由 advance() 兜底（本年进程拍屏在结算之前呈，不许读到去年的）。
+    // 流水账只记受控 Track：无头步进的影子轨 log 是瞥视引文的取材池，工资行进去会污染选取。
+    S.wageDelta = actual !== 0 ? `工资 ${actual > 0 ? "+" : ""}${actual}` : "";
+    if (actual !== 0) {
+      const ses = IFY.session;
+      const ctl = ses && ses.tracks ? ses.tracks[ses.controlTrack || "A"] : null;
+      if (!ctl || ctl.state === S) S.log.push(`${S.age} 岁 · 工资年结：金钱 ${actual > 0 ? "+" : ""}${actual}`);
+    }
   }
 
   function ledgerPush(st, entry) { if (!LEDGER.has(st)) LEDGER.set(st, []); LEDGER.get(st).push(entry); } // house.js 终局变现落账口（settle 分项）

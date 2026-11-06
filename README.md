@@ -7,7 +7,7 @@
 - **核心机制**：选择 + 影子人生 —— 未选之路不消失，作为平行线继续运行；30/40/50 岁可瞥见它，结算时揭晓它的代价。
 - **设计原则**：规则决定，故事呈现。确定性种子引擎算后果（同一种子可复现，支撑「同种子对战」），在线零 LLM 调用——所以它天然抗流量，扩容路线见 [docs/SCALING.md](docs/SCALING.md)。
 
-## 现在就能玩（v0.38.1）
+## 现在就能玩（v0.38.2）
 **线上**：已上线 `https://if-that-year.pages.dev`（Cloudflare Pages，推 `main` 自动部署；接入步骤与排障见 [docs/DEPLOY-CLOUDFLARE.md](docs/DEPLOY-CLOUDFLARE.md)）。
 
 **本地**：纯静态、免构建、免注册。用任意静态服务器打开即可：

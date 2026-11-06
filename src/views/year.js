@@ -28,6 +28,7 @@
         IFY.rec("rare", r.id, { choice: c.label, set: c.set || null, fx: IFY.S.lastDelta });
         document.querySelector(".choices").remove();
         IFY.el("echo").innerHTML = `${IFY.deltaLine()}<p class="pickednote">已选「${IFY.esc(c.label)}」</p><p class="echo">${IFY.esc(echoText(c))}</p><button class="primary" id="cont">过一年</button>`;
+        IFY.refreshStatsBar(); // fx-fix：稀有事件选项落账后就地刷条（与事件/危机的 v0.31.2 修复对齐，此前漏了这一处）
         IFY.save(); IFY.el("cont").addEventListener("click", IFY.advance);
       });
     }));
