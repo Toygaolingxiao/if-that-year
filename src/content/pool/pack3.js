@@ -2,7 +2,7 @@
 window.GAME_PACKS=(window.GAME_PACKS||[]).concat([
 {"id":"p3_001","min":32,"max":37,"text":"第一次去对方家里吃饭。你帮忙端菜，对方母亲问了你工资，问得很直接，你答得也很直接。","effects":{"relation":2},"state":{"spouse":"partnered"}},
 {"id":"p3_002","min":32,"max":38,"text":"对方父亲不爱说话，饭后默默给你续了三回茶。临走，把一箱自家种的橙子搬上了你的后备箱。","state":{"spouse":"partnered"}},
-{"id":"p3_003","min":32,"max":39,"text":"领证之后，婚礼怎么办，两家人坐下来谈。酒席桌数、彩礼、改口费，一项一项都在桌上。","choices":[{"label":"听长辈的，办得体面些","effects":{"money":-5,"relation":2},"echo":"婚礼那天你脚后跟磨破了皮，敬酒敬到最后，笑得脸都僵了。"},{"label":"简单办，钱留着过日子","effects":{"money":-2,"freedom":2},"echo":"只请了至亲，一共六桌。吃完饭你们去江边走了一圈，鞋都没换。"}],"state":{"spouse":"partnered"},"set":"married"},
+{"id":"p3_003","min":32,"max":39,"require":"married","chain":"p3_086","text":"领证之后，婚礼怎么办，两家人坐下来谈。酒席桌数、彩礼、改口费，一项一项都在桌上。","choices":[{"label":"听长辈的，办得体面些","effects":{"money":-5,"relation":2},"echo":"婚礼那天你脚后跟磨破了皮，敬酒敬到最后，笑得脸都僵了。"},{"label":"简单办，钱留着过日子","effects":{"money":-2,"freedom":2},"echo":"只请了至亲，一共六桌。吃完饭你们去江边走了一圈，鞋都没换。"}],"state":{"spouse":"partnered"},"set":"married"},
 {"id":"p3_004","min":33,"max":40,"text":"结婚第一年，你们为牙膏从哪头挤吵了一架。吵完两个人都笑了，又都觉得这架吵得没出息。","effects":{"relation":1},"state":{"spouse":"partnered"},"require":"married","flagAgeWithin":{"flag":"married","years":1}},
 {"id":"p3_005","min":32,"max":45,"text":"对方加班到半夜，你留了饭在锅里，贴了张纸条：微波炉三分钟。纸条一直贴在冰箱上，字都淡了。","state":{"spouse":"partnered"}},
 {"id":"p3_006","minYear":2000,"min":33,"max":48,"text":"家里的活儿一直没分清。这周你洗碗时摔了个盘子，对方在客厅说了一句：要不咱们列个表吧。","choices":[{"label":"列个表，一人一半","effects":{"relation":2,"freedom":-1},"echo":"表贴在厨房门后。执行了三个月，后来谁有空谁多干，表就作废了。"},{"label":"请钟点工，钱解决","effects":{"money":-3,"freedom":2},"echo":"阿姨每周来两次。那两个小时，你们出门散步，或者各玩各的手机。"}],"state":{"spouse":"partnered"}},

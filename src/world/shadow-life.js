@@ -354,7 +354,7 @@
   }
 
   // 无头年步进本体：决策序与 engine.js step() 严格对齐（蓝图 5.1/5.2）——
-  // 进程拍（父母 → 出生保送 → 首次露面保底 → dating → 出国去向 → 退休相位）→ 分岔 →（瞥视跳过）→ planYear 内容槽。
+  // 进程拍（父母 → 出生保送 → 首次露面保底 → 领证保送 → dating → 出国去向 → 退休相位）→ 分岔 →（瞥视跳过）→ planYear 内容槽。
   // 父母进程已在出生时建好，这里只调 parentsDue()，且至多一件/年（蓝图 5.3，两条人生节奏同构）。
   // 不受控 Track 不瞥视、无反思、无呈现：GLIMPSE_AGES 年龄直接落进 planYear，与受控 Track 的
   // 瞥视年不同——瞥视是玩家层的观看动作，不占被瞥视者的年份（它在那一年照常过日子）。
@@ -369,6 +369,9 @@
     // 首次露面保底（孩子线批次 S2）：与受控 step() 同位同规——出生满 3 年未露面必达一条低龄孩子拍
     // （选拍 kidDebutItem，无合格条目落保底拍）；补记 usedEvents，呈现后当场 syncKidDebut 立旗闭环。
     if (IFY.kidDebutDue()) { const kit = IFY.kidDebutItem(); if (kit) { if (!S.usedEvents.includes(kit.id)) S.usedEvents.push(kit.id); resolveProcHeadless(kit); IFY.syncKidDebut(); } }
+    // 成家接力（孩子线批次 S3）：与受控 step() 同位同规——定下满 1 年未领证必达 p3_086 本体；
+    // 补记 usedEvents（同为 p3_003 的 chain 前置接点）。
+    if (IFY.licenseDue()) { const lit = D.events.find((e) => e.id === "p3_086"); if (lit) { if (!S.usedEvents.includes(lit.id)) S.usedEvents.push(lit.id); resolveProcHeadless(lit); } }
     if (IFY.datingDue()) { const dit = D.events.find((e) => e.id === "proc_dating"); if (dit) resolveProcHeadless(dit); }
     IFY.settleAbroadDefault();
     const akd = IFY.abroadKindDue();

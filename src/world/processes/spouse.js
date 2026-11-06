@@ -92,6 +92,37 @@
     return cands[cands.length - 1];
   }
 
+  // 成家接力·领证保送（孩子线批次 S3）：定下之后没有任何机制把人送到领证拍面前，是孩子线细案
+  // 1.1 里记的断环（曾定下者 p3_086 呈现率只有 9.7%）——licenseDue 到期后由进程层以锚点拍呈现
+  // p3_086 本体（呈现点在 engine.js step() 与 shadow-life.js stepYearHeadless() 的进程段，排在
+  // dating 摊牌之前；与出生/露面保底同段，理由见呈现点注释）。无「不领」分支：p3_086 本身无选项、
+  // 呈现即领证（呈现层落 married 旗），本判定只管「满 1 年还没领」这一件事。
+  // 起算年读账本：partnered 的每一次落定都经 applyState 唯一执行点，同拍写下 kind:"state"、
+  // id:"spouse>partnered" 的账本条目（年龄戳为落定当年）——取最后一条即当前这段 partnered 的
+  // 起点。离婚/丧偶后再定下会再写一条，天然按新起点起算，不必另设字段。这与 datingSince 的
+  // 差别：datingSince 是状态字段、离开 dating 即清空；partnered 起点没有对应字段，账本流转
+  // 是唯一全程留痕的事实源（settlement 的 playerFacts 与 covenantSettleLineSeg 读的也是它）。
+  // proc_dating「定下来」选项同拍自带 set:"married"——那条路的人账面上已婚，不进本判定
+  // （婚礼拍也不走 p3_086 的 chain，细案 D-3 甲案：其落定文本自带仪式交代）。
+  // 旧存档（账本无 spouse>partnered 条目，如账本制之前推导状态的局）起算事实缺失 → 恒假、不炸，
+  // 那批局维持池抽领证的旧行为。
+  function partneredSinceOf(S) {
+    if (!S || !Array.isArray(S.ledger)) return null;
+    let since = null;
+    for (const le of S.ledger) {
+      if (le && le.kind === "state" && le.id === "spouse>partnered" && typeof le.age === "number") since = le.age;
+    }
+    return since;
+  }
+  function licenseDue() {
+    const S = IFY.S;
+    if (!S || !S.state || S.state.spouse !== "partnered") return false;
+    if (!S.flags || S.flags.married) return false;
+    const since = partneredSinceOf(S);
+    if (since == null) return false;
+    return S.age - since >= 1;
+  }
+
   // 分岔文案状态感知（v0.13.1，B2）：选项可带 labelBySpouse/echoBySpouse 变体——partnered 用原文字段，
   // dating 优先 dating 变体、其余状态（single/none/divorced/widowed）用 solo 变体，缺变体回落原文。
   function spouseText(c, kind) {
@@ -230,5 +261,5 @@
       : "38 岁挂起的那份账，45 岁说再试一回。可医院没正经跑起来，日子推着人往前走，孩子的事就一直没落定。";
     return "38 岁挂起的那份账，到这一生走完，也没正式对完。";
   }
-  Object.assign(IFY, { datingDue, bornDue, syncKidDebut, kidDebutDue, kidDebutItem, spouseText, registerCovenant, covenantSettleLine });
+  Object.assign(IFY, { datingDue, bornDue, syncKidDebut, kidDebutDue, kidDebutItem, licenseDue, spouseText, registerCovenant, covenantSettleLine });
 })(window.IFY);
