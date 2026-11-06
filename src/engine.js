@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.41.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.42.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -62,13 +62,19 @@ window.IFY = window.IFY || {};
     S.pendingSplit = { age: fork.age, eventId: fork.id, label: SPLIT_FORKS[fork.id], source: "fork" };
   }
 
+  // 出生年窗口 win（出生年抽选）：逐代按内容公历锚审计定死——窗口内任何一年都不让任何一条锚文本说谎。
+  // 五代各有单龄硬锚钉在基准年：c1955 恢复高考@22=1977（e55_001/p19_035/ce55 牌）、c1965 海南建省@23=1988＋
+  // 非典@38=2003＋二〇一五年五十岁（p23_040，年与龄同句）、c1978 非典@25=2003＋奥运@30=2008＋封控@42=2020、
+  // c1985 五千点@30=2015＋非典@18（ce85 牌/pr_y18）、c1995 升初中=2008@13（pr_teen1 明文）＋北京奥运@13（ce95_01 牌）。
+  // c2000 无年份硬锚，但招牌童年拍 pr_kid8_00「奥运那年夏天」@8 只在奥运年成立，连续窗口只能取 {2000}。
+  // 放宽任一窗口须先重过内容锚审计；抽法见 drawBirthYear。
   const ERAS = [
-    { id: "c1955", birth: 1955, label: "50年代出生", desc: "22 岁是 1977 年：恢复高考、返城、分房、下岗潮" },
-    { id: "c1965", birth: 1965, label: "60年代出生", desc: "22 岁是 1987 年：海南热、下海潮、房改" },
-    { id: "c1978", birth: 1978, label: "70年代出生", desc: "22 岁是 2000 年：互联网、非典、房价起飞" },
-    { id: "c1985", birth: 1985, label: "80年代出生", desc: "22 岁是 2007 年：奥运前一年、网吧正盛、房价起步" },
-    { id: "c1995", birth: 1995, label: "90年代出生", desc: "22 岁是 2017 年：共享单车、移动支付、短视频、毕业租房" },
-    { id: "c2000", birth: 2000, label: "2000年代出生", desc: "22 岁是 2022 年：现在这一代人的路" },
+    { id: "c1955", birth: 1955, win: [1955, 1955], label: "50年代出生", desc: "22 岁是 1977 年：恢复高考、返城、分房、下岗潮" },
+    { id: "c1965", birth: 1965, win: [1965, 1965], label: "60年代出生", desc: "22 岁是 1987 年：海南热、下海潮、房改" },
+    { id: "c1978", birth: 1978, win: [1978, 1978], label: "70年代出生", desc: "22 岁是 2000 年：互联网、非典、房价起飞" },
+    { id: "c1985", birth: 1985, win: [1985, 1985], label: "80年代出生", desc: "22 岁是 2007 年：奥运前一年、网吧正盛、房价起步" },
+    { id: "c1995", birth: 1995, win: [1995, 1995], label: "90年代出生", desc: "22 岁是 2017 年：共享单车、移动支付、短视频、毕业租房" },
+    { id: "c2000", birth: 2000, win: [2000, 2000], label: "2000年代出生", desc: "22 岁是 2022 年：现在这一代人的路" },
   ];
 
   const SAVE_KEY = "ify-save-v2";
@@ -115,6 +121,18 @@ window.IFY = window.IFY || {};
   function seedStreams(seedStr) { RNG.a = seedFromString(seedStr); RNGW.a = seedFromString(seedStr + "#world"); RNGA.a = seedFromString(seedStr + "#ambient"); }
 
   function seedFromString(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+
+  // 出生年抽选：独立派生的一掷函数（种子+"#birth:"+年代 id），不消费任何游戏随机流——同一记录
+  // （种子+年代）永远抽出同一年，重开存档不重抽（年份开局时已落进 S.birthYear）。窗口宽为 1 时恒为该年。
+  // 玩家只能在此基础上手动步进调整（开始屏出生年行），没有「重抽」入口。
+  function drawBirthYear(seedStr, era) {
+    if (!era) return 2000;
+    if (!era.win) return era.birth;
+    const lo = era.win[0], hi = era.win[1];
+    if (hi <= lo) return lo;
+    const st = { a: seedFromString(String(seedStr) + "#birth:" + era.id) };
+    return lo + Math.floor(mulberry(st) * (hi - lo + 1));
+  }
 
   const clamp = (v) => Math.max(0, Math.min(100, v));
 
@@ -526,6 +544,13 @@ window.IFY = window.IFY || {};
         <div class="setblock" id="erablock">
           <p class="setlab">年代</p>
           <div class="segpicks" id="erapick">${ERAS.map((e) => `<button type="button" class="segbtn${e.id === "c2000" ? " sel" : ""}" data-era="${e.id}" data-birth="${e.birth}"><b>${e.label}</b></button>`).join("")}</div>
+          <div class="birthyear-row">
+            <span class="birthyear-lab">出生年</span>
+            <button type="button" class="birthstep" id="birthminus" aria-label="出生年减一年">−</button>
+            <span class="birthyear-val" id="birthyear"></span>
+            <button type="button" class="birthstep" id="birthplus" aria-label="出生年加一年">+</button>
+          </div>
+          <p class="hint" id="birthhint"></p>
         </div>
         <p class="hint" id="prohint" hidden>这一局从小时候开始，路等 22 岁再选。家里什么样是发到手里的，没有重抽。</p>
         ${returning ? `<div class="row"><button class="textlink" id="liveslink">活过的人生</button></div>` : ""}
@@ -634,6 +659,27 @@ window.IFY = window.IFY || {};
     const renderDeck = () => { const d = el("carddeck"); if (d) d.innerHTML = deckHtml(); };
     const redealAll = () => { if (!CARDS_ON) return; dealt = CARDS.deal(effSeed(), selEra()); picked.family = 0; picked.temper = 0; picked.era = 0; renderDeck(); };
     const redealEra = () => { if (!CARDS_ON) return; dealt.era = CARDS.deal(effSeed(), selEra()).era; picked.era = 0; renderDeck(); };
+    // 出生年（抽选）：年份只由「有效种子＋年代」抽定（drawBirthYear），屏幕明示；玩家可手动步进调整
+    // （birthOverride，本屏内有效），换年代/改种子即失效回到抽出的年份。没有重抽入口：种子不变，年份不变。
+    let birthOverride = null;
+    const eraObj = () => ERAS.find((e) => e.id === selEra()) || ERAS[ERAS.length - 1];
+    const shownBirth = () => { const e = eraObj(); return birthOverride != null && birthOverride >= e.win[0] && birthOverride <= e.win[1] ? birthOverride : drawBirthYear(effSeed(), e); };
+    const syncBirth = () => {
+      const e = eraObj(); if (!e.win) return;
+      const y = shownBirth();
+      const val = el("birthyear"); if (val) val.textContent = `${y} 年`;
+      const wide = e.win[1] > e.win[0];
+      const bm = el("birthminus"), bp = el("birthplus");
+      if (bm) { bm.hidden = !wide; bm.disabled = y <= e.win[0]; }
+      if (bp) { bp.hidden = !wide; bp.disabled = y >= e.win[1]; }
+      const bh = el("birthhint");
+      if (bh) bh.textContent = wide ? `选这个年代时替你抽好的。想改就拨，只能在 ${e.win[0]}–${e.win[1]} 年之间——那几年的事，这个年代都讲得圆。` : "就这一年。早一年、晚一年，这个年代的故事都有讲不圆的地方。";
+    };
+    const stepBirth = (d) => { const e = eraObj(); birthOverride = Math.max(e.win[0], Math.min(e.win[1], shownBirth() + d)); syncBirth(); };
+    const bmBtn = el("birthminus"), bpBtn = el("birthplus");
+    if (bmBtn) bmBtn.addEventListener("click", () => stepBirth(-1));
+    if (bpBtn) bpBtn.addEventListener("click", () => stepBirth(1));
+    document.querySelectorAll("#erapick .segbtn").forEach((b) => b.addEventListener("click", () => { birthOverride = null; syncBirth(); }));
     if (CARDS_ON) {
       el("carddeck").addEventListener("click", (ev) => {
         const b = ev.target.closest(".cardpick"); if (!b) return;
@@ -664,7 +710,8 @@ window.IFY = window.IFY || {};
     };
     document.querySelectorAll("#erapick .segbtn").forEach((b) => b.addEventListener("click", eraToggle));
     eraToggle();
-    el("seedin").addEventListener("input", () => { redealAll(); }); // 种子一变手牌即重发：屏幕上的手牌恒等于开局将用的手牌（输入即生效，无单独确认按钮）
+    syncBirth(); // 出生年行首帧即明示（与年代预选/链接参数对齐后的抽出年份）
+    el("seedin").addEventListener("input", () => { redealAll(); birthOverride = null; syncBirth(); }); // 种子一变手牌即重发：屏幕上的手牌恒等于开局将用的手牌（输入即生效，无单独确认按钮）；出生年同理随种子重抽
     el("daily").addEventListener("click", () => {
       const dd = dailyFor(todayStr());
       dailyCtx = { eraId: dd.era.id, routeId: dd.route.id }; // 待选路线记下：开局随存档带入，22 岁选路拍预选高亮那一张、仍须玩家点选（两条流程一致）
@@ -678,6 +725,7 @@ window.IFY = window.IFY || {};
         el("dailyline").textContent = `今日一局：${dd.era.label}。种子替你备好了，点开始就是今日这局；进局选路时，今日那条会先亮着，你也可以改。`;
       }
       el("daily").textContent = "今日一局已备好";
+      birthOverride = null; syncBirth(); // 今日一局换了种子：出生年回到该种子抽出的年份
     });
     // 统一开局按钮：序章年代走序章开局；无序章年代先落出身、路线留到局内 22 岁汇入拍选（newGame 只建局不落路线）
     el("startgo").addEventListener("click", () => {
@@ -689,11 +737,11 @@ window.IFY = window.IFY || {};
       const eraId = eb ? eb.dataset.era : "c2000";
       const dRoute = dailyCtx && dailyCtx.eraId === eraId ? dailyCtx.routeId : null; // 年代被手改过则待选路线作废，不带进局
       if (hasPrologue(selEra())) {
-        newGamePrologue(seedStr, eraId, eb ? +eb.dataset.birth : 2000, dRoute);
+        newGamePrologue(seedStr, eraId, shownBirth(), dRoute); // 出生年：屏上明示的那一年（抽出或手动拨定），两条人生共用（影子在出生时拷 S.birthYear）
         return;
       }
       if (CARDS_ON && dealt) for (const cat of ["family", "temper", "era"]) ANA.track("card_pick", { cat, pick: picked[cat], changed: picked[cat] !== 0 });
-      newGame(seedStr, { era: eraId, birth: eb ? +eb.dataset.birth : 2000, cards: CARDS_ON && dealt ? [dealt.family[picked.family], dealt.temper[picked.temper], dealt.era[picked.era]] : [], dailyRoute: dRoute });
+      newGame(seedStr, { era: eraId, birth: shownBirth(), cards: CARDS_ON && dealt ? [dealt.family[picked.family], dealt.temper[picked.temper], dealt.era[picked.era]] : [], dailyRoute: dRoute });
     });
     IFY.finishRender();
   }
@@ -982,7 +1030,7 @@ window.IFY = window.IFY || {};
   }
   Object.assign(IFY, { D, CARDS, PRO, RHYTHM, PROLOGUE_ERA, hasPrologue, ANA, START_AGE, MAX_AGE, STAT_META, GLIMPSE_AGES, ERAS, SAVE_KEY,
     LIVES_KEY, PREFS_KEY, SPEED_CPS, SPEED_LABEL, SPEED_STYLE, AUTO_BASE_MS, AUTO_CAP_MS, AUTO_MODES,
-    DEFAULT_AUTO_MODE, RNG, RNGW, RNGA, mulberry, rng, rngW, rngA, seedStreams, seedFromString, clamp, esc,
+    DEFAULT_AUTO_MODE, RNG, RNGW, RNGA, mulberry, rng, rngW, rngA, seedStreams, seedFromString, drawBirthYear, clamp, esc,
     el, app, reducedMotion, freshState, save, loadSave, clearSave, loadLives, todayStr, recordLives,
     STREAK_KEY, LASTLIFE_KEY, loadStreak, loadLastLife, dateStrOf, shiftedDateStr, recordDayAndLife,
     streakLine, lastLifeLine, dailyFor, loadPrefs, savePrefs, rhythmOf, rhythmBase, applyTempDelta,

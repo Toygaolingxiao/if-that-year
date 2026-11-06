@@ -223,26 +223,120 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
 .ks-intro{font-size:14.5px;margin:4px 0 6px}
 .ks-buy{text-decoration:none;display:inline-block}
 .keepsake-panel .cardpreview canvas{max-width:min(100%,330px)}
-/* 纪录册：屏上是整页浮层（暖纸同体系），打印时只出册子本身 */
+/* 典藏预览仪式（定稿 §六采 B 一条）：游戏内看长图预览时缓缓展开，约 1 秒，呈现层动效 */
+.keepsake-panel .cardpreview canvas{animation:ks-unfold 1.1s ease both}
+@keyframes ks-unfold{from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0 0 0% 0)}}
+@media (prefers-reduced-motion:reduce){.keepsake-panel .cardpreview canvas{animation:none}}
+/* 纪录册（和式 L2）：屏上是整页浮层，内文字阶以 .book-page 字号为基（em 制），
+   打印时字号切到 10.5pt、边距全走 @page，白底自立。间距先于内容：节距靠空，不靠色块。 */
 .ify-book{position:fixed;inset:0;overflow:auto;background:var(--paper);z-index:40;padding:22px 16px 60px}
 .ify-book .book-tools{max-width:660px;margin:0 auto 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.ify-book .book-page{max-width:660px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:40px 38px;box-shadow:0 4px 14px rgba(35,33,28,.05);font-size:15px;color:#26241F}
+.ify-book .book-cover{padding-top:1.4em}
+.ify-book .cov-mast{text-align:center}
+.ify-book .cov-prod{font-size:.73em;letter-spacing:.32em;color:var(--accent);font-weight:700;margin:0 0 1em}
+.ify-book .cov-brand{font-family:var(--serif);font-size:.95em;letter-spacing:.18em;margin:0 0 .5em}
+.ify-book .cov-title{font-family:var(--serif);font-size:2.3em;line-height:1.3;margin:0 0 .55em}
+.ify-book .cov-rule{width:2.7em;border-top:2px solid var(--accent);margin:0 auto 1em;height:0}
+.ify-book .cov-meta{font-size:.81em;color:#8A8B85;font-family:Menlo,Consolas,monospace;margin:0}
+.ify-book .cov-verdict{font-family:var(--serif);font-size:1.2em;line-height:1.95;margin:2.6em 0 0}
+.ify-book .cov-rare{border:1px solid var(--line);padding:1.5em 1.6em 1.3em;margin-top:2.8em}
+.ify-book .cov-rtag{font-size:.73em;letter-spacing:.3em;color:var(--accent);font-weight:700;margin:0 0 .8em}
+.ify-book .cov-rtitle{font-family:var(--serif);font-size:1.55em;margin:0 0 .6em}
+.ify-book .cov-rtext{font-size:.95em;line-height:1.85;margin:0}
+.ify-book .cov-plain{margin:2.8em 0 0;font-size:1em;color:var(--mut)}
+.ify-book .cov-plain span{color:var(--accent);font-weight:700;margin-right:.8em}
+.ify-book .cov-tags{font-size:.78em;color:#8A8B85;line-height:1.85;margin:2em 0 0}
+.ify-book .cov-death{font-size:.92em;line-height:1.9;margin:.6em 0 0}
+.ify-book .book-sec{margin-top:3em}
+.ify-book .book-h{font-family:var(--serif);font-size:1.24em;color:var(--accent);display:flex;align-items:center;gap:1em;margin:0 0 1.1em;font-weight:600}
+.ify-book .book-h::after{content:"";flex:1;border-top:1px solid var(--line)}
+.ify-book .book-group + .book-group{margin-top:2em}
+.ify-book .book-gname{font-size:.85em;letter-spacing:.24em;color:#8A8B85;font-weight:700;margin:0 0 .5em}
+.ify-book .book-ev{margin:0 0 1.5em}
+.ify-book .book-ya{font-size:.81em;color:#8A8B85;font-family:Menlo,Consolas,monospace;margin:0 0 .3em}
+.ify-book .book-et{font-family:var(--serif);font-size:1.05em;line-height:1.75;margin:0}
+.ify-book .book-choice{font-size:.85em;color:var(--mut);margin:.35em 0 0}
+.ify-book .book-tl{margin:.45em 0;line-height:1.8;font-size:1em}
+.ify-book .book-ya2{display:inline-block;min-width:9.5em;color:#8A8B85;font-size:.81em;font-family:Menlo,Consolas,monospace;margin-right:.6em}
+.ify-book .book-stats{display:grid;grid-template-columns:1fr 1fr;gap:.55em 2.2em;margin-bottom:1.2em}
+.ify-book .book-stat{display:flex;align-items:center;gap:.6em;font-size:.95em}
+.ify-book .book-stat span{width:2.4em;color:var(--mut)}
+.ify-book .book-bar{flex:1;height:.8em;background:#E7E1D3}
+.ify-book .book-bar i{display:block;height:100%;background:var(--accent)}
+.ify-book .book-stat b{width:2em;text-align:right;font-family:Menlo,Consolas,monospace;font-weight:700}
+.ify-book .book-fact{display:flex;gap:1.2em;margin:.9em 0}
+.ify-book .book-flab{flex:0 0 4.5em;color:var(--accent);font-weight:700;font-size:.9em;letter-spacing:.1em;padding-top:.18em}
+.ify-book .book-fact p{margin:0;line-height:1.8;font-size:1em}
+.ify-book .book-sub{font-size:.85em;letter-spacing:.24em;color:#8A8B85;font-weight:700;margin:2em 0 .5em}
+.ify-book .book-common{line-height:1.85;color:#4A463C;margin:0 0 1em}
+.ify-book .book-lead{font-family:var(--serif);font-size:1.3em;line-height:1.85;margin:1em 0 1.2em}
+.ify-book .book-arc{margin:0 0 1.6em}
+.ify-book .book-arc-svg{width:100%;height:auto;display:block}
+.ify-book .book-shape{text-align:center;margin:2em 0 0}
+.ify-book .book-shape-svg{width:50%;max-width:280px;height:auto}
+.ify-book .book-shapecap{font-size:.85em;letter-spacing:.2em;color:#8A8B85;margin:.4em 0 0}
+.ify-book .book-twin{display:flex;margin-top:2.2em}
+.ify-book .book-twin-col{flex:1}
+.ify-book .book-twin-col:first-child{padding-right:1.6em}
+.ify-book .book-twin-col:last-child{border-left:1px solid var(--line);padding-left:1.6em}
+.ify-book .book-twin-head{font-family:var(--serif);font-weight:700;font-size:1.1em;color:var(--accent);margin:0 0 .8em}
+.ify-book .book-twin-ev{margin:.5em 0;line-height:1.6}
+.ify-book .book-abs{color:var(--mut);font-size:.92em;margin:1em 0 0;line-height:1.7}
+.ify-book .book-colobox{border:1px solid var(--line);padding:2.2em}
+.ify-book .book-colobox p{line-height:1.85}
+.ify-book .book-seed{font-family:Menlo,Consolas,monospace;color:#8A8B85;font-size:.85em;margin-top:2em}
+.ify-book .book-url{color:#8A8B85;font-size:.85em}
+.ify-book .book-closing{font-family:var(--serif);font-size:1.25em;color:var(--accent);text-align:center;margin:2.2em 0 .6em}
+.ify-book .book-notebox{border:1px solid var(--line);padding:2.2em;min-height:56vh}
+.ify-book .book-dateline{text-align:right;color:#8A8B85;font-size:.9em}
+.ify-book .book-wm{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:41}
+.ify-book .book-wm span{position:absolute;left:50%;font-size:44px;font-weight:700;color:rgba(47,74,60,.10);transform:translateX(-50%) rotate(-24deg);white-space:nowrap}
+.ify-book .book-wm span:nth-child(1){top:8%}.ify-book .book-wm span:nth-child(2){top:26%}.ify-book .book-wm span:nth-child(3){top:44%}
+.ify-book .book-wm span:nth-child(4){top:62%}.ify-book .book-wm span:nth-child(5){top:80%}.ify-book .book-wm span:nth-child(6){top:98%}
+/* @page 边距写死（定稿 §二）：上下左右 18/16/20/16mm，装订侧在 .book-page 上再让 4mm；
+   页脚种子＋页码的 @page 页边盒规则随册子内容生成时写入（种子要写死进规则，见 buildKeepsakeBook） */
+@page{size:A4;margin:18mm 16mm 20mm 16mm}
+@media print{
+  body.has-book{background:#fff}
+  body.has-book .foot{display:none!important}
+  body.has-book #app{max-width:none;display:block;padding:0}
+  body.has-book #app>*:not(.ify-book){display:none!important}
+  body.has-book .ify-book{position:static;overflow:visible;padding:0;background:#fff}
+  body.has-book .ify-book .book-page{border:none;border-radius:0;box-shadow:none;max-width:none;padding:0 0 0 4mm;font-size:10.5pt;background:#fff}
+  body.has-book .ify-book .book-tools{display:none!important}
+  body.has-book .ify-book .book-cover{break-after:page;padding-top:30mm}
+  body.has-book .ify-book .book-h{break-after:avoid}
+  body.has-book .ify-book .book-group,body.has-book .ify-book .book-ev,body.has-book .ify-book .book-fact,body.has-book .ify-book .book-arc,body.has-book .ify-book .book-shape,body.has-book .ify-book .book-twin,body.has-book .ify-book .book-stats,body.has-book .ify-book .book-endblock{break-inside:avoid}
+  body.has-book .ify-book .book-colophon{break-before:page}
+  body.has-book .ify-book .book-colobox{padding:10mm}
+  body.has-book .ify-book .book-note{break-before:page}
+  body.has-book .ify-book .book-notebox{padding:10mm;min-height:224mm}
+  body.has-book-preview .ify-book{display:none!important}
+}
+/* 纪录册：屏上是整页浮层（暖纸同体系），打印时只出册子本身 */
 .ify-book .book-page{max-width:660px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:28px 26px;box-shadow:0 4px 14px rgba(35,33,28,.05)}
 .ify-book .book-meta{font-size:13px;color:var(--mut)}
 .ify-book .book-ya{display:inline-block;min-width:9.5em;color:var(--mut);font-size:12.5px;font-family:Menlo,Consolas,monospace;margin-right:.6em}
 .ify-book .book-ev,.ify-book .book-tl{margin:3px 0;line-height:1.75;font-size:14.5px}
 .ify-book .book-foot{margin-top:26px;border-top:1px solid var(--line);padding-top:12px;font-size:13px;color:var(--mut)}
-.ify-book .book-wm{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:41}
-.ify-book .book-wm span{position:absolute;left:50%;font-size:44px;font-weight:700;color:rgba(47,74,60,.10);transform:translateX(-50%) rotate(-24deg);white-space:nowrap}
-.ify-book .book-wm span:nth-child(1){top:8%}.ify-book .book-wm span:nth-child(2){top:26%}.ify-book .book-wm span:nth-child(3){top:44%}
-.ify-book .book-wm span:nth-child(4){top:62%}.ify-book .book-wm span:nth-child(5){top:80%}.ify-book .book-wm span:nth-child(6){top:98%}
-@media print{
-  body.has-book .foot{display:none!important}
-  body.has-book #app{max-width:none;display:block;padding:0}
-  body.has-book #app>*:not(.ify-book){display:none!important}
-  body.has-book .ify-book{position:static;overflow:visible;padding:0;background:#fff}
   body.has-book .ify-book .book-page{border:none;border-radius:0;box-shadow:none;max-width:none;padding:0}
-  body.has-book .ify-book .book-tools{display:none!important}
   body.has-book .ify-book h3{break-before:page}
   body.has-book .ify-book h3:first-of-type{break-before:auto}
-  body.has-book-preview .ify-book{display:none!important}
-}
+
+/* ================= [homepage-build 开始屏一单 · 独立块] =================
+   本块为首页单的全部 CSS 改动：只许在本块内改，勿动上方既有规则行（与典藏单分块合并）。
+   1) 开始屏主按钮强化：.actions 只被开始屏使用（已核），其 .primary 即「开始这一生」/「继续上次的人生」。
+      与年代段选钮 .segbtn.sel 同为主题色填充，靠尺寸（≥58px）/字号 17/字重 700/投影拉开主次，
+      让主按钮不用找。续玩态主按钮是 #resume（同 .primary），重开降为 .ghost，层级不变。
+   2) 出生年行：年代块内的明示行＋手动步进钮（窗口宽为 1 的年代步进钮隐藏，只剩明示与说明）。 */
+.actions .primary{min-height:58px;padding:15px 24px;font-size:17px;font-weight:700;letter-spacing:.03em;box-shadow:0 8px 22px rgba(47,74,60,.30)}
+@media (hover:hover){.actions .primary:hover{opacity:.95;transform:translateY(-1px)}}
+.actions .primary:active{opacity:.88}
+.birthyear-row{display:flex;align-items:center;gap:10px;margin-top:12px}
+.birthyear-lab{color:var(--mut);font-size:13px}
+.birthyear-val{font-family:var(--serif);font-size:19px;font-weight:700;color:var(--ink);min-width:76px;text-align:center}
+.birthstep{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:17px;line-height:1;cursor:pointer;padding:0}
+.birthstep:disabled{opacity:.35;cursor:default}
+.birthstep:active:not(:disabled){border-color:var(--accent);color:var(--accent)}
+/* ================= [/homepage-build 开始屏一单 · 独立块] ================= */
