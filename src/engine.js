@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.30.2 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.30.3 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -826,6 +826,11 @@ window.IFY = window.IFY || {};
   }
 
   function renderDeath() {
+    // 终局变现提前落账（v0.30.3）：死亡既已定案、死亡屏渲染之前（顶栏六维在此屏同显），
+    // 主角轨先落 houseSettleDue——死亡屏、结算、分享卡从此同读变现后的数值；houseSettled
+    // 防重，结算处（renderEnd）再调为空转。影子轨没有自己的死亡屏，仍在结算处落账，
+    // 结算时两条轨都已落账，口径不冲突。80 岁未死者不经此屏，在 renderEnd 落账，路径不变。
+    if (typeof IFY.houseSettleDue === "function") IFY.houseSettleDue(IFY.S);
     IFY.curKind = "death";
     IFY.clearAutoContext();
     app().classList.remove("playwrap");

@@ -132,7 +132,7 @@
     // §2.1：先按上屏快照的旧值出宽，渲染后一帧再写新值，让 .6s 过渡真正播放；§2.3：<30 的维度加临界静态分级
     return `<div class="stats">${IFY.STAT_META.map(([k, label]) => {
       const cur = IFY.S.stats[k], old = IFY.prevStats ? IFY.prevStats[k] : cur, crit = cur < 30;
-      return `<div class="stat${crit ? " crit" : ""}"><span>${label}</span><div class="bar"><i style="width:${old}%" data-cur="${cur}"></i></div><b>${cur}</b>${crit ? '<i class="cdot"></i>' : ""}</div>`;
+      return `<div class="stat${crit ? " crit" : ""}"><span>${label}</span><div class="bar"><i style="width:${old}%" data-cur="${cur}"></i></div><b>${Math.round(cur)}</b>${crit ? '<i class="cdot"></i>' : ""}</div>`;
     }).join("")}</div>`;
   }
 

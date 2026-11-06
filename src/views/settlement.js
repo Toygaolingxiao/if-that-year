@@ -1027,6 +1027,8 @@
     fastForwardUncontrolled();
     // 住房变现落账（v0.30.0）：两条 Track 都已定案——在 verdict/特殊结局/九槽文案等任何读终值的
     // 判定之前，各调一次 houseSettleDue（houseSettled 防重；资产只在此刻进流动金钱）。
+    // v0.30.3：主角轨若经死亡屏，落账已在 renderDeath 提前发生，此处对主角轨为空转；
+    // 80 岁未死（无死亡屏）的主角轨与影子轨仍在此处落账。
     if (typeof IFY.houseSettleDue === "function") {
       IFY.houseSettleDue(IFY.S);
       const sesH = IFY.session;

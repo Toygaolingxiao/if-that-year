@@ -77,7 +77,7 @@
       x.fillStyle = "#23211C"; x.fillText(label, 90, y + 8);
       x.fillStyle = "#DDD6C9"; x.fillRect(190, y - 8, barW, 14);
       x.fillStyle = "#2F4A3C"; x.fillRect(190, y - 8, (barW * IFY.S.stats[k]) / 100, 14);
-      x.fillStyle = "#23211C"; x.fillText(String(IFY.S.stats[k]), 190 + barW + 30, y + 8);
+      x.fillStyle = "#23211C"; x.fillText(String(Math.round(IFY.S.stats[k])), 190 + barW + 30, y + 8); // v0.30.3：内部浮点只取整显示，条宽仍用原值比例
       y += step;
     });
     return y;
