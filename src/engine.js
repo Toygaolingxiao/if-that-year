@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.38.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.38.1 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -47,6 +47,13 @@ window.IFY = window.IFY || {};
     const need = splitPointOf(S).age + 5;
     for (const a of [30, 40, 50]) if (a >= need) return a;
     return null;
+  }
+  // 本局实际瞥视站表：三站中不早于第一瞥的那些——早于第一瞥的站位在 step() 里只消费 1 抽、
+  // 不呈现，不算一站。瞥视文案（开场白站数、换路提示的「下次」）与呈现共用这一份，不许另写死。
+  function glimpseStationsOf(S) {
+    const fg = firstGlimpseAge(S);
+    if (fg == null) return [];
+    return [30, 40, 50].filter((a) => a >= fg);
   }
   // 22 后换轨级岔口落账（renderFork 与影子无头结算共用）：全程只留最后一个（时间序覆盖），封顶 45 岁。
   const SPLIT_FORKS = { fork28: "回不回老家", fork28m: "出不出去", fork28f: "走不走" };
@@ -793,7 +800,7 @@ window.IFY = window.IFY || {};
     const trackName = { study: "念书", work: "打工", craft: "学手艺", home: "守家里" }[IFY.S.state.track] || "";
     app().innerHTML = `<section class="card">${prologueHead(START_AGE, "adult")}${IFY.autoPanelHtml()}
       <h2>22 岁 · 往后的路</h2>
-      <p>${trackName ? `这几年，你是${trackName}过来的。` : ""}到了 22 岁，路一下子宽了。往哪边走，这一回你自己定。没选的那几条也不会消失——它们会在你 30、40、50 岁的时候，远远地看你一眼。</p>
+      <p>${trackName ? `这几年，你是${trackName}过来的。` : ""}到了 22 岁，路一下子宽了。往哪边走，这一回你自己定。没选的那几条也不会消失——往后隔些年，它们还会远远地看你一眼。</p>
       <div class="choices">${D.routes.map((r, i) => `<button class="choice${IFY.S.dailyRoute === r.id ? " dailymark" : ""}" data-i="${i}"><b>${esc(routeNameFork(r))}</b><small>${esc(routeDescFork(r))}</small></button>`).join("")}</div>
       </section>`;
     IFY.finishRender();
@@ -949,6 +956,6 @@ window.IFY = window.IFY || {};
     streakLine, lastLifeLine, dailyFor, loadPrefs, savePrefs, rhythmOf, rhythmBase, applyTempDelta,
     applyEffects, finalAge, renderStart, clearSave0, newGame, STAGE_LABEL, newGamePrologue, prologueHead,
     renderPrologue, renderRouteMerge, mergeIntoRoute, step, advance, renderDeath, TIER_ORDER, TIER_LABEL,
-    splitPointOf, firstGlimpseAge, noteSplitFork, SPLIT_FORKS,
+    splitPointOf, firstGlimpseAge, glimpseStationsOf, noteSplitFork, SPLIT_FORKS,
     SERIF, SANS, shareCurrent });
 })(window.IFY);

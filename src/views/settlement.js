@@ -467,8 +467,9 @@
 
   // ---------- 分家记账（丙案第一步）·结算图共用口径 ----------
   // 返回 null＝不画任何新元素（分家点就是 22 岁路口本身的普通局，图与旧版逐字一致）。
-  // 画法照评估：分家岁加实心节点＋标签；影子（22 岁那条未选路线）以既有灰虚线自该点引向 22 的
-  // 路线对照；脊线起点与 22 路线标签都保留；分家点在 22 前时纵轴原点改为 min(22, 分家岁)。
+  // 画法照评估：分家岁加实心节点＋标签；影子（22 岁那条未选路线）以既有灰虚线自该点引回
+  // 22 岁节点本身——端点落在节点上（旧画法端点停在同高处旁开 84px，屏上看就是线没连上）；
+  // 脊线起点与 22 路线标签都保留；分家点在 22 前时纵轴原点改为 min(22, 分家岁)。
   // 诚实口径：标签只说本命在哪儿分了岔（搬家/换轨岔口/落地），绝不声称影子走了岔口的未选支。
   function splitMapOf(S) {
     const sp = IFY.splitPointOf ? IFY.splitPointOf(S) : { age: IFY.START_AGE, source: "route" };
@@ -482,7 +483,7 @@
       return `<text class="maplab mapsplit" style="--bd2:.4s" x="${cx - 12}" y="${y22 + 4}" font-size="11.5" fill="#6E6A5E" text-anchor="end">${IFY.esc(`${sp.age} 岁 · ${sp.label}`)}</text>`;
     }
     const dx = sp.source === "move" ? -84 : 84;
-    let s = `<path class="mapbranch mapsplit" style="--bd:${bd.toFixed(2)}s" d="M ${cx} ${yS} Q ${cx + dx * 0.72} ${(yS + y22) / 2} ${cx + dx} ${y22}" fill="none" stroke="#8A948C" stroke-width="2" stroke-dasharray="4 4" stroke-linecap="round"/><circle cx="${cx + dx}" cy="${y22}" r="2" fill="#8A948C" opacity=".45"/>`;
+    let s = `<path class="mapbranch mapsplit" style="--bd:${bd.toFixed(2)}s" d="M ${cx} ${yS} Q ${cx + dx * 0.72} ${(yS + y22) / 2} ${cx} ${y22}" fill="none" stroke="#8A948C" stroke-width="2" stroke-dasharray="4 4" stroke-linecap="round"/>`;
     if (sp.source !== "fork") s += `<circle class="mapsplit" cx="${cx}" cy="${yS}" r="4" fill="#2F4A3C"/>`; // 换轨岔口岁已有分岔实心点，不重复画
     s += `<text class="maplab mapsplit" style="--bd2:${(bd + 0.1).toFixed(2)}s" x="${cx}" y="${yS - 10}" font-size="11.5" fill="#6E6A5E" text-anchor="middle">${IFY.esc(`${sp.age} 岁 · ${sp.label}`)}</text>`;
     return s;
@@ -532,7 +533,7 @@
     labels.push(`<text class="maplab" style="--bd2:.4s" x="${cx + 12}" y="${Y(IFY.START_AGE) + 4}" font-size="11.5" fill="#6E6A5E">22 岁 · ${IFY.esc(IFY.S.route.name)}</text>`);
     g += `<circle cx="${cx}" cy="${Y(end)}" r="4.5" fill="#2F4A3C"/>`;
     labels.push(`<text class="maplab" style="--bd2:${(GROW_DELAY + GROW_S + 0.1).toFixed(2)}s" x="${cx - 12}" y="${Y(end) + 4}" font-size="11.5" fill="#6E6A5E" text-anchor="end">${end} 岁</text>`);
-    if (spM) g += splitMapSvg(spM, Y, cx, GROW_DELAY + ((spM.age - origin) / Math.max(1, end - origin)) * GROW_S); // 分家记账：分家点节点＋标签＋引向 22 对照的影子虚线
+    if (spM) g += splitMapSvg(spM, Y, cx, GROW_DELAY + ((spM.age - origin) / Math.max(1, end - origin)) * GROW_S); // 分家记账：分家点节点＋标签＋引回 22 节点的影子虚线
     // 差一步剪影层（v0.20.0 M2）：空心虚线圈 + 既有灰的虚线支，与已走节点（实心松绿）可区分；不新造配色
     // fix5：剪影纵向一律钳在本轨终局 end 内（age 大于 end 的钳到 end 处），不许溢出画布
     nearMisses().forEach((n, i) => {
@@ -624,7 +625,7 @@
     g += `<circle cx="${cx}" cy="${ySwap}" r="4.5" fill="#2F4A3C"/>`;
     // 交叉标签是定稿整句，不走 fitW 截断（截了就不是那句话了）；居中锚在脊线上，窄屏也放得下整句
     labels.push(`<text class="maplab" style="--bd2:${(bdSwap + 0.1).toFixed(2)}s" x="${cx}" y="${ySwap - 10}" font-size="11.5" fill="#6E6A5E" text-anchor="middle">${IFY.esc(`${swapAge} 岁 · 换到了「${meta.swap.to}」那条路`)}</text>`);
-    if (spM) g += splitMapSvg(spM, Y, cx, GROW_DELAY + ((spM.age - origin) / Math.max(1, end - origin)) * GROW_S); // 分家记账：分家点节点＋标签＋引向 22 对照的影子虚线（与原图同画法）
+    if (spM) g += splitMapSvg(spM, Y, cx, GROW_DELAY + ((spM.age - origin) / Math.max(1, end - origin)) * GROW_S); // 分家记账：分家点节点＋标签＋引回 22 节点的影子虚线（与原图同画法）
     // 差一步剪影层：与原图同画法（nearMisses 的 faced 已按 merged log 判，见 nearMisses 内注）
     // fix5：剪影纵向钳在主轨终局 end 内（age 大于 end 的钳到 end 处），不许溢出画布
     nearMisses().forEach((n, i) => {

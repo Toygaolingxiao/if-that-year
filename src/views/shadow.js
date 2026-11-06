@@ -88,6 +88,32 @@ return { main, others};
 
 const GLIMPSE_AGES_ALL = [30, 40, 50]; // 与 engine.js GLIMPSE_AGES 键集同口径：stage 0/1/2 → 30/40/50
 
+// 瞥视站表与文案（与 engine.js 的呈现判定同源）：本局真会出现的站 = glimpseStationsOf——
+// 分家晚于 22 时，早站被漂移跳过、根本不呈现，文案只许诺站表里真有的站，不许再写死 30/40/50。
+function glimpseStationAges() {
+if (typeof IFY.glimpseStationsOf === "function") return IFY.glimpseStationsOf(IFY.S);
+const fg = typeof IFY.firstGlimpseAge === "function"? IFY.firstGlimpseAge(IFY.S): 30;
+return fg == null? []: GLIMPSE_AGES_ALL.filter((a) => a >= fg);
+}
+// 第一次瞥视的开场白：站数照站表说——三站全在时与旧文案逐字一致；缺站时只说真有的站；
+// 只剩一站时「各来一次」不成立，换成「就这一次」。
+function glimpseIntroHtml() {
+const ages = glimpseStationAges();
+const cn = { 30: "三十岁", 40: "四十岁", 50: "五十岁"};
+const head = "这就是你 22 岁那年没选的那条路。它过得怎么样，你只能远远看一眼";
+if (!ages.length) return `<p class="body">${head}。</p>`;
+const list = ages.map((a) => cn[a]).join("、");
+return `<p class="body">${head}——${ages.length === 1? `${list}那年，就这一次`: `${list}，各来一次`}。</p>`;
+}
+// 换路提示：当前站是不是站表的最后一站，照站表认——末站不许再许诺「下次瞥视还能再想」。
+function glimpseSwapHintHtml() {
+const ages = glimpseStationAges();
+const last = ages.length > 0 && (IFY.S? IFY.S.age: 0) >= ages[ages.length - 1];
+return last
+? "换过去，一生只能换这一次。这是最后一回瞥视——这次不换，往后就再没有能换的时候了。"
+: "换过去，一生只能换这一次。这次不换，下次瞥视还能再想；换了，就再没有第二次。";
+}
+
 // ---- 现状事实表的来源登记（蓝图 6.2：清单即事实的边界——无登记来源就不出该行，宁缺不编） ----
 // 住房行（v0.24.4 AN-2 改）：住房事实改读派生层 place.js housingOf（购房旗全集在那边写死一处，
 // 含 boughtReform 半截链口径），本文件不再自备旗子集。旧版的「房贷还着」靠两组手维 id 清单
@@ -338,7 +364,7 @@ const routeName = B.route? B.route.name: "";
 const firstLook = (IFY.playerMeta().glimpsesSeen + IFY.playerMeta().glimpsesSkipped) === 0; // v0.20.1 第九项：影子机制的说明不在开局讲，挪到第一次瞥视当口说（只说这一次）；v0.21 WP1：瞥视计数改读 session.meta（蓝图 3.1 玩家层）
 IFY.app().innerHTML = `<section class="card glimpse">${IFY.head()}
 <h2>${IFY.S.age} 岁 · 另一条路上的你</h2>
-${firstLook? `<p class="body">这就是你 22 岁那年没选的那条路。它过得怎么样，你只能远远看一眼——三十岁、四十岁、五十岁，各来一次。</p>`: ""}
+${firstLook? glimpseIntroHtml(): ""}
 <p class="teaser">${IFY.esc(routeName)}，那条路上的你。</p>
 <p class="hint">细节只给你看一眼。看，还是不看，你自己定——不看的那几次，结算时会记着。</p>
 <div class="row"><button class="primary" id="look">看细节</button><button class="ghost" id="skip">不看，继续过日子</button></div>
@@ -383,7 +409,7 @@ detailHtml = `${ledgerHead}${skeleton[0]? `<p class="body">${IFY.esc(skeleton[0]
 // 反思输入行之前；机会说明行只陈述机会存量，不劝换不劝留。悼念/回望 mode 天然不在 normal、不出；
 // skip 路径不经本处理器，不出。拒绝只关本次（下个瞥视点照常出），接受走 IFY.handControl()。
 const swapHtml = (mode === "normal" && !meta.swapped)
-? `<div id="swapblock"><p class="hint">换过去，一生只能换这一次。这次不换，下次瞥视还能再想；换了，就再没有第二次。</p><div class="row"><button class="primary" id="swap-yes">换过去，过它接下来的日子</button><button class="ghost" id="swap-no">不换，继续过我的</button></div></div>`
+? `<div id="swapblock"><p class="hint">${glimpseSwapHintHtml()}</p><div class="row"><button class="primary" id="swap-yes">换过去，过它接下来的日子</button><button class="ghost" id="swap-no">不换，继续过我的</button></div></div>`
 : "";
 IFY.el("detail").innerHTML = `${detailHtml}${markLine? `<p class="hint">你们共同的童年：</p><p class="body">${IFY.esc(markLine)}</p>`: ""}${swapHtml}
 <label class="refl-label">给现实里的自己留一句话（写下的话，会原样出现在这一生的结算里）<input id="refl" type="text" maxlength="60" placeholder="一句就好"></label>
@@ -414,7 +440,7 @@ const text = shadowStageText(stage); // 先抽定，点不点开都是这一条�
 const firstLook = (IFY.playerMeta().glimpsesSeen + IFY.playerMeta().glimpsesSkipped) === 0; // v0.20.1 第九项：影子机制的说明不在开局讲，挪到第一次瞥视当口说（只说这一次）；v0.21 WP1：瞥视计数改读 session.meta（蓝图 3.1 玩家层）
 IFY.app().innerHTML = `<section class="card glimpse">${IFY.head()}
 <h2>${IFY.S.age} 岁 · 另一条路上的你</h2>
-${firstLook? `<p class="body">这就是你 22 岁那年没选的那条路。它过得怎么样，你只能远远看一眼——三十岁、四十岁、五十岁，各来一次。</p>`: ""}
+${firstLook? glimpseIntroHtml(): ""}
 <p class="teaser">${IFY.esc(sh.name)}，今年：${IFY.esc(sh.teaser[stage])}</p>
 <p class="hint">细节只给你看一眼。看，还是不看，你自己定——不看的那几次，结算时会记着。</p>
 <div class="row"><button class="primary" id="look">看细节</button><button class="ghost" id="skip">不看，继续过日子</button></div>
@@ -474,6 +500,8 @@ Object.assign(IFY, {
 shadowRoute, shadowStageText, shadowCostText, shadowFinalText, shadowCompareLines, renderGlimpse,
 // WP4 取材层导出（供出处检查工具与断言复用同一套登记表与纯函数；呈现层之外不消费它们做决策）
 glimpseFactLines, glimpsePick, glimpseSkeleton, glimpseDeathLine, uncontrolledEntry, glimpseTakeForTest, glimpseMarkLineNext,
+// 瞥视文案构造器（只读：站表读 engine 的 glimpseStationsOf，不消费随机流）——供定向验证逐字比对
+glimpseStationAges, glimpseIntroHtml, glimpseSwapHintHtml,
 GLIMPSE_FACT_SOURCES: { HEALTH_ALERT_IDS, FACT_WORDS}, // v0.24.4：OWNED_FLAGS 与两组 MORTGAGE id 清单随派生化退役（住房改读 housingOf 单一源）
 });
 })(window.IFY);
