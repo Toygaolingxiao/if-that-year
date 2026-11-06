@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.33.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.33.1 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -94,6 +94,41 @@ window.IFY = window.IFY || {};
   const esc = (s) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
   const routeDesc = (r) => (r.descEra && IFY.S && r.descEra[IFY.S.era]) || r.desc; // v0.23 WP6（S-6A）：路线 desc 年代变体消费（descEra 与 desc 并列、同形于事件 textEra，契约见 registry-wp6.js）；未声明该年代回落 desc 原文
+  // 分岔选项认人（v0.33.x）：22 岁汇入屏的路线名/描述按「到达状态」换文案——引子早已按 track 认人，
+  // 选项却一直只有大学生一版（打工六年的人也读到「四年的书」「继续读下去」）。此处只换呈现：
+  // 路线 id/顺序/可选性/数值与落账名（S.route、出发日志、unchosen）一律走数据原名，不经此层。
+  // 到达状态键（routeStateKey）：
+  //   grad      —— study 轨且非中专形（含无序章开局 track=pre：没有已活的学业状态，沿用缺省文案口径）
+  //   zhongzhuan—— study 轨＋枚举事实 studyForm=zhongzhuan（中专毕业已工作约两年；仅 c1965/c1978/c1985/c1995 包可达）
+  //   work/craft/home —— 16 岁分岔后的少年轨道（schooling 为 school/half/pre 时）
+  //   never_<轨>/left_<轨> —— schooling=never（没进过校门）/left（读了又离开）叠加在非 study 轨上；
+  //     查文案时先全键、后轨道键回落（如 never_craft 无专属格则用 craft 格——前提是轨道格本身不预设学业）。
+  //   study 轨先于 schooling 判：补录回校者（track=study＋schooling=left）的 17–21 岁幕文按在校生走，grad 口径与幕文一致。
+  const routeStateKey = (S) => {
+    const st = (S && S.state) || {};
+    const track = st.track || "pre";
+    if (track === "study") return (S.facts && S.facts.studyForm) === "zhongzhuan" ? "zhongzhuan" : "grad";
+    if (track === "pre") return "grad";
+    const sc = st.schooling || "pre";
+    if (sc === "never" || sc === "left") return sc + "_" + track;
+    return track;
+  };
+  const routeStateKeys = (S) => { const k = routeStateKey(S); const us = k.indexOf("_"); return us > 0 ? [k, k.slice(us + 1)] : [k]; };
+  const routeDescState = (r) => {
+    if (!IFY.S) return null;
+    const era = IFY.S.era;
+    for (const k of routeStateKeys(IFY.S)) {
+      const se = r.descStateEra && r.descStateEra[era];
+      if (se && se[k]) return se[k];
+      if (r.descState && r.descState[k]) return r.descState[k];
+    }
+    return null;
+  };
+  const routeDescFork = (r) => routeDescState(r) || routeDesc(r); // 汇入屏专用：状态变体优先于年代变体与原文
+  const routeNameFork = (r) => { // 汇入屏专用显示名：只换这一屏的按钮字，数据 name 不动
+    if (IFY.S && r.nameState) for (const k of routeStateKeys(IFY.S)) if (r.nameState[k]) return r.nameState[k];
+    return r.name;
+  };
   const el = (id) => document.getElementById(id);
 
   const app = () => el("app");
@@ -738,7 +773,7 @@ window.IFY = window.IFY || {};
     app().innerHTML = `<section class="card">${prologueHead(START_AGE, "adult")}${IFY.autoPanelHtml()}
       <h2>22 岁 · 往后的路</h2>
       <p>${trackName ? `这几年，你是${trackName}过来的。` : ""}到了 22 岁，路一下子宽了。往哪边走，这一回你自己定。没选的那几条也不会消失——它们会在你 30、40、50 岁的时候，远远地看你一眼。</p>
-      <div class="choices">${D.routes.map((r, i) => `<button class="choice${IFY.S.dailyRoute === r.id ? " dailymark" : ""}" data-i="${i}"><b>${esc(r.name)}</b><small>${esc(routeDesc(r))}</small></button>`).join("")}</div>
+      <div class="choices">${D.routes.map((r, i) => `<button class="choice${IFY.S.dailyRoute === r.id ? " dailymark" : ""}" data-i="${i}"><b>${esc(routeNameFork(r))}</b><small>${esc(routeDescFork(r))}</small></button>`).join("")}</div>
       </section>`;
     IFY.finishRender();
     document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {
