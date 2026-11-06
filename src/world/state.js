@@ -104,7 +104,7 @@ window.GAME_REGISTRY = {
      "from": "undecided",
      "to": "has",
       "by": [
-       "fork38",
+       "fork_kid",
        "e_kid_settle",
        "e_kid_final",
        "lk_born"
@@ -114,10 +114,9 @@ window.GAME_REGISTRY = {
       "from": "undecided",
       "to": "none",
       "by": [
-       "fork38",
+       "fork_kid",
        "e_kid_settle",
        "e_kid_final",
-       "fork45",
        "cov_solo_due",
        "lk_none",
        "lk_fade"

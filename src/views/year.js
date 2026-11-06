@@ -191,7 +191,7 @@
         if (typeof IFY.houseOnBuyFlag === "function") IFY.houseOnBuyFlag(IFY.S, c.set, c);
         IFY.applyState(c);
         IFY.applyTempDelta(c.temp); // 温度接点（v0.17.0）：选项可带 temp 增减，只改质地字段
-        if (fork.age === 38) IFY.registerCovenant(c);
+        if (fork.id === "fork_kid") IFY.kidForkCovenant(c); // 孩子线批次 S4：fork_kid 落点记账（约的登记/再问补旗，旗与状态走上方通用序）
         fork.choices.forEach((o) => { if (o !== c) IFY.S.unchosen.push({ kind: "fork", age: fork.age, label: labelText(o) }); });
         if (typeof IFY.noteSplitFork === "function") IFY.noteSplitFork(IFY.S, fork); // 分家记账（丙案第一步）：换轨级岔口覆盖分家点（只记账，不声称影子走了未选支）
         IFY.S.log.push(`${fork.age} 岁 · ${fork.title.split("·")[1].trim()}：${labelText(c)}`);

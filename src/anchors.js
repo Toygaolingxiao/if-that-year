@@ -17,11 +17,13 @@
     { age: 33, id: "fork33f", route: "farm" },
     { age: 31, id: null, route: null },
     { age: 33, id: null, route: null },
-    { age: 38, id: null, route: null },
     { age: 44, id: null, route: null },
     { age: 52, id: null, route: null },
     { age: 58, id: null, route: null },
-    { age: 45, id: null, route: null },
+    // 孩子线批次 S4：fork_kid 是进程分岔（kidGateDue 开门呈现，无固定呈现年龄）——age 33
+    // 只是 D7 最早开门岁的建模登记（anchorInfo 无消费者、不改触发机制），本体以 id 认；
+    // 原 38 岁（fork38）与 45 岁（fork45）两行随其提问功能退役删除。
+    { age: 33, id: "fork_kid", route: null },
   ];
   // 进程拍：父母进程 care/hosp/dead 六拍（who/beat 与 parentsDue 的返回同形）、dating 到期拍、
   // 退休节点拍（node/full/auto 三条呈现条目同属一个节点机制）、出国去向拍（abroad 入口拍）。

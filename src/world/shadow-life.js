@@ -264,7 +264,7 @@
     if (typeof IFY.houseOnBuyFlag === "function") IFY.houseOnBuyFlag(S, c.set, c);
     IFY.applyState(c);
     IFY.applyTempDelta(c.temp); // 温度接点：只改质地字段
-    if (fork.age === 38) IFY.registerCovenant(c); // fork38 立约（流水行由 registerCovenant 先行落，与呈现层同序）
+    if (fork.id === "fork_kid") IFY.kidForkCovenant(c); // 孩子线批次 S4：fork_kid 落点记账（流水行由 registerCovenant 在钩子内先行落，与呈现层同序）
     fork.choices.forEach((o) => { if (o !== c) S.unchosen.push({ kind: "fork", age: fork.age, label: IFY.labelText(o) }); }); // 未选支进本 Track 自己的 unchosen
     if (typeof IFY.noteSplitFork === "function") IFY.noteSplitFork(S, fork); // 分家记账（丙案第一步）：换轨级岔口在本轨也落同一笔（与呈现层同口径）
     S.log.push(`${fork.age} 岁 · ${fork.title.split("·")[1].trim()}：${IFY.labelText(c)}`);
@@ -372,6 +372,10 @@
     // 成家接力（孩子线批次 S3）：与受控 step() 同位同规——定下满 1 年未领证必达 p3_086 本体；
     // 补记 usedEvents（同为 p3_003 的 chain 前置接点）。
     if (IFY.licenseDue()) { const lit = D.events.find((e) => e.id === "p3_086"); if (lit) { if (!S.usedEvents.includes(lit.id)) S.usedEvents.push(lit.id); resolveProcHeadless(lit); } }
+    // 站稳门（孩子线批次 S4）：与受控 step() 同位同规——领证保送之后、dating 摊牌之前呈现
+    // fork_kid（定形 kidForkView 与呈现层共用）；分岔独占本年，解决后 return（与下方年龄
+    // 分岔同规），选择走 chooseForTrack 既有通用回落（按新 id 的规则登记是 S5 的事）。
+    if (IFY.kidGateDue()) { const kf = IFY.kidForkView(); if (kf) { resolveForkHeadless(kf); return; } }
     if (IFY.datingDue()) { const dit = D.events.find((e) => e.id === "proc_dating"); if (dit) resolveProcHeadless(dit); }
     IFY.settleAbroadDefault();
     const akd = IFY.abroadKindDue();
@@ -379,7 +383,7 @@
     const wpd = IFY.workPhaseDue();
     if (wpd) { const wit = D.events.find((e) => e.id === wpd.item); if (wit) resolveProcHeadless(wit); }
     if (typeof IFY.wageDue === "function") IFY.wageDue(); // 工资轮：与受控 step() 同点同规（影子不打折，设计稿 §二.3）
-    let fork = D.forks.find((f) => f.age === S.age && (!f.route || f.route === S.route.id) && (!f.forbidRoute || f.forbidRoute !== S.route.id) && (!f.forbid || !S.flags[f.forbid]) && (!f.anyParentAlive || S.state.dad === "alive" || S.state.mom === "alive") && (!f.state || IFY.met(f))); // 与 step() 同式（含 fork58 互锁，下行）
+    let fork = D.forks.find((f) => f.age === S.age && !f.procOnly && (!f.route || f.route === S.route.id) && (!f.forbidRoute || f.forbidRoute !== S.route.id) && (!f.forbid || !S.flags[f.forbid]) && (!f.anyParentAlive || S.state.dad === "alive" || S.state.mom === "alive") && (!f.state || IFY.met(f))); // 与 step() 同式（含 fork58 互锁，下行）
     if (fork && fork.age === 58 && typeof IFY.retireDecidedThisYear === "function" && IFY.retireDecidedThisYear()) fork = null;
     if (fork) { resolveForkHeadless(fork); return; }
     // 瞥视：跳过——不受控 Track 不瞥视任何人（蓝图 5.1 第 2 步注）

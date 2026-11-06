@@ -194,7 +194,7 @@
       const X = (a) => anchorX + (a - age) * PP;
       const forkFiredW = (f) => IFY.S.log.some((l) => l.startsWith(`${f.age} 岁 · `) && f.choices.some((c) => l.endsWith(`：${c.label}`)));
       let s = "";
-      (IFY.D.forks || []).filter((f) => f.age < end && !(f.state && age > f.age && !forkFiredW(f))).forEach((f) => { // 过滤口径同旧画法（带门分岔没轮到这位玩家时不画）
+      (IFY.D.forks || []).filter((f) => !f.procOnly && f.age < end && !(f.state && age > f.age && !forkFiredW(f))).forEach((f) => { // 过滤口径同旧画法（带门分岔没轮到这位玩家时不画）；procOnly 进程分岔无固定站点、不入图（S4 起）
         const x = X(f.age);
         if (x < pad || x > W - pad) return; // 窗口外的站点不画：走过的随窗口左移出界，未来的从右侧渐隐段里随接近而显形
         const on = age >= f.age, col = on ? "#2F4A3C" : "#C4BCA9";
@@ -218,7 +218,7 @@
     const alive = !IFY.S.death; // fix5：游玩中终局未定——右端不标岁数（不预设终点），底线末段渐隐成开放式；终局已定后右端标真实终局岁（事实）
     let s = "";
     const forkFired = (f) => IFY.S.log.some((l) => l.startsWith(`${f.age} 岁 · `) && f.choices.some((c) => l.endsWith(`：${c.label}`)));
-    (IFY.D.forks || []).filter((f) => f.age < end && !(f.state && IFY.S.age > f.age && !forkFired(f))).forEach((f) => { // v0.16.0：带门分岔没轮到这位玩家时不画（未到龄仍照常淡显）
+    (IFY.D.forks || []).filter((f) => !f.procOnly && f.age < end && !(f.state && IFY.S.age > f.age && !forkFired(f))).forEach((f) => { // v0.16.0：带门分岔没轮到这位玩家时不画（未到龄仍照常淡显）；procOnly 进程分岔不入图（S4 起）
       const on = IFY.S.age >= f.age, col = on ? "#2F4A3C" : "#C4BCA9";
       s += `<line x1="${X(f.age)}" y1="30" x2="${X(f.age) + 13}" y2="13" stroke="${col}" stroke-width="1.6" stroke-dasharray="3 3"/><circle cx="${X(f.age)}" cy="30" r="3" fill="${col}"/>`;
     });

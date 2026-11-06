@@ -88,7 +88,7 @@
     const end = IFY.finalAge();
     x.strokeStyle = "#2F4A3C"; x.lineWidth = 7; x.beginPath(); x.moveTo(90, gy); x.lineTo(990, gy); x.stroke();
     x.strokeStyle = "#8A948C"; x.lineWidth = 4; x.setLineDash([14, 12]);
-    IFY.D.forks.filter((f) => f.age < end).forEach((f) => { const fx = 90 + (900 * (f.age - IFY.START_AGE)) / (end - IFY.START_AGE); x.beginPath(); x.moveTo(fx, gy); x.quadraticCurveTo(fx + 60, gy - 90, fx + 150, gy - 110); x.stroke(); });
+    IFY.D.forks.filter((f) => !f.procOnly && f.age < end).forEach((f) => { const fx = 90 + (900 * (f.age - IFY.START_AGE)) / (end - IFY.START_AGE); x.beginPath(); x.moveTo(fx, gy); x.quadraticCurveTo(fx + 60, gy - 90, fx + 150, gy - 110); x.stroke(); }); // procOnly 进程分岔无固定站点、不入图（S4 起）
     x.setLineDash([]);
     x.fillStyle = "#2F4A3C"; x.beginPath(); x.arc(990, gy, 12, 0, 7); x.fill();
   }

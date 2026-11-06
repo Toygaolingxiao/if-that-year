@@ -135,15 +135,88 @@
     return m.solo || orig;
   }
 
-  // fork38 立约（v0.17.0，§4.3 样例）：选择登记为持续状态（S.covenant + cov38_* 旗），后续由年度流事件读账、
-  // 到期点在 45 岁分岔（wait 支）与结算行呈现。只记约与旗，kids 的 setState 路径与价格结构一概不动。
-  function registerCovenant(c) {
-    const kind = c.set === "cov38_has" ? "has" : c.set === "cov38_none" ? "none" : "wait";
-    IFY.S.covenant = { kind, since: 38, due: kind === "wait" ? 45 : null };
+  // 立约登记（v0.17.0 fork38 立约的参数化版，孩子线批次 S4）：选择登记为持续状态（S.covenant），
+  // 后续由年度流事件读账、wait 到期由 kidGateDue 再问、结算行呈现。只记约与旗，kids 的 setState
+  // 路径与价格结构一概不动。S4 起 since 不再写死 38、due 不再写死 45：since = 登记当年年龄，
+  // wait 的 due = since + 7（D-2 裁定）。入参兼容两形：新调用方传 kind 字符串（"has"/"none"/"wait"）；
+  // 旧形传选项对象时按其 set（cov38_*）推 kind，仅作存量调用兜底。
+  function registerCovenant(kindOrChoice) {
+    const kind = typeof kindOrChoice === "string" ? kindOrChoice
+      : kindOrChoice && kindOrChoice.set === "cov38_has" ? "has"
+      : kindOrChoice && kindOrChoice.set === "cov38_none" ? "none" : "wait";
+    const S = IFY.S, since = S.age;
+    S.covenant = { kind, since, due: kind === "wait" ? since + 7 : null };
     const line = kind === "has" ? "立约：孩子的事定了，要。往后的日子，按这个安排走。"
       : kind === "none" ? "立约：孩子的事定了，不要。往后的安排，照这个来。"
-      : "立约：再等等。这份账先挂着，45 岁到期，再对一回。";
-    IFY.S.log.push(`38 岁 · ${line}`);
+      : `立约：再等等。这份账先挂着，${since + 7} 岁到期，再对一回。`;
+    S.log.push(`${since} 岁 · ${line}`);
+  }
+
+  // 站稳门（孩子线批次 S4，细案第 2.2 节 D7 门槛，用户裁定 D-1 取 dating 腿 7 年）：孩子的事
+  // 不再钉在 38 岁问全体，而是随成家进度开门——进程判定 kidGateDue 为真那年，由进程层呈现
+  // fork_kid（呈现点在 engine.js step() 与 shadow-life.js stepYearHeadless() 的进程段，排在
+  // dating 摊牌之前，与出生/领证保底同段同理：门的两条腿都以摊牌前的伴侣状态为准）。
+  // 红线：门只读伴侣状态与时间——partnered 起点读账本（partneredSinceOf，与 licenseDue 同源）、
+  // dating 读 datingSince；不读钱、住房、家底、童年与父母状态。无年龄上下限。
+  // 首问条件：kids 未定、covenant 未登记、未转晚育链（late_try 已落 = ≥44 选要已由 lk 链
+  // 接手，门不再重问——fork45 时代靠年龄钉死天然不重问，状态门必须显式关这一口），且
+  // (a) partnered 持续满 2 年，或 (b) dating 满 7 年。
+  // 再问模式：covenant 为 wait 且 age ≥ due 且身边仍有伴侣（partnered/dating）——无伴侣者
+  // 的悬账走 cov_solo_due 单身对账（细案 1.2 ⑤′），不由本门呈现。
+  function kidGateDue() {
+    const S = IFY.S;
+    if (!S || !S.state || S.state.kids !== "undecided") return false;
+    if (S.flags && S.flags.late_try) return false;
+    const cov = S.covenant;
+    if (cov) {
+      if (cov.kind !== "wait" || typeof cov.due !== "number" || S.age < cov.due) return false;
+      return S.state.spouse === "partnered" || S.state.spouse === "dating";
+    }
+    if (S.state.spouse === "partnered") {
+      const since = partneredSinceOf(S);
+      return since != null && S.age - since >= 2;
+    }
+    if (S.state.spouse === "dating") {
+      return typeof S.datingSince === "number" && S.age - S.datingSince >= 7;
+    }
+    return false;
+  }
+
+  // fork_kid 呈现定形：分岔本体（events.js）一张表写全五种落点选项，呈现时按门况选对——
+  // 年龄戳 = 当年岁数（账本/流水/未选支都按实岁记，与年龄分岔同形）；≥44 岁「要」换晚育版
+  // （kidLate 选项：落 late_try、不带 setState，kids 落定走 lk 链既有口径，细案 1.2 ⑥）；
+  // 再问模式收掉「再等等」、且「不要」换对账版（kidReask 选项：落 late_settle，细案第 5 节）。
+  // 本体永远不被改动，呈现与无头解决共用此定形（两呈现点同调）。
+  function kidForkView() {
+    const S = IFY.S;
+    const def = ((IFY.D && IFY.D.forks) || []).find((f) => f.id === "fork_kid");
+    if (!def) return null;
+    const reask = !!(S.covenant && S.covenant.kind === "wait");
+    const late = S.age >= 44;
+    const choices = (def.choices || []).filter((c) => {
+      if (c.kidLate) return late;
+      if (c.kidReask) return reask;
+      if (c.set === "kid_yes") return !late;
+      if (c.set === "kid_no") return !reask;
+      if (c.set === "kid_wait") return !reask;
+      return true;
+    }).map((c) => Object.assign({}, c));
+    return Object.assign({}, def, { age: S.age, choices });
+  }
+
+  // fork_kid 落点记账（呈现层与无头解决器在选项应用序的同一位置调用，与旧 registerCovenant
+  // 钩子同位）：旗与 kids 流转由选项本体经通用应用序落账，这里只管约的登记与再问补旗——
+  // 「要」（<44）登记 has 之约（since = 开门年龄，bornDue 次年接力）；「再等等」登记 wait 之约
+  // （due = since + 7）；首问「不要」登记 none 之约；再问「不要」（选项本体落 late_settle）
+  // 补落 kid_no、约保持 wait 原样（结算对账行据此读「挂起后定下来」版）；晚育版「要」
+  // （late_try）不登记约——与 fork45 时代同口径，lk 链自有落定路。
+  function kidForkCovenant(c) {
+    const S = IFY.S;
+    if (!c) return;
+    if (c.set === "kid_yes") registerCovenant("has");
+    else if (c.set === "kid_wait") registerCovenant("wait");
+    else if (c.set === "kid_no") registerCovenant("none");
+    else if (c.set === "late_settle") { if (S.flags) S.flags.kid_no = true; }
   }
 
   // 立约对账段版（v0.22.1 F3，交换局）：按段读账，口径与 settlement.playerFacts 同源。
@@ -261,5 +334,5 @@
       : "38 岁挂起的那份账，45 岁说再试一回。可医院没正经跑起来，日子推着人往前走，孩子的事就一直没落定。";
     return "38 岁挂起的那份账，到这一生走完，也没正式对完。";
   }
-  Object.assign(IFY, { datingDue, bornDue, syncKidDebut, kidDebutDue, kidDebutItem, licenseDue, spouseText, registerCovenant, covenantSettleLine });
+  Object.assign(IFY, { datingDue, bornDue, syncKidDebut, kidDebutDue, kidDebutItem, licenseDue, kidGateDue, kidForkView, kidForkCovenant, spouseText, registerCovenant, covenantSettleLine });
 })(window.IFY);

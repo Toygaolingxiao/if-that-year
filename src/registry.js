@@ -1067,27 +1067,42 @@ window.GAME_REGISTRY.milestones = {
   },
   "late_settle": {
    "setters": [
-    "fork45"
+    "fork_kid"
    ],
-   "note": "45 岁分岔主动落定不要（v0.16.0）"
+   "note": "到期再问时主动落定不要：原由 45 岁分岔落（v0.16.0），孩子线批次 S4 起改由 fork_kid 的到期再问「不要」（kidReask 选项）落，呈现层 kidForkCovenant 同拍补落 kid_no；旗义与读法不变"
+  },
+  "kid_yes": {
+   "setters": [
+    "fork_kid"
+   ],
+   "note": "站稳门内选要（孩子线批次 S4）：进程分岔 fork_kid 首问/再问选「要」（呈现年龄 <44）同拍落此旗并登记 covenant{kind:has, since=开门年龄}，次年 bornDue 保送出生拍。对应旧 cov38_has，但 since 不再是 38；≥44 岁选要不落此旗、改落 late_try 走晚育链"
+  },
+  "kid_no": {
+   "setters": [
+    "fork_kid"
+   ],
+   "note": "站稳门内选不要（孩子线批次 S4）：fork_kid 选「不要」落此旗、kids 同拍落 none、链关闭；到期再问选不要时由 kidForkCovenant 补落（该选项本体落 late_settle）。对应旧 cov38_none"
+  },
+  "kid_wait": {
+   "setters": [
+    "fork_kid"
+   ],
+   "note": "站稳门内选再等等（孩子线批次 S4）：fork_kid 首问选「再等等」落此旗并登记 covenant{kind:wait, since=开门年龄, due=since+7}，到期年由 kidGateDue 再问（只剩要/不要）。对应旧 cov38_wait；cov_solo_due 的门改读 kid_wait ∪ cov38_wait 并集（lines/covenant.js 用 any）"
   },
   "cov38_has": {
    "setters": [
-    "fork38"
    ],
-   "note": "立约·要（v0.17.0）：38 岁分岔选「要」登记的持续之约，年度流 cov_has_flow 读此旗；只记约不碰 kids 状态机"
+   "note": "立约·要（v0.17.0）：38 岁分岔选「要」登记的持续之约，年度流 cov_has_flow 读此旗（S4 起该流改读 cov38_has ∪ kid_yes 并集）；只记约不碰 kids 状态机。孩子线批次 S4 起 fork38 退役、新局不再产生此旗，登记保留供旧存档与旧账本读取，setters 清空以本注记为准"
   },
   "cov38_none": {
    "setters": [
-    "fork38"
    ],
-   "note": "立约·不要（v0.17.0）：同上，年度流 cov_none_flow"
+   "note": "立约·不要（v0.17.0）：同上，年度流 cov_none_flow（S4 起改读 cov38_none ∪ kid_no 并集）。S4 起新局不再产生，保留登记供旧存档，setters 清空以本注记为准"
   },
   "cov38_wait": {
    "setters": [
-    "fork38"
    ],
-   "note": "立约·再等等（v0.17.0）：悬账之约，年度流 cov_wait_flow，到期点为 45 岁分岔（fork45 前缀行）与 e_kid_settle/final 的既有落定路"
+   "note": "立约·再等等（v0.17.0）：悬账之约，年度流 cov_wait_flow（S4 起改读 cov38_wait ∪ kid_wait 并集），到期点原为 45 岁分岔与 e_kid_settle/final 的既有落定路；S4 起旧约到期改由 kidGateDue 再问呈现 fork_kid（伴侣在场时）或 cov_solo_due 单身对账（其门同改并集）。S4 起新局不再产生，保留登记供旧存档，setters 清空以本注记为准"
   },
   "cov_solo_done": {
    "setters": [
@@ -1176,9 +1191,9 @@ window.GAME_REGISTRY.milestones = {
   },
   "late_try": {
    "setters": [
-    "fork45"
+    "fork_kid"
    ],
-   "note": "45 岁分岔选「再认真试一回」（v0.16.0），开启 pack34 链与 synergy 晚育稀有"
+   "note": "晚育再试标记：原由 45 岁分岔选「再认真试一回」落（v0.16.0），孩子线批次 S4 起改由 fork_kid 在呈现年龄 ≥44 时选「要」（kidLate 选项）落，开启 pack34 链与 synergy 晚育稀有；旗义与读法不变"
   },
   "legacy_sharing_done": {
    "setters": [

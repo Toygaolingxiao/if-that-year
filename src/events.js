@@ -162,11 +162,23 @@ window.GAME_DATA = {
         { label: "现在这套住着挺好，不折腾", require: "bought_house", effects: { money: 2, freedom: 2, health: 1 }, echo: "你把中介的名片收进了抽屉。周末把阳台收拾出来，添了把椅子，住着比先前还顺心了几分。" },
         { label: "搬去离家人近的地方住", effects: { relation: 5, money: 2, growth: -2 }, set: "near_family", echo: "搬完家第一顿饭在父母那儿吃的，汤是热的，你走回去只用了十分钟，路上没赶时间。", echoState: { dad: { dead: "搬完家，第一顿饭是一个人开的火，汤是热的。你走回去只用了十分钟，路上没赶时间。" }, mom: { dead: "搬完家第一顿饭在你爸那儿吃的，汤是热的，你走回去只用了十分钟，路上没赶时间。" } } },
       ] },
-    { age: 38, title: "38 岁 · 要不要孩子", text: "这个问题从「以后的事」，变成了「就这几年的事」。",
+    // 孩子线批次 S4（细案 1.2 ⑤/第 5 节）：要不要孩子不再钉 38 岁问全体——fork38/fork45 的提问
+    // 功能退役，改由进程判定 kidGateDue（spouse.js：定下满 2 年 / 处满 7 年）开门、当年以本分岔
+    // 呈现（呈现定形 kidForkView：年龄戳实岁、选项按门况选对）。procOnly = 只许进程呈现：
+    // step()/无头步进的年龄查找与各图面（道路图/结算图/分享卡）一律跳过它（无固定站点）；
+    // age 填 33 只作校验器的建模年龄（D7 最早开门岁：31 定下 + 2 年），运行时不作呈现年龄用，
+    // 锚点表以 id 登记。本体一张表写全五种落点选项：常规「要」
+    // （kid_yes，<44 岁用）/ 晚育「要」（kidLate，≥44 岁换上：落 late_try、不落 kids，落定走
+    // lk 链）/ 常规「不要」（kid_no）/ 再问「不要」（kidReask，wait 到期再问时换上：落
+    // late_settle）/「再等等」（kid_wait，登记 wait 之约，due = 开门年龄 + 7）。
+    { id: "fork_kid", age: 33, procOnly: true, title: "孩子的事 · 要不要孩子", text: "定下来这两年，日子算是过稳了：下班一起买菜，逢年过节两边老人那儿轮着去，钱放在一处花。这个问题之前提过两回，都说再想想。这一回，两个人都没往后推，把话摆到桌上说。",
+      textState: { spouse: { dating: "处了这些年，家里的老人问起，你俩都打哈哈。这个问题这两年也提过两回：一回是对方家里添了小侄子，一回是你同事休完产假回来。这一回，两个人坐下来，把这件事正经摆到桌上说。" } },
       choices: [
-        { label: "要。日子会变样，心里有数", effects: { relation: 7, money: -6, freedom: -6, health: -2 }, setState: { kids: "has" }, set: "cov38_has", echo: "家里开始腾地方，婴儿床的尺寸量了又量，你把容易磕碰的桌角都贴上了软条。", echoBySpouse: { dating: "名分还没定，孩子先排上日程。你跟对方摊开说了，饭桌上对着日历算了半天，谁也没说反悔。婴儿床尺寸量了又量，桌角贴了软条。" } },
-        { label: "不要。两个人的日子也完整", labelBySpouse: { dating: "不要。就我们俩，往下过", solo: "不要。一个人的日子也完整" }, effects: { freedom: 6, money: 4, relation: -2 }, setState: { kids: "none" }, set: "cov38_none", echo: "亲戚再问起，你和另一半就把话岔到旅行上，回来在冰箱上多贴了一张车票根。", echoBySpouse: { dating: "亲戚再问起，你和另一半就把话岔到旅行上，回来在冰箱上多贴了一张车票根。", solo: "亲戚再问起，你把话岔到旅行上，回来在冰箱上多贴了一张车票根。" } },
-        { label: "再等等，看看身体和钱包", effects: { health: -2, money: 2 }, set: "cov38_wait", echo: "你去做了次全面检查，又把存款重新算了一遍，文件夹最上面压了张写着日期的纸。" },
+        { label: "要。日子会变样，心里有数", effects: { relation: 7, money: -6, freedom: -6, health: -2 }, setState: { kids: "has" }, set: "kid_yes", echo: "家里开始腾地方，婴儿床的尺寸量了又量，你把容易磕碰的桌角都贴上了软条。", echoBySpouse: { dating: "名分还没定，孩子先排上日程。你跟对方摊开说了，饭桌上对着日历算了半天，谁也没说反悔。婴儿床尺寸量了又量，桌角贴了软条。" } },
+        { label: "要。趁着身体还行，正经试一回", kidLate: true, effects: { money: -3, health: -1, relation: 2 }, set: "late_try", echo: "你把那家医院的名字搜出来，收藏了页面。对方说，陪你去，一次不落。" },
+        { label: "不要。两个人的日子也完整", labelBySpouse: { dating: "不要。就我们俩，往下过" }, effects: { freedom: 6, money: 4, relation: -2 }, setState: { kids: "none" }, set: "kid_no", echo: "亲戚再问起，你和另一半就把话岔到旅行上，回来在冰箱上多贴了一张车票根。", echoBySpouse: { dating: "亲戚再问起，你和另一半就把话岔到旅行上，回来在冰箱上多贴了一张车票根。" } },
+        { label: "不要。两个人的日子也完整", labelBySpouse: { dating: "不要。就我们俩，往下过" }, kidReask: true, effects: { freedom: 3, money: 2, relation: 1 }, setState: { kids: "none" }, set: "late_settle", echo: "这份账在文件夹里压了这些年，今天总算对完了。纸没有扔，收进抽屉底层。话说开的那晚，觉比平时睡得沉。" },
+        { label: "再等等，看看身体和钱包", effects: { health: -2, money: 2 }, set: "kid_wait", echo: "你去做了次全面检查，又把存款重新算了一遍，文件夹最上面压了张写着日期的纸。" },
       ] },
     { age: 44, title: "44 岁 · 中年的岔路", text: "往上看，天花板好像就在头顶；往旁边看，路还很多，就是每条都费劲。",
       textForm: { farm: "往手里看，一年到头就这些进项，好像到了顶；往旁边看，路还很多，就是每条都费劲。", self: "往店里看，一年到头就这个进项，好像到了顶；往旁边看，路还很多，就是每条都费劲。", flex: "往手里看，单子就这么多，好像到了顶；往旁边看，路还很多，就是每条都费劲。" },
@@ -190,13 +202,9 @@ window.GAME_DATA = {
         { label: "返聘几年，慢慢交棒", labelForm: { farm: "再帮一阵，慢慢交棒", self: "回去帮一阵，慢慢交棒", flex: "再跑几季，慢慢交棒" }, effects: { money: 5, growth: 2, freedom: -3 }, set: "rehire", setState: { workPhase: "part" }, temp: 2, echo: "返聘合同签的是短期的，你的工位没动，只是桌上的日历换成了自己买的那种大格子的。", echoForm: { farm: "说好再帮一阵，活还是那些活，你常守的那摊没动，只是家里的日历换成了自己买的那种大格子的。", self: "说好回去帮一阵，活还是那些活，你常守的那摊没动，只是账本换成了自己买的那种大格子的。", flex: "说好再跑几季，活还是那些活，你常跑的那片区没动，只是家里的日历换成了自己买的那种大格子的。" } },
         { label: "半退，去做点不挣钱但喜欢的事", effects: { freedom: 5, relation: 3, growth: 2 }, set: "slow_life", setState: { workPhase: "part" }, temp: -3, echo: "你一周只去两天社区教室，剩下的时间去学木工，头一件成品是个歪歪扭扭的小板凳。" },
       ] },
-    // v0.16.0：迟到分岔——38 岁选了「再等等」、到 45 还没定且身边有人的，最后问一次（state 门：kids 未定 + 有伴侣；solo 不弹，仍走 e_kid_settle/final 的路）
-    { age: 45, title: "45 岁 · 孩子的事，最后问一次", text: "这事拖了七年，两个人都很少再提。那晚收拾抽屉，翻出当年的检查单，日期还看得清。对方把单子放回原处，说：你想怎么办，这回听你的。再往后拖，就不会有人再提了。",
-      state: { kids: "undecided", spouse: ["partnered", "dating"] },
-      choices: [
-        { label: "再试一回，这次正经去治", effects: { money: -3, health: -1, relation: 2 }, set: "late_try", echo: "你把那家医院的名字搜出来，收藏了页面。对方说，陪你去，一次不落。" },
-        { label: "就这样定下来，两个人好好过", effects: { freedom: 3, money: 2, relation: 1 }, setState: { kids: "none" }, set: "late_settle", echo: "单子没有扔，压在抽屉最底下。话说开了，那晚的觉比平时沉。" },
-      ] },
+    // （45 岁分岔 fork45 已于孩子线批次 S4 退役：其「最后问一次」的功能并入 fork_kid——
+    // wait 之约到期由 kidGateDue 再问（只剩要/不要），≥44 岁选要落 late_try 进 lk 链。
+    // late_try / late_settle 两旗的落点随之改记 fork_kid，旗与读法不变，见 registry 登记。）
   ],
   // 年度事件：可选 route（路线专属）/ require（需持有标记）/ forbid（持有标记则不出现）/ choices（小选择+回响）
   events: [

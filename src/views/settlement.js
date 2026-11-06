@@ -353,8 +353,9 @@
     }
     // v0.22 WP7：视图非空时 faced 判定改读 merged log（两段里真遇过的分岔都算玩家遇过）；未交换走原读法。
     const nmView = playerFacts();
-    const faced = (IFY.D.forks || []).filter((f) => (!IFY.S.death || f.age < IFY.S.death.age) && (!f.state || (nmView ? !!chosenFromLog(nmView.mergedLog, f) : chosenOfFork(f))));
+    const faced = (IFY.D.forks || []).filter((f) => !f.procOnly && (!IFY.S.death || f.age < IFY.S.death.age) && (!f.state || (nmView ? !!chosenFromLog(nmView.mergedLog, f) : chosenOfFork(f)))); // procOnly 进程分岔无固定岁数、不入对照/差一步（S4 起）
     for (const f of IFY.D.forks || []) {
+      if (f.procOnly) continue;
       if (IFY.S.death ? f.age >= IFY.S.death.age : f.age > endAge) continue; // 没活到那个岁数的岔口不算差一步
       if (faced.includes(f)) continue;
       const u = forkUnmet(f);
@@ -510,7 +511,7 @@
       return s + "…";
     };
     const chosenOf = chosenOfFork;
-    const faced = (IFY.D.forks || []).filter((f) => (!IFY.S.death || f.age < IFY.S.death.age) && (!f.state || chosenOf(f))); // v0.16.0：带门分岔没触发过的，不进结算对照（无门分岔照旧）
+    const faced = (IFY.D.forks || []).filter((f) => !f.procOnly && (!IFY.S.death || f.age < IFY.S.death.age) && (!f.state || chosenOf(f))); // v0.16.0：带门分岔没触发过的，不进结算对照（无门分岔照旧）；procOnly 进程分岔不入图（S4 起）
     let g = `<line x1="${cx}" y1="${Y(origin)}" x2="${cx}" y2="${Y(end)}" stroke="#DDD6C9" stroke-width="1.5"/>`;
     g += `<path class="mapspine" style="--gd:${GROW_DELAY}s" pathLength="100" d="M ${cx} ${Y(origin)} L ${cx} ${Y(end)}" fill="none" stroke="#2F4A3C" stroke-width="3" stroke-linecap="round"/>`;
     const labels = [];
@@ -583,6 +584,7 @@
     // 段内 faced 序列：分岔岁落在段内、且该段 Track 的 log 里真有已选标签（chosenOfForkIn），同岁只取先命中的段
     const facedSeg = [];
     for (const f of IFY.D.forks || []) {
+      if (f.procOnly) continue; // procOnly 进程分岔无固定岁数、不入段图（S4 起）
       for (let si = 0; si < view.segments.length; si++) {
         const seg = view.segments[si];
         if (f.age < seg.fromAge || f.age > seg.toAge) continue;
