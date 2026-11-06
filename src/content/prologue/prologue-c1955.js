@@ -309,7 +309,7 @@
           choices: [
             { label: "去。一晚上认十个字，回来写在门框上", set: "literacy_gain", setFact: { schoolingDepth: "cut" }, effects: { growth: 2 }, echo: "半年下来，门框上的字连成了一片。你头一回自己读完一整张通知，心里亮堂了不少。" },
             { label: "跟放羊的老人认字，他写在地上，你跟着学", setFact: { schoolingDepth: "cut" }, effects: { growth: 1 }, echo: "你的名字是先在地上学会写的。后来队里贴告示，你能认个七七八八，日子够用了。" },
-            { label: "没去成，家里的活离不开人", set: "home_ledger", setFact: { schoolingDepth: "none" }, effects: { growth: 1 }, echo: "工分账你记得歪歪扭扭，数目倒从没错过。字认得不多，日子照样往前过。" },
+            { label: "没去成，家里的活离不开人", setFact: { schoolingDepth: "none" }, effects: { growth: 1 }, echo: "工分账你记得歪歪扭扭，数目倒从没错过。字认得不多，日子照样往前过。" },
           ] },
         { id: "pr_never3", age: 20, log: "认字之后", sit: "never",
           text: "这两年，队里贴的通知、供销社的价目，你都能自己看完了。去公社办事，表格递到手里，你能一笔一画填上，心里不慌了。",

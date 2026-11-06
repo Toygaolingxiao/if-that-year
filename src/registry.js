@@ -130,11 +130,6 @@ window.GAME_REGISTRY.milestones = {
     "p21_001"
    ]
   },
-  "aims_team_lead": {
-   "setters": [
-    "p9_055"
-   ]
-  },
   "asked_borrow": {
    "setters": [
     "p5_003",
@@ -143,10 +138,11 @@ window.GAME_REGISTRY.milestones = {
    ],
    "note": "有人开口借过钱（时序回响修复段立）：事实是「开口问过」、与借没借无关，故立在呈现上——p5_007（朋友借三千）、p5_003（老同学借钱）、p11_002（表弟借钱周转）任一呈现即立。消费者：p5_010「朋友第二次开口借钱」的 require——无此旗不出，挡「没人开过口直接第二次」。人物口径从宽：三条任一出过即算「又一次有人开口」，严格同人分旗成本不值（分析报告登记）。旧存档失败关闭：中途局无此旗时 p5_010 本局可能不再出，不产生矛盾"
   },
-  "asked_leave": {
+  "asked_regret": {
    "setters": [
-    "e65_003"
-   ]
+    "p1_003"
+   ],
+   "note": "聚餐时问过二战同学后不后悔（P1 补因果立）：同学上岸回响认领"
   },
   "back_home_stay": {
    "setters": [
@@ -161,6 +157,12 @@ window.GAME_REGISTRY.milestones = {
     "p11_041"
    ],
    "note": "回老家住一阵之后回城落定（v0.24.4 AN-2）：p11_041 条目级 set 落旗，居所轨迹 residenceTrailOf 只读此旗认回城（出国线记回 abroad）；旧存档无此旗，轨迹兼容读账本 p11_041 条目一个版本周期"
+  },
+  "back_to_work_soon": {
+   "setters": [
+    "p16_063"
+   ],
+   "note": "另一半出院后请几天假就回去上班（P1 立）：工作线回响认领"
   },
   "badminton_captain": {
    "setters": [
@@ -188,6 +190,12 @@ window.GAME_REGISTRY.milestones = {
     "e65_027"
    ]
   },
+  "bought_cotton_coat": {
+   "setters": [
+    "p29_005"
+   ],
+   "note": "打短工临走给自己买了件厚棉袄（P1 立）：过冬回响认领"
+  },
   "bought_fangai": {
    "setters": [
     "e65_026"
@@ -204,6 +212,126 @@ window.GAME_REGISTRY.milestones = {
     "p3_033"
    ]
   },
+  "care_plan_stated": {
+   "setters": [
+    "p21_068"
+   ],
+   "note": "把住院陪护安排对孩子念一遍说清了（P1 落事实）：消费者在结算批——「没办完的事」槽预期认领，本批只落事实不写判词"
+  },
+  "care_plan_vague": {
+   "setters": [
+    "p21_068"
+   ],
+   "note": "住院陪护安排只说了个大概（P1 落事实）：同上，结算批预期认领为悬着的事"
+  },
+  "checked_house_price": {
+   "setters": [
+    "p17_062"
+   ],
+   "note": "动过卖房念头、先看了行情（P1 立）：p22_045 空房处理与换房类条目的前置事实；不动住房参数"
+  },
+  "chess_circle": {
+   "setters": [
+    "p6_051"
+   ],
+   "note": "钓鱼改去公园下棋（P1 立）：棋局回响认领"
+  },
+  "cleaner_hired": {
+   "setters": [
+    "p4_011"
+   ],
+   "note": "给父母请了钟点工只做重活（P1 立）：双亲回响认领"
+  },
+  "coin_dabbled": {
+   "setters": [
+    "p19_047"
+   ],
+   "note": "注册买过一点币（P1 立）：币价波动回响认领"
+  },
+  "cousin_helped_first": {
+   "setters": [
+    "e78_030"
+   ],
+   "note": "父亲住院托表弟先帮着问（P1 立）：亲戚人情回响认领"
+  },
+  "cousin_stayed": {
+   "setters": [
+    "p11_007"
+   ],
+   "note": "表姐在自家沙发住过一阵（P1 立）：表姐落脚回响认领"
+  },
+  "cut_loss_once": {
+   "setters": [
+    "p1_036"
+   ],
+   "note": "基金割肉认过学费（P1 立）：投资话题回响认领；p13_044 规矩拍是它的叙事下游"
+  },
+  "data_course_done": {
+   "setters": [
+    "p18_038"
+   ],
+   "note": "报了厂内数据分析课（P1 立）：报表线回响认领"
+  },
+  "debt_free": {
+   "setters": [
+    "p12_064"
+   ],
+   "note": "补偿金先清了信用卡和零碎欠款、无债一身轻（P1 立）：借钱/月供类条目预期认领"
+  },
+  "delivered_meals_week": {
+   "setters": [
+    "p24_018"
+   ],
+   "note": "老朋友丧偶后接下来一周给对方送饭（P1 立）：老友线回响认领"
+  },
+  "elder_video_circle": {
+   "setters": [
+    "p14_063"
+   ],
+   "note": "跟老伙计们开起了视频局（P1 立）：老友条目预期按旗出场"
+  },
+  "elec_post_taken": {
+   "setters": [
+    "p23_032"
+   ],
+   "note": "拿电工证去应聘上岗（P1 立）：岗位事实回响认领；活计形态已由 craft_work 在管，工资档不另接"
+  },
+  "elevator_led": {
+   "setters": [
+    "p16_061"
+   ],
+   "note": "加装电梯时牵头把账算清（P1 立）：电梯装成回响的前置认领；health.js 电梯口径读条目发生事实，与本旗分工"
+  },
+  "escort_note_posted": {
+   "setters": [
+    "p23_062"
+   ],
+   "note": "把陪诊流程写成纸条贴了活动室（P1 立）：陪诊成摊回响认领；结算关系槽后续可读"
+  },
+  "fishing_circle": {
+   "setters": [
+    "p6_051"
+   ],
+   "note": "跟老同事钓鱼下周还去（P1 立）：钓鱼局回响认领"
+  },
+  "gave_parents_appliance": {
+   "setters": [
+    "p18_042"
+   ],
+   "note": "探亲留钱给家里换了空调（P1 立）：双亲回响认领（物件一侧）"
+  },
+  "gig_asked": {
+   "setters": [
+    "p1_030"
+   ],
+   "note": "问过骑手兼职怎么算（P1 立）：回响拍落 side_job，副业线由此开口"
+  },
+  "helped_classmate_job": {
+   "setters": [
+    "p1_015"
+   ],
+   "note": "帮教培转行的同学问过岗位（P1 立）：与 offered_hand 共用同学转行回响"
+  },
   "huiqian_chosen": {
    "setters": [
     "p30_003"
@@ -219,7 +347,8 @@ window.GAME_REGISTRY.milestones = {
   },
   "calligraphy_teach": {
    "setters": [
-    "p10_014"
+    "p10_014",
+    "p6_054"
    ]
   },
   "car_bought": {
@@ -289,11 +418,6 @@ window.GAME_REGISTRY.milestones = {
     "p21_031"
    ]
   },
-  "carpool_group": {
-   "setters": [
-    "p9_014"
-   ]
-  },
   "cataract_done": {
    "setters": [
     "p14_043",
@@ -335,11 +459,6 @@ window.GAME_REGISTRY.milestones = {
     "p9_020"
    ]
   },
-  "commute_reading": {
-   "setters": [
-    "p9_068"
-   ]
-  },
   "cooking_recipe": {
    "setters": [
     "p10_028"
@@ -355,19 +474,9 @@ window.GAME_REGISTRY.milestones = {
     "p23_040"
    ]
   },
-  "data_only_rep": {
-   "setters": [
-    "p9_007"
-   ]
-  },
   "dca": {
    "setters": [
     "p2_070"
-   ]
-  },
-  "dinner_prep_habit": {
-   "setters": [
-    "p9_062"
    ]
   },
   "door_neighbor": {
@@ -493,16 +602,6 @@ window.GAME_REGISTRY.milestones = {
    ],
    "note": "孙辈已在本局以在场人物出现过（时序回响修复段立）：孙辈没有出生状态域，只有 kidAgeMin 年龄代理，「第一次抱孙辈」类断言无从查证（G6 一轮 e95_009 实例）。本旗无数据层 setter：由 work.js 的 syncGrandkidSeen 扫账本——名单 21 条（p14_027、p14_028、p14_030、p14_031、p14_032、p14_034、p16_059、p16_070、p23_066、p25_006、p25_017、p25_027、p25_037、p25_042、p25_063、p26_013、p29_019、e55_044、e55_050、e55_069、e95_009，凡把孙辈写成主角自己的在场人物者）任一呈现即立，flagAges 记首次呈现年龄，与 syncPensionPaid 同型、setters 为空以本注记为准；新增同类条目须同步把 id 加进 work.js 的 GRANDKID_BEAT_IDS。消费者：p14_028、e55_044 的 forbid（第一次抱/有了孙辈的到来语义必须是真的第一次）。旧存档账本自愈"
   },
-  "had_pager": {
-   "setters": [
-    "e65_015"
-   ]
-  },
-  "hainan_dream": {
-   "setters": [
-    "e65_005"
-   ]
-  },
   "held_stock_2015": {
    "setters": [
     "p23_040"
@@ -559,6 +658,156 @@ window.GAME_REGISTRY.milestones = {
     "cf_02"
    ],
    "note": "出身牌钩子（v0.13.0）：setter 为牌 id，消费事件 pack33"
+  },
+  "kept_running": {
+   "setters": [
+    "p4_039"
+   ],
+   "note": "晨跑把闹钟定回去继续跑（P1 立）：健康线回响认领"
+  },
+  "kid_chose_far": {
+   "setters": [
+    "e78_048"
+   ],
+   "note": "孩子高考志愿以自己拿主意为主、去了远处（P1 落回响事实）：只落事实供孩子线后续回响读，不碰孩子线的门和链"
+  },
+  "kid_cost_memo": {
+   "setters": [
+    "p27_008"
+   ],
+   "note": "孩子升学费与对方按新比例写进备忘（P1 立）：只作回响取材，不碰孩子线的门和链"
+  },
+  "kid_cost_padfirst": {
+   "setters": [
+    "p27_008"
+   ],
+   "note": "孩子升学费谁宽裕谁先垫（P1 立）：同上"
+  },
+  "kid_stayed_near": {
+   "setters": [
+    "e78_048"
+   ],
+   "note": "孩子高考志愿挑了离家近的稳妥专业（P1 落回响事实）：同上"
+  },
+  "land_all_transferred": {
+   "setters": [
+    "p29_021"
+   ],
+   "note": "大田全流转出去（P1 立）：务农形态事实，农活/身体线回响认领"
+  },
+  "land_half_kept": {
+   "setters": [
+    "p29_021"
+   ],
+   "note": "大田先流转一半再种两年（P1 立）：务农形态事实，同上"
+  },
+  "meds_checked": {
+   "setters": [
+    "p22_066"
+   ],
+   "note": "复查时照用药记录逐个问清（P1 立）：健康线信号入口——用药在管事实；死亡片 B 预期消费"
+  },
+  "mentored_through_crisis": {
+   "setters": [
+    "p13_047"
+   ],
+   "note": "深夜陪带过的人捋了一个小时（P1 立）：带人线回响认领"
+  },
+  "met_after_divorce": {
+   "setters": [
+    "p27_006"
+   ],
+   "note": "离异后经人张罗见了面、约着喝了咖啡（P1 立）：再结伴回响认领（入 dating 进程）"
+  },
+  "neighbor_on_speaking": {
+   "setters": [
+    "p5_020"
+   ],
+   "note": "楼上漏水敲门商量、处成说得上话的邻里（P1 立）：邻里条目预期按旗分文案"
+  },
+  "new_neighbors_made": {
+   "setters": [
+    "p23_055"
+   ],
+   "note": "在新小区处新邻居（P1 立）：新邻居条目认领"
+  },
+  "offered_hand": {
+   "setters": [
+    "p1_012"
+   ],
+   "note": "给网店被封的同学递过「来你这边干着」的话（P1 立）：与 helped_classmate_job 共用同学转行回响"
+  },
+  "old_neighbors_kept": {
+   "setters": [
+    "p23_055"
+   ],
+   "note": "逢年过节回老楼看老邻居（P1 立）：老邻居线回响认领"
+  },
+  "parents_activity_class": {
+   "setters": [
+    "p13_007"
+   ],
+   "note": "给父母报了社区活动班（P1 立）：双亲进程回响认领（父母社交一侧）"
+  },
+  "parents_live_near": {
+   "setters": [
+    "p21_043"
+   ],
+   "note": "父母同住试后改成住得近勤走动（P1 落居住事实）：晚年照护线预期读"
+  },
+  "parents_live_together": {
+   "setters": [
+    "p21_043"
+   ],
+   "note": "父母同住再试一个月（P1 落居住事实）：晚年照护线预期读"
+  },
+  "partner_taught_chores": {
+   "setters": [
+    "p26_049"
+   ],
+   "note": "慢慢教对方一点自己的活防万一（P1 落事实）：判词批伴侣史分型预期认领；本批只认领事实，不写判词"
+  },
+  "pension_base_asked": {
+   "setters": [
+    "p12_017"
+   ],
+   "note": "就最低基数交社保找人事问过（P1 立）：退休核定回响认领；替代率分档沿用 wage.js 现成口径，本旗不动参数"
+  },
+  "pension_base_low": {
+   "setters": [
+    "p12_017"
+   ],
+   "note": "社保按最低基数交到底没问（P1 立）：退休核定回响认领；同上，不动参数"
+  },
+  "phone_class_done": {
+   "setters": [
+    "e55_050"
+   ],
+   "note": "去社区手机课堂学智能手机（P1 立）：社区课堂条目认领"
+  },
+  "phone_note_on_wall": {
+   "setters": [
+    "e55_050"
+   ],
+   "note": "让孩子写操作纸条贴墙学智能手机（P1 立）：孩子回响认领"
+  },
+  "process_craft": {
+   "setters": [
+    "p18_038"
+   ],
+   "note": "没报课、先吃透手头工序（P1 立）：工序线回响认领"
+  },
+  "promised_next_summer": {
+   "setters": [
+    "p33_004"
+   ],
+   "note": "答应侄子明年还来讲书（P1 立）：约定型回响认领，与立约线同语法"
+  },
+  "quit_drinking": {
+   "setters": [
+    "p26_015"
+   ],
+   "note": "体检三项箭头后先戒了酒（P1 立）：健康线疾病信号——干预方式事实；死亡片 B 预期消费"
   },
   "re_div_start": {
    "setters": [
@@ -687,16 +936,101 @@ window.GAME_REGISTRY.milestones = {
     "e65_040"
    ]
   },
-  "knows_boss_focus": {
-   "setters": [
-    "p9_001"
-   ]
-  },
   "laid_off": {
    "setters": [
     "p15_025",
     "p2_012"
    ]
+  },
+  "recheck_full": {
+   "setters": [
+    "p21_013"
+   ],
+   "note": "体检三项标红全查了一遍（P1 立）：健康线疾病信号入口——复查范围事实；死亡片 B 预期消费"
+  },
+  "recheck_logged": {
+   "setters": [
+    "p26_008"
+   ],
+   "note": "把对方复查结果记在台历上（P1 立）：健康线信号同族——复查在管事实；死亡片 B 对表"
+  },
+  "recheck_partial": {
+   "setters": [
+    "p21_013"
+   ],
+   "note": "体检三项标红只复查一项（P1 立）：健康线疾病信号入口——复查范围事实；死亡片 B 的 diseaseState 预期消费，与 p15_013/p21_032 同族对表"
+  },
+  "recipe_book": {
+   "setters": [
+    "p14_065"
+   ],
+   "note": "把成功菜式抄成了手抄本（P1 立）：厨房条目预期认领"
+  },
+  "rehab_kept": {
+   "setters": [
+    "p21_039"
+   ],
+   "note": "膝盖手术后好好配合康复（P1 立）：后续身体条目（爬楼/出门）回响认领"
+  },
+  "reimburse_expired": {
+   "setters": [
+    "p21_028"
+   ],
+   "note": "报销材料先放着（P1 立）：单子过期回响认领"
+  },
+  "reimburse_filed": {
+   "setters": [
+    "p21_028"
+   ],
+   "note": "陪父母看病的报销材料备齐去问清了（P1 立）：到账回响认领"
+  },
+  "rent_repair_fund": {
+   "setters": [
+    "p23_048"
+   ],
+   "note": "房改房租金单独存作维修基金（P1 立）：房屋大修类条目预期按旗抵扣认领"
+  },
+  "self_help_parents": {
+   "setters": [
+    "p4_011"
+   ],
+   "note": "没请钟点工、自己回去多干（P1 立）：照护回响认领"
+  },
+  "senior_u_one": {
+   "setters": [
+    "p25_052"
+   ],
+   "note": "老年大学只报一门课（P1 立）：课程回响认领"
+  },
+  "senior_u_two": {
+   "setters": [
+    "p25_052"
+   ],
+   "note": "老年大学报了两门课（P1 立）：课程回响认领"
+  },
+  "shebao_left_hanging": {
+   "setters": [
+    "p12_013"
+   ],
+   "note": "社保转移先放着没办（P1 立）：断缴发现回响认领"
+  },
+  "shebao_transferred": {
+   "setters": [
+    "p12_013"
+   ],
+   "note": "换城市时线上提交了社保转移（P1 立）：办结回响认领"
+  },
+  "spare_house_kept": {
+   "setters": [
+    "p22_045"
+   ],
+   "note": "空房先留着、先安顿父母（P1 落去留事实）：同上"
+  },
+  "spare_house_sold": {
+   "setters": [
+    "p22_045"
+   ],
+   "note": "空着的那套房挂牌处理了（P1 落去留事实）：只记去留，不动住房任何参数；住房账预期对表"
   },
   "spouse_hosp_done": {
    "setters": [
@@ -858,11 +1192,6 @@ window.GAME_REGISTRY.milestones = {
     "p3_054"
    ]
   },
-  "library_talk_given": {
-   "setters": [
-    "p9_043"
-   ]
-  },
   "library_volunteer": {
    "setters": [
     "p9_018"
@@ -891,11 +1220,6 @@ window.GAME_REGISTRY.milestones = {
     "p13_016"
    ],
    "note": "婚后管钱规矩已经谈过/定过（时序回响修复段立）：p13_016（第一次为钱吵、选项当场定规矩）与 p12_060（认真谈了一回、没吵架）写同一件家务事，两条互不记账、窗口重叠 12 年，同局两现既重复又口径相反（B85-03 实例）。两条条目级自立＋互 forbid，先到者占。旧存档有界放行"
-  },
-  "monthly_sync_habit": {
-   "setters": [
-    "p9_054"
-   ]
   },
   "moved_city": {
    "setters": [
@@ -993,11 +1317,6 @@ window.GAME_REGISTRY.milestones = {
     "p2_075"
    ]
   },
-  "parent_pension_ok": {
-   "setters": [
-    "p12_015"
-   ]
-  },
   "pension_paid": {
    "setters": [
     "p12_019",
@@ -1021,11 +1340,6 @@ window.GAME_REGISTRY.milestones = {
     "p25_079"
    ]
   },
-  "plan_late_retire": {
-   "setters": [
-    "e65_051"
-   ]
-  },
   "prepaid": {
    "setters": [
     "p12_067",
@@ -1035,11 +1349,6 @@ window.GAME_REGISTRY.milestones = {
   "promise_grandkid": {
    "setters": [
     "e65_054"
-   ]
-  },
-  "refused_drink_once": {
-   "setters": [
-    "p9_008"
    ]
   },
   "rehire": {
@@ -1106,11 +1415,6 @@ window.GAME_REGISTRY.milestones = {
     "fork28"
    ]
   },
-  "secondment_extended": {
-   "setters": [
-    "p9_023"
-   ]
-  },
   "self_hosp_done": {
    "setters": [
     "p21_039",
@@ -1129,7 +1433,8 @@ window.GAME_REGISTRY.milestones = {
    "setters": [
     "fork44",
     "p15_044",
-    "p20_034"
+    "p20_034",
+    "p1_088"
    ]
   },
   "side_start": {
@@ -1165,6 +1470,12 @@ window.GAME_REGISTRY.milestones = {
     "fork28"
    ]
   },
+  "stayed_home_halfmonth": {
+   "setters": [
+    "p16_063"
+   ],
+   "note": "另一半出院后在家陪了半个月（P1 立）：伴侣康复回响认领"
+  },
   "steady_job": {
    "setters": [
     "fork44",
@@ -1175,6 +1486,18 @@ window.GAME_REGISTRY.milestones = {
    "setters": [
     "e65_037"
    ]
+  },
+  "switched_to_walk": {
+   "setters": [
+    "p4_039"
+   ],
+   "note": "晨跑改成晚饭后散步（P1 立）：健康线回响认领"
+  },
+  "taiji_class": {
+   "setters": [
+    "p6_054"
+   ],
+   "note": "书法班改报了太极班（P1 立）：太极回响认领"
   },
   "team_captain": {
    "setters": [
@@ -1201,16 +1524,6 @@ window.GAME_REGISTRY.milestones = {
   "took_over_job": {
    "setters": [
     "e55_007"
-   ]
-  },
-  "touched_trade": {
-   "setters": [
-    "e65_030"
-   ]
-  },
-  "traj_antique": {
-   "setters": [
-    "r_antique"
    ]
   },
   "traj_award": {
@@ -1253,11 +1566,6 @@ window.GAME_REGISTRY.milestones = {
     "r_funding"
    ]
   },
-  "traj_hero": {
-   "setters": [
-    "r_rescue"
-   ]
-  },
   "traj_ipo": {
    "setters": [
     "r_ipo"
@@ -1266,11 +1574,6 @@ window.GAME_REGISTRY.milestones = {
   "traj_lottery": {
    "setters": [
     "r_lottery"
-   ]
-  },
-  "traj_patent": {
-   "setters": [
-    "r_patent"
    ]
   },
   "traj_school": {
@@ -1326,6 +1629,18 @@ window.GAME_REGISTRY.milestones = {
     "p19_049"
    ]
   },
+  "trip_cut_short": {
+   "setters": [
+    "p10_040"
+   ],
+   "note": "旅行中对方病倒后提前回家（P1 立）：伴侣旅行回响认领"
+  },
+  "trip_stayed": {
+   "setters": [
+    "p10_040"
+   ],
+   "note": "旅行中对方病倒后多住两天缓过来（P1 立）：伴侣旅行回响认领"
+  },
   "tutor_hard": {
    "setters": [
     "p3_054"
@@ -1359,15 +1674,52 @@ window.GAME_REGISTRY.milestones = {
     "p10_046"
    ]
   },
+  "visit_home_more": {
+   "setters": [
+    "p18_042"
+   ],
+   "note": "探亲后改成每年多回来一趟（P1 立）：双亲回响认领（陪伴一侧）"
+  },
   "volunteer_regular": {
    "setters": [
     "p9_022"
    ]
   },
-  "went_sancan": {
+  "wages_all_home": {
    "setters": [
-    "e65_014"
-   ]
+    "p29_005"
+   ],
+   "note": "打短工的工钱全带回家（P1 立）：家里用上这笔钱的回响认领"
+  },
+  "walk_regimen": {
+   "setters": [
+    "p26_015"
+   ],
+   "note": "体检三项箭头后每天走四十分钟（P1 立）：健康线疾病信号——干预方式事实；死亡片 B 的 diseaseState 预期消费"
+  },
+  "walk_with_dad": {
+   "setters": [
+    "p13_007"
+   ],
+   "note": "每天陪父亲散步打卡（P1 立）：双亲进程回响认领（父亲身体一侧）"
+  },
+  "warned_family_scam": {
+   "setters": [
+    "p10_068"
+   ],
+   "note": "在家庭群提醒过防诈骗电话（P1 立）：家人版回响认领"
+  },
+  "wednesday_new_dish": {
+   "setters": [
+    "p14_065"
+   ],
+   "note": "固定周三试新菜（P1 立）：新菜回响认领"
+  },
+  "went_home_for_dad": {
+   "setters": [
+    "e78_030"
+   ],
+   "note": "父亲住院自己请假跑回去办（P1 立）：双亲进程父亲一侧回响认领"
   },
   "xiahai": {
    "setters": [
@@ -1397,12 +1749,6 @@ window.GAME_REGISTRY.milestones = {
     "pr_never2"
    ],
    "note": "识字线（v0.18.0）：never 处境 15 岁夜校拍立旗，成年段有回响事件"
-  },
-  "home_ledger": {
-   "setters": [
-    "pr_never2"
-   ],
-   "note": "在家记账认字（v0.18.0）：never 处境夜校拍的另一条路"
   },
   "half_grown": {
    "setters": [

@@ -9,7 +9,7 @@ window.GAME_PACKS=(window.GAME_PACKS||[]).concat([
 {"id":"p6_006","minYear":2012,"min":40,"max":54,"require":"side_start","text":"你下班折腾的那个小账号，粉丝不多，但有一条视频被本地媒体转了。评论区有人问：这是你家阳台吗。","effects":{"growth":2,"health":-1}},
 {"id":"p6_007","min":46,"max":60,"require":"side_start","text":"家里的工具箱落了灰，又被你翻了出来。邻居家的门锁坏了，你拎着工具箱就过去了。"},
 {"id":"p6_008","min":42,"max":58,"require":"saw_home","text":"回老家办事，路过当年打听过的那家单位。楼还在，牌子换了，门口的梧桐粗了一圈。"},
-{"id":"p6_009","minYear":2012,"min":48,"max":62,"require":"saw_home","text":"同学群里说，当年你想考的那个岗位，后来并进了新单位，编制只剩一半。有人@你：幸好你没回来。","choices":[{"label":"回了个表情，没接话","effects":{"freedom":1,"wisdom":5},"echo":"你在群里潜水惯了，这次也一样。"},{"label":"说：回来也有回来的活法","effects":{"relation":1,"wisdom":5},"echo":"群里安静了一会儿，老班长出来岔开了话题。"}]},
+{"id":"p6_009","minYear":2012,"min":48,"max":62,"require":"saw_home","text":"同学群里说，当年你想考的那个岗位，后来并进了新单位，编制只剩一半。有人@你：幸好你没回来。你回了个表情，没接话。群里很快聊起了别的，那条消息沉了下去。","effects":{"freedom":1,"wisdom":5}},
 {"id":"p6_010","min":52,"max":64,"require":"saw_home","ctx":{"eduGateHalf":true},"text":"父亲收拾老屋，翻出你当年打印的招考简章，问还留着吗。你说留着吧，垫桌脚正好。","effects":{"wisdom":4},"stateAll":{"dad":"alive"}},
 {"id":"p6_011","min":40,"max":55,"require":"stayed_city","text":"你刚来这座城市时住的那片城中村拆了。你绕路去看了一眼，卖肠粉的摊子还在路口，就是挪了地方。"},
 {"id":"p6_012","min":50,"max":63,"minYear":2014,"require":"stayed_city","text":"父母第一次来你这边过冬。你带他们坐地铁、扫码买菜，母亲学会了用手机付款，逢人就讲。","choices":[{"label":"多留他们住些日子","effects":{"relation":2,"money":-2,"wisdom":3},"echo":"阳台上多了两盆他们侍弄的花，你下班回家先去看一眼长势。"},{"label":"按原计划送他们回去","effects":{"money":1,"freedom":1},"echo":"送站回来屋里一下子空了，你把电视打开，声音调大了一格。"}],"stateAll":{"mom":"alive","dad":"alive"}},
@@ -29,7 +29,7 @@ window.GAME_PACKS=(window.GAME_PACKS||[]).concat([
 {"id":"p6_026","min":50,"max":63,"w":2,"require":"renting","ctx":{"house":"renting"},"text":"你住的这片要改造了，通知贴在楼道里。邻居们在楼下商量搬去哪儿，你也站着听了一会儿。","choices":[{"label":"就近再租，离熟地方近点","effects":{"money":-2,"relation":1},"echo":"搬家那天，老邻居帮你抬了箱子，说下楼喝茶还找你。"},{"label":"干脆搬远些，租金便宜一半","effects":{"money":2,"freedom":1,"relation":-1},"echo":"新家楼下没有那家早点铺了，你适应了一个多月。"}]},
 {"id":"p6_027","min":40,"max":54,"require":"near_family","text":"下班顺路去父母家，母亲已经把你的碗摆上了。父亲说，又来蹭饭。你说，这不叫蹭，叫回家。","effects":{"relation":1,"money":-1},"stateAll":{"dad":"alive","mom":"alive"}},
 {"id":"p6_028","min":44,"max":60,"require":"near_family","text":"半夜父亲不舒服，电话打到你这儿。你五分钟赶到，陪着去急诊。天亮时医生说没大事，你在走廊长椅上眯了一会儿。","effects":{"relation":2,"health":-2,"wisdom":5},"stateAll":{"dad":"alive"}},
-{"id":"p6_029","kidAgeMin":6,"kidAgeMax":15,"minYear":2012,"forbid":["late_parent"],"min":42,"max":54,"text":"家长群里通知开家长会，你和对方划拳决定谁去。输的那个回来转述：老师说啥都好，就是作业字迹要练。","choices":[{"label":"你去，顺便问问近况","effects":{"relation":2,"freedom":-1},"echo":"你坐在小课桌后面，腿伸不直，听满了四十分钟。"},{"label":"对方去，你在家做饭","effects":{"health":1,"relation":1},"echo":"饭做好了人还没回，你把菜又热了一遍。"}],"state":{"kids":"has"},"stateAll":{"spouse":"partnered"}},
+{"id":"p6_029","kidAgeMin":6,"kidAgeMax":15,"minYear":2012,"forbid":["late_parent"],"min":42,"max":54,"text":"家长群里通知开家长会，你和对方划拳决定谁去。那回是你去的，顺便问了问近况。老师说啥都好，就是作业字迹要练。回来你把这话学给对方听，两个人笑了半天。","state":{"kids":"has"},"stateAll":{"spouse":"partnered"},"effects":{"relation":2,"freedom":-1}},
 {"id":"p6_030","kidAgeMin":12,"kidAgeMax":16,"forbid":["late_parent"],"min":46,"max":58,"text":"孩子的个子窜过你了。换灯泡这种事，现在喊一声就行。你在下面扶着凳子，指挥角度。","state":{"kids":"has"}},
 {"id":"p6_031","kidAgeMin":11,"kidAgeMax":17,"forbid":["late_parent"],"min":50,"max":62,"text":"孩子的房门开始随手关了。你敲门进去送水果，哦了一声就出来，果盘倒是空着端出来的。","state":{"kids":"has"}},
 {"id":"p6_032","min":46,"max":60,"text":"过年发红包，你给亲戚家的孩子挨个发。轮到自己，两口子对视一眼，把剩下的钱订了张机票。","effects":{"freedom":2,"money":-2},"state":{"kids":"none"},"stateAll":{"spouse":"partnered"}},
@@ -51,10 +51,10 @@ window.GAME_PACKS=(window.GAME_PACKS||[]).concat([
 {"id":"p6_048","min":54,"max":63,"require":"care_rotate","text":"兄妹几个的排班表贴在冰箱上，用磁贴压着。轮换久了，谁有事提前打招呼，表上的字被改得花里胡哨。"},
 {"id":"p6_049","stateNot":{"workPhase":"retired"},"ctx":{"form":["employee","public"],"car":"now"},"min":56,"max":64,"require":"care_rotate","text":"轮到你值这周，偏赶上单位最忙的几天。假条递上去，领导看了一眼就批了，说：家里事大。","choices":[{"label":"白天在医院，晚上回单位补活","effects":{"health":-2,"money":1,"relation":1,"wisdom":6},"echo":"那周过完，你在车里坐了十分钟才发动，腿有点软。"},{"label":"和兄妹临时换一周，欠个人情","effects":{"relation":1,"freedom":1},"echo":"换班的事说得很顺，对方只说：都一样，你先忙。"}]},
 {"id":"p6_050","min":59,"max":64,"require":"retired_full","text":"退休手续办完的第一个月，你还是六点多就醒。醒了也不起，听着楼下早点摊支锅的声音，慢慢又睡过去。","effects":{"freedom":2,"health":1,"wisdom":3}},
-{"id":"p6_051","min":60,"max":64,"require":"retired_full","text":"老同事群里约着去钓鱼，你买了根竿。坐了一上午，鱼没钓着，旁边的大爷给了你两条。","choices":[{"label":"下周还去，竿都买了","effects":{"relation":1,"money":-1,"health":1},"echo":"你把鱼拎回家，说是河边来的。差不多吧。"},{"label":"竿收起来，改去公园下棋","effects":{"relation":1,"freedom":1},"echo":"棋摊的大爷们给你让了个位置，说你这棋有章法。"}]},
+{"id":"p6_051","min":60,"max":64,"require":"retired_full","text":"老同事群里约着去钓鱼，你买了根竿。坐了一上午，鱼没钓着，旁边的大爷给了你两条。","choices":[{"label":"下周还去，竿都买了","effects":{"relation":1,"money":-1,"health":1},"echo":"你把鱼拎回家，说是河边来的。差不多吧。","set":"fishing_circle"},{"label":"竿收起来，改去公园下棋","effects":{"relation":1,"freedom":1},"echo":"棋摊的大爷们给你让了个位置，说你这棋有章法。","set":"chess_circle"}]},
 {"id":"p6_052","min":59,"max":64,"require":"rehire","state":{"workPhase":"part"},"text":"返聘合同一年一签。今年签字的时候，人事的小姑娘说：您这字，一看就是老同志的。她给你倒了杯水。"},
 {"id":"p6_053","min":60,"max":64,"require":"rehire","state":{"workPhase":"part"},"text":"退休金和返聘工资，两笔到账短信前后脚来。你把截图发到老同事群里，配文就俩字：踏实。","effects":{"money":2}},
-{"id":"p6_054","min":59,"max":64,"require":"slow_life","text":"你在老年大学报了个书法班，第一课老师让悬腕。你写了一页纸，胳膊酸了三天，还去。","choices":[{"label":"坚持去，家伙什都置办齐了","effects":{"growth":1,"money":-1,"health":1},"echo":"期末展览，你的字挂在走廊尽头，不显眼，但落款是你的名。"},{"label":"改报太极班，先活动腿脚","effects":{"health":2,"freedom":1},"echo":"太极班的同学约你晨练，六点半，公园东门，雷打不动。"}]},
+{"id":"p6_054","min":59,"max":64,"require":"slow_life","text":"你在老年大学报了个书法班，第一课老师让悬腕。你写了一页纸，胳膊酸了三天，还去。","choices":[{"label":"坚持去，家伙什都置办齐了","effects":{"growth":1,"money":-1,"health":1},"echo":"期末展览，你的字挂在走廊尽头，不显眼，但落款是你的名。","set":"calligraphy_teach"},{"label":"改报太极班，先活动腿脚","effects":{"health":2,"freedom":1},"echo":"太极班的同学约你晨练，六点半，公园东门，雷打不动。","set":"taiji_class"}]},
 {"id":"p6_055","min":60,"max":64,"require":"slow_life","text":"你给邻居修小家电出了名，工具箱就放在楼道口。谁家台灯不亮了，先来敲你的门。","effects":{"relation":1}},
 {"id":"p6_056","ctx":{"form":["employee","public"]},"stateNot":{"workPhase":"retired"},"forbid":["retire_final_said"],"min":58,"max":64,"text":"单位贴出新的退休年龄测算表，你找到自己那一栏，手指顺着往下数：比原先多了两年多。你把表折好，夹进了笔记本。"},
 {"id":"p6_057","ctx":{"form":["employee","public"]},"stateNot":{"workPhase":"retired"},"min":56,"max":64,"text":"延迟退休的细则轮到你们这批人，办公室里算了一下午账。有人说正好多攒点，有人说就想早点回家带孙辈。","choices":[{"label":"按新表走，多干两年","effects":{"money":2,"freedom":-2,"wisdom":3},"echo":"你把退休出游的单子往后挪了挪，目的地没变。"},{"label":"到老年龄就申请退，不等了","effects":{"freedom":2,"money":-1,"wisdom":3},"echo":"人事说可以，你把申请表领回来，压在台历底下。"}]},
@@ -86,4 +86,10 @@ window.GAME_PACKS=(window.GAME_PACKS||[]).concat([
 {"id":"p6_083","minYear":2012,"min":48,"max":64,"text":"暴雨那天全市停工，你在家煮了锅粥。老家的群里，叔叔发来视频：院子里的水到了小腿。你打电话过去，他说庄稼今年够呛。","effects":{"money":-1}},
 {"id":"p6_084","min":56,"max":64,"text":"小区里遛弯的老人比孩子多。棋牌室下午三点准时满座，你路过时，听见里面为一步棋争得正响。"},
 {"id":"p6_085","min":44,"max":56,"text":"你关注的一个同行账号停更了，最后一条写着：转行去做别的了，谢谢大家。你在评论区留了句保重。"}
+]);
+
+window.GAME_PACKS=(window.GAME_PACKS||[]).concat([
+{"id":"p6_086","min":61,"max":68,"require":"fishing_circle","text":"钓鱼那摊人后来固定了：每周三，河边老位置。有人带马扎，有人带茶。鱼钓没钓着不重要，人齐了就行。","effects":{"relation":2}},
+{"id":"p6_087","min":61,"max":68,"require":"chess_circle","text":"公园下棋那摊，你后来成了常驻。残局摆着，茶续着，到点就有人等你。","effects":{"relation":2}},
+{"id":"p6_088","min":62,"max":70,"require":"taiji_class","text":"太极班你一直没断。后来新来的学员站你后头学动作，老师说：看那位老学员的架势，就知道这班开了多少年。","effects":{"health":2}}
 ]);

@@ -18,7 +18,7 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
 {"id":"p24_015","min":71,"max":75,"text":"膝盖开始怕楼梯。你把家里的东西重新归置了一遍，常用的都挪到伸手够得着的地方，凳子换成带扶手的。收拾完试坐了一下，稳稳当当，心里也跟着稳了点。","choices":[{"label":"自己慢慢归置，一个周末弄完","effects":{"health":2},"echo":"弄完那天你在新凳子上坐了很久，腿也不酸了。"},{"label":"请邻居过来帮忙搭把手","effects":{"relation":2,"money":-1,"wisdom":2},"echo":"邻居顺手把高处的东西也都挪了下来，还贴了标签。"}]},
 {"id":"p24_016","min":75,"max":79,"text":"另一半睡得早，你睡得晚。你们商量好，卧室的灯留一盏小的，谁先睡谁先关大灯。夜里你起来倒水，借着那点光走，不吵醒谁，这办法用了好几年了。水杯放在你那侧的床头。","effects":{"relation":2,"health":1},"state":{"spouse":"partnered"}},
 {"id":"p24_017","min":76,"max":80,"all":["kid_abroad"],"require":"kid_abroad","text":"过年的时候，孩子那边是工作日，没法回来。你包了饺子，冻好一盒，说等哪次谁顺路，给带过去。饺子在冰箱里放了很久，最后你们老两口自己慢慢吃完了。","choices":[{"label":"吃完就吃完，下次再包新鲜的","effects":{"freedom":2},"echo":"最后那一盘，你蘸了很多醋，说还是刚包的好吃。"},{"label":"拍张照片发过去，说留着呢","effects":{"relation":2},"echo":"那边回了个流泪的表情，又补了一句，明年一定回。"}],"stateAll":{"spouse":"partnered"}},
-{"id":"p24_018","min":65,"max":68,"text":"老朋友的老伴走了，你陪着去办各种手续，跑了三个窗口。回来路上谁也没说话，到楼下你说，明天我给你送饭，别自己凑合。对方点点头，站在单元门口看了你一会儿。","choices":[{"label":"接下来一周，你把饭给他送过去","effects":{"relation":1},"echo":"一周的饭送下来，他开始自己下楼买菜了，见着你还道谢，说那几天多亏有你。"},{"label":"帮到手续办完，剩下的日子让他自己缓","effects":{"relation":2},"echo":"你隔几天打个电话问一声。他在电话里说，夜里还是睡不着，但饭能好好吃下去了。"}]},
+{"id":"p24_018","min":65,"max":68,"text":"老朋友的老伴走了，你陪着去办各种手续，跑了三个窗口。回来路上谁也没说话，到楼下你说，明天我给你送饭，别自己凑合。对方点点头，站在单元门口看了你一会儿。","choices":[{"label":"接下来一周，你把饭给他送过去","effects":{"relation":1},"echo":"一周的饭送下来，他开始自己下楼买菜了，见着你还道谢，说那几天多亏有你。","set":"delivered_meals_week"},{"label":"帮到手续办完，剩下的日子让他自己缓","effects":{"relation":2},"echo":"你隔几天打个电话问一声。他在电话里说，夜里还是睡不着，但饭能好好吃下去了。"}]},
 {"id":"p24_019","forbid":["late_parent"],"min":68,"max":72,"text":"你把两边的地址、电话、常去医院的路线，都写在一张纸上，压在客厅的玻璃板下面。孩子回来看见了，拍照存进手机，说这张纸比导航还让人心里有底。","effects":{"relation":1},"state":{"kids":"has"}},
 {"id":"p24_020","min":72,"max":76,"text":"年轻时一起出过远门的几个老朋友，建了个群，约着再走一趟当年去过的地方。商量了半个月，路线改了三次，最后定下来的只有一件事：走慢点，谁累了就坐下歇。","effects":{"freedom":2,"relation":2,"wisdom":2}},
 {"id":"p24_021","min":65,"max":68,"era":"c1965","text":"账户里那几股纪念股还留着，分红一年几十块钱，你从来没卖。另一半问留着干什么，你说密码还是对方的生日，改起来麻烦，就这么放着吧，也算个念想。","effects":{"wisdom":3,"money":1},"state":{"spouse":"partnered"},"require":"held_stock_2015"},
@@ -35,7 +35,7 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
 {"id":"p24_032","min":66,"max":70,"era":"c1965","text":"老同事里有人回了老家县城，有人跟着孩子去了外地。你们的聚会从一年一次变成谁回来谁召集。饭桌上先问的不是挣多少钱，是血压稳不稳，睡得好不好。","effects":{"relation":2}},
 {"id":"p24_033","forbid":["late_parent"],"min":70,"max":74,"era":"c1965","text":"孩子想接你们过去同住，房子都看好了。你和另一半商量了几个晚上，还是决定住自己的老房子，离医院近，老邻居都在。孩子没再劝，只说那就常回来看看。","choices":[{"label":"把 钥匙给孩子一把，安心","effects":{"relation":2},"echo":"钥匙交出去那天，你又叮嘱了一遍燃气阀门的方向。"},{"label":"先这么住着，过两年再说","effects":{"freedom":2},"echo":"挂了电话，另一半把刚看好的楼盘单页收进了抽屉。"}],"state":{"spouse":"partnered","kids":"has"}},
 {"id":"p24_034","min":71,"max":75,"era":"c1965","text":"老花眼又深了，配镜的时候顺便查了眼底。医生说没什么大问题，就是别再摸黑看手机。你回来把手机字体调到最大，另一半笑你，说这下隔着一米都能看见你聊什么。","effects":{"health":1,"growth":1},"state":{"spouse":"partnered"}},
-{"id":"p24_035","min":75,"max":79,"era":"c1965","text":"楼上的老邻居一个人住，儿女都在外地。你顺手帮着取快递、换灯泡，对方过意不去，总往你家送饺子。你们说好了，谁家灯晚上没亮，就上楼敲敲门看看。","choices":[{"label":"把约定认真记下来，贴在门后","effects":{"relation":2},"echo":"纸条贴上那天，对方送来一碗刚包好的饺子。"},{"label":"嘴上答应，心里想着别太麻烦人","effects":{"freedom":1,"relation":1},"echo":"话是这么说，第二天你还是先去敲了对方的门。"}]},
+{"id":"p24_035","min":75,"max":79,"era":"c1965","text":"楼上的老邻居一个人住，儿女都在外地。你顺手帮着取快递、换灯泡，对方过意不去，总往你家送饺子。你们说好了，谁家灯晚上没亮，就上楼敲敲门看看。这约定没写在纸上，可两家都记着。","effects":{"relation":2}},
 {"id":"p24_036","min":76,"max":80,"era":"c1965","text":"整理抽屉，翻出当年买房改房时的那张收据，纸已经发黄，字还清楚。你把收据和房产证放在一起，压在最下面。另一半说留着吧，这可是咱们这一辈子最大的一笔账。","effects":{"wisdom":3,"relation":1},"state":{"spouse":"partnered"},"require":"bought_fangai"},
 {"id":"p24_037","min":68,"max":72,"era":"c1965","text":"退休后你们重新分了工：买菜归你，交水电费归另一半，谁也不许越界指挥。头一个月磨合得直拌嘴，后来慢慢顺了。菜市场的人都认识你，知道你只买对方爱吃的那几样。","effects":{"relation":2,"freedom":1},"state":{"workPhase":"retired","spouse":"partnered"}},
 {"id":"p24_038","forbid":["late_parent"],"min":73,"max":77,"era":"c1965","text":"老房子卫生间要改一改，加扶手，换防滑砖。施工那几天你们住到孩子家，晚上认床，睡不踏实。改完回去那天，你先扶着新扶手慢慢走了一遍，说这钱花得值。","effects":{"money":-2,"health":2},"state":{"kids":"has"},"stateAll":{"spouse":"partnered"}},
@@ -57,4 +57,8 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
 {"id":"p24_054","min":76,"max":80,"era":"c1978","ctx":{"car":"now"},"text":"你们把当年结婚时住的那间小屋的地址输进导航，开车慢慢找过去。街还是那条街，门面全换了。你站在对面看了一会儿，另一半说，走吧，前面新开了家面馆，尝尝去。","effects":{"wisdom":3,"relation":2},"state":{"spouse":"partnered"}},
 {"id":"p24_055","min":68,"max":72,"era":"c1978","text":"父母那边年纪大了，你和兄弟姐妹在群里排了个陪诊表，谁有空谁去，费用记在一个共享的表格里。表格更新得比谁的朋友圈都勤，月底一对账，一分钱都不差。","effects":{"relation":2,"money":-1},"stateAll":{"dad":"alive","mom":"alive"},"forbid":"only_child"},
 {"id":"p24_056","forbid":["late_parent"],"min":73,"max":77,"era":"c1978","all":["photos_scanned"],"text":"孩子把你们的老照片都扫描了，存成电子相册发回来。你和另一半对着平板一张张翻，认人，认地方，有一张谁也想不起来是在哪拍的，笑了半天，就那么过去了。","effects":{"relation":2},"state":{"spouse":"partnered","kids":"has"}}
+]);
+
+window.GAME_PACKS=(window.GAME_PACKS||[]).concat([
+{"id":"p24_057","min":66,"max":72,"require":"delivered_meals_week","text":"送饭送到第七天，老朋友自己拎着菜上你家来了。对方说：缓过来了，这顿我请。你们在楼下小馆子坐了很久，说的都是年轻时候的事。","effects":{"relation":2}}
 ]);

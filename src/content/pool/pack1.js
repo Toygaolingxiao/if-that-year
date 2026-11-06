@@ -3,19 +3,19 @@
 window.GAME_PACKS=(window.GAME_PACKS||[]).concat([
 {"id":"p1_001","minYear":2010,"min":23,"max":25,"text":"招聘软件上滑了一晚上，你投出去四十多份简历。回复你的只有两家，一家要你先交培训费。","choices":[{"label":"那家交培训费的，拉黑举报","effects":{"growth":1,"wisdom":5},"echo":"举报理由你写了两行字，提交完心里舒服了点。"},{"label":"另一家约了面试，先去看看","effects":{"freedom":1},"echo":"面试地点在居民楼里，你走到门口，又折了回来。"}]},
 {"id":"p1_002","ctx":{"eduGate":true},"routeIn":["study","corp"],"minYear":2002,"forbid":"exam_landed","min":22,"max":24,"text":"校招宣讲会站满了人，HR 说今年招六个。散场时你数了数，光你们班就来了三十多个。"},
-{"id":"p1_003","minYear":2002,"min":23,"max":27,"text":"考研二战的同学还在自习室占着座。你们聚餐，他把行测题册垫在啤酒箱上，先干了一杯。","choices":[{"label":"问他后不后悔，他说先考上再说","effects":{"relation":1},"echo":"散场时他把题册塞回包里，动作很熟练。"},{"label":"没多问，给他夹了块肉","effects":{"relation":2,"money":-1},"echo":"他走的时候说，下次聚就是上岸饭了。谁也没接话，都举了杯。"}]},
+{"id":"p1_003","minYear":2002,"min":23,"max":27,"text":"考研二战的同学还在自习室占着座。你们聚餐，他把行测题册垫在啤酒箱上，先干了一杯。","choices":[{"label":"问他后不后悔，他说先考上再说","effects":{"relation":1},"echo":"散场时他把题册塞回包里，动作很熟练。","set":"asked_regret"},{"label":"没多问，给他夹了块肉","effects":{"relation":2,"money":-1},"echo":"他走的时候说，下次聚就是上岸饭了。谁也没接话，都举了杯。"}]},
 {"id":"p1_004","ctx":{"eduGateHalf":true},"routeIn":["home"],"minYear":2005,"forbidRoute":"abroad","forbid":["exam_passed","exam_landed"],"min":23,"max":30,"text":"国考报名那天系统挤崩了。你妈把岗位表打印出来，用红笔圈了三个离家近的。","choices":[{"label":"报了，买套题先刷着","effects":{"growth":2,"freedom":-1},"echo":"题册一百多块，刷到第三套的时候，你妈已经开始打听面试班了。"},{"label":"先放放，还是想再看看外面的机会","effects":{"freedom":2},"echo":"岗位表被压在茶几玻璃下面，过年回家还能看见那三个红圈。"}]},
 {"id":"p1_005","ctx":{"employed":true},"minYear":2012,"min":33,"max":35,"require":"stay_put","text":"考编的年龄线卡在 35 岁。同事群里有人算了算，这是他能报的最后一年，题已经刷到第四遍了。"},
 {"id":"p1_006","minYear":2002,"min":24,"max":30,"route":"corp","text":"这年的校招薪资又涨了。你带的新人，起薪比你当年多三千。你把这事咽下去，教他怎么用打印机。"},
 {"id":"p1_007","min":24,"max":32,"route":"corp","text":"公司开始讲期权和上市。同事把计算器按得噼啪响，算自己那份能换几平米。","choices":[{"label":"听个热闹，工资到账才是真的","effects":{"money":1},"echo":"季度奖到账那天，你请自己吃了一碗加了蛋的面。"},{"label":"跟着激动了一阵，也算了算","effects":{"growth":1,"freedom":-1,"wisdom":3},"echo":"那张写满数字的纸你留了很久，搬工位的时候才扔。"}]},
 {"id":"p1_008","minYear":2014,"min":25,"max":33,"text":"创业的同学发来消息，公司拿到了天使轮，请你过去一起干，工资先降三成。","choices":[{"label":"婉拒了，房租不等人","effects":{"money":1,"relation":-1},"echo":"他说理解。过年群里发红包，他发的最大。"},{"label":"去了，工位是一张拼起来的桌子","effects":{"growth":3,"money":-2,"freedom":2},"echo":"第一周你们修了五次空调。冰箱里永远有喝不完的可乐。"}]},
-{"id":"p1_009","min":24,"max":32,"minYear":2015,"text":"共享单车最火的那阵，楼下每天换一茬新车。半年后公司黄了，押金排队退到了十几万名。","choices":[{"label":"跟着排队，能退多少是多少","effects":{"money":1},"echo":"退回来那天你已经忘了这事，钱到账像捡的。"},{"label":"九十九块，懒得折腾了","effects":{"freedom":1},"echo":"那辆小黄车你还骑过两回，就当车费了。"}]},
+{"id":"p1_009","min":24,"max":32,"minYear":2015,"text":"共享单车最火的那阵，楼下每天换一茬新车。半年后公司黄了，押金排队退到了十几万名。你跟着排上了队，退回来那天，你早把这事忘了，钱到账像捡的一样。那辆小黄车你还骑过两回，就当车费了。","effects":{"money":1}},
 {"id":"p1_010","minYear":2012,"min":24,"max":36,"text":"做传统车企的同学跳去了新能源新势力，工资翻了一倍。群里恭喜完，有人默默把简历也更新了。"},
 {"id":"p1_011","ctx":{"eduGate":true},"route":"study","minYear":2012,"min":22,"max":32,"text":"芯片公司来学校挖人，开的价比去年高一截。你们专业群里一夜之间全是内推码。"},
-{"id":"p1_012","min":24,"max":36,"minYear":2014,"text":"做外贸的同学转行开了跨境网店。头三个月天天熬夜上架，第四个月说，账号被封了，申诉没过。","choices":[{"label":"请他吃了顿饭，没劝什么","effects":{"relation":2,"money":-1},"echo":"他说先去送两个月外卖，缓过来再想别的。"},{"label":"问他要不要来你这边先干着","effects":{"relation":1,"growth":1},"echo":"他说考虑考虑。电话挂了，你们都知道这事多半不成。"}]},
+{"id":"p1_012","min":24,"max":36,"minYear":2014,"text":"做外贸的同学转行开了跨境网店。头三个月天天熬夜上架，第四个月说，账号被封了，申诉没过。","choices":[{"label":"请他吃了顿饭，没劝什么","effects":{"relation":2,"money":-1},"echo":"他说先去送两个月外卖，缓过来再想别的。"},{"label":"问他要不要来你这边先干着","effects":{"relation":1,"growth":1},"echo":"他说考虑考虑。电话挂了，你们都知道这事多半不成。","set":"offered_hand"}]},
 {"id":"p1_013","minYear":2016,"min":24,"max":38,"text":"回县城的同学开起了直播卖红薯。第一场在线九个人，其中四个是自家亲戚。"},
 {"id":"p1_014","min":25,"max":35,"route":"study","text":"教辅机构来挖你去讲课，开的价是助学金的好几倍。你算了算时间，把电话存成了未接来电。"},
-{"id":"p1_015","min":25,"max":35,"minYear":2021,"maxYear":2022,"text":"双减文件下来的那周，在教培上班的同学连夜改简历。她的朋友圈从鸡娃文章，变成了转行求职。","choices":[{"label":"帮她问了问你这边的岗位","effects":{"relation":2},"echo":"岗位没对上，但她把你的名字写进了致谢的朋友圈，谁都看得见。"},{"label":"约她出来吃了顿火锅","effects":{"relation":1,"money":-1},"echo":"她辣得直喝水，说下周去面行政岗，从头来。"}]},
+{"id":"p1_015","min":25,"max":35,"minYear":2021,"maxYear":2022,"text":"双减文件下来的那周，在教培上班的同学连夜改简历。她的朋友圈从鸡娃文章，变成了转行求职。","choices":[{"label":"帮她问了问你这边的岗位","effects":{"relation":2},"echo":"岗位没对上，但她把你的名字写进了致谢的朋友圈，谁都看得见。","set":"helped_classmate_job"},{"label":"约她出来吃了顿火锅","effects":{"relation":1,"money":-1},"echo":"她辣得直喝水，说下周去面行政岗，从头来。"}]},
 {"id":"p1_016","minYear":2012,"min":33,"max":43,"text":"楼下邻居给孩子报的学科班停了，退费排到三个月后。业主群里吵了两天，最后都默默去问了体育班的价格。"},
 {"id":"p1_017","ctx":{"form":["employee"]},"minYear":2010,"min":32,"max":40,"text":"公司发了封全员信，标题叫「组织优化」。你那层走了七个人，茶水间的绿萝没人浇，蔫了。","choices":[{"label":"留下的人先把活分了，你多扛了一摊","effects":{"growth":2,"health":-2,"money":1,"wisdom":5},"echo":"忙完那阵你发现，多扛的那摊活，绩效表上就一行字。"},{"label":"开始悄悄看外面的机会","effects":{"freedom":2,"growth":1},"echo":"招聘软件的浏览记录，你设置成了仅自己可见。"}]},
 {"id":"p1_018","ctx":{"form":["employee","public"]},"min":33,"max":40,"require":"job_hop","text":"当年和你一起跳槽的同事，这回在优化名单里。他请你吃饭，说先歇半年，孩子正好要上小学。"},
@@ -30,13 +30,13 @@ window.GAME_PACKS=(window.GAME_PACKS||[]).concat([
 {"id":"p1_027","ctx":{"form":["employee","public"]},"min":24,"max":36,"minYear":2020,"text":"年轻同事开始准点下班，还把「整顿职场」挂在嘴边。你看着他，觉得有点羡慕，又有点替他捏汗。"},
 {"id":"p1_028","ctx":{"form":["employee","public"]},"min":26,"max":40,"text":"你把摸鱼练成了手艺：会议纪要写得飞快，茶水间去得勤快，活交得不早不晚。","choices":[{"label":"就这么平衡着，挺好","effects":{"health":2,"freedom":1,"growth":-2,"wisdom":3},"echo":"那一年你准时下班的次数，比前三年加起来都多。"},{"label":"有点慌，怕哪天被看出来没使劲","effects":{"growth":2,"health":-1},"echo":"你开始在下班后学点东西。学什么没想好，先报了个课。"}]},
 {"id":"p1_029","min":25,"max":45,"minYear":2014,"text":"失业的同学去跑了网约车。你们打车拼到他，他说这活儿就一点好：没人给他画饼。"},
-{"id":"p1_030","ctx":{"form":["employee","public"]},"min":25,"max":40,"minYear":2014,"text":"外卖站点招骑手，楼下小哥说旺季一个月能过万，就是膝盖和腰得自己保养。","choices":[{"label":"听完也就听完了，回去加班","effects":{"health":-1},"echo":"电梯里你揉了揉自己的腰，决定周末去趟按摩店。没去成。"},{"label":"问了问兼职怎么算，他说先跑晚高峰","effects":{"growth":1},"echo":"你把站点地址存了下来，一直没去报到。"}]},
+{"id":"p1_030","ctx":{"form":["employee","public"]},"min":25,"max":40,"minYear":2014,"text":"外卖站点招骑手，楼下小哥说旺季一个月能过万，就是膝盖和腰得自己保养。","choices":[{"label":"听完也就听完了，回去加班","effects":{"health":-1},"echo":"电梯里你揉了揉自己的腰，决定周末去趟按摩店。没去成。"},{"label":"问了问兼职怎么算，他说先跑晚高峰","effects":{"growth":1},"echo":"你把站点地址存了下来，一直没去报到。","set":"gig_asked"}]},
 {"id":"p1_031","forbidRoute":"abroad","min":28,"max":42,"text":"你算了算自己的社保，中间断过四个月。攻略看了半宿，补缴的队据说要排到下个月。","choices":[{"label":"请了半天假，去把队排了","effects":{"money":-1,"freedom":-1,"wisdom":5},"echo":"窗口的人说齐全了。你把回执夹在户口本里，放好。"},{"label":"先放着，眼下还没用到","effects":{"health":-1},"echo":"这事进了你的备忘录，往后每年都要往下拖一拖。"}]},
 {"id":"p1_032","min":30,"max":45,"text":"银行客户经理请你喝咖啡，聊个人养老金。账算了三遍，你还是没算明白。","choices":[{"label":"开了个户，先放一千进去","effects":{"money":-1,"wisdom":5},"echo":"开户礼品是个保温杯，你用它喝了一冬天水。"},{"label":"说回去再想想，咖啡喝完了","effects":{"freedom":1},"echo":"经理把测算表折好递给你，你夹进了笔记本，一直没再翻。"}]},
 {"id":"p1_033","min":22,"max":30,"minYear":2013,"text":"余额宝最热闹的时候，你把生活费都转了进去，每天早上先看一眼收益，够买个包子。"},
 {"id":"p1_034","minYear":2001,"min":26,"max":40,"text":"股市最热的那几个月，食堂里人人都在看盘。卖饭阿姨都问你，基金和股票哪个更稳当。","choices":[{"label":"跟了一小笔，说好亏完就收手","effects":{"money":-2,"growth":1,"wisdom":6},"echo":"收手那天你请自己吃了顿火锅，锅底点的鸳鸯。"},{"label":"没碰，围观了全程","effects":{"freedom":1,"wisdom":3},"echo":"跌下来的那周，食堂安静了不少，卖饭阿姨也不问了。"}]},
 {"id":"p1_035","minYear":2015,"maxYear":2021,"eraIn":["c1978"],"min":28,"max":43,"w":2,"text":"亲戚把养老钱投进了 P2P，爆雷那阵天天在群里发维权消息。你陪他去登记了一回，回来路上谁都没说话。","effects":{"relation":2,"health":-1,"wisdom":6}},
-{"id":"p1_036","minYear":2012,"min":26,"max":40,"text":"基金群里天天有人晒收益，你追着买了几只热门的。半年后打开账户，绿的多红的少。","choices":[{"label":"割了，认下这笔学费","effects":{"money":-2,"wisdom":6},"echo":"退出来那笔钱，你给家里添了台洗衣机，带烘干。"},{"label":"放着不动，眼不见心不烦","effects":{"money":-1,"health":-1,"wisdom":5},"echo":"它就在那儿趴着，你每个季度瞄一眼，心跳一次。"}]},
+{"id":"p1_036","minYear":2012,"min":26,"max":40,"text":"基金群里天天有人晒收益，你追着买了几只热门的。半年后打开账户，绿的多红的少。","choices":[{"label":"割了，认下这笔学费","effects":{"money":-2,"wisdom":6},"echo":"退出来那笔钱，你给家里添了台洗衣机，带烘干。","set":"cut_loss_once"},{"label":"放着不动，眼不见心不烦","effects":{"money":-1,"health":-1,"wisdom":5},"echo":"它就在那儿趴着，你每个季度瞄一眼，心跳一次。"}]},
 {"id":"p1_037","minYear":2012,"min":24,"max":38,"text":"同学在群里说币又涨了，附了张截图。另一个同学说，上轮他就是在最高点接的，现在还没回本。"},
 {"id":"p1_038","minYear":2018,"min":25,"max":45,"text":"大家开始聊消费降级：临期食品店排起了队，二手平台上你的闲置卖出去三件。"},
 {"id":"p1_039","ctx":{"form":["employee","public"],"notMainLine":["med_work","med_hosp","nurse_work","img_work"]},"forbid":"covid95_days","minYear":2020,"min":28,"max":38,"text":"疫情最紧的那阵，你在家办公。工位是餐桌，会议背景是晾衣架，猫在镜头前走了三个来回。","stateNot":{"cat":"gone"}},
@@ -86,4 +86,11 @@ window.GAME_PACKS=(window.GAME_PACKS||[]).concat([
 {"id":"p1_083","min":35,"max":45,"text":"你开始给新人讲当年：那时候哪有这些工具。讲完发现，他们礼貌地听，你也讲得没什么劲。","choices":[{"label":"改聊聊他们手头的活","effects":{"relation":2,"wisdom":5},"echo":"有个新人后来真拿着问题来找你，你给他画了张图。"},{"label":"讲完收工，各忙各的","effects":{"growth":1,"wisdom":5},"echo":"回工位的路上你想，当年带你的人，大概也是这个心情。","echoForm":{"farm":"回地里的路上你想，当年带你的人，大概也是这个心情。","self":"回店里的路上你想，当年带你的人，大概也是这个心情。","flex":"收工回去的路上你想，当年带你的人，大概也是这个心情。"}}]},
 {"id":"p1_084","min":23,"max":33,"minYear":2008,"text":"第一笔年终奖到账，比想象中少。你还是给爸妈各转了一笔，备注写的「过年加菜」。","effects":{"money":-1,"relation":2},"stateAll":{"dad":"alive","mom":"alive"}},
 {"id":"p1_085","ctx":{"form":["employee"]},"min":36,"max":45,"text":"部门里开始招更年轻的人，JD 上写着「35 岁以下优先」。你把这行字看了两遍。","choices":[{"label":"关掉页面，把手头的活干漂亮","effects":{"growth":2,"health":-1},"echo":"那周你交出去的东西，挑不出什么毛病。"},{"label":"当晚就把简历更新了","effects":{"freedom":2},"echo":"更新完你站在阳台上站了一会儿，楼下的烧烤摊刚支起来。"}]}
+]);
+
+window.GAME_PACKS=(window.GAME_PACKS||[]).concat([
+{"id":"p1_086","min":27,"max":40,"any":["offered_hand","helped_classmate_job"],"text":"那位转行的同学，后来落了脚，在一家机构做起了培训。同学聚会说起那阵子，对方说：多亏有人帮着问了一声。","effects":{"relation":2}},
+{"id":"p1_087","min":25,"max":34,"require":"asked_regret","text":"同学后来真考上了。庆功那顿饭，他先敬了你一杯，说那年你问他后不后悔，他在自习室里想过好几回。","effects":{"relation":2}},
+{"id":"p1_088","min":27,"max":44,"require":"gig_asked","set":"side_job","text":"你真去跑了三个月晚高峰。膝盖贴上膏药，账上多出一笔小钱。这摊事不大，可算是支起来了，后来一直没断。","effects":{"money":2,"health":-1}},
+{"id":"p1_089","min":30,"max":48,"require":"cut_loss_once","text":"后来又有人拉你看一只新基金。群里晒的收益图你看了两眼，把手机扣下了：上回那笔学费，你还没忘。","effects":{"wisdom":2}}
 ]);
