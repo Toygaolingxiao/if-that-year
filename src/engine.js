@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.47.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.47.1 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -572,14 +572,20 @@ window.IFY = window.IFY || {};
           <p class="bighero" id="bighero" aria-hidden="true"></p>
           <p class="setlab erahead">你是哪个年代的孩子？</p>
           <div class="eragrid" id="erapick">${ERAS.map((e) => `<button type="button" class="segbtn eracard${e.id === "c2000" ? " sel" : ""}" data-era="${e.id}" data-birth="${e.birth}"><b>${eraShort(e)}</b><span>${e.cap}</span></button>`).join("")}</div>
-          <p class="hint eradesc-lab">那个年代，家里常有的一幕</p>
-          <p class="hint" id="eradesc"></p>
-          <div class="birthyear-row">
-            <span class="birthyear-lab">生在</span>
-            <span class="birthyear-val" id="birthyear"></span>
+          <div class="scenerow">
+            <div class="scenecard">
+              <p class="hint eradesc-lab">那个年代，家里常有的一幕</p>
+              <p id="eradesc"></p>
+            </div>
+            <div class="birthcol">
+              <div class="birthyear-row">
+                <span class="birthyear-lab">生在</span>
+                <span class="birthyear-val" id="birthyear"></span>
+              </div>
+              <div class="yearstrip" id="yearstrip"></div>
+              <p class="hint" id="birthhint"></p>
+            </div>
           </div>
-          <div class="yearstrip" id="yearstrip"></div>
-          <p class="hint" id="birthhint"></p>
         </div>
         ${returning ? `<div class="row"><button class="textlink" id="liveslink">活过的人生</button></div>` : ""}
         ${sLine ? `<p class="hint">${sLine}</p>` : ""}

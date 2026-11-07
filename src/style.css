@@ -340,16 +340,31 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
 .birthstep{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:17px;line-height:1;cursor:pointer;padding:0}
 .birthstep:disabled{opacity:.35;cursor:default}
 .birthstep:active:not(:disabled){border-color:var(--accent);color:var(--accent)}
-/* v0.47.0 开始屏改版：眉题行／大字年份／年代卡网格／十年条 */
-.eyebrow2{font-family:var(--serif);font-size:13px;letter-spacing:.3em;color:var(--mut);margin:0 0 6px}
-.erahead{font-family:var(--serif);font-size:17px;font-weight:700;color:var(--ink);margin:12px 0 8px}
+/* v0.47.0 开始屏改版：眉题行／大字年份／年代卡网格／十年条；v0.47.1 版式照设计稿两版（网页 6 横、手机 3×2、场景与生年并排、年份尺） */
+.masthead{display:flex;flex-wrap:wrap;align-items:baseline}
+.masthead .prodcredit{flex:1 1 auto}
+.masthead .eyebrow,.masthead .gametitle,.masthead .leadline{flex-basis:100%}
+.eyebrow2{font-family:var(--serif);font-size:13px;letter-spacing:.3em;color:var(--mut);margin:0}
+.erahead{font-family:var(--serif);font-size:19px;font-weight:700;color:var(--ink);margin:12px 0 10px;text-align:center}
 .bighero{font-family:var(--serif);font-size:72px;font-weight:700;line-height:1.05;text-align:center;color:var(--ink);margin:8px 0 0;letter-spacing:.02em}
-.eragrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.eracard span{display:block;color:var(--mut);font-size:12.5px;margin-top:3px;line-height:1.5}
+.eragrid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.eracard{text-align:center;border-radius:16px;padding:14px 6px 12px}
+.eracard b{font-size:16.5px}
+.eracard span{display:block;color:var(--mut);font-size:12px;margin-top:4px;line-height:1.5}
 .eracard.sel span{color:rgba(255,255,255,.85)}
-.yearstrip{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin-top:10px}
-.yearbtn{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:7px 0;font-size:13.5px;cursor:pointer;color:var(--ink);text-align:center;line-height:1.2}
-.yearbtn.sel{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
-.yearbtn:active{border-color:var(--accent)}
-@media (max-width:640px){.eragrid{grid-template-columns:repeat(2,1fr)}.yearstrip{grid-template-columns:repeat(5,1fr)}.bighero{font-size:58px}}
+.scenerow{display:flex;gap:16px;align-items:stretch;margin-top:16px}
+.scenecard{flex:1.15;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 20px;display:flex;flex-direction:column;justify-content:center}
+.scenecard .eradesc-lab{margin:0 0 6px}
+#eradesc{font-family:var(--serif);font-size:17px;line-height:1.65;color:var(--ink);margin:0}
+.birthcol{flex:1;display:flex;flex-direction:column;justify-content:center}
+.birthcol .birthyear-row{margin-top:0;justify-content:center}
+.birthcol .birthyear-val{font-size:32px;min-width:0}
+.birthcol #birthhint{text-align:center}
+.yearstrip{display:grid;grid-template-columns:repeat(10,1fr);gap:2px;margin-top:10px;border-bottom:1px solid var(--line);padding-bottom:9px}
+.yearbtn{position:relative;background:none;border:0;border-radius:0;padding:4px 0 6px;font-size:13px;cursor:pointer;color:var(--mut);text-align:center;line-height:1.2}
+.yearbtn::after{content:"";position:absolute;left:50%;bottom:-1px;width:2px;height:8px;background:#B9B09A;transform:translateX(-50%)}
+.yearbtn.sel{color:var(--accent);font-weight:700}
+.yearbtn.sel::after{background:var(--accent);height:13px}
+.actions #startgo{border-radius:999px;box-shadow:0 8px 20px rgba(47,74,60,.22)}
+@media (max-width:640px){.eragrid{grid-template-columns:repeat(3,1fr)}.eracard span{font-size:11.5px}.bighero{font-size:56px}.scenerow{flex-direction:column}.birthcol .birthyear-val{font-size:28px}}
 /* ================= [/homepage-build 开始屏一单 · 独立块] ================= */
