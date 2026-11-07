@@ -34,7 +34,7 @@
   // 六代各 4 款、已入库过审）先单独成出生幕（0 岁呈现，屏头即出生年本身），家底/留守/随迁行
   // 留在 5 岁屏。框架句六代共用、按第一印象严线写（单句 ≤20 字）：头句交代叙述权（出生当天的
   // 事是后来听家里人讲的，视角在此豁免）。
-  // 0–4 小段（用户 2026-11-06 晚批准）：出生幕后不再一句话跳到 5 岁——来历幕呈现链里串三幕
+  // 0–4 小段（用户 2026-11-06 晚批准）：出生幕后不再一句话跳到 5 岁——来历幕呈现链里串四幕
   // 框架共用短拍（1 岁抓周＋3 岁＋4 岁，定义见 EARLY_ACTS），再落 5 岁屏。链只对本版 start()
   // 武装（earlyArmed），旧档无此字段＝不补演；出生幕收尾句只作衔接，不再自报跳到几岁。
   const BIRTH_FRAME = "你出生那天的事，是后来听家里人讲的。\n";
@@ -82,13 +82,22 @@
     yin: "你爬过去，抓住了{item}，攥得紧紧的。家里人笑，说这孩子，是个有主意的。",
     wan: "你爬过去，抓住了{item}，抱着不撒手。家里人笑，说这孩子，玩的心重。",
   };
-  // 三幕定义（不进 pack.acts/幕序，不占下标）：抓周幕的 variants 是族→旗/记号对照表——发放走
+  // 四幕定义（不进 pack.acts/幕序，不占下标）：抓周幕的 variants 是族→旗/记号对照表——发放走
   // start() 的独立派生流（种子+"#grab"，见 grabKeyFor）一掷定 key，序章自有流一格不消费
   // （既有变体发放/性子发牌/池排期逐格与旧版相同）；正文在呈现链物化时按年代物件面拼（见 earlyView）。
   // 3/4 岁两幕为共用层文本（年代中性、不用父母专名，留守局同读不穿帮）。全段零数值、零门、零路线锁。
   const EARLY_ACTS = [
     { id: "pr_grab", age: 1, log: "抓周", early: true, grab: true,
       variants: GRAB_FAMILIES.map((f) => ({ key: f, set: "grab_" + f, mark: "grab_" + f })) },
+    // 2 岁拍（v0.48.2，用户点名补）：0–4 段原缺 2 岁——三款共用层文本（平稳/小病/满地跑），
+    // 由 start() 的独立派生流（种子+"#early2"，见 early2KeyFor）定款，不消费序章流；
+    // 与 3/4 岁幕同规：年代中性、不用父母专名、零数值零门。平稳款占一半（用户原话「平稳成长」）。
+    { id: "pr_early2", age: 2, log: "平稳长大", early: true,
+      texts: [
+        { log: "平稳长大", text: "两岁这一年，你没病没灾，吃得香睡得稳，个头往上蹿了一截。大人说，这孩子好带，省心。" },
+        { log: "病过一场", text: "两岁这一年，你病过一场，夜里烧得满脸通红，家里人轮流抱着你，在屋里走了一夜。天快亮时烧退了，你趴在大人肩上睡着了，谁也没敢大声说话。" },
+        { log: "满地跑", text: "两岁这一年，你走路走稳了，满屋满院地跑，大人一错眼你就不见了。家里把门边都收拾干净，省得你绊着。" },
+      ] },
     { id: "pr_early3", age: 3, log: "学说话", early: true,
       text: "三岁那年，你开始跟在大人后头学话。大人说一句，你跟一句，学得一本正经，音还咬不准。家里人笑，你也跟着笑，以为自己说得对极了。" },
     { id: "pr_early4", age: 4, log: "开始记事", early: true,
@@ -898,7 +907,7 @@
       eraCard: dealt ? dealt.era[0] : null,
       situation: null, itch: null, done: false,
       pendingState: null, curText: null, curChoices: null, birthPending: false, birthText: null, // 0 岁开局 B 案：出生幕待呈现标记与定版文本（来历幕物化时置位，choose 收幕时清；旧档无此二字段＝未置位、不补演出生幕）
-      earlyArmed: true, earlyBuilt: false, earlyStep: 0, earlyOn: null, earlyText: null, grabKey: grabKeyFor(seedStr), // 0–4 小段：武装位与抓周族只由本版 start() 写入（旧档无 earlyArmed＝整链不演）；earlyBuilt/Step/On/Text 是呈现链状态（来历幕物化时建链、逐幕物化定版、choose 逐幕收）；grabKey 走独立派生流定版，读档不重掷
+      earlyArmed: true, earlyBuilt: false, earlyStep: 0, earlyOn: null, earlyText: null, grabKey: grabKeyFor(seedStr), early2Key: early2KeyFor(seedStr), // 0–4 小段：武装位与抓周族只由本版 start() 写入（旧档无 earlyArmed＝整链不演）；earlyBuilt/Step/On/Text 是呈现链状态（来历幕物化时建链、逐幕物化定版、choose 逐幕收）；grabKey/early2Key 走独立派生流定版，读档不重掷（旧档无 early2Key 时 2 岁拍回落平稳款）
       shadowMarkShown: false, shadowMarksShown: [], // WP9 A线：瞥视已示记号 id 表（轮换消费）；shadowMarkShown 保留作旧口径镜像（任一瞥视示句后置 true）
       seq: null, leftBehind: false, variants: null,
       gapQueue: [], gapOn: null, // fix8：间隙平年待呈现队列（choose 算定入队、present 逐条呈现；旧档无此二字段，读取时按空队列/未呈现处理）
@@ -972,6 +981,14 @@
   }
 
   // 抓周族发放（独立派生流，与 prng 同算法、种子另派生）：六族等权一掷定 key；start() 调用一次存 P.grabKey。
+  // 2 岁拍定款（v0.48.2）：与 grabKeyFor 同法走独立派生流——0=平稳（一半），1=小病，2=满地跑。
+  function early2KeyFor(seedStr) {
+    let a = seedFromString(String(seedStr) + "#early2") | 0;
+    a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    const r = ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    return r < 0.5 ? 0 : (r < 0.75 ? 1 : 2);
+  }
+
   function grabKeyFor(seedStr) {
     let a = seedFromString(String(seedStr) + "#grab") | 0;
     a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
@@ -983,9 +1000,16 @@
   // 3/4 岁幕只落流水账。重演（读档停在本幕）读 earlyText 定版，不重复落账、不重掷。
   function earlyView(S) {
     const P = S.prologue;
-    const beat = EARLY_ACTS[P.earlyStep];
+    let beat = EARLY_ACTS[P.earlyStep];
+    // v0.48.2：EARLY_ACTS 插入 2 岁拍后，旧档的 earlyStep 下标会与已物化幕错位一格——
+    // 已物化幕（earlyOn 在）按 id 对齐下标续演，与 rebuildSeq 按 id 对齐同例。
+    if (P.earlyOn && beat && beat.id !== P.earlyOn) {
+      const at = EARLY_ACTS.findIndex((b) => b.id === P.earlyOn);
+      if (at >= 0) { P.earlyStep = at; beat = EARLY_ACTS[at]; }
+    }
     if (P.earlyOn !== beat.id) {
       P.earlyOn = beat.id;
+      P.earlyLog = null;
       if (beat.grab) {
         const v = (beat.variants || []).find((x) => x.key === P.grabKey) || beat.variants[0];
         const spread = GRAB_SPREADS[S.era] || GRAB_SPREADS.c2000;
@@ -995,12 +1019,16 @@
         const list = GRAB_FAMILIES.map((f) => spread[f].d).join("、");
         P.earlyText = `你满周岁那天，家里人把东西摆了一地：${list}。大人把你抱到中间，让你自己抓。\n`
           + (GRAB_REVEAL[v.key] || GRAB_REVEAL.wen).replace("{item}", sp.d);
+      } else if (beat.texts) {
+        const pick = beat.texts[P.early2Key || 0] || beat.texts[0];
+        P.earlyText = pick.text;
+        P.earlyLog = pick.log;
       } else {
         P.earlyText = beat.text;
       }
       // 落账位置：来历幕的 5 岁行已在其物化时先落（拆屏机制使然），本链三行按岁插入它之前，
       // 保住流水账/年表的年龄序（1→3→4→5）；5 岁行缺失的边缘情形才退回尾 append。
-      const line = `${beat.age} 岁 · ${beat.log}`;
+      const line = `${beat.age} 岁 · ${P.earlyLog || beat.log}`;
       const at = S.log.findIndex((l) => typeof l === "string" && l.startsWith("5 岁 · "));
       if (at >= 0) S.log.splice(at, 0, line); else S.log.push(line);
     }
@@ -1121,7 +1149,7 @@
           P.curText = (fam ? open + "\n" + fam : open) + lb + mig;
         }
         P.curChoices = null;
-        // 0–4 小段建链（与出生幕拆分同物化点）：只建链不落账——三幕各自在首次呈现时物化
+        // 0–4 小段建链（与出生幕拆分同物化点）：只建链不落账——四幕各自在首次呈现时物化
         // （抓周记号/流水账都在那时落，与幕级落账同口径）；旧档无 earlyArmed，链永不建。
         if (P.earlyArmed && !P.earlyBuilt) { P.earlyBuilt = true; P.earlyStep = 0; P.earlyOn = null; P.earlyText = null; }
       } else if (act.temperPick) {
@@ -1310,7 +1338,7 @@
       return { id: "pr_birth", age: 0, stage: stageFor(0), title: null, text: P.birthText, choices: null, pendingState: P.pendingState, isFork: false,
         gateNote: null, familyBeat: false, echo: null, birth: true };
     }
-    // 0–4 小段：出生幕收下后、5 岁屏本体之前，链上三幕逐幕带出（pendingState 已随出生幕带出，
+    // 0–4 小段：出生幕收下后、5 岁屏本体之前，链上四幕逐幕带出（pendingState 已随出生幕带出，
     // 本链各幕恒 null，不重复落定；无出生幕拆分的空余屏局同样先走完链再落 5 岁屏）。
     if (act.id === "pr_origin" && P.earlyBuilt && P.earlyStep < EARLY_ACTS.length) return earlyView(S);
     return { id: act.id, age: act.age, stage: stageFor(act.age), title: act.title || null, text: P.curText, choices: P.curChoices, pendingState: P.pendingState, isFork: act.id === "pr_fork16",
@@ -1414,7 +1442,7 @@
     wp5BeatFor, rebuildSeq, migrantFamilies: MIGRANT_FAMILIES, careFamilies: CARE_FAMILIES }; // v0.23 WP5：验收脚本读口（选拍与 seq 重建）
   // acts / marks 惰性合并全年代包：校验与影子瞥视按 id 查全集（id 跨代唯一，集成时核过）；无包文件被加载的环境（单文件校验沙箱）自动退回 c2000 集。
   Object.defineProperty(PRO_API, "acts", { enumerable: true, get() {
-    let out = ACTS.concat(EARLY_ACTS, SIT_ACTS.half, SIT_ACTS.never); // EARLY_ACTS：0–4 小段三幕（框架共用、不入任何包的幕序，仅供校验/登记口径入账）
+    let out = ACTS.concat(EARLY_ACTS, SIT_ACTS.half, SIT_ACTS.never); // EARLY_ACTS：0–4 小段四幕（框架共用、不入任何包的幕序，仅供校验/登记口径入账）
     const P = window.GAME_PROLOGUE_PACKS || {};
     for (const k of Object.keys(P)) { const pk = P[k]; out = out.concat(pk.acts || [], (pk.sitActs && pk.sitActs.half) || [], (pk.sitActs && pk.sitActs.never) || []); }
     return out;
