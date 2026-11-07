@@ -1111,6 +1111,11 @@
         if (restText) {
           P.birthText = BIRTH_FRAME + open + "\n" + BIRTH_CLOSE;
           P.birthPending = true;
+          // 出生幕落账（v0.48.1）：拆屏后出生幕只在屏上、不在账上，流水账第一行成了 5 岁——
+          // 补一行 0 岁，插在 5 岁行之前（与 0–4 小段的插法同），账本从出生记起。
+          // 只在此物化点落一次；未拆屏的局（restText 为空）出生叙事并在 5 岁屏里，不另起行。
+          const bAt = S.log.findIndex((l) => typeof l === "string" && l.startsWith("5 岁 · "));
+          if (bAt >= 0) S.log.splice(bAt, 0, "0 岁 · 出生"); else S.log.push("0 岁 · 出生");
           P.curText = restText;
         } else {
           P.curText = (fam ? open + "\n" + fam : open) + lb + mig;
