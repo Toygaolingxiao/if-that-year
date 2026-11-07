@@ -41,6 +41,7 @@ for (const rel of ENGINE_FILES) load(rel);
 vm.runInContext("window.__P = { get S() { return window.IFY.S; }, set S(v) { window.IFY.S = v; }, freshState: window.IFY.freshState, met: window.IFY.met, echoText: window.IFY.echoText, procText: window.IFY.procText, settlementSlots: window.IFY.settlementSlots, lifeTags: window.IFY.lifeTags, verdict: window.IFY.verdict, partnerHistoryOf: window.IFY.partnerHistoryOf, D: window.IFY.D };", sandbox, { filename: "probe-export" });
 vm.runInContext("window.__P.sampleStatsPeak = window.IFY.sampleStatsPeak; window.__P.loadSave = window.IFY.loadSave;", sandbox, { filename: "probe-export-c" });
 vm.runInContext("window.__P.unmetConditions = window.IFY.unmetConditions; window.__P.anyFamilyAlive = window.IFY.anyFamilyAlive; window.__P.specificity = window.IFY.specificity;", sandbox, { filename: "probe-export-d" });
+vm.runInContext("window.__P.flatLineOk = window.IFY.flatLineOk; window.__P.flatMicroNeeds = window.IFY.flatMicroNeeds; window.__P.flatAdultNeeds = window.IFY.flatAdultNeeds; window.__P.flatAdult = window.IFY.RHYTHM.flatAdult;", sandbox, { filename: "probe-export-e" });
 const P = sandbox.window.__P;
 const byId = {};
 for (const e of P.D.events || []) if (e.id) byId[e.id] = e;
@@ -435,6 +436,39 @@ console.log("⑨ 判词批 D 扩展：lk_born/lk_check 现行伴侣门 / 两地�
   ok(P.specificity(eWait) - strip(eWait, (c) => delete c.stateAll) === 1, "D-ext specificity: lk_wait 新增 stateAll 键 +1（总指挥集成时并入，与 lk_check 同形）");
   const e27 = byIdD.p13_027;
   ok(P.specificity(e27) - strip(e27, (c) => delete c.stateAll) === 1, "D-ext specificity: p13_027 新增 stateAll 键 +1");
+}
+
+// ---- ⑩ 判词批 E：平年两池事实守卫 ----
+console.log("⑩ 判词批 E：平年两池事实守卫（micro 下标侧表 / flatAdult 同机制 / 抽点过滤谓词 flatLineOk）");
+{ // 数据断言：micro 池本体冻结（8 条、点名两条在原下标原文本）；侧表只登记这两条
+  const micro = P.D.micro;
+  ok(Array.isArray(micro) && micro.length === 8, "E 数据: micro 池 8 条（顺序/长度冻结，老存档下标不串位）");
+  ok(micro[1] === "这一年没什么大事。工资照发，饭照吃，觉照睡。", "E 数据: micro[1] 工资行原文在原下标");
+  ok(micro[4] === "母亲寄来一箱橘子，吃到最后两个，坏了。你扔的时候有点舍不得。", "E 数据: micro[4] 橘子行原文在原下标");
+  const mn = P.flatMicroNeeds;
+  ok(mn && Object.keys(mn).length === 2 && !!mn[1] && !!mn[4], "E 数据: micro 侧表只登记下标 1 与 4");
+  ok(mn[1] && mn[1].stateNot && mn[1].stateNot.workPhase && mn[1].stateNot.workPhase.includes("retired"), "E 数据: micro[1] 侧表 = stateNot{workPhase:[retired]}");
+  ok(mn[4] && mn[4].state && mn[4].state.mom && mn[4].state.mom.includes("alive"), "E 数据: micro[4] 侧表 = state{mom:[alive]}");
+  ok(P.flatAdultNeeds && Object.keys(P.flatAdultNeeds).length === 0, "E 数据: flatAdult 侧表为空（现 5 条逐条审计无事实预设）");
+  ok(Array.isArray(P.flatAdult) && P.flatAdult.length === 5, "E 数据: flatAdult 池 5 条");
+}
+{ // 功能断言：flatLineOk 是 planYear 两抽点共用的唯一过滤谓词
+  let S = freshS();
+  S.state.workPhase = "retired";
+  ok(P.flatLineOk("micro", 1) === false, "E 功能: retired 时 micro[1] 工资行不可达");
+  S.state.workPhase = "working";
+  ok(P.flatLineOk("micro", 1) === true, "E 功能: working 时 micro[1] 工资行可达");
+  S.state.workPhase = "part";
+  ok(P.flatLineOk("micro", 1) === true, "E 功能: part 半退（仍有工钱）时 micro[1] 可达");
+  S = freshS();
+  S.state.mom = "dead";
+  ok(P.flatLineOk("micro", 4) === false, "E 功能: 母亲已故时 micro[4] 橘子行不可达");
+  S.state.mom = "alive";
+  ok(P.flatLineOk("micro", 4) === true, "E 功能: 母亲在世时 micro[4] 橘子行可达");
+  S = freshS(); // 最坏状态：双亲皆故＋完全退休＋丧偶——无预设行一条都不许误伤
+  S.state.mom = "dead"; S.state.dad = "dead"; S.state.workPhase = "retired"; S.state.spouse = "widowed";
+  ok([0, 2, 3, 5, 6, 7].every((i) => P.flatLineOk("micro", i) === true), "E 功能: 无预设的 6 条 micro 在最坏状态下仍全可达");
+  ok([0, 1, 2, 3, 4].every((i) => P.flatLineOk("flat", i) === true), "E 功能: flatAdult 5 条在最坏状态下仍全可达（侧表为空）");
 }
 
 console.log(`\nstateline-assert: ${pass} passed, ${fail} failed`);

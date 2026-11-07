@@ -363,22 +363,48 @@
     const flatShare = IFY.rhythmOf(IFY.S).flatShare;
     if (IFY.RHYTHM && flatShare > 0 && IFY.rngA() < flatShare) {
       plan.kind = "flat"; plan.layer = 4;
-      plan.flat = IFY.RHYTHM.flatAdult[Math.floor(IFY.rngA() * IFY.RHYTHM.flatAdult.length)];
+      const fa = IFY.RHYTHM.flatAdult;
+      let cand = fa.map((_, i) => i).filter((i) => flatLineOk("flat", i));
+      if (!cand.length) cand = fa.map((_, i) => i).filter((i) => !FLAT_ADULT_NEEDS[i]); // 滤空回落无预设行
+      if (!cand.length) cand = fa.map((_, i) => i);
+      plan.flat = fa[cand[Math.floor(IFY.rngA() * cand.length)]];
       schedStats.flat++; schedStats.flavorYears++;
       return plan;
     }
     // L3 saliency
     const e = pickSaliency(pool);
     if (e) { plan.kind = "event"; plan.layer = 3; plan.event = e; schedStats.l3++; return plan; }
-    // L4 风味填充：本年无任何 L1–L3 内容才落微年
+    // L4 风味填充：本年无任何 L1–L3 内容才落微年（候选先经事实守卫，未用行被事实全拦时回落无预设行）
     plan.kind = "micro"; plan.layer = 4;
-    const fresh = IFY.D.micro.filter((_, i) => !IFY.S.microUsed.includes(i));
-    plan.microIdx = fresh.length ? IFY.D.micro.indexOf(fresh[Math.floor(IFY.rngA() * fresh.length)]) : Math.floor(IFY.rngA() * IFY.D.micro.length);
+    const allIdx = IFY.D.micro.map((_, i) => i);
+    let fresh = allIdx.filter((i) => !IFY.S.microUsed.includes(i) && flatLineOk("micro", i));
+    if (!fresh.length) fresh = allIdx.filter((i) => !MICRO_FLAT_NEEDS[i]);
+    if (!fresh.length) fresh = allIdx;
+    plan.microIdx = fresh[Math.floor(IFY.rngA() * fresh.length)];
     schedStats.micro++; schedStats.flavorYears++;
     return plan;
   }
 
+  // ---------- 平年两池事实守卫（判词批 E）：预设型平年文在抽点过滤，不落渲染层 ----------
+  // micro 是纯字符串数组、条目没有字段位，事实要求用「下标 → factOk 的 needs」侧表表达；
+  // 池本体（events.js）一字不动——老存档 microUsed 存的正是下标，顺序/长度/文本冻结才不串位。
+  // flatAdult 同走一套（侧表按下标记忆）：现 5 条逐条审计均无事实预设、表为空——防线先立，
+  // 将来往任一池加带预设的行，只需在对应侧表登记，不必再动抽点。
+  // 判定复用 factOk 词表、只读现行 state（state/stateNot），不读只增不减的旧旗（与 D 片纪律同）。
+  // 过滤必须落在 planYear 的两个抽点：year.js 的 flatCarry 挂起行是上一年已抽定的文本，
+  // 渲染侧再过滤会被合并呈现绕过；抽点过滤后，挂起行天然只来自合格候选。
+  // 影子轨（shadow-life stepYearHeadless）消费同一 planYear、按影子自身状态求值，同受此守卫。
+  const MICRO_FLAT_NEEDS = {
+    1: { stateNot: { workPhase: ["retired"] } }, // 「工资照发，饭照吃」：完全退休后领的是退休金，不发工资（part 半退仍有工钱，不拦）
+    4: { state: { mom: ["alive"] } }, // 「母亲寄来一箱橘子」：母亲已故即不出
+  };
+  const FLAT_ADULT_NEEDS = {}; // 现池 5 条（灯/理发/风扇/包子铺/花）逐条审计无事实预设，登记为空
+  function flatLineOk(pool, idx) {
+    return factOk((pool === "micro" ? MICRO_FLAT_NEEDS : FLAT_ADULT_NEEDS)[idx]);
+  }
+
   Object.assign(IFY, { factOk, evidenceCount, met, unmetConditions, kidAgeTrue, petAgesTrue, pickRare, pickCrisis, pickEvent,
     planYear, saliencyScore, specificity, eventPool, pickChain, pickSaliency, rareEligible,
+    flatLineOk, flatMicroNeeds: MICRO_FLAT_NEEDS, flatAdultNeeds: FLAT_ADULT_NEEDS,
     anchors: ANCHORS, anchorInfo, schedStats });
 })(window.IFY);
