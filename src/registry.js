@@ -1167,6 +1167,186 @@ window.GAME_REGISTRY.milestones = {
    ],
    "note": "童年记号（变体扩容批）：开学点名老师念错一个音；纯发放，无成年回响，影子回响见 prologue.js MARKS"
   },
+  "mark_satchel55": {
+   "setters": [
+    "pr_child1"
+   ],
+   "note": "童年记号（变体扩容第二轮）：大人用旧的军挎包；纯发放，无成年回响，影子回响见 prologue-c1955.js MARKS"
+  },
+  "mark_bench55": {
+   "setters": [
+    "pr_child1"
+   ],
+   "note": "童年记号（变体扩容第二轮）：上学抱去的小板凳；纯发放，无成年回响，影子回响见 prologue-c1955.js MARKS"
+  },
+  "mark_ink55": {
+   "setters": [
+    "pr_child1"
+   ],
+   "note": "童年记号（变体扩容第二轮）：蘸水笔洇开的墨团；纯发放，无成年回响，影子回响见 prologue-c1955.js MARKS"
+  },
+  "mark_top55": {
+   "setters": [
+    "pr_child2"
+   ],
+   "note": "童年记号（变体扩容第二轮）：木头陀螺；纯发放，无成年回响，影子回响见 prologue-c1955.js MARKS"
+  },
+  "mark_kite55": {
+   "setters": [
+    "pr_child2"
+   ],
+   "note": "童年记号（变体扩容第二轮）：旧报纸糊的风筝；纯发放，无成年回响，影子回响见 prologue-c1955.js MARKS"
+  },
+  "mark_slingshot55": {
+   "setters": [
+    "pr_child2"
+   ],
+   "note": "童年记号（变体扩容第二轮）：柳木叉弹弓；纯发放，无成年回响，影子回响见 prologue-c1955.js MARKS"
+  },
+  "mark_satchel65": {
+   "setters": [
+    "pr_child1"
+   ],
+   "note": "童年记号（变体扩容第二轮）：旧布拼的书包；纯发放，无成年回响，影子回响见 prologue-c1965.js MARKS"
+  },
+  "mark_bench65": {
+   "setters": [
+    "pr_child1"
+   ],
+   "note": "童年记号（变体扩容第二轮）：上学抱去的小板凳；纯发放，无成年回响，影子回响见 prologue-c1965.js MARKS"
+  },
+  "mark_chalk65": {
+   "setters": [
+    "pr_child1"
+   ],
+   "note": "童年记号（变体扩容第二轮）：上讲台捏断的粉笔；纯发放，无成年回响，影子回响见 prologue-c1965.js MARKS"
+  },
+  "mark_redscarf65": {
+   "setters": [
+    "pr_child2"
+   ],
+   "note": "童年记号（变体扩容第二轮）：入队戴上的红领巾；纯发放，无成年回响，影子回响见 prologue-c1965.js MARKS"
+  },
+  "mark_top65": {
+   "setters": [
+    "pr_child2"
+   ],
+   "note": "童年记号（变体扩容第二轮）：枣木陀螺；纯发放，无成年回响，影子回响见 prologue-c1965.js MARKS"
+  },
+  "mark_swim65": {
+   "setters": [
+    "pr_child2"
+   ],
+   "note": "童年记号（变体扩容第二轮）：学会游泳的那条河；纯发放，无成年回响，影子回响见 prologue-c1965.js MARKS"
+  },
+  "mark_crayon78": {
+   "setters": [
+    "pr_child1"
+   ],
+   "note": "童年记号（变体扩容第二轮）：十二支新蜡笔；纯发放，无成年回响，影子回响见 prologue-c1978.js MARKS"
+  },
+  "mark_satchel78": {
+   "setters": [
+    "pr_child1"
+   ],
+   "note": "童年记号（变体扩容第二轮）：军绿挎包；纯发放，无成年回响，影子回响见 prologue-c1978.js MARKS"
+  },
+  "mark_stool78": {
+   "setters": [
+    "pr_child1"
+   ],
+   "note": "童年记号（变体扩容第二轮）：上学抱去的小板凳；纯发放，无成年回响，影子回响见 prologue-c1978.js MARKS"
+  },
+  "mark_shuttlecock78": {
+   "setters": [
+    "pr_child2"
+   ],
+   "note": "童年记号（变体扩容第二轮）：鸡毛毽子；纯发放，无成年回响，影子回响见 prologue-c1978.js MARKS"
+  },
+  "mark_sandbag78": {
+   "setters": [
+    "pr_child2"
+   ],
+   "note": "童年记号（变体扩容第二轮）：碎布缝的沙包；纯发放，无成年回响，影子回响见 prologue-c1978.js MARKS"
+  },
+  "mark_hoop78": {
+   "setters": [
+    "pr_child2"
+   ],
+   "note": "童年记号（变体扩容第二轮）：滚铁环；纯发放，无成年回响，影子回响见 prologue-c1978.js MARKS"
+  },
+  "mark_bag85": {
+   "setters": [
+    "pr_child1"
+   ],
+   "note": "童年记号（变体扩容第二轮）：开学第一天背家里用旧布缝的书包；纯发放，无成年回响，影子回响见 prologue-c1985.js MARKS"
+  },
+  "mark_abacus85": {
+   "setters": [
+    "pr_child1"
+   ],
+   "note": "童年记号（变体扩容第二轮）：开学带去学珠算的旧算盘；纯发放，无成年回响，影子回响见 prologue-c1985.js MARKS"
+  },
+  "mark_bench85": {
+   "setters": [
+    "pr_child1"
+   ],
+   "note": "童年记号（变体扩容第二轮）：开学坐的两人合坐长板凳；纯发放，无成年回响，影子回响见 prologue-c1985.js MARKS"
+  },
+  "mark_top85": {
+   "setters": [
+    "pr_child2"
+   ],
+   "note": "童年记号（变体扩容第二轮）：放学在院里抽的木陀螺；纯发放，无成年回响，影子回响见 prologue-c1985.js MARKS"
+  },
+  "mark_kite85": {
+   "setters": [
+    "pr_child2"
+   ],
+   "note": "童年记号（变体扩容第二轮）：开春糊的风筝断线挂在树上；纯发放，无成年回响，影子回响见 prologue-c1985.js MARKS"
+  },
+  "mark_cicada85": {
+   "setters": [
+    "pr_child2"
+   ],
+   "note": "童年记号（变体扩容第二轮）：夏天傍晚摸的知了猴；纯发放，无成年回响，影子回响见 prologue-c1985.js MARKS"
+  },
+  "mark_paint95": {
+   "setters": [
+    "pr_child1"
+   ],
+   "note": "童年记号（变体扩容第二轮）：开学买的十二色水彩笔；纯发放，无成年回响，影子回响见 prologue-c1995.js MARKS"
+  },
+  "mark_wrap95": {
+   "setters": [
+    "pr_child1"
+   ],
+   "note": "童年记号（变体扩容第二轮）：开学第一晚给新书套的书皮套；纯发放，无成年回响，影子回响见 prologue-c1995.js MARKS"
+  },
+  "mark_badge95": {
+   "setters": [
+    "pr_child1"
+   ],
+   "note": "童年记号（变体扩容第二轮）：开学发的校牌；纯发放，无成年回响，影子回响见 prologue-c1995.js MARKS"
+  },
+  "mark_yoyo95": {
+   "setters": [
+    "pr_child2"
+   ],
+   "note": "童年记号（变体扩容第二轮）：线总断的悠悠球；纯发放，无成年回响，影子回响见 prologue-c1995.js MARKS"
+  },
+  "mark_silk95": {
+   "setters": [
+    "pr_child2"
+   ],
+   "note": "童年记号（变体扩容第二轮）：鞋盒里养的蚕宝宝；纯发放，无成年回响，影子回响见 prologue-c1995.js MARKS"
+  },
+  "mark_shuttle95": {
+   "setters": [
+    "pr_child2"
+   ],
+   "note": "童年记号（变体扩容第二轮）：放学踢的鸡毛毽子；纯发放，无成年回响，影子回响见 prologue-c1995.js MARKS"
+  },
   "mark_hoop": {
    "setters": [
     "pr_child2"

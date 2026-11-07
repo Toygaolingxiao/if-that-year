@@ -25,6 +25,10 @@
    间隔平年（FLATS_BY_AGE 每岁四款）、c2000 包 pr_child1/pr_child2/pr_teen1 补到六款——
    索引 0 与原三文逐字比对、定款函数 2,000 种子分布、2 岁三形概率保持、新记号纯发放
    （全仓扫描只许见于 prologue.js 与 registry.js 登记）、start() 落 key 一致性。
+   ⑯ 变体扩容第二轮（⑮ 的水位随本轮上调：early 三拍十文、平年六款）：early/flats 既有
+   下标逐字、pr_child4 补到六款（带内扩轮换：新款挂旧记号、child4KeyFor 的 r 全域
+   记号与旧版逐点全等扫描）、pr_teen2 单文扩四款（altTexts 逐款配齐 never/left 分文、款 0 逐字）、pr_y17/pr_y18
+   单套扩四套（altSets 每套四轨＋尾句、套 0 逐字）、幕级定款 actVariantKeyFor 分布。
    用法：node scripts/stateline-assert.js */
 "use strict";
 const fs = require("fs"), vm = require("vm"), path = require("path");
@@ -909,18 +913,18 @@ console.log("⑭ 出生年内容片 c1955 批：公历门落点（高考簇/返�
 }
 
 // ---- ⑮ 序章变体扩容：变体数 / 原文逐字 / 定款分布 / 新记号纯发放 ----
-console.log("⑮ 序章变体扩容：early2/3/4 六文 / 平年四款 / child1/child2/teen1 六款 / 定款分布 / 纯发放扫描");
+console.log("⑮ 序章变体扩容：early2/3/4 十文 / 平年六款 / child1/child2/teen1 六款 / 定款分布 / 纯发放扫描");
 {
   const PRO = sandbox.window.GAME_PROLOGUE;
   const first = (id) => PRO.acts.find((a) => a.id === id);
   const e2 = first("pr_early2"), e3 = first("pr_early3"), e4 = first("pr_early4");
-  ok(!!e2 && !!e2.texts && e2.texts.length === 6, "⑮ pr_early2 texts = 6");
-  ok(!!e3 && !!e3.texts && e3.texts.length === 6 && e3.text === undefined, "⑮ pr_early3 texts = 6（原单 text 已改数组）");
-  ok(!!e4 && !!e4.texts && e4.texts.length === 6 && e4.text === undefined, "⑮ pr_early4 texts = 6（原单 text 已改数组）");
+  ok(!!e2 && !!e2.texts && e2.texts.length === 10, "⑮ pr_early2 texts = 10（第二轮水位）");
+  ok(!!e3 && !!e3.texts && e3.texts.length === 10 && e3.text === undefined, "⑮ pr_early3 texts = 10（原单 text 已改数组）");
+  ok(!!e4 && !!e4.texts && e4.texts.length === 10 && e4.text === undefined, "⑮ pr_early4 texts = 10（原单 text 已改数组）");
   ok(e2.texts[0].text === "两岁这一年，你没病没灾，吃得香睡得稳，个头往上蹿了一截。大人说，这孩子好带，省心。" && e2.texts[0].log === "平稳长大", "⑮ pr_early2[0] 原平稳文逐字");
   ok(e2.texts[1].text === "两岁这一年，你病过一场，夜里烧得满脸通红，家里人轮流抱着你，在屋里走了一夜。天快亮时烧退了，你趴在大人肩上睡着了，谁也没敢大声说话。" && e2.texts[1].log === "病过一场", "⑮ pr_early2[1] 原小病文逐字");
   ok(e2.texts[2].text === "两岁这一年，你走路走稳了，满屋满院地跑，大人一错眼你就不见了。家里把门边都收拾干净，省得你绊着。" && e2.texts[2].log === "满地跑", "⑮ pr_early2[2] 原满地跑文逐字");
-  ok(JSON.stringify(e2.texts.map((t) => t.log)) === JSON.stringify(["平稳长大", "病过一场", "满地跑", "平稳长大", "病过一场", "满地跑"]), "⑮ pr_early2 标题按形：同形两文共用标题（标题进账面）");
+  ok(JSON.stringify(e2.texts.map((t) => t.log)) === JSON.stringify(["平稳长大", "病过一场", "满地跑", "平稳长大", "病过一场", "满地跑", "平稳长大", "平稳长大", "病过一场", "满地跑"]), "⑮ pr_early2 标题按形：同形诸文共用标题（标题进账面）");
   ok(e3.texts[0].text === "三岁那年，你开始跟在大人后头学话。大人说一句，你跟一句，学得一本正经，音还咬不准。家里人笑，你也跟着笑，以为自己说得对极了。", "⑮ pr_early3[0] 原文逐字");
   ok(e4.texts[0].text === "四岁那年，你开始记事了。谁给过你一块糖，谁答应的事没算数，你都记得。家里人说，这孩子记性好，往后吃不了亏。", "⑮ pr_early4[0] 原文逐字");
   ok(e3.texts.every((t) => !t.log) && e4.texts.every((t) => !t.log), "⑮ pr_early3/4 各文不带 log（流水账标题恒为幕题）");
@@ -935,7 +939,7 @@ console.log("⑮ 序章变体扩容：early2/3/4 六文 / 平年四款 / child1/
   };
   for (const [age, orig] of Object.entries(ORIG_FLAT)) {
     const f = FL[age];
-    ok(!!f && !!f.texts && f.texts.length === 4 && f.texts[0] === orig && f.text === orig, `⑮ flat ${age}: texts 4 款、[0] 与 text 字段均为原句逐字`);
+    ok(!!f && !!f.texts && f.texts.length === 6 && f.texts[0] === orig && f.text === orig, `⑮ flat ${age}: texts 6 款、[0] 与 text 字段均为原句逐字`);
   }
   ok(FL[14].textBySchooling && FL[14].textBySchooling.never === "十四岁这一年，你的个子蹿了一截，裤子眼看着短下去，露着脚脖子过了一冬天，谁也没顾上给你换。", "⑮ flat 14 never 分文逐字未动");
   ok(FL[14].texts.slice(1).every((t) => !t.includes("校服") && !t.includes("初二") && !t.includes("上学")), "⑮ flat 14 新款不预设上过学（无校服/初二/上学）");
@@ -957,26 +961,129 @@ console.log("⑮ 序章变体扩容：early2/3/4 六文 / 平年四款 / child1/
     const allowed = new Set(NEW_MARKS.flatMap((m) => [m + " @ src/content/prologue/prologue.js", m + " @ src/registry.js"]));
     ok([...hits].every((h) => allowed.has(h)), `⑮ 新记号纯发放：引用面只在定义与登记（实测 ${[...hits].join("；") || "无"}）`);
   }
-  { // 定款分布：2,000 个种子，每款 ≥8%（六款拍）；平年四款 ≥15%
-    const N = 2000, cE2 = [0, 0, 0, 0, 0, 0], cE3 = [0, 0, 0, 0, 0, 0], cE4 = [0, 0, 0, 0, 0, 0];
-    const cFlat = { 6: [0, 0, 0, 0], 8: [0, 0, 0, 0], 10: [0, 0, 0, 0], 14: [0, 0, 0, 0], 19: [0, 0, 0, 0] };
+  { // 定款分布：2,000 个种子，十款拍每款 ≥6%（第二轮水位）；平年六款 ≥10%
+    const N = 2000, cE2 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], cE3 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], cE4 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    const cFlat = { 6: [0, 0, 0, 0, 0, 0], 8: [0, 0, 0, 0, 0, 0], 10: [0, 0, 0, 0, 0, 0], 14: [0, 0, 0, 0, 0, 0], 19: [0, 0, 0, 0, 0, 0] };
     for (let i = 0; i < N; i++) {
       const s = "EV15-" + i;
       cE2[PRO.early2KeyFor(s)]++; cE3[PRO.early34KeyFor(s, "#early3")]++; cE4[PRO.early34KeyFor(s, "#early4")]++;
-      for (const age of [6, 8, 10, 14, 19]) cFlat[age][PRO.flatKeyFor(s, age, 4)]++;
+      for (const age of [6, 8, 10, 14, 19]) cFlat[age][PRO.flatKeyFor(s, age, 6)]++;
     }
-    ok(cE2.every((c) => c >= N * 0.08), `⑮ early2 定款分布六款全 ≥8%（${cE2.join("/")}）`);
-    ok(cE3.every((c) => c >= N * 0.08), `⑮ early3 定款分布六款全 ≥8%（${cE3.join("/")}）`);
-    ok(cE4.every((c) => c >= N * 0.08), `⑮ early4 定款分布六款全 ≥8%（${cE4.join("/")}）`);
-    const shape = [cE2[0] + cE2[3], cE2[1] + cE2[4], cE2[2] + cE2[5]];
+    ok(cE2.every((c) => c >= N * 0.06), `⑮ early2 定款分布十款全 ≥6%（${cE2.join("/")}）`);
+    ok(cE3.every((c) => c >= N * 0.06), `⑮ early3 定款分布十款全 ≥6%（${cE3.join("/")}）`);
+    ok(cE4.every((c) => c >= N * 0.06), `⑮ early4 定款分布十款全 ≥6%（${cE4.join("/")}）`);
+    const shape = [cE2[0] + cE2[3] + cE2[6] + cE2[7], cE2[1] + cE2[4] + cE2[8], cE2[2] + cE2[5] + cE2[9]];
     ok(shape[0] >= N * 0.45 && shape[0] <= N * 0.55 && shape[1] >= N * 0.20 && shape[1] <= N * 0.30 && shape[2] >= N * 0.20 && shape[2] <= N * 0.30, `⑮ early2 三形概率保持 1/2、1/4、1/4（${shape.join("/")}）`);
-    ok(Object.entries(cFlat).every(([, cs]) => cs.every((c) => c >= N * 0.15)), `⑮ 平年五岁定款分布四款全 ≥15%（${Object.entries(cFlat).map(([a, cs]) => a + ":" + cs.join("/")).join(" ")}）`);
+    ok(Object.entries(cFlat).every(([, cs]) => cs.every((c) => c >= N * 0.10)), `⑮ 平年五岁定款分布六款全 ≥10%（${Object.entries(cFlat).map(([a, cs]) => a + ":" + cs.join("/")).join(" ")}）`);
   }
   { // start() 集成：key 与 seedStr 落盘、且与定款函数同值
     const S = P.freshState("EV15-START");
     S.era = "c2000";
     PRO.start(S, "EV15-START");
     ok(S.prologue.early2Key === PRO.early2KeyFor("EV15-START") && S.prologue.early3Key === PRO.early34KeyFor("EV15-START", "#early3") && S.prologue.early4Key === PRO.early34KeyFor("EV15-START", "#early4") && S.prologue.seedStr === "EV15-START", "⑮ start(): early2/3/4Key 与 seedStr 落盘且与定款函数一致");
+  }
+}
+
+// ---- ⑯ 变体扩容第二轮：既有下标逐字 / child4 新记号 / teen2 四款 / y17/y18 四套 / 幕级定款分布 ----
+console.log("⑯ 变体扩容第二轮：early/flats 既有下标逐字 / pr_child4 六款 / pr_teen2 四款 / pr_y17/y18 四套 / 幕级定款分布");
+{
+  const PRO = sandbox.window.GAME_PROLOGUE;
+  const first = (id) => PRO.acts.find((a) => a.id === id);
+  const e2 = first("pr_early2"), e3 = first("pr_early3"), e4 = first("pr_early4");
+  // early2 下标 3–5（首轮三形新文）逐字（下标 0–2 见 ⑮）
+  ok(e2.texts[3].text === "两岁这一年，你长得结实，饭量比大人想的还大。喂什么吃什么，不挑。家里人说，这样的孩子好养活，省了不少心。" && e2.texts[3].log === "平稳长大", "⑯ pr_early2[3] 首轮平稳新文逐字");
+  ok(e2.texts[4].text === "两岁这一年，你出过一回疹子，身上起了一片红点，夜里痒得睡不踏实。大人轮着抱你，在屋里慢慢走，走着走着你就睡了。疹子退下去之后，你又满屋跑了。" && e2.texts[4].log === "病过一场", "⑯ pr_early2[4] 首轮小病新文逐字");
+  ok(e2.texts[5].text === "两岁这一年，你学会了开门——够着门把手，踮着脚，使大劲往下压。门一开你就往外钻，大人一天里不知道追回来多少回，最后拿根绳把门拴上了。" && e2.texts[5].log === "满地跑", "⑯ pr_early2[5] 首轮满地跑新文逐字");
+  // early3/4 下标 0–5 逐字（0 已在 ⑮ 单钉，此处整段比对）
+  const E3_OLD = [
+    "三岁那年，你开始跟在大人后头学话。大人说一句，你跟一句，学得一本正经，音还咬不准。家里人笑，你也跟着笑，以为自己说得对极了。",
+    "三岁那年，你话多得收不住，见着什么都要问一句「这是啥」。大人答得口干，你还在问。到后来，大人指着桌子先开了口：这是桌子，别问了。",
+    "三岁那年，你学会了头一句完整的话，是跟大人要吃的。手里明明还拿着半块，又指着锅里说，还要。说得清清楚楚，一点不含糊。",
+    "三岁那年，你把家里人的称呼喊了个遍，就是分不清辈分，见谁都喊哥哥。喊错了，大人纠正一回，你下回还照旧，喊得理直气壮。",
+    "三岁那年，你学了一首儿歌，是大人一句一句喂会的。唱到中间总忘词，就拿「啦啦啦」顶上，调还跑得老远，谁也不忍心打断你。",
+    "三岁那年，你说话带上了大人的口头禅，连叹气的样子都学。家里来人，你背着手站在门口说一句「坐吧」，把一屋子人说愣了，随后全笑了。",
+  ];
+  ok(E3_OLD.every((s, i) => e3.texts[i].text === s), "⑯ pr_early3 下标 0–5 与扩容前逐字一致");
+  const E4_OLD = [
+    "四岁那年，你开始记事了。谁给过你一块糖，谁答应的事没算数，你都记得。家里人说，这孩子记性好，往后吃不了亏。",
+    "四岁那年，你记住了去小卖部的路，能自己跑个来回，找回来的零钱一分不少。家里人开始打发你跑腿，多给你一毛钱，算是辛苦费。",
+    "四岁那年，你认得家里每样东西的位子。谁的东西找不着，来问你，你一指一个准。大人说，这孩子眼睛尖，心里有数。",
+    "四岁那年，你头回一个人睡，半夜醒过一回，抱着枕头坐了一阵，没喊人，又躺下了。第二天大人看被子叠得整整齐齐，还以为是别人帮你叠的。",
+    "四岁那年，你学会了看大人的脸色。家里人吵了两句，你就安安静静地摆弄手里的东西，不闹人。等气氛缓过来，你才凑过去要吃的。",
+    "四岁那年，家里来过一个远房亲戚，住了一礼拜。走的时候你抱着人家的腿不撒手。过了半年，人家再来，你还认得，跑过去喊，就是把称呼喊错了一辈。",
+  ];
+  ok(E4_OLD.every((s, i) => e4.texts[i].text === s), "⑯ pr_early4 下标 0–5 与扩容前逐字一致");
+  // 平年五岁下标 0–3 逐字
+  const FLAT_OLD = {
+    6: ["六岁那年，你学会了自己系鞋带，头一回没让大人帮忙，就是系成了死结，最后还是大人蹲下来解的。",
+      "六岁那年，你学会了自己穿衣服，就是扣子总扣错一格，斜着一排到了学校才被同学指出来。你也不嫌丢人，中午回家重扣了一遍。",
+      "六岁那年，你掉了一颗下牙，哭了半天，怕它长不出来。大人说，长，掉一颗长一颗，新的还更结实。你天天伸舌头去舔那个缺口，舔了好些日子。",
+      "六岁那年，你学会了看表，认不全数字，就记长针短针的位子。家里人问几点，你能报个八九不离十，自己得意得不行。"],
+    8: ["这一年没什么大事。你的乳牙掉了一颗，压在枕头底下，第二天枕头底下多了一块糖，你到现在也不确定是谁放的。",
+      "八岁那年，你学会了骑家里那辆旧自行车，腿还够不着座，就站在横梁下头蹬。在院里摔了两回，膝盖磕青了，也没哭，扶起来接着骑。",
+      "八岁那年，你攒了一个月的零钱，买了个想要好久的玩具，没拿热乎两天，借给同学，拿回来时少了个零件。你心疼，也没好意思要人家赔。",
+      "八岁那年，你头回自己洗衣服，肥皂下多了，漂了四遍水还是滑的。大人晾出去时直摇头，你倒觉得洗得挺干净，穿在身上还有股肥皂味。"],
+    10: ["十岁那年，家里换了台新电视，旧的那台搬去了奶奶屋里。你负责上房顶转天线，转准了画面，全家都说你手稳。",
+      "十岁那年，你学会了包饺子，捏出来的个个站不稳，下锅一煮，露了一半馅。家里人捞出来照样吃，说，下回就好了。",
+      "十岁那年，你迷上了集卡片，零花钱大半换成了卡，厚厚一摞拿橡皮筋捆着。跟人对着拍，赢回来的揣兜里，输了就回家翻箱倒柜找自己的存货。",
+      "十岁那年，家里停电停了一晚上，你点了蜡烛写作业，影子在墙上晃。来电的时候你正写到一半，倒有点舍不得那支蜡烛了。"],
+    14: ["初二这一年，你的个子蹿了一截，校服裤子眼看着短下去，露着脚脖子过了一冬天，谁也没顾上给你换。",
+      "十四岁这一年，你开始爱照镜子了，出门前总要扒拉两下头发。家里人笑你臭美，你嘴上不认，镜子还是天天照。",
+      "十四岁这一年，你的饭量涨得吓人，一顿吃两碗还盯着锅。家里人添饭时直念叨：这哪是吃饭，这是往里倒。",
+      "十四岁这一年，你学会了跟大人顶嘴，顶完又后悔，一个人在屋里闷半天。等家里人喊吃饭，你低着头出去，谁也不提刚才的事，饭桌上又好了。"],
+    19: ["这一年过得平。手机换了张新卡，旧号码的联系人导过来，少了几个，你也没太在意。",
+      "十九岁这一年，你学会了自己去医院挂号，排了一上午队，看了个感冒。回来路上买了点水果，觉得自己也算能照顾自己了。",
+      "十九岁这一年，你的作息彻底乱了，夜里两三点还醒着，中午才起。家里人说你几回，你答应得好好的，到晚上又照旧。",
+      "十九岁这一年，你把头发剪短了，剪完对着镜子看了半天，不太习惯。家里人说精神，你也就留下了，没再往长里续。"],
+  };
+  ok(Object.entries(FLAT_OLD).every(([age, arr]) => arr.every((s, i) => PRO.flatsByAge[age].texts[i] === s)), "⑯ 平年五岁下标 0–3 与扩容前逐字一致");
+  // pr_child4 六款：带内扩轮换（旧四记号都带成年回响，整体重掷会洗全线轨迹——新款挂旧记号）
+  const c4 = first("pr_child4");
+  ok(!!c4 && c4.variants.length === 6, "⑯ pr_child4（c2000 包）variants = 6");
+  ok(JSON.stringify(c4.variants.map((v) => v.key)) === JSON.stringify(["tree", "shop", "yearbook", "classphoto", "shoestand", "lastpage"]), "⑯ pr_child4 六款 key 序（既有四款未动、新款追加在尾）");
+  ok(c4.variants[0].text === "小学门口有棵老梧桐，树底下有个修鞋摊。你毕业那年夏天，学校要拓宽校门，树留不留，议论了一阵。后来树留下了，修鞋摊挪到树影的另一边，大爷说，挪几步没事，照样修鞋。", "⑯ pr_child4[0] 原文逐字");
+  ok(c4.variants[4].set === "mark_tree" && c4.variants[4].mark === "mark_tree" && c4.variants[5].set === "mark_yearbook" && c4.variants[5].mark === "mark_yearbook", "⑯ pr_child4 新款挂旧记号（shoestand→梧桐、lastpage→留言册），记号面与旧版全等");
+  { // 带内扩轮换审计：r 全域扫描——每一点映射出的记号须与旧版 floor(r*4) 落带记号相同，且六款份额各 ≥6%
+    ok(typeof PRO.child4KeyFor === "function", "⑯ PRO_API 暴露 child4KeyFor");
+    const OLD4_MARKS = ["mark_tree", "mark_shop", "mark_yearbook", "mark_classphoto"];
+    const markOf = {}; for (const v of c4.variants) markOf[v.key] = v.mark;
+    const cnt = {}; let markOk = true;
+    const NC = 4000;
+    for (let i = 0; i < NC; i++) { const r = (i + 0.5) / NC; const k = PRO.child4KeyFor(r); cnt[k] = (cnt[k] || 0) + 1; if (markOf[k] !== OLD4_MARKS[Math.floor(r * 4)]) markOk = false; }
+    ok(markOk, "⑯ pr_child4 带内扩轮换：r 全域记号与旧版逐点全等（成年回响/轨迹零扰动）");
+    ok(["tree", "shop", "yearbook", "classphoto", "shoestand", "lastpage"].every((k) => (cnt[k] || 0) >= NC * 0.06), `⑯ pr_child4 六款定款份额各 ≥6%（${JSON.stringify(cnt)}）`);
+  }
+  // pr_teen2 四款：款 0 逐字 + 新款分文结构
+  const t2 = first("pr_teen2");
+  ok(t2.text === "十五岁那年，你开始想一件事：往后的日子，是接着念书，还是早点出去挣钱。想归想，日子还是一天一天过——作业要交，饭要照吃。", "⑯ pr_teen2 款0 正文逐字");
+  ok(t2.textBySchooling && t2.textBySchooling.never === "十五岁那年，你开始想一件事：往后的日子，是守着家里这一摊，还是早点出去挣钱。想归想，日子还是一天一天过——活要干，饭要照吃。" && t2.textBySchooling.left === "十五岁那年，你开始想一件事：书已经放下了，往后的日子，是守着家里这一摊，还是早点出去挣钱。想归想，日子还是一天一天过——活要干，饭要照吃。", "⑯ pr_teen2 款0 never/left 分文逐字");
+  ok(Array.isArray(t2.altTexts) && t2.altTexts.length === 3, "⑯ pr_teen2 altTexts = 3（连原款共四款）");
+  ok(t2.altTexts.every((e) => typeof e.text === "string" && e.text.length > 20 && e.textBySchooling && typeof e.textBySchooling.never === "string" && e.textBySchooling.never.length > 20 && typeof e.textBySchooling.left === "string" && e.textBySchooling.left.length > 20), "⑯ pr_teen2 新款逐款配齐 never/left 分文");
+  ok(t2.altTexts.every((e) => !e.textBySchooling.never.includes("作业") && !e.textBySchooling.left.includes("作业") && !e.textBySchooling.never.includes("上学") && !e.textBySchooling.left.includes("上学")), "⑯ pr_teen2 新款 never/left 分文不预设在校（无作业/上学）");
+  ok(!t2.variants, "⑯ pr_teen2 不走 variants 机制（序章流零新增掷格）");
+  // pr_y17 / pr_y18 四套：套 0 逐字 + 新套结构
+  const y17 = first("pr_y17"), y18 = first("pr_y18");
+  const Y17_0 = { study: "高二分了科。你选的那一科，班里走了一半人，又从别的班补进来一半。晚自习的灯管换了一根，亮得有点晃眼。",
+    work: "打工第一年，你在流水线上学到一件事：手上的活要快，眼睛还得盯着前一个工位。工资发下来，头一笔给你妈转了三百。",
+    craft: "职校第二年，开始进实训车间。师傅让你先练基本功，同一个件磨了四十遍，手上的茧先起来了。",
+    home: "留在家里的第一年，你跟着把一季庄稼从头走到尾。播种的时候腰是弯的，收的时候也是。晒场上的谷子，你翻了不下二十遍。" };
+  ok(["study", "work", "craft", "home"].every((k) => y17.textByTrack[k] === Y17_0[k]) && y17.tail === "你把闹钟定得比别人早十分钟，后来慢慢成了习惯。", "⑯ pr_y17 套0 四轨＋尾句逐字");
+  const Y18_0 = { study: "高三这一年，日子是按周过的：周考、月考、模拟。教室后墙贴了张倒计时，数字一天少一个。你的水杯上贴着名字，怕拿错。",
+    work: "你满十八了。厂里把你从临时工转成正式的，工牌换了颜色。夜班排到你的时候，你在休息室的长椅上睡过几个整觉。",
+    craft: "毕业这一年，你开始跟师傅出活。头一回独立干完一件，验收的人点了点头。你回去把那件工具擦了三遍。",
+    home: "这一年收成还行。你爸把卖粮的钱数了两遍，分出一份，说给你留着。村里同龄的走了大半，晚饭桌上常听见他们打工地方的名字。" };
+  ok(["study", "work", "craft", "home"].every((k) => y18.textByTrack[k] === Y18_0[k]) && y18.tail === "成年这天，你请要好的几个吃了顿饭，一人一瓶汽水，瓶子碰在一起，声音很脆。", "⑯ pr_y18 套0 四轨＋尾句逐字");
+  for (const [act, nm] of [[y17, "pr_y17"], [y18, "pr_y18"]]) {
+    ok(Array.isArray(act.altSets) && act.altSets.length === 3 && act.altSets.every((s) => ["study", "work", "craft", "home"].every((k) => typeof s.textByTrack[k] === "string" && s.textByTrack[k].length > 15) && typeof s.tail === "string" && s.tail.length > 5), `⑯ ${nm} altSets = 3，每套四轨＋尾句齐全（连原套共四套）`);
+  }
+  { // 幕级定款分布：2,000 个种子，四款全 ≥15%
+    const N = 2000;
+    ok(typeof PRO.actVariantKeyFor === "function", "⑯ PRO_API 暴露 actVariantKeyFor");
+    for (const id of ["pr_teen2", "pr_y17", "pr_y18"]) {
+      const c = [0, 0, 0, 0];
+      for (let i = 0; i < N; i++) c[PRO.actVariantKeyFor("EV16-" + i, id, 4)]++;
+      ok(c.every((x) => x >= N * 0.15), `⑯ ${id} 幕级定款四款全 ≥15%（${c.join("/")}）`);
+    }
   }
 }
 
