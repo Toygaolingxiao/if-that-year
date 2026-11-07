@@ -89,7 +89,8 @@
   }
 
   function resumeAuto() { // 回到前台且当前画面仍可自动推进、还有剩余时间，才接着走
-    if (autoEligible() && IFY.autoRemain > 0 && IFY.autoTimer === null && IFY.autoPhase2 === null && IFY.S && IFY.S.route && !IFY.S.death && IFY.S.age < IFY.MAX_AGE && !document.hidden) { startAuto(IFY.autoRemain); lineResume(); }
+    // v0.51.1：序章还没选路、S.route 为空时也要能续——旧闸只认 route，切走再切回时序章的计时永远续不上、画面死在原地（玩家席实测：平年开着，1 岁屏纹丝不动）。
+    if (autoEligible() && IFY.autoRemain > 0 && IFY.autoTimer === null && IFY.autoPhase2 === null && IFY.S && (IFY.S.route || (IFY.S.prologue && !IFY.S.prologue.done)) && !IFY.S.death && IFY.S.age < IFY.MAX_AGE && !document.hidden) { startAuto(IFY.autoRemain); lineResume(); }
   }
 
   function speedButtonLabel(k) { return `${IFY.SPEED_LABEL[k]} · ${IFY.SPEED_STYLE[k]}`; }

@@ -61,7 +61,7 @@
     grab_wen: { shadow: "两条路上都一样的是，周岁那天你抓了念书的那一样，家里人笑了好一阵。" },
     grab_cai: { shadow: "两条路上都一样的是，周岁那天你抓了算钱的那一样，家里人说，往后饿不着。" },
     grab_gong: { shadow: "两条路上都一样的是，周岁那天你抓了干活的那一样，举起来晃，家里人直笑。" },
-    grab_shi: { shadow: "两条路上都一样的是，周岁那天你抓了吃的那一样，抓到手就往嘴里送。" },
+    grab_shi: { shadow: "两条路上都一样的是，周岁那天你抓了吃的那一样，攥着不肯撒手，家里人哄了半天。" },
     grab_yin: { shadow: "两条路上都一样的是，周岁那天你抓了那枚印，攥得紧紧的，谁要都不给。" },
     grab_wan: { shadow: "两条路上都一样的是，周岁那天你抓了玩的那一样，抱着不撒手。" },
   };
@@ -77,12 +77,17 @@
     c1995: { wen: { d: "一本书", n: "书" }, cai: { d: "一把硬币", n: "硬币" }, gong: { d: "一把尺子", n: "尺子" }, shi: { d: "一块巧克力", n: "巧克力" }, yin: { d: "一枚印章", n: "印章" }, wan: { d: "一块积木", n: "积木" } },
     c2000: { wen: { d: "一本绘本", n: "绘本" }, cai: { d: "一个计算器", n: "计算器" }, gong: { d: "一把尺子", n: "尺子" }, shi: { d: "一块小蛋糕", n: "小蛋糕" }, yin: { d: "一枚印章", n: "印章" }, wan: { d: "一个电脑鼠标", n: "电脑鼠标" } },
   };
+  // 俭省摆面（玩家席 2026-11-07 点题）：家底紧巴的几张牌（cf_04 家里不富裕/cf_06 衣裳紧着穿/cf_13 记事起就欠着账，
+  // 都是出生那会儿就成立的家境），摆面里的钢笔换成铅笔——紧巴家里摆不出一支钢笔，铅笔谁家都有。
+  // 只换文族这一件，族、记号、发放全不变，零数值；其余年代文族本就是书和本，不挑家底，不换。
+  const MODEST_FAMILIES = ["cf_04", "cf_06", "cf_13"];
+  const MODEST_WEN = { c1965: { d: "一支铅笔", n: "铅笔" }, c1978: { d: "一支铅笔", n: "铅笔" } };
   // 抓周揭晓段（六族框架共用、年代中性）：叙述只记事，判语都出自家里人的嘴（笑着当真，不算判命）。
   const GRAB_REVEAL = {
     wen: "你爬过去，抓住了{item}，低头翻来覆去地看。家里人笑，说这孩子往后怕是要念书的。",
     cai: "你爬过去，东摸摸，西摸摸，最后抓住了{item}。家里人笑，说行，往后饿不着。",
     gong: "你爬过去，抓住了{item}，举起来直晃。家里人笑，说手上有劲，是个干活的料。",
-    shi: "你爬过去，抓住了{item}，就往嘴里送。家里人笑得直拍手。",
+    shi: "你爬过去，抓住了{item}，低头就要往嘴边送。家里人赶紧笑着拦下来，拿别的东西哄着跟你换——你还攥着不肯撒手。",
     yin: "你爬过去，抓住了{item}，攥得紧紧的。家里人笑，说这孩子，是个有主意的。",
     wan: "你爬过去，抓住了{item}，抱着不撒手。家里人笑，说这孩子，玩的心重。",
   };
@@ -1238,7 +1243,8 @@
       P.earlyLog = null;
       if (beat.grab) {
         const v = (beat.variants || []).find((x) => x.key === P.grabKey) || beat.variants[0];
-        const spread = GRAB_SPREADS[S.era] || GRAB_SPREADS.c2000;
+        const baseSpread = GRAB_SPREADS[S.era] || GRAB_SPREADS.c2000;
+        const spread = (MODEST_FAMILIES.includes(P.family) && MODEST_WEN[S.era]) ? { ...baseSpread, wen: MODEST_WEN[S.era] } : baseSpread;
         const sp = spread[v.key] || spread.wen;
         if (v.set) S.flags[v.set] = true;
         if (v.mark) { const e = markEntryWithShadow(v.mark, beat.age, null); e.item = sp.n; S.marks.push(e); }
