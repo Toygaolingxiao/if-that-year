@@ -1157,12 +1157,12 @@ vm.runInContext("window.__P.specialEnding = window.IFY.specialEnding;", sandbox,
   ok(spId() === "end_farm_life", "⑰ 功能: farm 路线 + farm_work + 轨迹终点 home → 守着土地");
   mkEnd("E14-AR", { deathAge: 80, route: "abroad", flags: { stayed_city: true }, used: ["ab37_003"], ledger: [{ age: 22, kind: "route", id: "abroad" }] });
   ok(spId() === "end_abroad_rest", "⑰ 功能: abroad 路线 + 轨迹终点 abroad + 永住/扎根事实 → 异乡终老");
-  mkEnd("E14-RF", { deathAge: 78, stats: st6(50, 50, 50, 86, 50, 50), flags: { renting: true } });
-  ok(spId() === "end_rent_free", "⑰ 功能: 终局私租（派生 renting）+ 自由 86 → 无房一身轻");
-  mkEnd("E14-RF2", { deathAge: 45, stats: st6(50, 50, 50, 86, 50, 50), flags: { renting: true } });
+  mkEnd("E14-RF", { deathAge: 78, stats: st6(50, 50, 50, 92, 50, 50), flags: { renting: true } });
+  ok(spId() === "end_rent_free", "⑰ 功能: 终局私租（派生 renting）+ 自由 92 → 无房一身轻");
+  mkEnd("E14-RF2", { deathAge: 45, stats: st6(50, 50, 50, 92, 50, 50), flags: { renting: true } });
   ok(spId() === null, "⑰ 功能: 45 岁终局同形 → 形状门剔除无房一身轻（一辈子未走完）");
-  mkEnd("E14-CB", { deathAge: 80, stats: st6(55, 55, 50, 50, 50, 50), flags: { laid_off: true } });
-  ok(spId() === "end_comeback", "⑰ 功能: laid_off 在账 + 钱/健康回到 55 → 重新站起来");
+  mkEnd("E14-CB", { deathAge: 80, stats: st6(55, 68, 50, 50, 50, 50), flags: { laid_off: true } });
+  ok(spId() === "end_comeback", "⑰ 功能: laid_off 在账 + 钱回到 68/健康 55 → 重新站起来");
   mkEnd("E14-OH", { deathAge: 85, age: 70, stats: st6(50, 50, 70, 50, 50, 50), flags: { factory_work: true, mentor_bond: true }, flagAges: { factory_work: 25 }, ledger: [{ age: 25, kind: "event", id: "p15_006", set: "factory_work" }] });
   ok(spId() === "end_old_hand", "⑰ 功能: 同一主线工龄 45 年 + 成长 70 + 带过徒弟 → 老把式");
 }

@@ -1104,7 +1104,7 @@
 
   // 立约资格（fix4-settle 第 3 条）：立约是两个人的约定。fork38 对从没成过家的人也照样
   // registerCovenant（spouse.js），但那只是一个人把孩子的事定下来——子女槽已按此陈述
-  // （「孩子的事，38 岁那年就定下了」），对账行里凡断言「立的约」的句子只许真有约的局出。
+  // （「孩子的事，X 岁那年就定下了」），对账行里凡断言「立的约」的句子只许真有约的局出。
   // 判法：把会被对账行读到的每一份约（与 covenantSettleLineSeg 的 covOf 同口径），回到它
   // 所属 Track 的全账本——38 岁之前真走过定关系/领证路径（spouse 曾落到 partnered/dating）
   // 才算有约；38 岁那年正单身、但先前成过家的人（离异/丧偶）不算单身局，不在此门内。
@@ -1363,12 +1363,12 @@
         else s5 = view.flagWitnessed("kid_abroad") ? "孩子大了，去了远方。逢年过节，电话那头热闹。" : kidPresenceSentence();
       }
       else if (hasIdx.length === 1) s5 = kidSent(hasIdx[0], 0);
-      else if (view.domainEnd("kids") === "none") { const covK = view.covenant(); s5 = covK && covK.kind === "none" ? "孩子的事，38 岁那年就定下了：不要。后来照着这个安排过。" : "这一生没要孩子。别人家围着孩子转的那些年，你这儿没这一摊事。"; }
+      else if (view.domainEnd("kids") === "none") { const covK = view.covenant(); s5 = covK && covK.kind === "none" ? "孩子的事，" + (typeof covK.since === "number" ? covK.since : 38) + " 岁那年就定下了：不要。后来照着这个安排过。" : "这一生没要孩子。别人家围着孩子转的那些年，你这儿没这一摊事。"; }
       else s5 = "孩子的事一直没正式定下来。拖着拖着，就到了这岁数。";
     }
     else if (F.late_parent) s5 = "孩子来得晚。别人抱孙辈的年纪，你还在给孩子开家长会。";
     else if (ST.kids === "has") s5 = F.kid_abroad ? "孩子大了，去了远方。逢年过节，电话那头热闹。" : kidPresenceSentence();
-    else if (ST.kids === "none") s5 = IFY.S.covenant && IFY.S.covenant.kind === "none" ? "孩子的事，38 岁那年就定下了：不要。后来照着这个安排过。" : "这一生没要孩子。别人家围着孩子转的那些年，你这儿没这一摊事。";
+    else if (ST.kids === "none") s5 = IFY.S.covenant && IFY.S.covenant.kind === "none" ? "孩子的事，" + (typeof IFY.S.covenant.since === "number" ? IFY.S.covenant.since : 38) + " 岁那年就定下了：不要。后来照着这个安排过。" : "这一生没要孩子。别人家围着孩子转的那些年，你这儿没这一摊事。";
     else s5 = "孩子的事一直没正式定下来。拖着拖着，就到了这岁数。";
     slots.push(["子女", s5]);
     // 父母槽：交换局 dad/mom 取 domainEnd 的见证终局、照护三旗按见证口径；未交换局读终局身体与本局旗（原读法）。
@@ -1408,11 +1408,13 @@
     let s7;
     // 没办完的事（v0.22 WP7）：交换局 covenant 跨段查（任一段的约与其结账旗按见证口径）、late_tried 同理，
     // kids 收尾按 domainEnd 判；glimpsesSkipped 以下各支照旧（meta 与终局身体）。未交换局走原三支。
-    if (view && view.flagWitnessed("cov_solo_done") && view.domainEnd("kids") === "undecided") s7 = "38 岁挂起的那份账，45 岁你一个人对完了。孩子的事没落定，可那份约不算悬着了。";
-    else if (view && view.covenant() && view.covenant().kind === "wait" && view.domainEnd("kids") === "undecided") s7 = "38 岁挂起的那份账，到最后也没正式对完。";
+    const covSettle = view ? view.covenant() : (IFY.S.covenant || null);
+    const covSince = covSettle && typeof covSettle.since === "number" ? covSettle.since : 38; // 立约岁数读本局真账（kidGateDue 随成家进度开门，不再钉 38；旧档无 since 才回落 38）
+    if (view && view.flagWitnessed("cov_solo_done") && view.domainEnd("kids") === "undecided") s7 = covSince + " 岁挂起的那份账，" + (covSince + 7) + " 岁你一个人对完了。孩子的事没落定，可那份约不算悬着了。";
+    else if (view && view.covenant() && view.covenant().kind === "wait" && view.domainEnd("kids") === "undecided") s7 = covSince + " 岁挂起的那份账，到最后也没正式对完。";
     else if (view && view.flagWitnessed("late_tried") && !view.flagWitnessed("late_parent")) s7 = "想要孩子那几年，试过，也跑过医院，最后没等来。这事放下了，就是偶尔还想起。";
-    else if (!view && F.cov_solo_done && ST.kids === "undecided") s7 = "38 岁挂起的那份账，45 岁你一个人对完了。孩子的事没落定，可那份约不算悬着了。";
-    else if (!view && IFY.S.covenant && IFY.S.covenant.kind === "wait" && ST.kids === "undecided") s7 = "38 岁挂起的那份账，到最后也没正式对完。";
+    else if (!view && F.cov_solo_done && ST.kids === "undecided") s7 = covSince + " 岁挂起的那份账，" + (covSince + 7) + " 岁你一个人对完了。孩子的事没落定，可那份约不算悬着了。";
+    else if (!view && IFY.S.covenant && IFY.S.covenant.kind === "wait" && ST.kids === "undecided") s7 = covSince + " 岁挂起的那份账，到最后也没正式对完。";
     else if (!view && F.late_tried && !F.late_parent) s7 = "想要孩子那几年，试过，也跑过医院，最后没等来。这事放下了，就是偶尔还想起。";
     else if ((IFY.playerMeta().glimpsesSkipped || 0) >= 2 && !(IFY.playerMeta().glimpsesSeen > 0)) s7 = "另一条路有几回摆在眼前，你都没去细看。那边后来什么样，你一直不知道。"; // v0.21 WP1：瞥视计数改读 session.meta（蓝图 3.1）；v0.22.1 F8：看过至少一次的人不许判「都没去细看」，计数口径与文案对齐（审计 run-13）
     else if (housing.rentingNow) s7 = "买房的事提过几回，最后没办成，一直租着住。"; // v0.24.4：改读派生 rentingNow——旧版三旗排除漏了 bought_commodity/bought_fangai/jizi_house，商品房买家照样出「一直租着住」（侦察 c1965 rec-05 实锤）
