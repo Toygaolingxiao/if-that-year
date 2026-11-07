@@ -1012,7 +1012,7 @@ return;
 let pending = "";
 try { pending = sessionStorage.getItem(PENDING_KEY) || "";} catch (e) {}
 panel.innerHTML = `<div class="ks-block">
-<p class="ks-intro">把这一生订成一册：一张长图（判词、大事记、六维、另一条路），加一本能打印的纪录册，年表是全的。买一次，这台设备以后每一局都能导出。</p>
+<p class="ks-intro">把这一生订成一册：一张长图（判词、大事记、六维、另一条路），加一本能打印的纪录册，年表是全的。长图能存下来发给家里人看，册子打印出来能送人。买一次，这台设备以后每一局都能导出。</p>
 <div class="row">
 <button type="button" class="ghost" id="ks-preview">先看长图预览（带水印）</button>
 <a class="ghost ks-buy" href="${esc(CFG.buyPage || "buy.html")}" target="_blank" rel="noopener">去订一册 · ¥${CFG.priceJPY} / ¥${CFG.priceCNY}</a>
@@ -1070,7 +1070,7 @@ if (panel &&!panel.hidden) renderPanel();
 function mountKeepsakeDesk() {
 const desk = IFY.app().querySelector(".sharedesk");
 if (!desk || IFY.el("keepsake-line")) return;
-desk.insertAdjacentHTML("afterend", `<p class="keepsake-line" id="keepsake-line"><button type="button" class="textlink" id="keepsake-open"></button></p><div class="keepsake-panel" id="keepsake-panel" hidden></div>`);
+desk.insertAdjacentHTML("afterend", `<p class="keepsake-line" id="keepsake-line"><button type="button" class="textlink" id="keepsake-open"></button></p><p class="hint" style="margin:2px 0 0">长图能存下来发给家里人看，册子能打印出来送人。</p><div class="keepsake-panel" id="keepsake-panel" hidden></div>`);
 const btn = IFY.el("keepsake-open");
 if (!btn) return;
 btn.addEventListener("click", () => {

@@ -1441,6 +1441,191 @@
     return slots;
   }
 
+  // ---------- 人生线（结算页收尾一节，年表之后、分享台之前） ----------
+  // 六行横条：爸爸/妈妈/我/对方/孩子/另一条路，只记「谁在、从哪一年到哪一年」。
+  // 取数全走本页既有通道，不新造口径：父母与伴侣、孩子的流转岁数读账本 state 流转
+  // （交换局读 playerFacts 的 mergedLedger，与年表/九槽同源）；父母是否离世读 domainEnd/
+  // 终局 state（与父母槽同判）；父母本人终龄 = 离世时我的岁数 + 出生时父母年龄 age0
+  // （parents 进程，age0 出生掷定、两轨同值）；伴侣的任次与收尾读 partnerHistoryOf；
+  // 孩子出生年读 kidsBornAt ?? kidsAt（apply/spouse 既有口径）；影子终龄读不受控 Track
+  // 本人 state（与第八槽同源，renderEnd 入口已 fastForwardUncontrolled）。
+  // 红线：不标分岔点/分开年龄、不写比较句、伴侣只写「对方」、孩子不写性别。
+  // 纯呈现、只读：任何一步取数失败整节缺席，绝不拖垮结算页。
+  function lifelineHtml(view) {
+    try {
+      const S = IFY.S;
+      if (!S || !S.route) return "";
+      const myFinal = IFY.finalAge();
+      const led = view ? view.mergedLedger : (Array.isArray(S.ledger) ? S.ledger : []);
+      const transFirst = {}, transLast = {};
+      for (const e of led) {
+        if (e && e.kind === "state" && typeof e.id === "string" && typeof e.age === "number") {
+          if (!(e.id in transFirst)) transFirst[e.id] = e.age;
+          transLast[e.id] = e.age;
+        }
+      }
+      const parentsOf = (who) => {
+        if (S.parents && S.parents[who]) return S.parents[who];
+        if (view) for (const seg of view.segments) { const p = seg.state && seg.state.parents; if (p && p[who]) return p[who]; }
+        return null;
+      };
+      const parentDead = (who) => view ? view.domainEnd(who) === "dead" : !!((S.state || {})[who] === "dead");
+      const parentInfo = (who) => {
+        let deathAt = null;
+        if (parentDead(who)) {
+          if (typeof transLast[who + ">dead"] === "number") deathAt = transLast[who + ">dead"];
+          else { const P = parentsOf(who); if (P && typeof P.deathAge === "number") deathAt = P.deathAge; } // 账本缺流转时的回落：进程掷定的离世点（进程发作即此岁）
+        }
+        const P0 = parentsOf(who);
+        const age0 = P0 && typeof P0.age0 === "number" ? P0.age0 : null;
+        return { deathAt, ownAge: deathAt != null && age0 != null ? deathAt + age0 : null };
+      };
+      const dad = parentInfo("dad"), mom = parentInfo("mom");
+      // 伴侣：对方行画最后一任（结算陪伴槽的「对方」同指）；成家标记取第一次定下来的岁数。
+      const ph = partnerHistoryOf(view);
+      const marryAge = typeof transFirst["spouse>partnered"] === "number" ? transFirst["spouse>partnered"]
+        : (ph.parts.length && typeof ph.parts[0].settledAge === "number" ? ph.parts[0].settledAge : null);
+      let pStart = null, pEnd = null; // pEnd: {t:"alive"} | {t:"widowed"|"divorced", age}
+      if (ph.parts.length) {
+        const last = ph.parts[ph.parts.length - 1];
+        pStart = typeof last.settledAge === "number" ? last.settledAge
+          : (typeof transLast["spouse>partnered"] === "number" ? transLast["spouse>partnered"] : marryAge);
+        if ((last.endKind === "widowed" || last.endKind === "divorced") && typeof last.endAge === "number") pEnd = { t: last.endKind, age: last.endAge };
+        else pEnd = { t: "alive" };
+      } else if (marryAge != null) { // 账本可回放但任次形状对不上（known=false 的老档等）：按终局身体回落
+        pStart = marryAge;
+        const fin = (S.state || {}).spouse;
+        if (fin === "widowed" && typeof transLast["spouse>widowed"] === "number") pEnd = { t: "widowed", age: transLast["spouse>widowed"] };
+        else if (fin === "divorced" && typeof transLast["spouse>divorced"] === "number") pEnd = { t: "divorced", age: transLast["spouse>divorced"] };
+        else pEnd = { t: "alive" };
+      }
+      if (pStart == null && (S.state || {}).spouse === "dating" && typeof transFirst["spouse>dating"] === "number") {
+        pStart = transFirst["spouse>dating"]; pEnd = { t: "alive" }; // 没领证、处到老的：行从处上那年起，不落成家标记
+      }
+      // 孩子：有孩子才有行；出生年优先本轨 kidsBornAt ?? kidsAt，交换局再退账本首次 kids>has 流转岁。
+      let kidBorn = null;
+      const kidsHas = view ? (view.domainEnd("kids") === "has" || typeof transFirst["kids>has"] === "number") : (S.state || {}).kids === "has";
+      if (kidsHas) {
+        if (typeof S.kidsBornAt === "number") kidBorn = S.kidsBornAt;
+        else if (typeof S.kidsAt === "number") kidBorn = S.kidsAt;
+        else if (typeof transFirst["kids>has"] === "number") kidBorn = transFirst["kids>has"];
+        else if (view) for (const seg of view.segments) { const st = seg.state; if (typeof st.kidsBornAt === "number") { kidBorn = st.kidsBornAt; break; } if (typeof st.kidsAt === "number") { kidBorn = st.kidsAt; break; } }
+      }
+      // 影子：不受控 Track 本人终龄（无 Track 的旧档整行缺席，不编岁数）。
+      const B = uncontrolledState();
+      const shadowFinal = B ? (B.death ? B.death.age : (typeof B.age === "number" ? B.age : null)) : null;
+      // ---------- 几何（手机列：viewBox 360 宽，按原生尺寸出图，字号 ≥10） ----------
+      const X0 = 52, XR = 338, XTIP = 350, W = 360;
+      const axisMax = Math.max(30, Math.ceil(Math.max(myFinal, shadowFinal || 0) / 10) * 10);
+      const X = (age) => X0 + (Math.max(0, Math.min(age, axisMax)) / axisMax) * (XR - X0);
+      const estW = (t) => { let w = 0; for (const ch of String(t)) w += /[0-9]/.test(ch) ? 6 : 10.5; return w; };
+      const C = { dad: "#5d5648", mom: "#7a6a58", me: "#2f5d43", partner: "#8a6f55", kid: "#97917a", shadow: "#7d968a", grid: "#e3dac4", note: "#9a8f7a" };
+      const rows = [];
+      const arrow = (x, y, col) => `<path d="M${x} ${y} l-9 -4.5 v9 z" fill="${col}"/>`;
+      const endNote = (dotX, y, text, col) => { // 点旁注：右侧放得下就放右边；放不下改到点左上方（贴线同高会让虚线从字缝里透出来）
+        const w = estW(text);
+        return dotX + 7 + w <= W - 2
+          ? `<text x="${(dotX + 7).toFixed(1)}" y="${y + 4}" font-size="10.5" fill="${col}">${IFY.esc(text)}</text>`
+          : `<text x="${(dotX - 2).toFixed(1)}" y="${y - 8}" font-size="10.5" fill="${col}" text-anchor="end">${IFY.esc(text)}</text>`;
+      };
+      const belowNote = (sx, y, text) => { // 行下注：从起点往右写，超界改贴右界收尾
+        const w = estW(text);
+        return sx + w <= W - 2
+          ? `<text x="${sx.toFixed(1)}" y="${y}" font-size="10.5" fill="${C.note}">${IFY.esc(text)}</text>`
+          : `<text x="${W - 2}" y="${y}" font-size="10.5" fill="${C.note}" text-anchor="end">${IFY.esc(text)}</text>`;
+      };
+      const parentRow = (label, info, col) => {
+        if (info.deathAt != null) {
+          const dx = X(info.deathAt);
+          return { h: 30, body: (y) => `<line x1="${X0}" y1="${y}" x2="${dx.toFixed(1)}" y2="${y}" stroke="${col}" stroke-width="3" stroke-linecap="round"/><circle cx="${dx.toFixed(1)}" cy="${y}" r="3.5" fill="${col}"/>${endNote(dx, y, info.ownAge != null ? `${info.ownAge} 岁那年走了` : "那年走了", col)}` };
+        }
+        return { h: 30, body: (y) => `<line x1="${X0}" y1="${y}" x2="${XTIP - 2}" y2="${y}" stroke="${col}" stroke-width="3" stroke-linecap="round"/>${arrow(XTIP, y, col)}` };
+      };
+      rows.push({ label: "爸爸", col: C.dad, ...parentRow("爸爸", dad, C.dad) });
+      rows.push({ label: "妈妈", col: C.mom, ...parentRow("妈妈", mom, C.mom) });
+      rows.push({
+        label: "我", col: C.me, h: 46,
+        body: (y) => {
+          const lineY = y + 18, ex = X(myFinal);
+          let s = `<line x1="${X0}" y1="${lineY}" x2="${ex.toFixed(1)}" y2="${lineY}" stroke="${C.me}" stroke-width="4" stroke-linecap="round"/>`;
+          const marks = [];
+          if (marryAge != null) marks.push({ age: marryAge, text: `${marryAge} 岁，成家` });
+          if (kidBorn != null) marks.push({ age: kidBorn, text: `${kidBorn} 岁，孩子出生` });
+          marks.sort((a, b) => a.age - b.age);
+          const near = marks.length === 2 && Math.abs(X(marks[1].age) - X(marks[0].age)) < 100;
+          marks.forEach((mk, i) => {
+            const mx = X(mk.age);
+            s += `<circle cx="${mx.toFixed(1)}" cy="${lineY}" r="3" fill="#FFFDF8" stroke="${C.me}" stroke-width="2.2"/>`;
+            let anchor = "middle", tx = mx;
+            if (near) { anchor = i === 0 ? "end" : "start"; tx = i === 0 ? mx - 6 : mx + 6; }
+            else tx = Math.max(X0 + 26, Math.min(322, mx));
+            s += `<text x="${tx.toFixed(1)}" y="${lineY - 8}" font-size="10.5" fill="${C.me}" text-anchor="${anchor}">${IFY.esc(mk.text)}</text>`;
+          });
+          s += `<circle cx="${ex.toFixed(1)}" cy="${lineY}" r="4" fill="${C.me}"/><text x="${ex.toFixed(1)}" y="${lineY + 17}" font-size="11" fill="${C.me}" text-anchor="end">${myFinal} 岁</text>`;
+          return s;
+        },
+      });
+      if (pStart != null && pEnd) rows.push({
+        label: "对方", col: C.partner, h: 48,
+        body: (y) => {
+          const sx = X(pStart);
+          let s = pEnd.t === "alive"
+            ? `<line x1="${sx.toFixed(1)}" y1="${y}" x2="${XTIP - 2}" y2="${y}" stroke="${C.partner}" stroke-width="3" stroke-linecap="round"/>${arrow(XTIP, y, C.partner)}`
+            : `<line x1="${sx.toFixed(1)}" y1="${y}" x2="${X(pEnd.age).toFixed(1)}" y2="${y}" stroke="${C.partner}" stroke-width="3" stroke-linecap="round"/><circle cx="${X(pEnd.age).toFixed(1)}" cy="${y}" r="3.5" fill="${C.partner}"/>`;
+          return s + belowNote(sx, y + 17, `${pStart} 岁那年，并入这条线`);
+        },
+      });
+      if (kidBorn != null) rows.push({
+        label: "孩子", col: C.kid, h: 48,
+        body: (y) => {
+          const sx = X(kidBorn);
+          return `<line x1="${sx.toFixed(1)}" y1="${y}" x2="${XTIP - 2}" y2="${y}" stroke="${C.kid}" stroke-width="3" stroke-linecap="round"/>${arrow(XTIP, y, C.kid)}` + belowNote(sx, y + 17, `${kidBorn} 岁那年，从这条线分出去`);
+        },
+      });
+      if (shadowFinal != null) rows.push({
+        label: "另一条路", col: C.shadow, h: 26,
+        body: (y) => {
+          const dx = X(shadowFinal);
+          return `<line x1="${X0}" y1="${y}" x2="${dx.toFixed(1)}" y2="${y}" stroke="${C.shadow}" stroke-width="3" stroke-linecap="round" stroke-dasharray="6 5"/><circle cx="${dx.toFixed(1)}" cy="${y}" r="3.5" fill="${C.shadow}"/>${endNote(dx, y, `没选的那条路，${shadowFinal} 岁走完`, C.shadow)}`;
+        },
+      });
+      // 纵向排布 + 网格 + 轴标
+      let y = 14;
+      const rowYs = rows.map((r) => { const yy = y; y += r.h; return yy; });
+      const axisY = y + 4, H = axisY + 16;
+      let grid = "", axis = "";
+      for (let a = 0; a <= axisMax; a += 10) {
+        const gx = X(a).toFixed(1);
+        grid += `<line x1="${gx}" y1="6" x2="${gx}" y2="${axisY - 12}" stroke="${C.grid}" stroke-width="1"/>`;
+        const lab = a === 0 ? "0 岁" : (a === axisMax ? `${a} 岁` : `${a}`);
+        axis += `<text x="${gx}" y="${axisY + 2}" font-size="10.5" fill="${C.note}" text-anchor="middle">${lab}</text>`;
+      }
+      let body = "";
+      rows.forEach((r, i) => {
+        const yy = rowYs[i];
+        const lineY = r.label === "我" ? yy + 18 : yy + 10;
+        body += `<text x="46" y="${lineY + 4}" font-size="11" fill="${r.col}" text-anchor="end"${r.label === "我" ? ` font-weight="600"` : ""}>${r.label}</text>` + r.body(yy + (r.label === "我" ? 0 : 10) - (r.label === "我" ? 0 : 0)) ;
+      });
+      // 图下小注：按本局实际有的开口行拼（父母双双开口时并成一个单位，避免与首句重名）
+      const openNames = [];
+      if (dad.deathAt == null && mom.deathAt == null) openNames.push("爸爸妈妈");
+      else { if (dad.deathAt == null) openNames.push("爸爸"); if (mom.deathAt == null) openNames.push("妈妈"); }
+      if (pEnd && pEnd.t === "alive") openNames.push("对方");
+      if (kidBorn != null) openNames.push("孩子");
+      let cap;
+      if (openNames.length === 1 && openNames[0] === "爸爸妈妈") cap = "爸爸妈妈的线从我出生那年画起，还往前走，画到我这一生结束为止。";
+      else {
+        cap = "爸爸妈妈的线从我出生那年画起";
+        if (openNames.length) {
+          const joined = openNames.length === 1 ? openNames[0] : openNames.slice(0, -1).join("、") + "和" + openNames[openNames.length - 1];
+          cap += `；${joined}的线还往前走，画到我这一生结束为止`;
+        }
+        cap += "。";
+      }
+      return `<div class="rev" id="lifeline-sec" style="--d:.65s"><h3>人生线</h3><svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="人生线">${grid}${body}${axis}</svg><p class="hint" style="margin-top:2px">${IFY.esc(cap)}</p></div>`;
+    } catch (e) { return ""; }
+  }
+
   function renderEnd() {
     // 结算快进（v0.22 WP7，蓝图 7.4）：clearSave 之前先把不受控 Track 步进到死亡或保险丝（110）并置 finalized——
     // 只置内存位、不另行 save：本函数随后即 clearSave() 清档，终局屏之后没有续读路径，落盘无意义
@@ -1514,6 +1699,7 @@
       <h3>这一生，年表<button type="button" class="newhint" id="tlhint" hidden>到最新一年 ↓</button></h3>
       <div class="timeline" id="timeline">${tlLog.map((l) => { const m = l.match(/^(\d+) 岁 · ([\s\S]*)$/); const yr = m && IFY.S.birthYear ? `${IFY.S.birthYear + (+m[1])} 年 · ` : ""; return `<p>${IFY.esc(yr + l)}</p>`; }).join("")}</div>
       </div>
+      ${lifelineHtml(tlView)}
       <div class="row">
         <button class="ghost" id="copylink">复制同局链接（给朋友玩同一种子）</button>
       </div>
