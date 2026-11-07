@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.46.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.46.1 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -62,20 +62,18 @@ window.IFY = window.IFY || {};
     S.pendingSplit = { age: fork.age, eventId: fork.id, label: SPLIT_FORKS[fork.id], source: "fork" };
   }
 
-  // 出生年窗口 win（出生年抽选）：逐代按内容公历锚审计定死——窗口内任何一年都不让任何一条锚文本说谎。
-  // c2000 例外走非连续集 winSet（用户 2026-11-07 裁定，文案不改）：8 岁那拍只认奥运年，2000/2004/2008 出生时 8 岁恰为 2008/2012/2016 三届夏季奥运，那拍文字只写「奥运那年」不写公历年号，三个年份都讲得圆。
-  // 五代各有单龄硬锚钉在基准年：c1955 恢复高考@22=1977（e55_001/p19_035/ce55 牌）、c1965 海南建省@23=1988＋
-  // 非典@38=2003＋二〇一五年五十岁（p23_040，年与龄同句）、c1978 非典@25=2003＋奥运@30=2008＋封控@42=2020、
-  // c1985 五千点@30=2015＋非典@18（ce85 牌/pr_y18）、c1995 升初中=2008@13（pr_teen1 明文）＋北京奥运@13（ce95_01 牌）。
-  // c2000 无年份硬锚，但招牌童年拍 pr_kid8_00「奥运那年夏天」@8 只在奥运年成立，连续窗口只能取 {2000}。
-  // 放宽任一窗口须先重过内容锚审计；抽法见 drawBirthYear。
+  // 出生年窗口 win（出生年抽选）：六代一律整段十年全开——用户 2026-11-04 原裁定、2026-11-07 亲口复位：
+  // 没选时在十年里随机抽一年，玩家可逐年步进改选任意一年。v0.42.1 的 {2000,2004,2008} 非连续集与
+  // 其余五代的单年钉窗都是施工侧公历锚盘点后的收窄产物，已被用户撤销，不许再以内容锚为由收窄窗口。
+  // 咬着具体年份的内容（盘点 ~/workspace/birth-decade/SCOPE.md：D 类 77 条、E 类真钉子 3 件、c1995 五条
+  // 年龄窗、奥运拍 pr_kid8_00）由后续内容片逐条改派生/改窗解决，c1955 先行，不回头动窗口。抽法见 drawBirthYear。
   const ERAS = [
-    { id: "c1955", birth: 1955, win: [1955, 1955], label: "50年代出生", descs: ["家里几个孩子挤着盖一条被子。粮票收在妈妈抽屉里，买东西前总要数一遍。"] },
-    { id: "c1965", birth: 1965, win: [1965, 1965], label: "60年代出生", descs: ["煤球炉放在楼道里，谁家炒菜，整层楼都闻得到。"] },
-    { id: "c1978", birth: 1978, win: [1978, 1978], label: "70年代出生", descs: ["放学自己开门，钥匙挂在脖子上。电视就那么几个台，全楼都在看同一个。"] },
-    { id: "c1985", birth: 1985, win: [1985, 1985], label: "80年代出生", descs: ["家里添了彩电，你爸不让你随便调台。过生日，碗里多卧一个鸡蛋。"] },
-    { id: "c1995", birth: 1995, win: [1995, 1995], label: "90年代出生", descs: ["家里有了电话和VCD。初中同学开始去网吧，你爸每次提起都要说两句。"] },
-    { id: "c2000", birth: 2000, win: [2000, 2008], winSet: [2000, 2004, 2008], label: "2000年代出生", descs: ["作业写完才能开电脑。你妈在客厅，听着你房间里键盘一直响。"] },
+    { id: "c1955", birth: 1955, win: [1950, 1959], label: "50年代出生", descs: ["家里几个孩子挤着盖一条被子。粮票收在妈妈抽屉里，买东西前总要数一遍。", "衣服是哥哥姐姐穿小了传给你的。膝盖上的补丁，是妈妈晚上就着灯缝的。", "一年到头，过年才见到肉。妈妈把肉切得很薄，一人夹一片。", "生产队的钟一响，全村都起了。你端着碗蹲在门口吃完，才去上学。"] },
+    { id: "c1965", birth: 1965, win: [1960, 1969], label: "60年代出生", descs: ["煤球炉放在楼道里，谁家炒菜，整层楼都闻得到。", "院子里只有一个水龙头，早上全院的人排队接水。", "冬天的大白菜堆在阳台上，一进家门就是菜味。", "村口的大喇叭一响，全村都听得见。井台边排队挑水，扁担压得肩膀疼。"] },
+    { id: "c1978", birth: 1978, win: [1970, 1979], label: "70年代出生", descs: ["放学自己开门，钥匙挂在脖子上。", "家里买了第一台电视，邻居搬着小板凳来看，你站在最前面。", "晚上整栋楼的窗户里，传出同一个节目的声音。", "晒场上放露天电影，你搬着小板凳跑在最前面。幕布被风吹得直晃。"] },
+    { id: "c1985", birth: 1985, win: [1980, 1989], label: "80年代出生", descs: ["家里添了彩电，你爸不让你随便调台。", "放学后同学挤在小卖部门口，看别人打红白机。你兜里只有五毛钱。", "过生日，碗里多卧一个鸡蛋。", "赶集要走五里路。你坐在爸的自行车后座上，脚不敢乱晃。"] },
+    { id: "c1995", birth: 1995, win: [1990, 1999], label: "90年代出生", descs: ["家里有了电话和VCD。周末你爸租碟回来，全家挤在一起看。", "初中同学开始去网吧，你爸一提起网吧就皱眉。", "小卖部的辣条一毛钱一包，放学路上买一包，得在进家门前吃完。", "村里年轻人陆续往南走。你爸过年才回来，行李里有一双新球鞋。"] },
+    { id: "c2000", birth: 2000, win: [2000, 2009], label: "2000年代出生", descs: ["作业写完才能开电脑。你妈在客厅，听着你房间里键盘一直响。", "你爸的手机被你拿去玩游戏，还回去的时候只剩一格电。", "家里装上宽带那天，你爸研究了一晚上路由器。", "镇上的快递能到村口小卖部了。你奶奶学会了视频通话，屏幕举得老远。"] },
   ];
 
   const SAVE_KEY = "ify-save-v2";
@@ -132,7 +130,6 @@ window.IFY = window.IFY || {};
     const lo = era.win[0], hi = era.win[1];
     if (hi <= lo) return lo;
     const st = { a: seedFromString(String(seedStr) + "#birth:" + era.id) };
-    if (era.winSet && era.winSet.length) return era.winSet[Math.floor(mulberry(st) * era.winSet.length)];
     return lo + Math.floor(mulberry(st) * (hi - lo + 1));
   }
 
@@ -575,6 +572,7 @@ window.IFY = window.IFY || {};
         <div class="setblock" id="erablock">
           <p class="setlab">年代</p>
           <div class="segpicks" id="erapick">${ERAS.map((e) => `<button type="button" class="segbtn${e.id === "c2000" ? " sel" : ""}" data-era="${e.id}" data-birth="${e.birth}"><b>${e.label}</b></button>`).join("")}</div>
+          <p class="hint eradesc-lab">那个年代，常见的一幕</p>
           <p class="hint" id="eradesc"></p>
           <div class="birthyear-row">
             <span class="birthyear-lab">出生年</span>
@@ -695,7 +693,7 @@ window.IFY = window.IFY || {};
     // （birthOverride，本屏内有效），换年代/改种子即失效回到抽出的年份。没有重抽入口：种子不变，年份不变。
     let birthOverride = null;
     const eraObj = () => ERAS.find((e) => e.id === selEra()) || ERAS[ERAS.length - 1];
-    const birthYears = () => { const e = eraObj(); if (e.winSet && e.winSet.length) return e.winSet.slice(); const ys = []; for (let y = e.win[0]; y <= e.win[1]; y++) ys.push(y); return ys; };
+    const birthYears = () => { const e = eraObj(); const ys = []; for (let y = e.win[0]; y <= e.win[1]; y++) ys.push(y); return ys; };
     const shownBirth = () => { const ys = birthYears(); return birthOverride != null && ys.includes(birthOverride) ? birthOverride : drawBirthYear(effSeed(), eraObj()); };
     const syncBirth = () => {
       const e = eraObj(); if (!e.win) return;
@@ -741,13 +739,13 @@ window.IFY = window.IFY || {};
       const io = el("intro-old"); if (io) io.hidden = pro;
       const ip = el("intro-pro"); if (ip) ip.hidden = !pro;
       const db = el("deckblock"); if (db) db.hidden = pro;
-      const ed = el("eradesc"); if (ed) { const pool = (eraObj().descs || []); if (pool.length) ed.textContent = pool[Math.floor(Math.random() * pool.length)]; } // 年代说明行：纯呈现轮换，不入局、不碰种子与存档
+      const ed = el("eradesc"); if (ed) { const pool = (eraObj().descs || []); if (pool.length) ed.textContent = pool[seedFromString(effSeed() + "#eradesc:" + eraObj().id) % pool.length]; } // 年代说明行：按种子+年代选条——同一开局恒同一条（与「同种子同人生」一致），换种子才换条；纯呈现，不入局不入存档
       const sg = el("startgo"); if (sg) sg.textContent = startLabel();
     };
     document.querySelectorAll("#erapick .segbtn").forEach((b) => b.addEventListener("click", eraToggle));
     eraToggle();
     syncBirth(); // 出生年行首帧即明示（与年代预选/链接参数对齐后的抽出年份）
-    el("seedin").addEventListener("input", () => { redealAll(); birthOverride = null; syncBirth(); }); // 种子一变手牌即重发：屏幕上的手牌恒等于开局将用的手牌（输入即生效，无单独确认按钮）；出生年同理随种子重抽
+    el("seedin").addEventListener("input", () => { redealAll(); birthOverride = null; eraToggle(); syncBirth(); }); // 种子一变手牌即重发：屏幕上的手牌恒等于开局将用的手牌（输入即生效，无单独确认按钮）；出生年同理随种子重抽，年代说明行也随种子重选条
     el("daily").addEventListener("click", () => {
       const dd = dailyFor(todayStr());
       dailyCtx = { eraId: dd.era.id, routeId: dd.route.id }; // 待选路线记下：开局随存档带入，22 岁选路拍预选高亮那一张、仍须玩家点选（两条流程一致）
