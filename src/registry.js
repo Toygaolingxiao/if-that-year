@@ -1155,6 +1155,18 @@ window.GAME_REGISTRY.milestones = {
    ],
    "note": "童年记号（v0.21.1 变体）：开学第一天站错队；成年回响 echo_wrongline，影子回响见 prologue.js MARKS"
   },
+  "mark_pencil": {
+   "setters": [
+    "pr_child1"
+   ],
+   "note": "童年记号（变体扩容批）：开学第一天落了铅笔盒、借同桌的笔；纯发放，无成年回响，影子回响见 prologue.js MARKS"
+  },
+  "mark_namecall": {
+   "setters": [
+    "pr_child1"
+   ],
+   "note": "童年记号（变体扩容批）：开学点名老师念错一个音；纯发放，无成年回响，影子回响见 prologue.js MARKS"
+  },
   "mark_hoop": {
    "setters": [
     "pr_child2"
@@ -1172,6 +1184,18 @@ window.GAME_REGISTRY.milestones = {
     "pr_child2"
    ],
    "note": "童年记号（v0.21.1 变体）：一毛钱的冰棍；成年回响 echo_icepop，影子回响见 prologue.js MARKS"
+  },
+  "mark_hopscotch": {
+   "setters": [
+    "pr_child2"
+   ],
+   "note": "童年记号（变体扩容批）：放学后在巷口跳房子；纯发放，无成年回响，影子回响见 prologue.js MARKS"
+  },
+  "mark_jumprope": {
+   "setters": [
+    "pr_child2"
+   ],
+   "note": "童年记号（变体扩容批）：放学后拴在树上的皮筋；纯发放，无成年回响，影子回响见 prologue.js MARKS"
   },
   "mark_shop": {
    "setters": [

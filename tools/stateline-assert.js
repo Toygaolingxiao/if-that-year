@@ -21,6 +21,10 @@
    1977 公历门（年龄带派生 [18,27]）、返城镜像补 maxYear 1982、下岗根/房改/票证等 C 化
    （补 minYear/maxYear 并放宽年龄带）；ce55_01 牌文去年龄断言改公历叙事；R5：
    unmetConditions 补 maxYear 登记（与 met 同口径，差一步解释两侧完整）。
+   ⑮ 序章变体扩容：0–4 小段（pr_early2 三形六文 / pr_early3 / pr_early4 各六文）与
+   间隔平年（FLATS_BY_AGE 每岁四款）、c2000 包 pr_child1/pr_child2/pr_teen1 补到六款——
+   索引 0 与原三文逐字比对、定款函数 2,000 种子分布、2 岁三形概率保持、新记号纯发放
+   （全仓扫描只许见于 prologue.js 与 registry.js 登记）、start() 落 key 一致性。
    用法：node scripts/stateline-assert.js */
 "use strict";
 const fs = require("fs"), vm = require("vm"), path = require("path");
@@ -902,6 +906,78 @@ console.log("⑭ 出生年内容片 c1955 批：公历门落点（高考簇/返�
     S = freshS(); S.era = "c1978"; S.birthYear = 1978; S.age = 43;
     const u2 = P.unmetConditions(byId.p1_035).unmet;
     ok(u1.some((x) => x.kind === "maxYear" && x.need === 2021) && !u2.some((x) => x.kind === "maxYear"), "⑭ R5: 既有 maxYear 条目 p1_035 超窗报 maxYear、界内不报"); }
+}
+
+// ---- ⑮ 序章变体扩容：变体数 / 原文逐字 / 定款分布 / 新记号纯发放 ----
+console.log("⑮ 序章变体扩容：early2/3/4 六文 / 平年四款 / child1/child2/teen1 六款 / 定款分布 / 纯发放扫描");
+{
+  const PRO = sandbox.window.GAME_PROLOGUE;
+  const first = (id) => PRO.acts.find((a) => a.id === id);
+  const e2 = first("pr_early2"), e3 = first("pr_early3"), e4 = first("pr_early4");
+  ok(!!e2 && !!e2.texts && e2.texts.length === 6, "⑮ pr_early2 texts = 6");
+  ok(!!e3 && !!e3.texts && e3.texts.length === 6 && e3.text === undefined, "⑮ pr_early3 texts = 6（原单 text 已改数组）");
+  ok(!!e4 && !!e4.texts && e4.texts.length === 6 && e4.text === undefined, "⑮ pr_early4 texts = 6（原单 text 已改数组）");
+  ok(e2.texts[0].text === "两岁这一年，你没病没灾，吃得香睡得稳，个头往上蹿了一截。大人说，这孩子好带，省心。" && e2.texts[0].log === "平稳长大", "⑮ pr_early2[0] 原平稳文逐字");
+  ok(e2.texts[1].text === "两岁这一年，你病过一场，夜里烧得满脸通红，家里人轮流抱着你，在屋里走了一夜。天快亮时烧退了，你趴在大人肩上睡着了，谁也没敢大声说话。" && e2.texts[1].log === "病过一场", "⑮ pr_early2[1] 原小病文逐字");
+  ok(e2.texts[2].text === "两岁这一年，你走路走稳了，满屋满院地跑，大人一错眼你就不见了。家里把门边都收拾干净，省得你绊着。" && e2.texts[2].log === "满地跑", "⑮ pr_early2[2] 原满地跑文逐字");
+  ok(JSON.stringify(e2.texts.map((t) => t.log)) === JSON.stringify(["平稳长大", "病过一场", "满地跑", "平稳长大", "病过一场", "满地跑"]), "⑮ pr_early2 标题按形：同形两文共用标题（标题进账面）");
+  ok(e3.texts[0].text === "三岁那年，你开始跟在大人后头学话。大人说一句，你跟一句，学得一本正经，音还咬不准。家里人笑，你也跟着笑，以为自己说得对极了。", "⑮ pr_early3[0] 原文逐字");
+  ok(e4.texts[0].text === "四岁那年，你开始记事了。谁给过你一块糖，谁答应的事没算数，你都记得。家里人说，这孩子记性好，往后吃不了亏。", "⑮ pr_early4[0] 原文逐字");
+  ok(e3.texts.every((t) => !t.log) && e4.texts.every((t) => !t.log), "⑮ pr_early3/4 各文不带 log（流水账标题恒为幕题）");
+  ok(e2.keyProp === "early2Key" && e3.keyProp === "early3Key" && e4.keyProp === "early4Key", "⑮ 三拍 keyProp 与 P 字段对位");
+  const FL = PRO.flatsByAge;
+  const ORIG_FLAT = {
+    6: "六岁那年，你学会了自己系鞋带，头一回没让大人帮忙，就是系成了死结，最后还是大人蹲下来解的。",
+    8: "这一年没什么大事。你的乳牙掉了一颗，压在枕头底下，第二天枕头底下多了一块糖，你到现在也不确定是谁放的。",
+    10: "十岁那年，家里换了台新电视，旧的那台搬去了奶奶屋里。你负责上房顶转天线，转准了画面，全家都说你手稳。",
+    14: "初二这一年，你的个子蹿了一截，校服裤子眼看着短下去，露着脚脖子过了一冬天，谁也没顾上给你换。",
+    19: "这一年过得平。手机换了张新卡，旧号码的联系人导过来，少了几个，你也没太在意。",
+  };
+  for (const [age, orig] of Object.entries(ORIG_FLAT)) {
+    const f = FL[age];
+    ok(!!f && !!f.texts && f.texts.length === 4 && f.texts[0] === orig && f.text === orig, `⑮ flat ${age}: texts 4 款、[0] 与 text 字段均为原句逐字`);
+  }
+  ok(FL[14].textBySchooling && FL[14].textBySchooling.never === "十四岁这一年，你的个子蹿了一截，裤子眼看着短下去，露着脚脖子过了一冬天，谁也没顾上给你换。", "⑮ flat 14 never 分文逐字未动");
+  ok(FL[14].texts.slice(1).every((t) => !t.includes("校服") && !t.includes("初二") && !t.includes("上学")), "⑮ flat 14 新款不预设上过学（无校服/初二/上学）");
+  ok(JSON.stringify(FL[10].effects) === JSON.stringify({ relation: 1 }) && JSON.stringify(FL[6].effects) === "{}", "⑮ flat effects 与原值一致（10 岁 relation+1、6 岁空）");
+  const c1 = first("pr_child1"), c2 = first("pr_child2"), t1 = first("pr_teen1");
+  ok(!!c1 && c1.variants.length === 6, "⑮ pr_child1（c2000 包）variants = 6");
+  ok(!!c2 && c2.variants.length === 6, "⑮ pr_child2（c2000 包）variants = 6");
+  ok(!!t1 && t1.variants.length === 6, "⑮ pr_teen1（c2000 包）variants = 6");
+  ok(t1.variants.every((v) => v.textBySchooling && typeof v.textBySchooling.never === "string" && v.textBySchooling.never.length > 10), "⑮ pr_teen1 六款全带 never 分文");
+  const NEW_MARKS = ["mark_pencil", "mark_namecall", "mark_hopscotch", "mark_jumprope"];
+  ok(NEW_MARKS.every((m) => PRO.marks[m] && typeof PRO.marks[m].shadow === "string" && PRO.marks[m].shadow.length > 5), "⑮ 新记号四枚在 MARKS 均有影子句");
+  const newVars = c1.variants.slice(4).concat(c2.variants.slice(4));
+  ok(newVars.length === 4 && newVars.every((v) => v.set === v.mark && NEW_MARKS.includes(v.mark)), "⑮ child1/2 新增四款 set=mark 且均为新记号");
+  { // 纯发放扫描：新记号全仓只许出现在 prologue.js（定义）与 registry.js（登记）
+    const hits = new Set();
+    const exact = NEW_MARKS.map((m) => [m, new RegExp(m + "(?![0-9A-Za-z_])")]); // 精确 id 匹配：mark_pencil55/65 是他代既有记号，不算引用
+    const walk = (dir) => { for (const name of fs.readdirSync(dir)) { const p = path.join(dir, name); const st = fs.statSync(p); if (st.isDirectory()) walk(p); else if (name.endsWith(".js")) { const src = fs.readFileSync(p, "utf8"); for (const [m, re] of exact) if (re.test(src)) hits.add(m + " @ " + path.relative(ROOT, p)); } } };
+    walk(path.join(ROOT, "src"));
+    const allowed = new Set(NEW_MARKS.flatMap((m) => [m + " @ src/content/prologue/prologue.js", m + " @ src/registry.js"]));
+    ok([...hits].every((h) => allowed.has(h)), `⑮ 新记号纯发放：引用面只在定义与登记（实测 ${[...hits].join("；") || "无"}）`);
+  }
+  { // 定款分布：2,000 个种子，每款 ≥8%（六款拍）；平年四款 ≥15%
+    const N = 2000, cE2 = [0, 0, 0, 0, 0, 0], cE3 = [0, 0, 0, 0, 0, 0], cE4 = [0, 0, 0, 0, 0, 0];
+    const cFlat = { 6: [0, 0, 0, 0], 8: [0, 0, 0, 0], 10: [0, 0, 0, 0], 14: [0, 0, 0, 0], 19: [0, 0, 0, 0] };
+    for (let i = 0; i < N; i++) {
+      const s = "EV15-" + i;
+      cE2[PRO.early2KeyFor(s)]++; cE3[PRO.early34KeyFor(s, "#early3")]++; cE4[PRO.early34KeyFor(s, "#early4")]++;
+      for (const age of [6, 8, 10, 14, 19]) cFlat[age][PRO.flatKeyFor(s, age, 4)]++;
+    }
+    ok(cE2.every((c) => c >= N * 0.08), `⑮ early2 定款分布六款全 ≥8%（${cE2.join("/")}）`);
+    ok(cE3.every((c) => c >= N * 0.08), `⑮ early3 定款分布六款全 ≥8%（${cE3.join("/")}）`);
+    ok(cE4.every((c) => c >= N * 0.08), `⑮ early4 定款分布六款全 ≥8%（${cE4.join("/")}）`);
+    const shape = [cE2[0] + cE2[3], cE2[1] + cE2[4], cE2[2] + cE2[5]];
+    ok(shape[0] >= N * 0.45 && shape[0] <= N * 0.55 && shape[1] >= N * 0.20 && shape[1] <= N * 0.30 && shape[2] >= N * 0.20 && shape[2] <= N * 0.30, `⑮ early2 三形概率保持 1/2、1/4、1/4（${shape.join("/")}）`);
+    ok(Object.entries(cFlat).every(([, cs]) => cs.every((c) => c >= N * 0.15)), `⑮ 平年五岁定款分布四款全 ≥15%（${Object.entries(cFlat).map(([a, cs]) => a + ":" + cs.join("/")).join(" ")}）`);
+  }
+  { // start() 集成：key 与 seedStr 落盘、且与定款函数同值
+    const S = P.freshState("EV15-START");
+    S.era = "c2000";
+    PRO.start(S, "EV15-START");
+    ok(S.prologue.early2Key === PRO.early2KeyFor("EV15-START") && S.prologue.early3Key === PRO.early34KeyFor("EV15-START", "#early3") && S.prologue.early4Key === PRO.early34KeyFor("EV15-START", "#early4") && S.prologue.seedStr === "EV15-START", "⑮ start(): early2/3/4Key 与 seedStr 落盘且与定款函数一致");
+  }
 }
 
 console.log(`\nstateline-assert: ${pass} passed, ${fail} failed`);

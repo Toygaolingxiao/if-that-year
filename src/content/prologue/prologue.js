@@ -45,10 +45,14 @@
     mark_candy: { shadow: "两条路上都一样的是，开学第一天同桌塞给你的那颗水果糖，糖纸你夹在课本里，留了好多年。" },
     mark_window: { shadow: "两条路上都一样的是，你坐了一年的靠窗座位，窗外那面旗，升起来降下去，你都看见了。" },
     mark_wrongline: { shadow: "两条路上都一样的是，开学第一天你站错了队，跟着隔壁班走出去半条街，又被喊了回来。" },
+    mark_pencil: { shadow: "两条路上都一样的是，开学第一天你落了铅笔盒，借同桌的笔用了一上午，那支笔人家送你了。" },
+    mark_namecall: { shadow: "两条路上都一样的是，开学点名时老师念错的那个音，跟了你好多年，老同学见面还那么喊你。" },
     mark_river: { shadow: "两条路上都一样的是，放学路上的那条河沟，后来修路填平了一半，你每次路过都要往下看一眼。" },
     mark_hoop: { shadow: "两条路上都一样的是，巷口那块空地和你的铁环，后来空地盖了楼，铁环也不知去向。" },
     mark_corn: { shadow: "两条路上都一样的是，暑假钻过的那片玉米地，后来种上了别的，你路过时还是会往里看一眼。" },
     mark_icepop: { shadow: "两条路上都一样的是，放学路上那根一毛钱的冰棍，你掰成两半，跟同路的那个一人吃一半。" },
+    mark_hopscotch: { shadow: "两条路上都一样的是，巷口地上那排粉笔格子，你总在最后一格上晃，旁边的人喊得比你还急。" },
+    mark_jumprope: { shadow: "两条路上都一样的是，放学后拴在树上的那根皮筋，你总卡在升到肩膀的那一关，天黑了才散。" },
     mark_tree: { shadow: "两条路上都一样的是，小学门口那棵梧桐还在，修鞋摊换成了摊主的儿子在守。" },
     mark_shop: { shadow: "两条路上都一样的是，校门口那家小卖部，关门前一天，老板把剩下的糖分给了你们几个。" },
     mark_yearbook: { shadow: "两条路上都一样的是，毕业留言册上那句「勿忘我」，你到现在也没认出是谁写的。" },
@@ -89,29 +93,87 @@
   const EARLY_ACTS = [
     { id: "pr_grab", age: 1, log: "抓周", early: true, grab: true,
       variants: GRAB_FAMILIES.map((f) => ({ key: f, set: "grab_" + f, mark: "grab_" + f })) },
-    // 2 岁拍（v0.48.2，用户点名补）：0–4 段原缺 2 岁——三款共用层文本（平稳/小病/满地跑），
+    // 2 岁拍（v0.48.2，用户点名补）：0–4 段原缺 2 岁——三形共用层文本（平稳/小病/满地跑），
     // 由 start() 的独立派生流（种子+"#early2"，见 early2KeyFor）定款，不消费序章流；
-    // 与 3/4 岁幕同规：年代中性、不用父母专名、零数值零门。平稳款占一半（用户原话「平稳成长」）。
-    { id: "pr_early2", age: 2, log: "平稳长大", early: true,
+    // 与 3/4 岁幕同规：年代中性、不用父母专名、零数值零门。平稳形占一半（用户原话「平稳成长」）。
+    // 变体扩容（用户 2026-11-07 点题）：每形再添一文，共六文——下标 0/1/2 是原三文逐字不动，
+    // 3/4/5 是三形的新文；同形两文共用流水账标题（标题要进账面，本批纯文本扩容不动账面），
+    // 定款映射见 early2KeyFor（三形概率与旧版逐种一致）。
+    { id: "pr_early2", age: 2, log: "平稳长大", early: true, keyProp: "early2Key",
       texts: [
         { log: "平稳长大", text: "两岁这一年，你没病没灾，吃得香睡得稳，个头往上蹿了一截。大人说，这孩子好带，省心。" },
         { log: "病过一场", text: "两岁这一年，你病过一场，夜里烧得满脸通红，家里人轮流抱着你，在屋里走了一夜。天快亮时烧退了，你趴在大人肩上睡着了，谁也没敢大声说话。" },
         { log: "满地跑", text: "两岁这一年，你走路走稳了，满屋满院地跑，大人一错眼你就不见了。家里把门边都收拾干净，省得你绊着。" },
+        { log: "平稳长大", text: "两岁这一年，你长得结实，饭量比大人想的还大。喂什么吃什么，不挑。家里人说，这样的孩子好养活，省了不少心。" },
+        { log: "病过一场", text: "两岁这一年，你出过一回疹子，身上起了一片红点，夜里痒得睡不踏实。大人轮着抱你，在屋里慢慢走，走着走着你就睡了。疹子退下去之后，你又满屋跑了。" },
+        { log: "满地跑", text: "两岁这一年，你学会了开门——够着门把手，踮着脚，使大劲往下压。门一开你就往外钻，大人一天里不知道追回来多少回，最后拿根绳把门拴上了。" },
       ] },
-    { id: "pr_early3", age: 3, log: "学说话", early: true,
-      text: "三岁那年，你开始跟在大人后头学话。大人说一句，你跟一句，学得一本正经，音还咬不准。家里人笑，你也跟着笑，以为自己说得对极了。" },
-    { id: "pr_early4", age: 4, log: "开始记事", early: true,
-      text: "四岁那年，你开始记事了。谁给过你一块糖，谁答应的事没算数，你都记得。家里人说，这孩子记性好，往后吃不了亏。" },
+    // 3/4 岁拍变体扩容（同上批）：原单文改 texts 数组，下标 0 是原文逐字不动，另添五文；
+    // 定款走各自独立派生流（种子+"#early3"/"#early4"，见 start 与 early34KeyFor），旧档无 key 回落下标 0。
+    // 两拍的流水账标题恒为幕题（学说话/开始记事），各文不另带 log——标题进账面，同 2 岁拍口径。
+    { id: "pr_early3", age: 3, log: "学说话", early: true, keyProp: "early3Key",
+      texts: [
+        { text: "三岁那年，你开始跟在大人后头学话。大人说一句，你跟一句，学得一本正经，音还咬不准。家里人笑，你也跟着笑，以为自己说得对极了。" },
+        { text: "三岁那年，你话多得收不住，见着什么都要问一句「这是啥」。大人答得口干，你还在问。到后来，大人指着桌子先开了口：这是桌子，别问了。" },
+        { text: "三岁那年，你学会了头一句完整的话，是跟大人要吃的。手里明明还拿着半块，又指着锅里说，还要。说得清清楚楚，一点不含糊。" },
+        { text: "三岁那年，你把家里人的称呼喊了个遍，就是分不清辈分，见谁都喊哥哥。喊错了，大人纠正一回，你下回还照旧，喊得理直气壮。" },
+        { text: "三岁那年，你学了一首儿歌，是大人一句一句喂会的。唱到中间总忘词，就拿「啦啦啦」顶上，调还跑得老远，谁也不忍心打断你。" },
+        { text: "三岁那年，你说话带上了大人的口头禅，连叹气的样子都学。家里来人，你背着手站在门口说一句「坐吧」，把一屋子人说愣了，随后全笑了。" },
+      ] },
+    { id: "pr_early4", age: 4, log: "开始记事", early: true, keyProp: "early4Key",
+      texts: [
+        { text: "四岁那年，你开始记事了。谁给过你一块糖，谁答应的事没算数，你都记得。家里人说，这孩子记性好，往后吃不了亏。" },
+        { text: "四岁那年，你记住了去小卖部的路，能自己跑个来回，找回来的零钱一分不少。家里人开始打发你跑腿，多给你一毛钱，算是辛苦费。" },
+        { text: "四岁那年，你认得家里每样东西的位子。谁的东西找不着，来问你，你一指一个准。大人说，这孩子眼睛尖，心里有数。" },
+        { text: "四岁那年，你头回一个人睡，半夜醒过一回，抱着枕头坐了一阵，没喊人，又躺下了。第二天大人看被子叠得整整齐齐，还以为是别人帮你叠的。" },
+        { text: "四岁那年，你学会了看大人的脸色。家里人吵了两句，你就安安静静地摆弄手里的东西，不闹人。等气氛缓过来，你才凑过去要吃的。" },
+        { text: "四岁那年，家里来过一个远房亲戚，住了一礼拜。走的时候你抱着人家的腿不撒手。过了半年，人家再来，你还认得，跑过去喊，就是把称呼喊错了一辈。" },
+      ] },
   ];
   // 间隔平年（幕之间的年份）：只记流水账一行，带一个具体小细节；数值至多 ±1（波动派生 <0.95 的轨道连这点也不动，见 choose）。
+  // 变体扩容（用户 2026-11-07 点题）：每岁由单句扩为 texts 四款，下标 0 是原句逐字不动（text 字段同步保留原文，
+  // 既有读 text 的路径不变）；定款走 (种子, 年龄) 纯哈希（见 flatKeyFor），不经 P、不消费任何随机流，
+  // 旧档（P 无 seedStr）一律回落原句。各款共享该岁原 effects；textBySchooling 等整段换文优先级不变、仍压过变体选款。
   const FLATS_BY_AGE = {
-    6: { text: "六岁那年，你学会了自己系鞋带，头一回没让大人帮忙，就是系成了死结，最后还是大人蹲下来解的。", effects: {} },
-    8: { text: "这一年没什么大事。你的乳牙掉了一颗，压在枕头底下，第二天枕头底下多了一块糖，你到现在也不确定是谁放的。", effects: {} },
-    10: { text: "十岁那年，家里换了台新电视，旧的那台搬去了奶奶屋里。你负责上房顶转天线，转准了画面，全家都说你手稳。", effects: { relation: 1 } },
+    6: { text: "六岁那年，你学会了自己系鞋带，头一回没让大人帮忙，就是系成了死结，最后还是大人蹲下来解的。", effects: {},
+      texts: [
+        "六岁那年，你学会了自己系鞋带，头一回没让大人帮忙，就是系成了死结，最后还是大人蹲下来解的。",
+        "六岁那年，你学会了自己穿衣服，就是扣子总扣错一格，斜着一排到了学校才被同学指出来。你也不嫌丢人，中午回家重扣了一遍。",
+        "六岁那年，你掉了一颗下牙，哭了半天，怕它长不出来。大人说，长，掉一颗长一颗，新的还更结实。你天天伸舌头去舔那个缺口，舔了好些日子。",
+        "六岁那年，你学会了看表，认不全数字，就记长针短针的位子。家里人问几点，你能报个八九不离十，自己得意得不行。",
+      ] },
+    8: { text: "这一年没什么大事。你的乳牙掉了一颗，压在枕头底下，第二天枕头底下多了一块糖，你到现在也不确定是谁放的。", effects: {},
+      texts: [
+        "这一年没什么大事。你的乳牙掉了一颗，压在枕头底下，第二天枕头底下多了一块糖，你到现在也不确定是谁放的。",
+        "八岁那年，你学会了骑家里那辆旧自行车，腿还够不着座，就站在横梁下头蹬。在院里摔了两回，膝盖磕青了，也没哭，扶起来接着骑。",
+        "八岁那年，你攒了一个月的零钱，买了个想要好久的玩具，没拿热乎两天，借给同学，拿回来时少了个零件。你心疼，也没好意思要人家赔。",
+        "八岁那年，你头回自己洗衣服，肥皂下多了，漂了四遍水还是滑的。大人晾出去时直摇头，你倒觉得洗得挺干净，穿在身上还有股肥皂味。",
+      ] },
+    10: { text: "十岁那年，家里换了台新电视，旧的那台搬去了奶奶屋里。你负责上房顶转天线，转准了画面，全家都说你手稳。", effects: { relation: 1 },
+      texts: [
+        "十岁那年，家里换了台新电视，旧的那台搬去了奶奶屋里。你负责上房顶转天线，转准了画面，全家都说你手稳。",
+        "十岁那年，你学会了包饺子，捏出来的个个站不稳，下锅一煮，露了一半馅。家里人捞出来照样吃，说，下回就好了。",
+        "十岁那年，你迷上了集卡片，零花钱大半换成了卡，厚厚一摞拿橡皮筋捆着。跟人对着拍，赢回来的揣兜里，输了就回家翻箱倒柜找自己的存货。",
+        "十岁那年，家里停电停了一晚上，你点了蜡烛写作业，影子在墙上晃。来电的时候你正写到一半，倒有点舍不得那支蜡烛了。",
+      ] },
     14: { text: "初二这一年，你的个子蹿了一截，校服裤子眼看着短下去，露着脚脖子过了一冬天，谁也没顾上给你换。", effects: {},
       // fix4（序章四修）：never 分文——没进过校门的人没有初二和校服（与各年代包 flat14 同收口）。
-      textBySchooling: { never: "十四岁这一年，你的个子蹿了一截，裤子眼看着短下去，露着脚脖子过了一冬天，谁也没顾上给你换。" } },
-    19: { text: "这一年过得平。手机换了张新卡，旧号码的联系人导过来，少了几个，你也没太在意。", effects: {} },
+      textBySchooling: { never: "十四岁这一年，你的个子蹿了一截，裤子眼看着短下去，露着脚脖子过了一冬天，谁也没顾上给你换。" },
+      // 扩容新款一律不预设上过学（与 never 分文同口径）：只写长个子/饭量/脾气，任何处境读着都不穿帮；
+      // never 局仍走 textBySchooling 整段换文，不经变体选款。
+      texts: [
+        "初二这一年，你的个子蹿了一截，校服裤子眼看着短下去，露着脚脖子过了一冬天，谁也没顾上给你换。",
+        "十四岁这一年，你开始爱照镜子了，出门前总要扒拉两下头发。家里人笑你臭美，你嘴上不认，镜子还是天天照。",
+        "十四岁这一年，你的饭量涨得吓人，一顿吃两碗还盯着锅。家里人添饭时直念叨：这哪是吃饭，这是往里倒。",
+        "十四岁这一年，你学会了跟大人顶嘴，顶完又后悔，一个人在屋里闷半天。等家里人喊吃饭，你低着头出去，谁也不提刚才的事，饭桌上又好了。",
+      ] },
+    19: { text: "这一年过得平。手机换了张新卡，旧号码的联系人导过来，少了几个，你也没太在意。", effects: {},
+      texts: [
+        "这一年过得平。手机换了张新卡，旧号码的联系人导过来，少了几个，你也没太在意。",
+        "十九岁这一年，你学会了自己去医院挂号，排了一上午队，看了个感冒。回来路上买了点水果，觉得自己也算能照顾自己了。",
+        "十九岁这一年，你的作息彻底乱了，夜里两三点还醒着，中午才起。家里人说你几回，你答应得好好的，到晚上又照旧。",
+        "十九岁这一年，你把头发剪短了，剪完对着镜子看了半天，不太习惯。家里人说精神，你也就留下了，没再往长里续。",
+      ] },
   };
   const ACTS = [
     { id: "pr_origin", age: 5, log: "家里是这样开始的", setState: { schooling: "school" },
@@ -132,6 +194,11 @@
           text: "开学第一天放学，你站错了队，跟着隔壁班走出去半条街，才被门卫喊回来。你妈在校门口等急了，见着你，先笑后骂，牵着你的手往家走。",
           // fix4（序章四修）：留守形——校门口等人的换成奶奶（变体 textLB 通用化后生效）。
           textLB: "开学第一天放学，你站错了队，跟着隔壁班走出去半条街，才被门卫喊回来。你奶奶在校门口等急了，见着你，先笑后骂，牵着你的手往家走。" },
+        // 变体扩容（用户 2026-11-07 点题）：新记号纯发放、无任何既有门/回响引用（断言组 ⑮ 有全仓扫描钉住）。
+        { key: "pencil", log: "开学第一天", set: "mark_pencil", mark: "mark_pencil",
+          text: "开学第一天，你把铅笔盒落在了家里，一上午借同桌的笔用。放学前你把借的那支铅笔还给人家，人家摆摆手说，送你了。后来你才知道，开学头一天，落东西的不止你一个。" },
+        { key: "namecall", log: "开学第一天", set: "mark_namecall", mark: "mark_namecall",
+          text: "开学第一天点名，老师把你名字里的一个字念错了音，全班回过头看你。你举起手，小声纠正了一遍。往后好些年，还有老同学按那个错音喊你，你也应。" },
       ] },
     { id: "pr_child2", age: 9, log: "河沟里摸螺蛳",
       variants: [
@@ -144,6 +211,11 @@
           text: "暑假，你跟着大孩子钻玉米地，掰人家的玉米棒子，叶子在胳膊上拉出一道道红印。跑出来时一人怀里抱着两个，蹲在沟边啃，又甜又涩。" },
         { key: "icepop", log: "一毛钱的冰棍", set: "mark_icepop", mark: "mark_icepop",
           text: "放学路上，小卖部门口摆着个捂着棉被的泡沫箱，冰棍一毛钱一根。你把钱攥出汗，买了一根，掰成两半，跟同路的那个一人一半，化了的水顺着手往下滴。" },
+        // 变体扩容（用户 2026-11-07 点题）：新记号纯发放、无任何既有门/回响引用（同 pr_child1 口径）。
+        { key: "hopscotch", log: "跳房子", set: "mark_hopscotch", mark: "mark_hopscotch",
+          text: "放学后，巷口的地上用粉笔画满了格子，你们把沙包踢进格里，单脚跳着去捡。轮到你时总在最后一格上晃，旁边的人喊得比你还急。跳到天黑，喊吃饭的来了，才散。" },
+        { key: "jumprope", log: "跳皮筋", set: "mark_jumprope", mark: "mark_jumprope",
+          text: "放学后，两棵树之间拴上皮筋，你们一跳就是一下午。从脚脖子升到腰，再升到肩膀，你总在升到肩膀那一关卡住。天快黑了，喊吃饭的声音一出来，人哗一下散了。" },
       ] },
     { id: "pr_child3", age: 11, log: "性子", temperPick: true,
       // 选幕制片一（性子）：正文走 frames 幕框（present 的 temperPick 支按所发三卡下标和取模定框），
@@ -174,6 +246,15 @@
           textBySchooling: { never: "跟你一起长大的升初中了，学校离家远，每天得提前半小时出门。开学那天他们在巷口集合，书包一个比一个鼓。你站在边上看了一会儿，转身回去帮家里干活。" } },
         { key: "bus", text: "升初中那年，你开始自己坐车上学。头一回坐车你睡过了头，一睁眼到了终点站，只好再坐回来。",
           textBySchooling: { never: "跟你一起长大的开始自己坐车上学了。头一回有人睡过了头，坐到终点站，又坐了回来，成了笑了半个月的话。你没坐过那趟车，听他们讲，也跟着笑。" } },
+        // 变体扩容（用户 2026-11-07 点题）：本幕无记号（与既有两款同形），每款照带 never 分文，不预设本人上过学。
+        { key: "lunchbox", text: "升初中那年，学校远，中午回不了家，你开始带饭。用布包着饭盒，到中午饭早凉了，跟同学换着菜吃。谁家多装了个鸡蛋，那天就抢手。",
+          textBySchooling: { never: "跟你一起长大的升初中了，学校远，中午回不了家，一个个开始带饭。你晌午回家吃饭，路过学校门口，正赶上他们出来，饭盒用布包着，在手里晃。" } },
+        { key: "alarm", text: "升初中那年，你头回有了个小闹钟，是家里人专门给你买的，怕你睡过头。铃一响满屋子都醒了，你按掉它，闭着眼把衣服摸着穿上。",
+          textBySchooling: { never: "跟你一起长大的升初中了，学校远，听说谁家还给买了小闹钟，怕睡过头。你不用那东西，家里人一喊就起，起来先干头一件活。" } },
+        { key: "bikefix", text: "升初中那年，路上车链子掉过一回，你蹲在路边弄了半天，手上全是油，上得也不对付，骑两步又掉。最后是推着车走完那段路的，迟到了。",
+          textBySchooling: { never: "跟你一起长大的升初中了，天天骑老远。有人车链子掉在半道上，推着车走完，迟到了，回来学给你们听。你听着，觉得那段路是真远。" } },
+        { key: "classmatehome", text: "升初中那年，你头回去同学家写作业，人家屋里有写字台，还有台灯。你写两行，摸一摸台灯的开关，作业磨蹭到天黑才写完，回家挨了问。",
+          textBySchooling: { never: "跟你一起长大的升初中了，有人头回去同学家写作业，回来讲人家屋里有写字台，还有台灯，摸得爱不释手。你听完，回家看了看自家那张吃饭的桌子，没说什么。" } },
       ] },
     { id: "pr_teen2", age: 15, log: "十五岁的念头",
       text: "十五岁那年，你开始想一件事：往后的日子，是接着念书，还是早点出去挣钱。想归想，日子还是一天一天过——作业要交，饭要照吃。",
@@ -907,7 +988,7 @@
       eraCard: dealt ? dealt.era[0] : null,
       situation: null, itch: null, done: false,
       pendingState: null, curText: null, curChoices: null, birthPending: false, birthText: null, // 0 岁开局 B 案：出生幕待呈现标记与定版文本（来历幕物化时置位，choose 收幕时清；旧档无此二字段＝未置位、不补演出生幕）
-      earlyArmed: true, earlyBuilt: false, earlyStep: 0, earlyOn: null, earlyText: null, grabKey: grabKeyFor(seedStr), early2Key: early2KeyFor(seedStr), // 0–4 小段：武装位与抓周族只由本版 start() 写入（旧档无 earlyArmed＝整链不演）；earlyBuilt/Step/On/Text 是呈现链状态（来历幕物化时建链、逐幕物化定版、choose 逐幕收）；grabKey/early2Key 走独立派生流定版，读档不重掷（旧档无 early2Key 时 2 岁拍回落平稳款）
+      earlyArmed: true, earlyBuilt: false, earlyStep: 0, earlyOn: null, earlyText: null, grabKey: grabKeyFor(seedStr), early2Key: early2KeyFor(seedStr), early3Key: early34KeyFor(seedStr, "#early3"), early4Key: early34KeyFor(seedStr, "#early4"), seedStr: String(seedStr), // 0–4 小段：武装位与抓周族只由本版 start() 写入（旧档无 earlyArmed＝整链不演）；earlyBuilt/Step/On/Text 是呈现链状态（来历幕物化时建链、逐幕物化定版、choose 逐幕收）；grabKey/early2Key/early3Key/early4Key 走独立派生流定版，读档不重掷（旧档无 early2Key 时 2 岁拍回落平稳款、无 early3/4Key 时回落原文）；seedStr 供间隔平年 (种子,年龄) 哈希定款（旧档无此字段＝平年一律原句）
       shadowMarkShown: false, shadowMarksShown: [], // WP9 A线：瞥视已示记号 id 表（轮换消费）；shadowMarkShown 保留作旧口径镜像（任一瞥视示句后置 true）
       seq: null, leftBehind: false, variants: null,
       gapQueue: [], gapOn: null, // fix8：间隙平年待呈现队列（choose 算定入队、present 逐条呈现；旧档无此二字段，读取时按空队列/未呈现处理）
@@ -981,12 +1062,28 @@
   }
 
   // 抓周族发放（独立派生流，与 prng 同算法、种子另派生）：六族等权一掷定 key；start() 调用一次存 P.grabKey。
-  // 2 岁拍定款（v0.48.2）：与 grabKeyFor 同法走独立派生流——0=平稳（一半），1=小病，2=满地跑。
+  // 独立派生流一掷（与 grabKeyFor 同算法，只读种子字符串）：供 3/4 岁拍与间隔平年定款共用，
+  // 不碰序章流、不碰主流程任何一股随机流，同种子同 tag 永远同值。
+  function derivedRoll(seedStr, tag) {
+    let a = seedFromString(String(seedStr) + tag) | 0;
+    a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  // 3/4 岁拍定款（变体扩容批）：六款等权，tag 分别是 "#early3"/"#early4"；start() 时算好存 P。
+  function early34KeyFor(seedStr, tag) { return Math.floor(derivedRoll(seedStr, tag) * 6); }
+  // 间隔平年定款（变体扩容批）：平年发放路径不经 P 逐年存 key，用 (种子, 年龄) 纯哈希现算——
+  // 同局同岁永远同款，零流消费；旧档 P 无 seedStr 时调用方回落原句。
+  function flatKeyFor(seedStr, age, n) { return Math.floor(derivedRoll(seedStr, "#flat" + age) * n); }
+
+  // 2 岁拍定款（v0.48.2 立形，变体扩容批扩文）：与 grabKeyFor 同法走独立派生流。
+  // 三形概率与旧版逐种一致（平稳 1/2、小病 1/4、满地跑 1/4），每形内两文对半：
+  // 下标 0/3=平稳两文、1/4=小病两文、2/5=满地跑两文——同一 r 落进哪一形与旧版完全相同，
+  // 流水账标题（按形记）逐种不变；旧档存量 key 0/1/2 仍指三形原文（新数组下标 0/1/2 即原文）。
   function early2KeyFor(seedStr) {
     let a = seedFromString(String(seedStr) + "#early2") | 0;
     a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     const r = ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    return r < 0.5 ? 0 : (r < 0.75 ? 1 : 2);
+    return r < 0.25 ? 0 : r < 0.5 ? 3 : r < 0.625 ? 1 : r < 0.75 ? 4 : r < 0.875 ? 2 : 5;
   }
 
   function grabKeyFor(seedStr) {
@@ -1020,9 +1117,11 @@
         P.earlyText = `你满周岁那天，家里人把东西摆了一地：${list}。大人把你抱到中间，让你自己抓。\n`
           + (GRAB_REVEAL[v.key] || GRAB_REVEAL.wen).replace("{item}", sp.d);
       } else if (beat.texts) {
-        const pick = beat.texts[P.early2Key || 0] || beat.texts[0];
+        // 变体扩容批：按拍自带的 keyProp 读 start() 已定版的款号（旧档无该 key 回落下标 0＝原文）；
+        // 文自带 log 时才改流水账标题（2 岁拍按形记题），3/4 岁拍各文不带 log、标题恒为幕题。
+        const pick = beat.texts[P[beat.keyProp] || 0] || beat.texts[0];
         P.earlyText = pick.text;
-        P.earlyLog = pick.log;
+        if (pick.log) P.earlyLog = pick.log;
       } else {
         P.earlyText = beat.text;
       }
@@ -1429,8 +1528,12 @@
     for (let a = act.age + 1; a < nextAge; a++) {
       const f = packFor(S.era).flatsByAge[a];
       if (!f) continue;
+      // 变体扩容批：平年带 texts 时按 (种子, 年龄) 哈希选款作底文（P.seedStr 缺失＝旧档，回落原句）；
+      // 不带 texts 的包平年行为与旧版逐字相同。
+      let baseText = f.text;
+      if (f.texts && f.texts.length > 1 && P.seedStr) baseText = f.texts[flatKeyFor(P.seedStr, a, f.texts.length)] || f.text;
       // fix2（opt-in）：平年文可带 textBySchooling 按当前 schooling 整段换文（未声明的平年行为不变）。
-      let fText = (f.textBySchooling && S.state && f.textBySchooling[S.state.schooling]) || f.text;
+      let fText = (f.textBySchooling && S.state && f.textBySchooling[S.state.schooling]) || baseText;
       // fix3 B1（子类 1b/1d）：平年文可带 textByFact（按枚举事实，如手足形）与 textByLeftBehind
       // （留守口吻）整段换文，优先级 留守＞事实＞处境＞原文；均不消费流。
       if (f.textByFact) for (const [fn, map] of Object.entries(f.textByFact)) { const fv = factOf(S, fn); if (map && map[fv]) fText = map[fv]; }
@@ -1445,6 +1548,7 @@
   }
 
   const PRO_API = { sitActs: SIT_ACTS, flatsByAge: FLATS_BY_AGE, situationW: SITUATION_W, start, present, choose, stageFor, prng, packFor, hasPack,
+    early2KeyFor, early34KeyFor, flatKeyFor, // 变体扩容批：定款函数验收读口（与 wp5BeatFor 同例）
     factOf, setFact, rollExamBand, gateNoteSample: GATE_NOTE_SAMPLE,
     wp5BeatFor, rebuildSeq, migrantFamilies: MIGRANT_FAMILIES, careFamilies: CARE_FAMILIES }; // v0.23 WP5：验收脚本读口（选拍与 seq 重建）
   // acts / marks 惰性合并全年代包：校验与影子瞥视按 id 查全集（id 跨代唯一，集成时核过）；无包文件被加载的环境（单文件校验沙箱）自动退回 c2000 集。
