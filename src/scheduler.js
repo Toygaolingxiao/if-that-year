@@ -166,6 +166,7 @@
     if (e.forbidRoute && S.route && e.forbidRoute === S.route.id) out.push({ kind: "forbidRoute", need: e.forbidRoute });
     if (e.era && S.era !== e.era) out.push({ kind: "era", need: e.era });
     if (e.minYear && (S.birthYear || 1978) + S.age < e.minYear) out.push({ kind: "minYear", need: e.minYear });
+    if (e.maxYear && (S.birthYear || 1978) + S.age > e.maxYear) out.push({ kind: "maxYear", need: e.maxYear }); // 出生年内容片 R5：与 minYear 对偶登记（此前只有 met() 消费 maxYear，「差一步」解释对 maxYear 条目缺一侧）；纯解释层，不改任何呈现判定
     if (e.eraIn && !e.eraIn.includes(S.era || "c2000")) out.push({ kind: "eraIn", need: e.eraIn });
     const reqList = e.require ? (Array.isArray(e.require) ? e.require : [e.require]) : [];
     for (const f of reqList) if (!F[f]) out.push({ kind: "flag", flag: f });

@@ -81,7 +81,7 @@
   ];
   const ERAS = {
     c1955: [
-      { id: "ce55_01", name: "赶上恢复高考", needsSchooling: ["school", "half"], text: "你二十二岁那年，广播里说恢复高考了。你把箱子底的课本翻出来，煤油灯芯剪了又剪。这件事把你这一茬人的日子，从中间劈成了两半。", effects: { growth: 1, wisdom: 1 } },
+      { id: "ce55_01", name: "赶上恢复高考", needsSchooling: ["school", "half"], text: "一九七七年，广播里说恢复高考了。你把箱子底的课本翻出来，煤油灯芯剪了又剪。这件事把你这一茬人的日子，从中间劈成了两半。", effects: { growth: 1, wisdom: 1 } },
       { id: "ce55_02", name: "拜师学艺的年月", text: "那年月，十几岁的孩子拜师学手艺是常事：管吃管住，没工钱，师傅骂得凶，看家的本事倒不藏着掖着。谁家孩子出了师，巷口都要议论两天。", effects: { growth: 2, relation: 1 } },
       { id: "ce55_03", name: "粮票布票的年月", needsSchooling: ["school", "half"], text: "你记事起，买什么都要票。粮票、布票、肉票，你妈用手绢包着，压在箱子底。你小学就会算家里这个月还剩几两油。", effects: { wisdom: 1, money: -2, health: -1 } },
       { id: "ce55_04", name: "上山下乡那些年", text: "那几年，城里的年轻人一批批下乡，插队、落户，学着挑水、插秧。走的时候敲锣打鼓，回城的人，那顶草帽还留在老乡家的墙上。", effects: { health: 2, growth: -1, freedom: -1 } },

@@ -17,6 +17,10 @@
    判词纯函数化（同记录同判词、不消费游戏随机流、判词专属子流）、健康现在时断言的
    minFinal 硬门、篇幅 ≤110 与提及维度 ≥2 的构造批、statsLate 记账（60 岁定格/老档回填）。
    ⑥ 的片段门手组局自本片起钉散文调（选段带调偏向后，不钉调测不到门本身，见该组内注）。
+   ⑭ 出生年内容片 c1955 批：D 表条目按公历十年 [1950,1959] 重算落点——恢复高考簇挂
+   1977 公历门（年龄带派生 [18,27]）、返城镜像补 maxYear 1982、下岗根/房改/票证等 C 化
+   （补 minYear/maxYear 并放宽年龄带）；ce55_01 牌文去年龄断言改公历叙事；R5：
+   unmetConditions 补 maxYear 登记（与 met 同口径，差一步解释两侧完整）。
    用法：node scripts/stateline-assert.js */
 "use strict";
 const fs = require("fs"), vm = require("vm"), path = require("path");
@@ -846,6 +850,58 @@ console.log("⑬ 判词升格片：verdictTone 定调表测 / verdictCouncil 合
     ok(!!back && !!back.statsLate && K6.every((k) => back.statsLate[k] === back.stats[k]), "⑬ statsLate: 老档（无字段）载入按现值回填起账");
     store.delete("ify-save-v2");
   }
+}
+
+console.log("⑭ 出生年内容片 c1955 批：公历门落点（高考簇/返城镜像/下岗根/盘仓）+ 牌文去年龄 + R5 maxYear 登记");
+{ // 数据形状：本批 22 条参数逐条对齐（null = 不许有此字段）
+  const SHAPE = [
+    ["e55_001", 18, 27, 1977, 1977], ["e55_002", 18, 27, 1977, 1979], ["e55_003", 18, 27, 1977, 1979],
+    ["e55_004", 18, 28, 1977, 1981], ["e55_058", 18, 27, null, null], ["e55_059", 18, 28, null, null],
+    ["e55_005w", 23, 26, null, 1982], ["e55_006w", 23, 26, null, 1982],
+    ["e55_033", 35, 50, 1995, 2005], ["e55_034", 35, 50, 1995, 2005], ["p15_025", 35, 50, 1995, 2005],
+    ["e55_062", 38, 50, 1998, 2003], ["e55_014", 25, 33, 1979, 1992], ["e55_029", 32, 44, 1992, 2002],
+    ["e55_010", 22, 30, null, 1993], ["e55_011", 22, 32, null, 1991], ["e55_012", 24, 34, null, 1993],
+    ["e55_013", 25, 35, null, 1994], ["e55_030", 33, 45, 1988, 2002], ["e55_031", 35, 46, null, 2002],
+    ["p19_035", 18, 27, 1977, 1977], ["p29_003", 19, 30, 1978, 1984],
+  ];
+  for (const [id, mn, mx, y0, y1] of SHAPE) {
+    const e = byId[id];
+    ok(!!e && e.min === mn && e.max === mx && (e.minYear || null) === y0 && (e.maxYear || null) === y1,
+      `⑭ 形状 ${id}: 龄带 [${mn},${mx}] 年门 ${y0}/${y1}`);
+  }
+  const card = sandbox.window.GAME_CARDS && sandbox.window.GAME_CARDS.byId && sandbox.window.GAME_CARDS.byId.ce55_01;
+  ok(!!card && card.text.includes("一九七七年") && !card.text.includes("二十二岁"), "⑭ 牌文 ce55_01: 公历叙事、去年龄断言（hook 旗不在牌面字段内、未动）");
+}
+{ // 落点功能断言：构造状态直调 met()，呈现公历 = birthYear + age
+  const at = (birthYear, age, setup) => { const S = freshS(); S.era = "c1955"; S.birthYear = birthYear; S.age = age; if (setup) setup(S); return S; };
+  const gk = (S) => { S.facts = { schoolingDepth: "full" }; };
+  const farm = (S) => { S.flags.farm_work = true; };
+  // ① e55_001 / p19_035：呈现公历恒 = 1977（窗内三端出生年同验）
+  ok(!!at(1955, 22, gk) && P.met(byId.e55_001) === true, "⑭ e55_001: 1955 生 22 岁（1977）可出");
+  ok(!!at(1955, 21, gk) && P.met(byId.e55_001) === false && !!at(1955, 23, gk) && P.met(byId.e55_001) === false, "⑭ e55_001: 同生 21/23 岁（1976/1978）不出——公历恒 1977");
+  ok(!!at(1950, 27, gk) && P.met(byId.e55_001) === true && !!at(1950, 22, gk) && P.met(byId.e55_001) === false, "⑭ e55_001: 1950 生 27 岁可出、22 岁（1972）不出");
+  ok(!!at(1959, 18, gk) && P.met(byId.e55_001) === true && !!at(1959, 22, gk) && P.met(byId.e55_001) === false, "⑭ e55_001: 1959 生 18 岁可出、22 岁（1981）不出");
+  ok(JSON.stringify(byId.e55_001.requiresFactAny) === JSON.stringify([{ schoolingDepth: "full" }, { schoolingDepth: "cut", _flag: "literacy_gain" }, { schoolingDepth: "cut", _flag: "half_grown" }]) && !!byId.e55_001.textFact && !!byId.e55_001.choicesFact, "⑭ e55_001: requiresFactAny 软门与 textFact/choicesFact 原样未动（软门在呈现层选本人形/目击形，不拦 met）");
+  ok(!!at(1955, 22) && P.met(byId.e55_002) === false, "⑭ e55_002: 无 schoolingDepth 事实不出（requiresFactHard 硬门保留，met 层拦）");
+  ok(!!at(1955, 22) && P.met(byId.p19_035) === true && !!at(1955, 21) && P.met(byId.p19_035) === false && !!at(1959, 18) && P.met(byId.p19_035) === true && !!at(1950, 26) && P.met(byId.p19_035) === false, "⑭ p19_035: 与 era 版同门（1977 恒定，1950 生 26 岁=1976 不出）");
+  ok(!!at(1950, 27, gk) && P.met(byId.e55_002) === true && !!at(1955, 24, gk) && P.met(byId.e55_002) === true && !!at(1955, 25, gk) && P.met(byId.e55_002) === false, "⑭ e55_002: 落点 1977–1979（1955 生 25 岁=1980 出窗）");
+  ok(!!at(1955, 26, gk) && P.met(byId.e55_004) === true && !!at(1955, 27, gk) && P.met(byId.e55_004) === false, "⑭ e55_004: 落点至 1981（1955 生 27 岁=1982 出窗）");
+  // ② 返城镜像：呈现公历 ≤1982
+  ok(!!at(1955, 25) && P.met(byId.e55_005w) === true && !!at(1959, 23) && P.met(byId.e55_005w) === true && !!at(1959, 24) && P.met(byId.e55_005w) === false, "⑭ e55_005w: 1982 可出（1959 生 23 岁）、1983 不出");
+  ok(!!at(1959, 24) && P.met(byId.e55_006w) === false && !!at(1950, 26) && P.met(byId.e55_006w) === true, "⑭ e55_006w: 同门（1983 不出、1976 可出）");
+  // ③ p29_003：呈现公历 ∈[1978,1984]
+  ok(!!at(1955, 25, farm) && P.met(byId.p29_003) === true && !!at(1955, 29, farm) && P.met(byId.p29_003) === true && !!at(1955, 30, farm) && P.met(byId.p29_003) === false, "⑭ p29_003: 1955 生 25–29 岁（1980–1984）可出、30 岁（1985）不出");
+  ok(!!at(1950, 28, farm) && P.met(byId.p29_003) === true && !!at(1950, 25, farm) && P.met(byId.p29_003) === false && !!at(1959, 19, farm) && P.met(byId.p29_003) === true && !!at(1959, 26, farm) && P.met(byId.p29_003) === false, "⑭ p29_003: 1950 生 28 岁（1978）可出/25 岁（1975）不出；1959 生 19 岁（1978）可出/26 岁（1985）不出");
+  // ④ 下岗根窗 [1995,2005]（以无 ctx 的 e55_034 为功能样本，e55_033 同参另有 ctx 门、形状已验）
+  ok(!!at(1955, 39) && P.met(byId.e55_034) === false && !!at(1950, 45) && P.met(byId.e55_034) === true && !!at(1959, 36) && P.met(byId.e55_034) === true && !!at(1959, 46) && P.met(byId.e55_034) === true && !!at(1959, 47) && P.met(byId.e55_034) === false, "⑭ e55_034: 1994 不出、1995/2005 界内可出、2006 不出");
+  // R5：unmetConditions 登记 maxYear（与 met 同口径）
+  { const S = at(1959, 24); const u = P.unmetConditions(byId.e55_005w).unmet;
+    ok(P.met(byId.e55_005w) === false && u.some((x) => x.kind === "maxYear" && x.need === 1982), "⑭ R5: e55_005w 超窗时 unmet 报 maxYear 1982（met 灭与解释同判）"); }
+  { let S = freshS(); S.era = "c1978"; S.birthYear = 1978; S.age = 44;
+    const u1 = P.unmetConditions(byId.p1_035).unmet;
+    S = freshS(); S.era = "c1978"; S.birthYear = 1978; S.age = 43;
+    const u2 = P.unmetConditions(byId.p1_035).unmet;
+    ok(u1.some((x) => x.kind === "maxYear" && x.need === 2021) && !u2.some((x) => x.kind === "maxYear"), "⑭ R5: 既有 maxYear 条目 p1_035 超窗报 maxYear、界内不报"); }
 }
 
 console.log(`\nstateline-assert: ${pass} passed, ${fail} failed`);
