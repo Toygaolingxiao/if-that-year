@@ -413,7 +413,20 @@
     1: { stateNot: { workPhase: ["retired"] } }, // 「工资照发，饭照吃」：完全退休后领的是退休金，不发工资（part 半退仍有工钱，不拦）
     4: { state: { mom: ["alive"] } }, // 「母亲寄来一箱橘子」：母亲已故即不出
   };
-  const FLAT_ADULT_NEEDS = {}; // 现池 5 条（灯/理发/风扇/包子铺/花）逐条审计无事实预设，登记为空
+  const FLAT_ADULT_NEEDS = {
+    // 退休可能性池回响行（下标 5–13，退休池批）：与 MICRO 侧表的事实纪律同——文本不得与
+    // 当前事实打架：一次性落定的旗用回望口径（「那年」「那几年」），持续性状态（店还开着、
+    // 还在带学员、还在卖货）才用现在时；摆摊行另以 notFlag 挡已收摊的局。
+    5: { flag: "travel_paused" }, // 没出远门的那年（回望口径）
+    6: { flag: "travel_kept" }, // 相册在茶几上（常设物，无时点断言）
+    7: { flag: "cruise_world" }, // 手头紧的那阵子（回望口径）
+    8: { flag: "shop_kept" }, // 小店还开着（kept 与 closed/grew 互斥，恒真）
+    9: { flag: "grandkid_full" }, // 带娃那几年（回望口径）
+    10: { flag: "house_fixed" }, // 修完那年冬天（事件锚，回望口径）
+    11: { flag: "stall_started", notFlag: "stall_paused" }, // 小摊进项（收摊后不出）
+    12: { flag: "class_helper" }, // 带新学员（持续角色）
+    13: { flag: "stream_sold" }, // 直播进项（sold 与 closed/fun 互斥，恒真）
+  };
   function flatLineOk(pool, idx) {
     return factOk((pool === "micro" ? MICRO_FLAT_NEEDS : FLAT_ADULT_NEEDS)[idx]);
   }

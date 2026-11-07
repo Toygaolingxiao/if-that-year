@@ -32,6 +32,11 @@
    ⑰ 结局扩容批：人生形状 15 条（结局表 17→32）数据形状 + 手组终局直调
    specialEnding——纯数据条走 met/evidence 本体，形状门条（终局年龄/伴侣史/statsLate/
    usedRare）正反两侧都测：形状不合必须剔除。
+   ⑱ 退休可能性池（游戏性波次第一波）：52 条 rt_* 新拍数据形状（minYear 硬门、邮轮
+   stats 双档门、链锚旗落账、p24_051 同落 class_joined、shop_wound_down 与本体
+   shop_closed 分立）＋ met 功能断言（直播 2016 公历年门按出生年派生、游山玩水链
+   露面/经手的时间窗接力、带孙辈链的孩子年龄门、邮轮钱档分流）＋平年回响侧表
+   （FLAT_ADULT 5–13 下标旗守卫、旧行 0–4 无守卫）。
    用法：node scripts/stateline-assert.js */
 "use strict";
 const fs = require("fs"), vm = require("vm"), path = require("path");
@@ -55,7 +60,7 @@ vm.createContext(sandbox);
 const load = (rel) => vm.runInContext(fs.readFileSync(path.join(ROOT, rel), "utf8"), sandbox, { filename: rel });
 load("src/events.js");
 for (const p of PACK_FILES) load(p);
-load("src/content/prologue/cards.js"); load("src/content/rare/synergy.js"); load("src/content/registry-v023.js"); load("src/content/registry-wp2.js"); load("src/content/registry-wp3.js"); load("src/content/registry-wp4.js"); load("src/content/registry-wp5.js"); load("src/content/registry-wp6.js"); load("src/content/registry-wp7.js"); load("src/content/registry-wp8.js"); load("src/world/state.js"); load("src/registry.js"); load("src/anchors.js"); load("src/rhythm.js"); load("src/content/prologue/prologue-c1955.js"); load("src/content/prologue/prologue-c1965.js"); load("src/content/prologue/prologue-c1978.js"); load("src/content/prologue/prologue-c1985.js"); load("src/content/prologue/prologue-c1995.js"); load("src/content/prologue/prologue.js"); load("src/storylet.js"); // v0.20.0 M1-B：storylet 在 prologue 之后、引擎之前并入并挂 sl（序同 index.html）；v0.23 WP1：登记数据文件在 state.js 之前（序同 index.html）
+load("src/content/prologue/cards.js"); load("src/content/rare/synergy.js"); load("src/content/registry-v023.js"); load("src/content/registry-wp2.js"); load("src/content/registry-wp3.js"); load("src/content/registry-wp4.js"); load("src/content/registry-wp5.js"); load("src/content/registry-wp6.js"); load("src/content/registry-wp7.js"); load("src/content/registry-wp8.js"); load("src/content/registry-retire.js"); load("src/world/state.js"); load("src/registry.js"); load("src/anchors.js"); load("src/rhythm.js"); load("src/content/prologue/prologue-c1955.js"); load("src/content/prologue/prologue-c1965.js"); load("src/content/prologue/prologue-c1978.js"); load("src/content/prologue/prologue-c1985.js"); load("src/content/prologue/prologue-c1995.js"); load("src/content/prologue/prologue.js"); load("src/storylet.js"); // v0.20.0 M1-B：storylet 在 prologue 之后、引擎之前并入并挂 sl（序同 index.html）；v0.23 WP1：登记数据文件在 state.js 之前（序同 index.html）
 const ENGINE_FILES = ["src/engine.js", "src/world/apply.js", "src/record.js", "src/world/processes/parents.js", "src/world/processes/spouse.js", "src/world/processes/work.js", "src/world/processes/place.js", "src/world/processes/health.js", "src/scheduler.js", "src/world/shadow-life.js", "src/world/shadow-policy.js", "src/views/stream.js", "src/views/year.js", "src/views/shadow.js", "src/views/settlement.js", "src/views/share.js"]; // v0.20.0 引擎模块（各自独立包装器，共享 window.IFY），按 index.html 顺序逐个真实载入，不再拼接（engine-boot.js 不载：断言不需要开局渲染）；判词批 B 起补载 shadow-life/shadow-policy（settlementSlots 的 playerMeta 依赖，同 sim.js 装载序）
 for (const rel of ENGINE_FILES) load(rel);
 vm.runInContext("window.__P = { get S() { return window.IFY.S; }, set S(v) { window.IFY.S = v; }, freshState: window.IFY.freshState, met: window.IFY.met, echoText: window.IFY.echoText, procText: window.IFY.procText, settlementSlots: window.IFY.settlementSlots, lifeTags: window.IFY.lifeTags, verdict: window.IFY.verdict, partnerHistoryOf: window.IFY.partnerHistoryOf, D: window.IFY.D };", sandbox, { filename: "probe-export" });
@@ -65,6 +70,7 @@ vm.runInContext("window.__P.flatLineOk = window.IFY.flatLineOk; window.__P.flatM
 vm.runInContext("window.__P.deathCausePool = window.IFY.deathCausePool; window.__P.deathCauses = window.IFY.DEATH_CAUSES; window.__P.deathCauseIds = window.IFY.DEATH_CAUSE_IDS; window.__P.withLife = window.IFY.withLife;", sandbox, { filename: "probe-export-f" });
 vm.runInContext("window.__P.examPending = window.IFY.examPending;", sandbox, { filename: "probe-export-g" });
 vm.runInContext("window.__P.verdictTone = window.IFY.verdictTone; window.__P.verdictCouncil = window.IFY.verdictCouncil; window.__P.sampleStatsLate = window.IFY.sampleStatsLate; window.__P.RNG = window.IFY.RNG; window.__P.RNGW = window.IFY.RNGW; window.__P.RNGA = window.IFY.RNGA;", sandbox, { filename: "probe-export-h" });
+vm.runInContext("window.__P.eventPool = window.IFY.eventPool;", sandbox, { filename: "probe-export-i" }); // ⑱：81+ 年龄窗只能经 eventPool 实测（met 不查年龄；项目 sim 驱动 advance 钉顶 80 岁，81+ 拍在 sim 里不可达）
 const P = sandbox.window.__P;
 const byId = {};
 for (const e of P.D.events || []) if (e.id) byId[e.id] = e;
@@ -478,8 +484,8 @@ console.log("⑩ 判词批 E：平年两池事实守卫（micro 下标侧表 / f
   ok(mn && Object.keys(mn).length === 2 && !!mn[1] && !!mn[4], "E 数据: micro 侧表只登记下标 1 与 4");
   ok(mn[1] && mn[1].stateNot && mn[1].stateNot.workPhase && mn[1].stateNot.workPhase.includes("retired"), "E 数据: micro[1] 侧表 = stateNot{workPhase:[retired]}");
   ok(mn[4] && mn[4].state && mn[4].state.mom && mn[4].state.mom.includes("alive"), "E 数据: micro[4] 侧表 = state{mom:[alive]}");
-  ok(P.flatAdultNeeds && Object.keys(P.flatAdultNeeds).length === 0, "E 数据: flatAdult 侧表为空（现 5 条逐条审计无事实预设）");
-  ok(Array.isArray(P.flatAdult) && P.flatAdult.length === 5, "E 数据: flatAdult 池 5 条");
+  ok(P.flatAdultNeeds && Object.keys(P.flatAdultNeeds).length === 9, "E 数据: flatAdult 侧表 9 条（退休池批水位：原 5 条无事实预设仍无守卫，追加回响行 5–13 各挂旗守卫，逐项见 ⑱）");
+  ok(Array.isArray(P.flatAdult) && P.flatAdult.length === 14, "E 数据: flatAdult 池 14 条（退休池批水位：原 5 条下标 0–4 不动，末尾追加 9 行回响）");
 }
 { // 功能断言：flatLineOk 是 planYear 两抽点共用的唯一过滤谓词
   let S = freshS();
@@ -1166,6 +1172,101 @@ vm.runInContext("window.__P.specialEnding = window.IFY.specialEnding;", sandbox,
   mkEnd("E14-OH", { deathAge: 85, age: 70, stats: st6(50, 50, 70, 50, 50, 50), flags: { factory_work: true, mentor_bond: true }, flagAges: { factory_work: 25 }, ledger: [{ age: 25, kind: "event", id: "p15_006", set: "factory_work" }] });
   ok(spId() === "end_old_hand", "⑰ 功能: 同一主线工龄 45 年 + 成长 70 + 带过徒弟 → 老把式");
 }
+
+// ---- ⑱ 退休可能性池：数据形状 / 年份门 / 链条三件 / 关联旗落账 / 平年守卫 ----
+console.log("⑱ 退休可能性池：52 拍数据 / minYear 硬门 / 链条接力 / 旗落账 / 平年侧表");
+{
+  const RT_IDS = ["rt_travel_duo","rt_travel_solo","rt_travel_show","rt_travel_decide","rt_travel_echo_kept","rt_travel_echo_packed","rt_stream_open","rt_stream_show","rt_stream_decide","rt_stream_echo_sold","rt_stream_echo_closed","rt_cruise_world","rt_cruise_near","rt_cruise_echo","rt_winter_home","rt_winter_away","rt_winter_decide","rt_shop_open","rt_shop_chair","rt_shop_decide","rt_shop_echo","rt_grand_open","rt_grand_show","rt_grand_decide","rt_grand_echo","rt_kin_far","rt_grand_watch","rt_stall_open","rt_stall_show","rt_class_open","rt_class_show","rt_class_decide","rt_class_edit","rt_unit_open","rt_unit_echo","rt_garden_yard","rt_garden_balcony","rt_garden_show","rt_garden_big","rt_house_open","rt_house_show","rt_old_friends","rt_old_neighbors","rt_late_owned","rt_late_kids","rt_late_solo","rt_skill_pass","rt_move_kid","rt_health_club","rt_health_echo","rt_pet_old_cat","rt_pet_old_dog"];
+  ok(RT_IDS.length === 52 && RT_IDS.every((id) => !!byId[id]), "⑱ 52 条 rt_* 新拍全部在册");
+  ok(byId.rt_stream_open.minYear === 2016 && byId.rt_stream_show.minYear === 2016 && byId.rt_stream_decide.minYear === 2016, "⑱ 直播链三拍 minYear=2016 硬门齐全（§7 绑公历）");
+  ok(byId.rt_class_edit.minYear === 2012 && byId.rt_class_edit.require === "stream_begun", "⑱ 剪辑班 minYear=2012 且读 stream_begun（与直播链互链）");
+  ok(byId.p24_051.set === "class_joined", "⑱ p24_051 本批起同落 class_joined（旧拍即链的一张脸）");
+  ok(JSON.stringify(byId.rt_cruise_world.stats) === JSON.stringify([{ k: "money", gt: 69 }, { k: "health", gt: 49 }]) && JSON.stringify(byId.rt_cruise_near.stats) === JSON.stringify([{ k: "money", gt: 57 }, { k: "health", gt: 39 }]), "⑱ 邮轮双档门：长线 钱>69/健康>49、短线 钱>57/健康>39");
+  ok(byId.rt_cruise_near.forbid === "cruise_world", "⑱ 邮轮短线 forbid cruise_world（先远后近不出，近→远经手保留）");
+  const reg17 = sandbox.window.GAME_REGISTRY;
+  const st17 = (f) => (reg17.milestones[f] && reg17.milestones[f].setters) || [];
+  ok(st17("travel_begun").join() === "rt_travel_duo,rt_travel_solo" && st17("stream_begun").join() === "rt_stream_open" && st17("shop_opened").join() === "rt_shop_open" && st17("grandkid_begun").join() === "rt_grand_open", "⑱ 链锚旗登记：travel/stream/shop/grandkid begun 的 setter 与数据一致");
+  ok(st17("class_joined").includes("p24_051") && st17("class_joined").includes("rt_class_open") && st17("class_joined").includes("rt_class_edit"), "⑱ class_joined 三 setter 齐（p24_051＋rt_class_open＋rt_class_edit）");
+  ok(st17("shop_wound_down").join() === "rt_shop_decide" && st17("shop_closed").join() === "p2_040,p30_008", "⑱ shop_wound_down 独立登记、本体 shop_closed 的 setter 未被污染（防撞名回归）");
+  ok(byId.rt_travel_duo.set === "travel_begun" && byId.rt_travel_show.require === "travel_begun" && byId.rt_travel_decide.require === "travel_begun", "⑱ 游山玩水链：开启落锚、露面/经手 require 同锚");
+  ok(byId.rt_shop_chair.require === "shop_opened" && byId.rt_shop_decide.require === "shop_opened" && byId.rt_garden_yard.set === "garden_begun" && byId.rt_garden_balcony.forbid === "garden_begun" && byId.rt_winter_away.forbid === "winter_begun", "⑱ 小店/种菜/过冬链：锚旗与防双呈 forbid 落账");
+  ok(P.flatAdult.length === 14 && [0, 1, 2, 3, 4].every((i) => !P.flatAdultNeeds[i]), "⑱ FLAT_ADULT 共 14 行、旧行 0–4 无守卫（旧局逐字不变）");
+  ok(P.flatAdultNeeds[5].flag === "travel_paused" && P.flatAdultNeeds[7].flag === "cruise_world" && P.flatAdultNeeds[11].flag === "stall_started" && P.flatAdultNeeds[11].notFlag === "stall_paused" && P.flatAdultNeeds[13].flag === "stream_sold", "⑱ 平年回响侧表：下标 5–13 旗守卫与 rhythm 追加行一一对应");
+  // 功能：合成退休局
+  function retiredS(by, age, retireAge) {
+    const S = freshS();
+    S.birthYear = by; S.age = age; S.state.workPhase = "retired";
+    S.flags = { retired_begun: true }; S.flagAges = { retired_begun: retireAge };
+    S.usedEvents = []; S.usedRare = [];
+    return S;
+  }
+  { // 直播年份门：1950 年生、2015 年（65 岁）不出，2016 年（66 岁）出——门锁公历年不锁年龄
+    let S = retiredS(1950, 65, 60);
+    ok(P.met(byId.rt_stream_open) === false, "⑱ 功能：1950 年生 65 岁（公历 2015）直播拍不出（minYear 门）");
+    S = retiredS(1950, 66, 60);
+    ok(P.met(byId.rt_stream_open) === true, "⑱ 功能：1950 年生 66 岁（公历 2016）直播拍可出");
+    S = retiredS(2000, 60, 58); // 出生年换代、年龄更小，公历 2060 照样出——门不绑年龄
+    ok(P.met(byId.rt_stream_open) === true, "⑱ 功能：2000 年生 60 岁（公历 2060）直播拍可出（门绑公历不绑年龄）");
+  }
+  { // 游山玩水链：露面在开启后 1–4 年、经手在 2–7 年，窗口外自动落空
+    let S = retiredS(1960, 62, 60);
+    S.state.spouse = "partnered";
+    ok(P.met(byId.rt_travel_show) === false, "⑱ 功能：未开启时露面拍不出");
+    S.flags.travel_begun = true; S.flagAges.travel_begun = 61; // 开启后 1 年
+    ok(P.met(byId.rt_travel_show) === true && P.met(byId.rt_travel_decide) === false, "⑱ 功能：开启后 1 年露面可出、经手未到（flagAgeMin 2）");
+    S.flagAges.travel_begun = 60; // 开启后 2 年
+    ok(P.met(byId.rt_travel_decide) === true, "⑱ 功能：开启后 2 年经手可出");
+    S.age = 67; // 开启后 7 年：露面窗（≤6）已过、经手窗（≤7）还在
+    ok(P.met(byId.rt_travel_show) === false && P.met(byId.rt_travel_decide) === true, "⑱ 功能：开启后 7 年露面窗已关、经手窗未关");
+    S.state.spouse = "widowed";
+    ok(P.met(byId.rt_travel_duo) === false && P.met(byId.rt_travel_solo) === false, "⑱ 功能：退休已满 6 年，两张开启脸都过首呈窗（flagAgeWithin 3）");
+  }
+  { // 带孙辈链：孩子年龄门与 kid_abroad 负向门
+    let S = retiredS(1955, 68, 66);
+    S.state.kids = "has"; S.kidsAt = 38; // 孩子 30 岁
+    ok(P.met(byId.rt_grand_open) === true, "⑱ 功能：孩子 30 岁、退休 2 年，带孙辈开启可出");
+    S.kidsAt = 50; // 孩子 18 岁：孙辈无从谈起
+    ok(P.met(byId.rt_grand_open) === false, "⑱ 功能：孩子 18 岁，带孙辈开启不出（kidAgeMin 25）");
+    S.kidsAt = 38; S.flags.kid_abroad = true;
+    ok(P.met(byId.rt_grand_open) === false && P.met(byId.rt_kin_far) === true, "⑱ 功能：孩子在国外时近身带娃不出、视频/探亲脸可出");
+  }
+  { // 邮轮钱档分流
+    let S = retiredS(1960, 63, 61);
+    S.stats.money = 75; S.stats.health = 60;
+    ok(P.met(byId.rt_cruise_world) === true, "⑱ 功能：钱 75/健康 60，邮轮长线可出");
+    S.stats.money = 62;
+    ok(P.met(byId.rt_cruise_world) === false && P.met(byId.rt_cruise_near) === true, "⑱ 功能：钱 62，长线关、短线开");
+    S.stats.money = 40;
+    ok(P.met(byId.rt_cruise_near) === false, "⑱ 功能：钱 40，邮轮两线都关（不贴价签、不判低，只是不出这拍）");
+  }
+  { // 平年守卫功能：无旗局读不到回响行
+    let S = freshS();
+    ok(P.flatLineOk("adult", 0) === true && P.flatLineOk("adult", 5) === false, "⑱ 功能：无 travel_paused 旗时平年回响行不出、旧行照常");
+    S.flags.travel_paused = true;
+    ok(P.flatLineOk("adult", 5) === true, "⑱ 功能：落 travel_paused 后回响行可出");
+    S.flags.stall_started = true; S.flags.stall_paused = true;
+    ok(P.flatLineOk("adult", 11) === false, "⑱ 功能：已收摊的局读不到小摊进项行（notFlag 守卫）");
+  }
+  { // 76+ 可调度：年龄窗在数据层（eventPool 按 min/max 过滤，met 不查年龄）；状态/年龄代理门在 met 层
+    ok(byId.rt_old_friends.min === 77 && byId.rt_old_friends.max === 88 && byId.rt_old_neighbors.min === 84 && byId.rt_old_neighbors.max === 98, "⑱ 数据：老朋友局 77–88、老邻居脸 84–98（年龄分脸，无虚构的朋友存殁旗）");
+    ok(byId.rt_late_owned.min === 82 && byId.rt_late_kids.min === 82 && byId.rt_late_solo.min === 82 && byId.rt_grand_watch.min === 74 && byId.rt_grand_watch.max === 92, "⑱ 数据：82+ 三脸与孙辈守望（74–92）的年龄窗在册——81 岁以后仍有可调度拍");
+    let S = freshS();
+    S.age = 86; S.state.kids = "has"; S.kidsAt = 40; // 孩子 46 岁
+    ok(P.met(byId.rt_late_kids) === true && P.met(byId.rt_grand_watch) === true, "⑱ 功能：86 岁、有孩子且孩子 46 岁时，孩子脸/孙辈守望脸的 met 门全过");
+    S.state.kids = "none"; S.kidsAt = null;
+    ok(P.met(byId.rt_late_kids) === false && P.met(byId.rt_grand_watch) === false, "⑱ 功能：无孩子局两脸都不出（读本局真账，不预设子孙）");
+  }
+  { // 81+ 实测经 eventPool（真实池过滤含年龄窗）：86 岁局里四拍在池、80 岁局里 84+ 拍不在池
+    let S = freshS();
+    S.age = 86; S.state.kids = "has"; S.kidsAt = 40; S.flags.bought_house = true; S.usedEvents = []; S.usedRare = [];
+    const pool86 = P.eventPool().map((e) => e.id);
+    ok(pool86.includes("rt_old_neighbors") && pool86.includes("rt_late_owned") && pool86.includes("rt_late_kids"), "⑱ 功能：86 岁（有孩子、自有房）事件池含老邻居脸/老屋脸/孩子脸——81+ 有可调度拍");
+    S.age = 80;
+    const pool80 = P.eventPool().map((e) => e.id);
+    ok(pool80.includes("rt_old_friends") && !pool80.includes("rt_old_neighbors") && !pool80.includes("rt_late_kids"), "⑱ 功能：80 岁池含老朋友局、不含 84+/82+ 拍（年龄窗经池过滤真生效）");
+  }
+}
+
 
 
 console.log(`\nstateline-assert: ${pass} passed, ${fail} failed`);

@@ -14,7 +14,7 @@ const ld = (rel, key) => { const s = { window: {} }; vm.createContext(s); vm.run
 const errors = [], warnings = [];
 const err = (m) => errors.push(m), warn = (m) => warnings.push(m);
 
-const REG = (() => { const s = { window: {} }; vm.createContext(s); for (const rel of ["src/content/registry-v023.js", "src/content/registry-wp2.js", "src/content/registry-wp3.js", "src/content/registry-wp4.js", "src/content/registry-wp5.js", "src/content/registry-wp6.js", "src/content/registry-wp7.js", "src/content/registry-wp8.js", "src/world/state.js", "src/registry.js"]) vm.runInContext(fs.readFileSync(path.join(ROOT, rel), "utf8"), s, { filename: rel }); return s.window.GAME_REGISTRY; })(); // v0.20.0 拆分：domains 在 src/world/state.js，milestones 在 src/registry.js，须同沙盒顺序载入；v0.23 WP1：登记数据文件（registry-v023.js）先行，registry.js 尾部合入
+const REG = (() => { const s = { window: {} }; vm.createContext(s); for (const rel of ["src/content/registry-v023.js", "src/content/registry-wp2.js", "src/content/registry-wp3.js", "src/content/registry-wp4.js", "src/content/registry-wp5.js", "src/content/registry-wp6.js", "src/content/registry-wp7.js", "src/content/registry-wp8.js", "src/content/registry-retire.js", "src/world/state.js", "src/registry.js"]) vm.runInContext(fs.readFileSync(path.join(ROOT, rel), "utf8"), s, { filename: rel }); return s.window.GAME_REGISTRY; })(); // v0.20.0 拆分：domains 在 src/world/state.js，milestones 在 src/registry.js，须同沙盒顺序载入；v0.23 WP1：登记数据文件（registry-v023.js）先行，registry.js 尾部合入
 const D = ld("src/events.js", "GAME_DATA");
 let events = [...D.events];
 for (const p of PACK_FILES) events = events.concat(ld(p, "GAME_PACKS") || []); // v0.20.0 M1-B：内容按领域重组至 src/content/，PACK_FILES 为 index.html 相对顺序的完整路径

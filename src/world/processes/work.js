@@ -246,7 +246,7 @@
   }
   // grandkid_seen 同步（时序回响修复段）：把孙辈写成主角自己的在场人物的条目名单——任一呈现即立，
   // flagAges 记首次呈现年龄。新增同类条目须同步往此名单加 id（登记见 registry 的 grandkid_seen 注）。
-  const GRANDKID_BEAT_IDS = ["p14_027", "p14_028", "p14_030", "p14_031", "p14_032", "p14_034", "p16_059", "p16_070", "p23_066", "p25_006", "p25_017", "p25_027", "p25_037", "p25_042", "p25_063", "p26_013", "p29_019", "e55_044", "e55_050", "e55_069", "e95_009"];
+  const GRANDKID_BEAT_IDS = ["p14_027", "p14_028", "p14_030", "p14_031", "p14_032", "p14_034", "p16_059", "p16_070", "p23_066", "p25_006", "p25_017", "p25_027", "p25_037", "p25_042", "p25_063", "p26_013", "p29_019", "e55_044", "e55_050", "e55_069", "e95_009", "rt_grand_open", "rt_grand_show", "rt_grand_decide", "rt_grand_echo", "rt_grand_watch", "rt_kin_far"]; // 退休池批追加：带孙辈链六拍同为孙辈在场人物条目，按本注同步规矩入名单
   function syncGrandkidSeen() {
     const S = IFY.S;
     if (!S || !S.flags || S.flags.grandkid_seen) return;
