@@ -2,26 +2,124 @@
 (function (IFY) {
   "use strict";
   // ---------- 结算 ----------
+  // 判词升格（审议单 #6）：定调 verdictTone + 合议选维 verdictCouncil + 组装 verdict，三者
+  // 都是「本局记录的纯函数」——只读终局已定格的 stats / statsPeak / statsLate / flags /
+  // ledger / state / death / crisisUsed / usedRare / usedEvents，不掷主骰、不写状态；
+  // 选段的随机走以种子派生的判词专属子流（种子 + "#verdict"，与 #birth: 同法），不消费
+  // 任何游戏随机流。同一份记录重复求判词逐字一致；游戏轨迹零扰动。_verdict 记 v:2。
+  const VDIM = ["health", "money", "growth", "freedom", "relation", "wisdom"]; // 固定维序（STAT_META 序）：一切并列的唯一打破口径，替代旧版并列抽骰
+  const VINIT = { health: 60, money: 45, growth: 50, freedom: 50, relation: 50, wisdom: 40 }; // 六维初值（与 STAT_META 同值）：涨幅腿的原点
+  const VDIM_NAME = { health: "身体", money: "钱", growth: "本事", freedom: "自由", relation: "关系", wisdom: "见识" }; // 轻提对并列模板的维度名
+  const vPeakOf = (S, k) => { const p = S && S.statsPeak; return p && typeof p[k] === "number" ? p[k] : (S && S.stats && typeof S.stats[k] === "number" ? S.stats[k] : 0); };
+  const vLateOf = (S, k) => { const l = S && S.statsLate; return l && typeof l[k] === "number" ? l[k] : null; };
+
+  // 定调（纯函数）：只读账本派生事实与峰值形状，不读数值曲线（盘点 4.1/4.4 的定版规则 v2.1）。
+  // aux 可预填 { view, ph, special }（verdict 主流程已算好的段视图/伴侣史/特殊结局，省重算）；
+  // 单独调用（断言台架）时自行派生，special 只在 S 就是当前局时读 specialEnding()。
+  function verdictTone(S, aux) {
+    S = S || IFY.S; aux = aux || {};
+    const view = aux.view !== undefined ? aux.view : playerFacts();
+    const led = view ? view.ledger : (Array.isArray(S.ledger) ? S.ledger : []);
+    const hasFlag = (f) => view ? (view.hasFact(f) || view.flagWitnessed(f)) : !!(S.flags && S.flags[f]);
+    const fin = S.stats || {};
+    const pk = (k) => vPeakOf(S, k);
+    let drop = 0; for (const k of VDIM) drop += Math.max(0, pk(k) - (typeof fin[k] === "number" ? fin[k] : 0));
+    // 变故数 ADV（每项 1 分）
+    let adv = 0;
+    const ph = aux.ph || partnerHistoryOf(view);
+    if (ph.parts.some((p) => p.endKind === "widowed")) adv++;
+    if (ph.parts.some((p) => p.endKind === "divorced")) adv++;
+    if (hasFlag("laid_off")) adv++;
+    if (S.crisisUsed && Object.keys(S.crisisUsed).length) adv++;
+    if (led.some((e) => e.kind === "state" && (e.id === "dad>dead" || e.id === "mom>dead") && typeof e.age === "number" && e.age < 38)) adv++;
+    if (S.death && S.death.type === "accident") adv++;
+    if (S.death && typeof S.death.age === "number" && S.death.age < 65) adv++;
+    if ((S.usedRare || []).length >= 2) adv++;
+    if (pk("money") - (typeof fin.money === "number" ? fin.money : 0) >= 25) adv++;
+    // 顺遂数 JOY（每项 1 分）
+    let joy = 0;
+    if (pk("relation") >= 90) joy++;
+    if (["hobby_calligraphy", "hobby_photo", "hobby_fishing", "hobby_garden", "hobby_music", "hobby_run", "hobby_cook", "hobby_badminton"].some(hasFlag)) joy++;
+    const dogSt = S.state && S.state.dog;
+    if ((dogSt && dogSt !== "none") || hasFlag("dog_home") || (S.usedEvents || []).some((id) => id === "p11_054" || id === "p5_044" || id === "p13_055")) joy++;
+    let special = aux.special;
+    if (special === undefined) { special = false; if (S === IFY.S) { try { special = !!specialEnding(); } catch (e) { special = false; } } }
+    if (special) joy++;
+    if (pk("freedom") >= 85) joy++;
+    if ((typeof fin.health === "number" ? fin.health : 0) >= 70 && pk("health") - fin.health <= 6) joy++;
+    if (S.state && S.state.spouse === "partnered") joy++;
+    // 判定序：壮阔 → 欢快 → 散文兜底（散文 = 两个签名都没有，平平静静本身即其义）
+    let tone = "prose";
+    if (adv >= 3 || (adv >= 2 && drop >= 22)) tone = "grand";
+    else if ((adv <= 1 && joy >= 3) || (adv === 0 && joy >= 2 && drop <= 25)) tone = "joy";
+    return { tone, adv, joy, drop };
+  }
+
+  // 合议选维（纯函数）：故事维三腿入选（峰值≥75 ∨ 涨幅≥25 ∨ 终局站位），按「峰值＋晚年
+  // 加分（statsLate：60 岁后涨≥10 且终局≥60 的维 +4，只作排序、不当门）」取至多 2 维满句；
+  // 钱的主线判定与封顶三条按盘点第三节定版（主线必提 / 非主线降轻提 / 唯一故事维保险丝）；
+  // 低位侧 L1=钱且非主线走轻提对。返回 { full, light, cost, pair, moneyMain }：
+  // full = 正面满句维（≤2）、light = [{k, kind:"story"|"low"}]、cost = 代价满句维或 null、
+  // pair = 轻提对 [钱, 伙伴维] 或 null。
+  function verdictCouncil(S) {
+    S = S || IFY.S;
+    const fin = S.stats || {};
+    const fv = (k) => (typeof fin[k] === "number" ? fin[k] : 0);
+    const pk = (k) => vPeakOf(S, k);
+    const rise = (k) => pk(k) - VINIT[k];
+    const dropK = (k) => pk(k) - fv(k);
+    const isStory = (k) => pk(k) >= 75 || rise(k) >= 25 || (fv(k) >= 70 && dropK(k) <= 6);
+    const lateBonus = (k) => { const l = vLateOf(S, k); return l !== null && fv(k) - l >= 10 && fv(k) >= 60; };
+    const score = (k) => pk(k) + (lateBonus(k) ? 4 : 0);
+    const byScore = VDIM.filter(isStory).sort((a, b) => (score(b) - score(a)) || (VDIM.indexOf(a) - VDIM.indexOf(b)));
+    const moneyMain = (pk("money") >= 75 && rise("money") >= 25) || (pk("money") >= 70 && rise("money") >= 20 && dropK("money") >= 25);
+    const lows = VDIM.slice().sort((a, b) => (pk(a) - pk(b)) || (VDIM.indexOf(a) - VDIM.indexOf(b)));
+    const L1 = lows[0];
+    const full = byScore.slice(0, 2);
+    const light = [];
+    const lightHas = (k) => light.some((x) => x.k === k);
+    // 封顶 3（主线必提）：主线局钱还没被提到（不在正维、也不是最低维——最低维自有代价面）
+    // → 钱占第二个正维位，被挤下去的那维降轻提。
+    if (moneyMain && !full.includes("money") && L1 !== "money") {
+      if (full.length >= 2) { const dis = full[1]; full[1] = "money"; light.push({ k: dis, kind: "story" }); }
+      else full.push("money");
+    }
+    // 封顶 1：钱入选正面、非主线、且另有正维 → 钱降轻提，满句位让给下一位故事维；
+    // 封顶 2（保险丝）：钱是唯一故事维时不降，保留满句。
+    if (!moneyMain && full.includes("money") && full.length >= 2) {
+      full.splice(full.indexOf("money"), 1);
+      light.push({ k: "money", kind: "story" });
+      const nxt = byScore.find((k) => !full.includes(k) && k !== "money");
+      if (nxt) full.push(nxt);
+    }
+    // 一维都没入选（0.1% 量级）：回落最高峰维出满句，保证正面恒有满句。
+    if (!full.length) full.push(VDIM.slice().sort((a, b) => (pk(b) - pk(a)) || (VDIM.indexOf(a) - VDIM.indexOf(b)))[0]);
+    // 低位侧：自 L1 起找第一个不在正维里的维。
+    let cost = null, pair = null;
+    for (const cand of lows) {
+      if (full.includes(cand)) continue;
+      if (cand === "money" && !moneyMain) {
+        // 轻提对：钱与次低维并列轻提，钱不独占代价满句。伙伴只许取还没被提到的维——
+        // 已降为故事轻提的维不再进低位对（同维两提且口吻打架），顺延下一位；无伙伴时钱单独轻提。
+        if (!lightHas("money")) light.push({ k: "money", kind: "low" });
+        const partner = lows.find((k2) => k2 !== "money" && !full.includes(k2) && !lightHas(k2));
+        if (partner) { light.push({ k: partner, kind: "low" }); pair = ["money", partner]; }
+        cost = null;
+        break;
+      }
+      cost = cand;
+      break;
+    }
+    return { full, light, cost, pair, moneyMain, lows };
+  }
+
   function verdict() {
     if (IFY.S._verdict) return IFY.S._verdict;
-    // 并列打破（v0.11.0）：同值维度用本局 rng 随机定序，不再按固定键序隐式优先
-    // 判词批 C（偷艺 4.2）：选维改按一生峰值 statsPeak——判词定的是「到过的高处」，不被临终
-    // 前的塌陷（健康/金钱）带偏；top 与 bottom 同源（都按峰值：bottom = 一生峰值最低的那维，
-    // 即这一生从没真正起来过的那一面）。峰值容器或单维缺失时逐维回落终局值（迁移前保险
-    // 读法）。并列打破的 rng 消费与旧版逐项同形：条目顺序不变、每维恰抽一次。片段的
-    // needs 事实门仍读终局事实（factOkHere），不换源——词说高处，事实预设仍须对得上这一生。
-    const peak = IFY.S.statsPeak;
-    const sorted = Object.entries(IFY.S.stats).map(([k, v]) => [k, (peak && typeof peak[k] === "number") ? peak[k] : v, IFY.rng()]).sort((a, b) => (b[1] - a[1]) || (a[2] - b[2]));
-    const top = sorted[0][0], bottom = sorted[sorted.length - 1][0];
+    const S = IFY.S;
+    // 判词专属子流：自本局种子派生，每次求判词都从头起算——抽数与顺序只由记录决定。
+    const vst = { a: IFY.seedFromString(String(S.seedStr || "") + "#verdict") };
+    const vrng = () => IFY.mulberry(vst);
     // F1/F2（v0.17.0）：片段先按 needs 对本局事实过滤再抽；过滤后为空回落中性片段（无 needs 者），事实不许将就
-    const pickF = (pool) => {
-      if (!Array.isArray(pool)) return { text: pool, idx: 0 };
-      let cands = pool.map((f, i) => [f, i]).filter(([f]) => factOkHere(typeof f === "string" ? null : f.needs)); // AN-5 R7：判词过滤走段口径（factOkHere 定义在下方、pickF 调用时已就绪）
-      if (!cands.length) cands = pool.map((f, i) => [f, i]).filter(([f]) => typeof f === "string" || !f.needs);
-      if (!cands.length) cands = pool.map((f, i) => [f, i]);
-      const [f, i] = cands[Math.floor(IFY.rng() * cands.length)];
-      return { text: typeof f === "string" ? f : f.t, idx: i };
-    };
     // AN-5 R7：交换局判词改段口径——factOk 本体（scheduler.js，事件调度在用）口径不动；
     // 本函数内另建段版：flag/anyFlag 按段见证判（任一段成立过即算），notFlag/notAnyFlag 按
     // 「任一段都没见证过」判（负向门防的是把交出段发生过的事断言成没发生过），state/stateNot/
@@ -51,11 +149,84 @@
       if (needs && needs.singlePartner && phVerdict.known && phVerdict.parts.length >= 2) return false;
       return true;
     };
-    const tF = pickF(IFY.D.verdictTop[top]), cF = pickF(IFY.D.verdictCost[bottom]);
-    IFY.S._verdict = { text: tF.text + cF.text, top, bottom, topIdx: tF.idx, costIdx: cF.idx };
+    const toneR = verdictTone(S, { view, ph: phVerdict });
+    const tone = toneR.tone;
+    const C = verdictCouncil(S);
+    // 选段：事实门（needs）+ 终局断言硬门（minFinal）在先，调偏向在内——先按本调标记挑，
+    // 没有再落无标记段，再落回事实门全集、无预设段、全池（旧回落链同形）。minFinal 是硬
+    // 门：先于一切回落过滤，任何一层都不许越过（断言终局身体的段，终局对不上永不出）。
+    const fragT = (f) => (typeof f === "string" ? f : f.t);
+    const fragTone = (f) => (typeof f === "string" ? null : f.tone || null);
+    const pickCands = (pool) => {
+      const hardOk = (f) => { const mf = typeof f === "string" ? null : f.minFinal; if (!mf) return true; return Object.entries(mf).every(([k, v]) => (typeof S.stats[k] === "number" ? S.stats[k] : 0) >= v); };
+      let base = pool.map((f, i) => [f, i]).filter(([f]) => hardOk(f));
+      if (!base.length) base = pool.map((f, i) => [f, i]); // 理论不可达（每池都留无门兜底段）；真空了宁可全池，不许判词缺句
+      const layers = [
+        base.filter(([f]) => factOkHere(typeof f === "string" ? null : f.needs) && (tone === "prose" ? !fragTone(f) : fragTone(f) === tone)),
+        base.filter(([f]) => factOkHere(typeof f === "string" ? null : f.needs) && !fragTone(f)),
+        base.filter(([f]) => factOkHere(typeof f === "string" ? null : f.needs)),
+        base.filter(([f]) => typeof f === "string" || !f.needs),
+        base,
+      ];
+      return layers.find((l) => l.length) || base;
+    };
+    const pickF = (pool) => {
+      if (!Array.isArray(pool)) return { text: pool, idx: 0 };
+      const cands = pickCands(pool);
+      const [f, i] = cands[Math.floor(vrng() * cands.length)];
+      return { text: fragT(f), idx: i };
+    };
+    // 篇幅兜底专用：同一候选层里取最短一段（同长取先）——只在满句叠满仍超 110 时换段，不掷骰。
+    const pickShort = (pool) => {
+      if (!Array.isArray(pool)) return { text: pool, idx: 0 };
+      const cands = pickCands(pool);
+      let best = cands[0];
+      for (const ci of cands) if (fragT(ci[0]).length < fragT(best[0]).length) best = ci;
+      return { text: fragT(best[0]), idx: best[1] };
+    };
+    const pickFrame = (pool) => {
+      if (!Array.isArray(pool) || !pool.length) return "";
+      return pool[Math.floor(vrng() * pool.length)];
+    };
+    // 组装序（抽序恒定，只由记录决定）：开场框架 → 正面满句（合议序）→ 故事轻提 →
+    // 代价满句或低位轻提（轻提对优先并列成句、其余低位轻提逐句）→ 收尾框架。
+    const D = IFY.D;
+    const openT = pickFrame(D.verdictFrame && D.verdictFrame.open && D.verdictFrame.open[tone]);
+    let fullPicks = C.full.map((k) => ({ k, pick: pickF(D.verdictTop[k]) }));
+    const storyLightT = C.light.filter((x) => x.kind === "story").map((x) => (D.verdictLightStory || {})[x.k] || "").filter(Boolean);
+    let costPick = C.cost ? pickF(D.verdictCost[C.cost]) : null;
+    let lowT = [];
+    if (C.pair) {
+      const tpl = pickFrame(D.verdictLightPair);
+      lowT = [tpl.replace("{a}", VDIM_NAME[C.pair[0]]).replace("{b}", VDIM_NAME[C.pair[1]])];
+    } else {
+      lowT = C.light.filter((x) => x.kind === "low").map((x) => (D.verdictLightLow || {})[x.k] || "").filter(Boolean);
+    }
+    const closeT = pickFrame(D.verdictFrame && D.verdictFrame.close && D.verdictFrame.close[tone]);
+    // 篇幅硬线 ≤110 字：超线按序处理——撤收尾框架 → 撤开场框架 → 代价换同层最短段 →
+    // 第二满句换最短段 → 撤故事轻提 → 撤低位轻提 → 第一满句换最短段（最后兜底）。
+    // 换段优先于撤轻提：提及维度是本片的账，段内换哪一段只是选材；全程只看总长与
+    // 段长，是记录的确定性函数。_verdict.light 只记真正活进文本的轻提（被裁掉的不算
+    // 「提到」，普查口径按文本算）。
+    const build = (o, s, l, c) => [o ? openT : "", ...fullPicks.map((x) => x.pick.text), ...(s ? storyLightT : []), ...(costPick ? [costPick.text] : []), ...(l ? lowT : []), c ? closeT : ""].filter(Boolean).join("");
+    let text = build(true, true, true, true);
+    let dropS = false, dropL = false;
+    if (text.length > 110) text = build(true, true, true, false);
+    if (text.length > 110) text = build(false, true, true, false);
+    if (text.length > 110 && costPick) { costPick = pickShort(D.verdictCost[C.cost]); text = build(false, true, true, false); }
+    if (text.length > 110 && fullPicks.length > 1) { fullPicks[1] = { k: fullPicks[1].k, pick: pickShort(D.verdictTop[fullPicks[1].k]) }; text = build(false, true, true, false); }
+    if (text.length > 110) { dropS = true; text = build(false, false, true, false); }
+    if (text.length > 110) { dropL = true; text = build(false, false, false, false); }
+    if (text.length > 110 && fullPicks.length) { fullPicks[0] = { k: fullPicks[0].k, pick: pickShort(D.verdictTop[fullPicks[0].k]) }; text = build(false, false, false, false); }
+    const lightShown = C.light.filter((x) => (x.kind === "story" ? !dropS : !dropL)).map((x) => x.k);
+    IFY.S._verdict = {
+      v: 2, text, tone, adv: toneR.adv, joy: toneR.joy,
+      full: C.full.slice(), light: lightShown, cost: C.cost, pair: C.pair, moneyMain: C.moneyMain,
+      top: C.full[0] || null, bottom: C.cost,
+      topIdx: fullPicks.length ? fullPicks[0].pick.idx : 0, costIdx: costPick ? costPick.idx : -1,
+    };
     return IFY.S._verdict;
   }
-
   // ---------- 事实标签行（v0.11.0） ----------
   // 只从本局事实取材，三段为限、纯描述：①路线与人生形状（落脚终点由居所轨迹单一派生，旗标只作质地修饰——AN-5 R2）②一条最有分量的轨迹（按下方优先级取第一条有旗标/日志证据的，无证据不生成）③晚年与家庭收尾。
   // 无稀有度、无档位；不复述特殊结局名；纯函数（不耗 rng），同局在结算页与分享卡恒一致。
@@ -1393,7 +1564,7 @@
     // 一字不动，本钩子只做 DOM 追加；模块缺席（旧缓存）时静默跳过。
     if (typeof IFY.mountKeepsakeDesk === "function") IFY.mountKeepsakeDesk();
   }
-  Object.assign(IFY, { verdict, lifeTags, specialEnding, settlementMapHtml, renderLives, settlementSlots, renderEnd, occupationTrail, kidPresenceCount, nearMisses, chosenOfFork,
+  Object.assign(IFY, { verdict, verdictTone, verdictCouncil, lifeTags, specialEnding, settlementMapHtml, renderLives, settlementSlots, renderEnd, occupationTrail, kidPresenceCount, nearMisses, chosenOfFork,
     // v0.22 WP7 新增导出：段事实视图、段版分岔反查、对面终局短句与结算快进（分享卡与断言复用同一口径）
     playerFacts, chosenOfForkIn, uncontrolledFinalLine, fastForwardUncontrolled,
     // 判词批 B 新增导出：伴侣史回放派生（断言与后续槽位复用同一口径）

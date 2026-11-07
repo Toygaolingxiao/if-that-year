@@ -12,6 +12,11 @@
    verdict 按峰值选维（峰值与终局背离时 top/bottom 均走峰值）、无峰值时回落终局选维、
    loadSave 老档迁移（无 statsPeak 按现值初始化、单维缺失逐维补、既有值不覆盖）。
    数据断言（字段在数据里）+ 功能断言（用真实引擎 met/echoText/procText 跑）两层都过才算 PASS。
+   ⑬ 判词升格片（审议单 #6）：定调 verdictTone 纯函数表测（壮阔/欢快/散文三调的账本
+   派生判定）、合议 verdictCouncil（故事维三腿/钱封顶三条/statsLate 晚年加分/固定维序）、
+   判词纯函数化（同记录同判词、不消费游戏随机流、判词专属子流）、健康现在时断言的
+   minFinal 硬门、篇幅 ≤110 与提及维度 ≥2 的构造批、statsLate 记账（60 岁定格/老档回填）。
+   ⑥ 的片段门手组局自本片起钉散文调（选段带调偏向后，不钉调测不到门本身，见该组内注）。
    用法：node scripts/stateline-assert.js */
 "use strict";
 const fs = require("fs"), vm = require("vm"), path = require("path");
@@ -44,6 +49,7 @@ vm.runInContext("window.__P.unmetConditions = window.IFY.unmetConditions; window
 vm.runInContext("window.__P.flatLineOk = window.IFY.flatLineOk; window.__P.flatMicroNeeds = window.IFY.flatMicroNeeds; window.__P.flatAdultNeeds = window.IFY.flatAdultNeeds; window.__P.flatAdult = window.IFY.RHYTHM.flatAdult;", sandbox, { filename: "probe-export-e" });
 vm.runInContext("window.__P.deathCausePool = window.IFY.deathCausePool; window.__P.deathCauses = window.IFY.DEATH_CAUSES; window.__P.deathCauseIds = window.IFY.DEATH_CAUSE_IDS; window.__P.withLife = window.IFY.withLife;", sandbox, { filename: "probe-export-f" });
 vm.runInContext("window.__P.examPending = window.IFY.examPending;", sandbox, { filename: "probe-export-g" });
+vm.runInContext("window.__P.verdictTone = window.IFY.verdictTone; window.__P.verdictCouncil = window.IFY.verdictCouncil; window.__P.sampleStatsLate = window.IFY.sampleStatsLate; window.__P.RNG = window.IFY.RNG; window.__P.RNGW = window.IFY.RNGW; window.__P.RNGA = window.IFY.RNGA;", sandbox, { filename: "probe-export-h" });
 const P = sandbox.window.__P;
 const byId = {};
 for (const e of P.D.events || []) if (e.id) byId[e.id] = e;
@@ -195,6 +201,12 @@ function slotS2(entries, spouseFinal) {
     S.state.spouse = spouseFinal;
     S.ledger = entries.map(([a, t]) => LE(a, t));
     if (flags) Object.assign(S.flags, flags);
+    // 判词升格片（⑬）适配：选段自本片起带调偏向——本组手组局（关系峰值 95）天然判欢快，
+    // 欢快标志段会先行占位、测不到片段门本身。故把变故数钉在 2（散文带：<3 不壮阔、
+    // >1 不欢快、总跌幅 0），选段落回无标记池；片段门（factOkHere 的 singlePartner
+    // 复合判）与下方三条断言一字不变，验的仍是门本身。
+    S.flags.laid_off = true;
+    if (!entries.some(([, t]) => t === "widowed" || t === "divorced")) S.crisisUsed = { assert_probe: 1 };
     return P.verdict().text;
   };
   let hitSingle = 0, hitMulti = 0, hitMultiNoFlag = 0;
@@ -667,6 +679,173 @@ const E12 = (mutate) => { const S = freshS(); S.age = 24; S.usedEvents = []; S.u
   ok(shadowAfter[0] === false && shadowAfter[1] === true && shadowAfter[2] === true,
     "⑫ 断言5: 影子立桥后——桥拍关/链头开/窗继续等，与主轨同读同效");
   ok(P.met(byId.p16_077) === mainBefore[0] && P.met(byId.p16_001) === mainBefore[1], "⑫ 断言5: withLife 退出后主轨作用域还原、门结果不变");
+}
+
+
+// ---- ⑬ 判词升格片（审议单 #6）：定调纯函数 / 合议选维与钱封顶 / 同记录同判词 / statsLate ----
+console.log("⑬ 判词升格片：verdictTone 定调表测 / verdictCouncil 合议与钱封顶 / 纯函数判词 / 硬门与篇幅 / statsLate 记账");
+{
+  const K6 = ["health", "money", "growth", "freedom", "relation", "wisdom"];
+  const LE13 = (age, id) => ({ age, kind: "state", id });
+  // 手组记录：freshState 为底，覆写六维/峰值/晚年快照/账本/旗/危机/稀有/配偶/死因。
+  const mkRec = (seed, o) => {
+    const S = P.freshState(seed);
+    P.S = S;
+    S.route = { id: "home" }; S.era = "c2000"; S.birthYear = 2000; S.age = 80;
+    S.stats = o.stats; S.statsPeak = o.peak || { ...o.stats };
+    S.statsLate = o.late !== undefined ? o.late : null;
+    S.ledger = o.ledger || [];
+    if (o.flags) Object.assign(S.flags, o.flags);
+    if (o.crisis) S.crisisUsed = o.crisis;
+    if (o.rare) S.usedRare = o.rare;
+    if (o.spouse) S.state.spouse = o.spouse;
+    if (o.death !== undefined) S.death = o.death;
+    return S;
+  };
+  const st6 = (h, m, g, f, r, w) => ({ health: h, money: m, growth: g, freedom: f, relation: r, wisdom: w });
+  const FLAT = st6(50, 50, 50, 50, 50, 50);
+  const toneOf = (S, special) => P.verdictTone(S, { special: !!special });
+
+  // 数据断言：新池形状
+  {
+    const D = P.D;
+    ok(K6.every((k) => (D.verdictTop[k] || []).filter((f) => typeof f !== "string" && f.tone === "grand").length === 1 && (D.verdictTop[k] || []).filter((f) => typeof f !== "string" && f.tone === "joy").length === 1), "⑬ 数据: verdictTop 六维各恰有壮阔/欢快标志段各 1");
+    ok(K6.every((k) => (D.verdictCost[k] || []).filter((f) => typeof f !== "string" && f.tone === "grand").length === 1), "⑬ 数据: verdictCost 六维各恰有壮阔代价段 1");
+    ok(D.verdictFrame && K6.length === 6 && ["grand", "joy", "prose"].every((t) => D.verdictFrame.open[t].length === 2 && D.verdictFrame.close[t].length === 1), "⑬ 数据: 框架件 开场 3 调×2 / 收尾 3 调×1");
+    ok(K6.every((k) => typeof D.verdictLightStory[k] === "string" && typeof D.verdictLightLow[k] === "string") && D.verdictLightPair.length >= 2 && D.verdictLightPair.every((t) => t.includes("{a}") && t.includes("{b}")), "⑬ 数据: 轻提两家六维齐备 + 并列模板 ≥2");
+    const hh = D.verdictTop.health;
+    ok(hh.length === 8 && hh.filter((f) => typeof f !== "string" && f.minFinal).length === 5 && hh.some((f) => typeof f === "string"), "⑬ 数据: 健康上句 8 段（原 6＋新 2）、5 段挂 minFinal、留无门兜底段");
+    const segMoneySave = (D.verdictTop.money || []).find((f) => typeof f !== "string" && f.t && f.t.includes("账上留着两年的生活费"));
+    ok(!!segMoneySave && segMoneySave.minFinal && segMoneySave.minFinal.money === 55, "⑬ 数据: 钱上句「账上留着两年生活费」挂 minFinal{money:55}");
+  }
+
+  // 定调表测（纯函数：只读账本派生事实与峰值形状）
+  {
+    let S = mkRec("T1", { stats: FLAT, spouse: "single", death: { age: 78, type: "health", text: "" } });
+    let t = toneOf(S);
+    ok(t.tone === "prose" && t.adv === 0 && t.joy === 0, `⑬ 定调: 平局无签名 → 散文（adv=${t.adv} joy=${t.joy}）`);
+    S = mkRec("T2", { stats: FLAT, spouse: "widowed", ledger: [LE13(31, "spouse>partnered"), LE13(61, "spouse>widowed")], flags: { laid_off: true }, crisis: { x: 1 }, death: { age: 80, type: "health", text: "" } });
+    t = toneOf(S);
+    ok(t.tone === "grand" && t.adv === 3, `⑬ 定调: 丧偶+下岗+危机 ADV=3 → 壮阔（adv=${t.adv}）`);
+    S = mkRec("T3", { stats: st6(60, 50, 50, 50, 50, 50), peak: st6(90, 50, 50, 50, 50, 50), spouse: "widowed", ledger: [LE13(31, "spouse>partnered"), LE13(61, "spouse>widowed")], flags: { laid_off: true }, death: { age: 80, type: "health", text: "" } });
+    t = toneOf(S);
+    ok(t.tone === "grand" && t.adv === 2 && t.drop === 30, `⑬ 定调: ADV=2 且总跌幅 30 ≥22 → 壮阔（adv=${t.adv} drop=${t.drop}）`);
+    S = mkRec("T4", { stats: st6(50, 50, 50, 50, 92, 50), spouse: "partnered", flags: { hobby_fishing: true }, death: { age: 82, type: "health", text: "" } });
+    t = toneOf(S);
+    ok(t.tone === "joy" && t.joy === 3 && t.adv === 0, `⑬ 定调: 关系峰值 92+爱好+伴侣在侧 JOY=3 → 欢快（joy=${t.joy}）`);
+    S = mkRec("T5", { stats: st6(50, 50, 50, 50, 92, 50), spouse: "partnered", death: { age: 82, type: "health", text: "" } });
+    t = toneOf(S);
+    ok(t.tone === "joy" && t.joy === 2, `⑬ 定调: ADV=0、JOY=2、总跌幅 0 ≤25 → 欢快第二支（joy=${t.joy}）`);
+    S = mkRec("T6", { stats: st6(50, 50, 50, 50, 92, 50), peak: st6(63, 50, 50, 50, 92, 50), spouse: "partnered", ledger: [LE13(31, "spouse>partnered"), LE13(61, "spouse>widowed")], flags: { laid_off: true, hobby_fishing: true }, death: { age: 82, type: "health", text: "" } });
+    t = toneOf(S);
+    ok(t.tone === "prose" && t.adv === 2 && t.joy === 3 && t.drop === 13, `⑬ 定调: 变故与顺遂都中等（ADV=2/JOY=3/跌 13）→ 散文兜底（adv=${t.adv} joy=${t.joy} drop=${t.drop}）`);
+    S = mkRec("T7", { stats: FLAT, spouse: "widowed", ledger: [LE13(30, "dad>dead"), LE13(31, "spouse>partnered"), LE13(61, "spouse>widowed")], rare: ["r_a", "r_b"], death: { age: 80, type: "health", text: "" } });
+    t = toneOf(S);
+    ok(t.tone === "grand" && t.adv === 3, `⑬ 定调: 38 岁前丧父+稀有≥2+丧偶 ADV=3 → 壮阔（adv=${t.adv}）`);
+    S = mkRec("T7b", { stats: FLAT, spouse: "single", ledger: [LE13(45, "dad>dead")], death: { age: 80, type: "health", text: "" } });
+    t = toneOf(S);
+    ok(t.adv === 0 && t.tone === "prose", `⑬ 定调: 45 岁丧父不入变故（区分度收紧到 38 岁，adv=${t.adv}）`);
+    S = mkRec("T8", { stats: FLAT, spouse: "widowed", ledger: [LE13(31, "spouse>partnered"), LE13(55, "spouse>widowed")], flags: { laid_off: true }, death: { age: 60, type: "health", text: "" } });
+    t = toneOf(S);
+    ok(t.tone === "grand" && t.adv === 3, `⑬ 定调: 65 岁前去世计入变故（adv=${t.adv}）`);
+    const tA = toneOf(S), tB = toneOf(S);
+    ok(JSON.stringify(tA) === JSON.stringify(tB), "⑬ 定调: 同记录两次求调逐项一致（纯函数）");
+  }
+
+  // 合议表测（选维 / 钱封顶三条 / 晚年加分 / 固定维序）
+  {
+    let S = mkRec("C1", { stats: st6(40, 72, 70, 45, 88, 42), peak: st6(40, 74, 72, 45, 90, 42), spouse: "partnered" });
+    let C = P.verdictCouncil(S);
+    ok(C.moneyMain === false && JSON.stringify(C.full) === "[\"relation\",\"growth\"]" && C.light.some((x) => x.k === "money" && x.kind === "story"), `⑬ 合议: 钱站位入选非主线 → 降轻提、满句位让给成长（full=${C.full}）`);
+    S = mkRec("C2", { stats: st6(30, 45, 85, 50, 90, 50), peak: st6(30, 72, 90, 50, 95, 50), spouse: "partnered" });
+    C = P.verdictCouncil(S);
+    ok(C.moneyMain === true && JSON.stringify(C.full) === "[\"relation\",\"money\"]" && C.light.some((x) => x.k === "growth" && x.kind === "story"), `⑬ 合议: 钱主线（挣到过又跌下来）未入选 → 必提占第二正维位、成长降轻提（full=${C.full}）`);
+    S = mkRec("C3", { stats: st6(50, 72, 60, 55, 60, 55), peak: st6(55, 74, 70, 60, 74, 60), spouse: "single" });
+    C = P.verdictCouncil(S);
+    ok(JSON.stringify(C.full) === "[\"money\"]" && !C.light.some((x) => x.k === "money"), "⑬ 合议: 钱是唯一故事维 → 保险丝保留满句、不降轻提");
+    S = mkRec("C4", { stats: st6(50, 40, 55, 45, 88, 52), peak: st6(55, 40, 60, 45, 90, 58), spouse: "partnered" });
+    C = P.verdictCouncil(S);
+    ok(C.cost === null && JSON.stringify(C.pair) === "[\"money\",\"freedom\"]" && C.light.some((x) => x.k === "money" && x.kind === "low") && C.light.some((x) => x.k === "freedom" && x.kind === "low"), `⑬ 合议: L1=钱非主线 → 轻提对{钱,自由}、代价满句为空（pair=${C.pair}）`);
+    S = mkRec("C5", { stats: st6(70, 45, 78, 72, 80, 71), peak: st6(74, 70, 82, 76, 85, 75), spouse: "partnered" });
+    C = P.verdictCouncil(S);
+    ok(C.moneyMain === true && C.cost === "money" && !C.full.includes("money"), `⑬ 合议: L1=钱且主线 → 钱出满句代价（cost=${C.cost}）`);
+    const c6stats = st6(40, 50, 80, 50, 60, 77);
+    S = mkRec("C6", { stats: c6stats, peak: { ...c6stats }, late: st6(40, 50, 80, 50, 60, 65), spouse: "single" });
+    C = P.verdictCouncil(S);
+    ok(C.full[0] === "wisdom", `⑬ 合议: statsLate 晚年加分（智慧 60 岁后涨 12、+4）翻盘排序（full=${C.full}）`);
+    S = mkRec("C6b", { stats: c6stats, peak: { ...c6stats }, late: null, spouse: "single" });
+    C = P.verdictCouncil(S);
+    ok(C.full[0] === "growth", `⑬ 合议: 无 statsLate 时无加分、按峰值原序（full=${C.full}）`);
+    S = mkRec("C7", { stats: st6(40, 45, 50, 48, 62, 44), peak: st6(40, 45, 50, 48, 62, 44), spouse: "single" });
+    C = P.verdictCouncil(S);
+    ok(C.full.length === 1 && C.full[0] === "relation" && C.cost === "health", `⑬ 合议: 零故事维 → 回落最高峰维满句、代价照走（full=${C.full} cost=${C.cost}）`);
+    S = mkRec("C8", { stats: st6(80, 80, 40, 40, 40, 40), peak: st6(80, 80, 40, 40, 40, 40), spouse: "single" });
+    C = P.verdictCouncil(S);
+    ok(C.full[0] === "health" && C.full[1] === "money", `⑬ 合议: 同分并列按固定维序（健康先于金钱，full=${C.full}）`);
+  }
+
+  // 判词整体：同记录同判词 / 不消费主随机流 / 钱封顶文本级 / 健康硬门 / 篇幅与提及下限
+  {
+    const rich = { stats: st6(30, 45, 85, 50, 90, 50), peak: st6(30, 72, 90, 50, 95, 50), spouse: "partnered", ledger: [LE13(31, "spouse>partnered")], death: { age: 84, type: "health", text: "" } };
+    const S1 = mkRec("V1-SAME", rich);
+    const v1 = P.verdict();
+    const S2 = mkRec("V1-SAME", JSON.parse(JSON.stringify(rich)));
+    const v2 = P.verdict();
+    ok(v1.text === v2.text && v1.tone === v2.tone && JSON.stringify(v1.full) === JSON.stringify(v2.full) && v1.cost === v2.cost, "⑬ 判词: 同记录克隆两份、各自独立求判词 → 逐字一致");
+    ok(v1.v === 2, "⑬ 判词: _verdict 带 v:2 标记");
+    const S3 = mkRec("V2-RNG", rich);
+    const before = [P.RNG.a, P.RNGW.a, P.RNGA.a];
+    P.verdict();
+    ok(P.RNG.a === before[0] && P.RNGW.a === before[1] && P.RNGA.a === before[2], "⑬ 判词: 求判词不消费三股游戏随机流（子流独立）");
+    const moneyTopTexts = (P.D.verdictTop.money || []).map((f) => (typeof f === "string" ? f : f.t));
+    let capOk = true, lightSeen = false;
+    for (let i = 0; i < 12; i++) {
+      mkRec("V3-CAP-" + i, { stats: st6(40, 72, 70, 45, 88, 42), peak: st6(40, 74, 72, 45, 90, 42), spouse: "partnered", death: { age: 80, type: "health", text: "" } });
+      const vv = P.verdict();
+      if (moneyTopTexts.some((tx) => vv.text.includes(tx)) || vv.full.includes("money") || vv.cost === "money") capOk = false;
+      if (vv.text.includes(P.D.verdictLightStory.money)) lightSeen = true;
+    }
+    ok(capOk && lightSeen, "⑬ 判词: 非主线钱满句 12 子扫描零出现（合议+文本双证）、钱只以轻提短句活进文本（封顶文本级）");
+    const S5 = mkRec("V4-GATE", { stats: st6(30, 40, 40, 40, 80, 40), peak: st6(95, 40, 40, 40, 85, 40), spouse: "single", death: { age: 82, type: "health", text: "" } });
+    const v5 = P.verdict();
+    ok(v5.text.includes("体检单年年就那几项") && !v5.text.includes("提着菜篮") && !v5.text.includes("绕着小区走三圈") && !v5.text.includes("雷打不动") && !v5.text.includes("一觉睡到五点多") && !v5.text.includes("牙口还算行"), "⑬ 判词: 终局健康 30 → 现在时身体断言段全被 minFinal 硬门挡下、只出无门兜底段");
+    let lenOk = true, menOk = true, worst = 0;
+    for (let i = 0; i < 60; i++) {
+      const base = 35 + (i * 7) % 55;
+      const stats = st6(base, 30 + (i * 11) % 65, 30 + (i * 13) % 65, 30 + (i * 17) % 65, 30 + (i * 19) % 68, 30 + (i * 23) % 65);
+      const peak = {}; for (const k of K6) peak[k] = Math.min(98, stats[k] + (i * 3) % 18);
+      const S = mkRec("V5-LEN-" + i, { stats, peak, spouse: i % 3 ? "partnered" : "single", flags: i % 4 ? { laid_off: true } : null, crisis: i % 5 ? { x: 1 } : null, death: { age: 55 + (i % 40), type: i % 7 ? "health" : "accident", text: "" } });
+      const v = P.verdict();
+      worst = Math.max(worst, v.text.length);
+      if (v.text.length > 110) lenOk = false;
+      const mentioned = new Set([...v.full, ...v.light, ...(v.cost ? [v.cost] : [])]);
+      if (mentioned.size < 2) menOk = false;
+    }
+    ok(lenOk, `⑬ 判词: 60 局构造批篇幅全 ≤110 字（最长 ${worst}）`);
+    ok(menOk, "⑬ 判词: 60 局构造批每局提及维度 ≥2（升格地板）");
+  }
+
+  // statsLate 记账：初值 / 60 岁定格 / 定格后不动 / 老档回填
+  {
+    const S0 = P.freshState("LATE-INIT");
+    ok(S0.statsLate === null, "⑬ statsLate: freshState 初值 null（未到 60 不落账）");
+    const S = mkRec("LATE-S", { stats: st6(55, 50, 60, 52, 66, 58), spouse: "single" });
+    S.age = 59; P.sampleStatsPeak();
+    ok(S.statsLate === null, "⑬ statsLate: 59 岁收口不落快照");
+    S.age = 60; P.sampleStatsPeak();
+    ok(!!S.statsLate && K6.every((k) => S.statsLate[k] === S.stats[k]), "⑬ statsLate: 60 岁收口整份定格六维");
+    const frozen = JSON.stringify(S.statsLate);
+    S.stats = st6(40, 70, 61, 52, 70, 66); S.age = 61; P.sampleStatsPeak();
+    ok(JSON.stringify(S.statsLate) === frozen, "⑬ statsLate: 定格后六维再涨不重写（只作晚年加分的原点）");
+    const old = P.freshState("LATE-OLD");
+    old.route = { id: "corp" };
+    old.stats = st6(33, 44, 55, 66, 77, 88);
+    delete old.statsLate;
+    store.set("ify-save-v2", JSON.stringify(old));
+    const back = P.loadSave();
+    ok(!!back && !!back.statsLate && K6.every((k) => back.statsLate[k] === back.stats[k]), "⑬ statsLate: 老档（无字段）载入按现值回填起账");
+    store.delete("ify-save-v2");
+  }
 }
 
 console.log(`\nstateline-assert: ${pass} passed, ${fail} failed`);

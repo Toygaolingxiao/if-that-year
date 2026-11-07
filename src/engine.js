@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.47.2 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.48.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -197,6 +197,7 @@ window.IFY = window.IFY || {};
       seedStr, age: START_AGE, era: "c2000", birthYear: 2000,
       stats: Object.fromEntries(STAT_META.map(([k, , init]) => [k, init])),
       statsPeak: Object.fromEntries(STAT_META.map(([k, , init]) => [k, init])), // 判词批 C（偷艺 4.2）：六维一生峰值，初值 = 开局六维；由 sampleStatsPeak 在年度收口纯 max 并入，判词按峰值选维。旧档无此字段走 backfillStatsPeak 迁移
+      statsLate: null, // 判词升格片（审议单 #6）：60 岁六维快照，与 statsPeak 同位采样（sampleStatsLate 挂在 sampleStatsPeak 的收口点上）：当年收口年龄首次 ≥60 时整份定格，此后不动。只供判词合议的晚年加分排序，不当任何门。旧档无此字段走 backfillStatsLate 回填（以载入时现值起账，只少记不多记）
       route: null, unchosen: [], log: [], reflections: [], // v0.21 WP1：reflections 是玩家层字段——本字段只为 Track 同形保留、恒不作数，权威在 session.meta（蓝图 3.1）
       usedEvents: [], flags: {}, state: IFY.initialState(), crisisUsed: {}, microUsed: [], usedRare: [], cards: [],
       glimpsesSeen: 0, glimpsesSkipped: 0, lastDelta: "", wageDelta: "", // wageDelta：工资年结的标注通道（fx-fix）——wageDue 每年结算时刷新（非零整数落账记「工资 ±N」、否则清空），deltaLine 与 lastDelta 拼行呈现；旧档无此字段按空读
@@ -273,13 +274,23 @@ window.IFY = window.IFY || {};
     for (const [k, , init] of STAT_META) if (typeof t.statsPeak[k] !== "number") t.statsPeak[k] = typeof t.stats[k] === "number" ? t.stats[k] : init;
   }
 
+  // 判词升格片（审议单 #6）旧档回填：与 backfillStatsPeak 同法——无 statsLate 的存档读入时
+  // 以载入时六维现值整份起账（60 岁前的档起账后仍会被 60 岁收口的真快照覆盖，见
+  // sampleStatsLate 的 backfilled 标记；60 岁后的档只能以载入点为界，晚年涨幅只少记不多记）。
+  // 容器在但单维缺失时逐维按现值补，既有值不覆盖。
+  function backfillStatsLate(t) {
+    if (!t || typeof t !== "object" || !t.stats) return;
+    if (!t.statsLate || typeof t.statsLate !== "object" || Array.isArray(t.statsLate)) { t.statsLate = {}; t.statsLateBackfilled = true; }
+    for (const [k, , init] of STAT_META) if (typeof t.statsLate[k] !== "number") t.statsLate[k] = typeof t.stats[k] === "number" ? t.stats[k] : init;
+  }
+
   function loadSave() {
     try {
       const s = JSON.parse(localStorage.getItem(SAVE_KEY));
       if (!s) return null;
       // v2 的 Track 条目本体即平铺 state（route/flags 直挂条目上，与 backfillAdmitted 同口径）
-      if (s.tracks) { for (const k of Object.keys(s.tracks)) { backfillAdmitted(s.tracks[k]); backfillWage(s.tracks[k]); backfillHouse(s.tracks[k]); backfillStatsPeak(s.tracks[k]); } const a = s.tracks[s.controlTrack || "A"] || s.tracks.A; return a && (a.route || a.mergePending || (a.phase === "prologue" && a.prologue)) ? s : null; }
-      backfillAdmitted(s); backfillWage(s); backfillHouse(s); backfillStatsPeak(s);
+      if (s.tracks) { for (const k of Object.keys(s.tracks)) { backfillAdmitted(s.tracks[k]); backfillWage(s.tracks[k]); backfillHouse(s.tracks[k]); backfillStatsPeak(s.tracks[k]); backfillStatsLate(s.tracks[k]); } const a = s.tracks[s.controlTrack || "A"] || s.tracks.A; return a && (a.route || a.mergePending || (a.phase === "prologue" && a.prologue)) ? s : null; }
+      backfillAdmitted(s); backfillWage(s); backfillHouse(s); backfillStatsPeak(s); backfillStatsLate(s);
       return (s.route || s.mergePending || (s.phase === "prologue" && s.prologue)) ? s : null;
     } catch (e) { return null; }
   }
@@ -506,6 +517,23 @@ window.IFY = window.IFY || {};
       if (typeof v !== "number") continue;
       if (typeof S.statsPeak[k] !== "number" || v > S.statsPeak[k]) S.statsPeak[k] = v;
     }
+    sampleStatsLate();
+  }
+
+  // 判词升格片（审议单 #6）：60 岁快照采样——与 sampleStatsPeak 同位（三收口点经它同调），
+  // 当年收口年龄首次 ≥60 时把当前六维整份定格进 S.statsLate，此后不再动。回填档（载入时
+  // 以现值起账、带 statsLateBackfilled 标记）在跨过 60 的首个收口被真快照覆盖一次，覆盖后
+  // 清标记；60 岁后载入的回填档在载入后首个收口定格（与载入点只差一年内，只少记不多记）。
+  // 纯赋值：不掷骰、不消费任何随机流，同种子轨迹不变。
+  function sampleStatsLate() {
+    const S = IFY.S;
+    if (!S || !S.stats) return;
+    if (S.statsLate && !S.statsLateBackfilled) return;
+    if (typeof S.age !== "number" || S.age < 60) return;
+    const snap = {};
+    for (const [k, , init] of STAT_META) snap[k] = typeof S.stats[k] === "number" ? S.stats[k] : init;
+    S.statsLate = snap;
+    delete S.statsLateBackfilled;
   }
 
   function finalAge() { return IFY.S && IFY.S.death ? IFY.S.death.age : MAX_AGE; }
@@ -1067,7 +1095,7 @@ window.IFY = window.IFY || {};
   Object.assign(IFY, { D, CARDS, PRO, RHYTHM, PROLOGUE_ERA, hasPrologue, ANA, START_AGE, MAX_AGE, STAT_META, GLIMPSE_AGES, ERAS, SAVE_KEY,
     LIVES_KEY, PREFS_KEY, SPEED_CPS, SPEED_LABEL, SPEED_STYLE, AUTO_BASE_MS, AUTO_CAP_MS, AUTO_MODES,
     DEFAULT_AUTO_MODE, RNG, RNGW, RNGA, mulberry, rng, rngW, rngA, seedStreams, seedFromString, drawBirthYear, clamp, esc,
-    el, app, reducedMotion, freshState, sampleStatsPeak, save, loadSave, clearSave, loadLives, todayStr, recordLives,
+    el, app, reducedMotion, freshState, sampleStatsPeak, sampleStatsLate, save, loadSave, clearSave, loadLives, todayStr, recordLives,
     STREAK_KEY, LASTLIFE_KEY, loadStreak, loadLastLife, dateStrOf, shiftedDateStr, recordDayAndLife,
     streakLine, lastLifeLine, dailyFor, loadPrefs, savePrefs, rhythmOf, rhythmBase, applyTempDelta,
     applyEffects, finalAge, renderStart, clearSave0, newGame, STAGE_LABEL, newGamePrologue, prologueHead,
