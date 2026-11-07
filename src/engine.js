@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.54.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.55.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -665,6 +665,15 @@ window.IFY = window.IFY || {};
             </div>
           </div>
         </div>
+      </section>
+      <section class="card seedentry">
+        <p class="setlab">用种子开一局</p>
+        <p class="hint">填朋友给的种子码，用同一个种子开一局。年代还是在上面选。</p>
+        <div class="seedrow">
+          <input id="seedentryin" type="text" placeholder="填种子码" autocomplete="off">
+          <button type="button" class="ghost" id="seedentrygo">用这个种子开始</button>
+        </div>
+        <p class="hint" id="seedentrymsg"></p>
       </section>`;
     let startLock = false; // §6.1 防连点：双击不能在同一帧触发两次开局（统一挂在 #startgo 上）
     const llBtn = el("liveslink"); // v0.24.0：首访（无存档、无已完成局）不渲染此入口，取不到时跳过接线
@@ -797,6 +806,22 @@ window.IFY = window.IFY || {};
       el("daily").textContent = "今日一局已备好";
       birthOverride = null; syncBirth(); // 今日一局换了种子：出生年回到该种子抽出的年份
     });
+    // F2 种子正式入口（圆桌决议）：安静的次要入口，与折叠区里的 #seedin 是同一个输入——
+    // 这里填的码同步写进 #seedin 并触发它既有的 input 接线（重发牌面、按种子重抽出生年），
+    // 再点开始走的仍是统一开局按钮那一条路，与带 ?seed= 链接打开完全同路，不另起开局逻辑。
+    const seIn = el("seedentryin"), seGo = el("seedentrygo"), seMsg = el("seedentrymsg");
+    if (seIn && seGo) {
+      if (seedParam && !seIn.value) seIn.value = seedParam; // 链接带来的种子在正式入口里也看得见
+      const syncEntry = () => { const si = el("seedin"); if (si && si.value !== seIn.value) { si.value = seIn.value; si.dispatchEvent(new Event("input", { bubbles: true })); } };
+      seIn.addEventListener("input", syncEntry); // 填了不用入口按钮、直接点主开始钮，也用这个种子
+      seGo.addEventListener("click", () => {
+        const v = (seIn.value || "").trim();
+        if (!v) { if (seMsg) seMsg.textContent = "先填种子码，再点开始。"; seIn.focus(); return; } // 引擎对种子无格式限制（任意非空串都按哈希成局），空着没法开，只提示这一句
+        syncEntry();
+        el("startgo").click();
+      });
+      seIn.addEventListener("keydown", (ev) => { if (ev.key === "Enter") { ev.preventDefault(); seGo.click(); } });
+    }
     // 统一开局按钮：序章年代走序章开局；无序章年代先落出身、路线留到局内 22 岁汇入拍选（newGame 只建局不落路线）
     el("startgo").addEventListener("click", () => {
       if (startLock) return;

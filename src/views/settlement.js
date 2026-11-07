@@ -1626,6 +1626,120 @@
     } catch (e) { return ""; }
   }
 
+  // ---------- F1「回头看，有一年」（圆桌决议 F1）：从玩家本人账本里选出最好的一年 ----------
+  // 纯函数：只读已定格的账本（交换局读 playerFacts 合并账）、流水、flagAges 与 statsPeak，
+  // 不掷骰、不写状态、不消费任何随机流；同一局重复求值逐字一致。
+  // 选年打分（多维读账，钱维数值本身永不计分——买房计的是「落定一件大事」不是钱多）：
+  //   关系：领证 +50 / 孩子出生 +50 / 处上对象（首次 dating）+25 / 添宠物 +15
+  //   事件：买房落定 +35 / 考上入行 +35 / 稀有际遇 +30 / 副业成形 +20 / 退休 +20 /
+  //         爱好立旗 +15 / 其余有抉择的年份 +10（兜底候选）
+  //   健康：流水里出现康复/戒断/锻炼类事实的年份 +15（每岁至多一次）
+  //   维度加权（复用判词升格的 statsPeak 峰值读账）：关系峰值 ≥85 时关系类 +10、≥75 时 +5；
+  //   健康峰值 ≥85 时健康类 +10、≥75 时 +5；成长峰值 ≥85 时考上/副业 +5。
+  //   守卫：当年有父母离世/丧偶/离异流转的年份整年出局（那一年再有喜事也不指它）；
+  //   同分时先比「有没有一句能引的流水」，再取更早的岁数。全候选 ≤0 分 → 返回 null，整节不出。
+  function bestYearOf(view) {
+    try {
+      const S = IFY.S;
+      if (!S || !S.route) return null;
+      const led = view ? view.mergedLedger : (Array.isArray(S.ledger) ? S.ledger : []);
+      const logArr = view ? view.mergedLog : (Array.isArray(S.log) ? S.log : []);
+      const pk = (k) => (S.statsPeak && typeof S.statsPeak[k] === "number" ? S.statsPeak[k] : 0);
+      const relB = pk("relation") >= 85 ? 10 : pk("relation") >= 75 ? 5 : 0;
+      const heaB = pk("health") >= 85 ? 10 : pk("health") >= 75 ? 5 : 0;
+      const groB = pk("growth") >= 85 ? 5 : 0;
+      const score = new Map(); // age -> { pts, cat }（cat = 该岁最高优先类别，定引文口径）
+      const CAT_PRIO = { kid: 0, marry: 1, house: 2, exam: 3, rare: 4, dating: 5, side: 6, retire: 7, pet: 8, hobby: 9, health: 10, fork: 11 };
+      const add = (age, pts, cat) => {
+        if (typeof age !== "number" || !(age >= 0)) return;
+        const cur = score.get(age) || { pts: 0, cat: null };
+        cur.pts += pts;
+        if (cat && (cur.cat === null || CAT_PRIO[cat] < CAT_PRIO[cur.cat])) cur.cat = cat;
+        score.set(age, cur);
+      };
+      const banned = new Set();
+      let datingDone = false;
+      for (const e of led) {
+        if (!e || typeof e.age !== "number") continue;
+        if (e.kind === "state") {
+          if (e.id === "dad>dead" || e.id === "mom>dead" || e.id === "spouse>widowed" || e.id === "spouse>divorced") banned.add(e.age);
+          else if (e.id === "spouse>partnered") add(e.age, 50 + relB, "marry");
+          else if (e.id === "spouse>dating" && !datingDone) { datingDone = true; add(e.age, 25 + relB, "dating"); }
+          else if (e.id === "dog>home" || e.id === "cat>home") add(e.age, 15, "pet");
+          else if (e.id === "workPhase>retired") add(e.age, 20, "retire");
+        }
+      }
+      // 孩子出生年：与子女槽/人生线同锚（kidsBornAt ?? kidsAt），交换局再扫各段 Track
+      let kidBorn = null;
+      if (typeof S.kidsBornAt === "number") kidBorn = S.kidsBornAt;
+      else if (typeof S.kidsAt === "number") kidBorn = S.kidsAt;
+      else if (view) for (const seg of view.segments) { const st = seg.state; if (typeof st.kidsBornAt === "number") { kidBorn = st.kidsBornAt; break; } if (typeof st.kidsAt === "number") { kidBorn = st.kidsAt; break; } }
+      if (kidBorn != null) add(kidBorn, 50 + relB, "kid");
+      // 旗标落点（flagAges 是引擎的落旗岁账）：买房/考上/爱好/副业
+      const FA = S.flagAges || {};
+      const F = S.flags || {};
+      const flagAge = (f) => (F[f] && typeof FA[f] === "number" ? FA[f] : null);
+      for (const f of ["bought_house", "bought_fangai", "jizi_house", "bought_commodity"]) { const a = flagAge(f); if (a != null) { add(a, 35, "house"); break; } }
+      { const a = flagAge("exam_landed"); if (a != null) add(a, 35 + groB, "exam"); }
+      for (const f of ["side_business", "side_job", "side_start"]) { const a = flagAge(f); if (a != null) { add(a, 20 + groB, "side"); break; } }
+      for (const f of Object.keys(F)) if (f.startsWith("hobby_")) { const a = flagAge(f); if (a != null) add(a, 15, "hobby"); }
+      // 流水逐年读：稀有际遇 / 健康事实 / 有抉择的年份（兜底候选），并留引文
+      const SYS = ["影子：", "两条路上都一样的是", "工资年结", "交换：", "出身：", "立约："];
+      const linesByAge = new Map();
+      for (const l of logArr) {
+        const m = typeof l === "string" && l.match(/^(\d+) 岁 · ([\s\S]*)$/);
+        if (!m) continue;
+        const age = +m[1], text = m[2];
+        if (!linesByAge.has(age)) linesByAge.set(age, []);
+        linesByAge.get(age).push(text);
+        if (SYS.some((p) => text.startsWith(p)) || text.includes("这一生停在这里")) continue;
+        if (text.includes("【稀有】")) add(age, 30, "rare");
+        if (/出院|康复|戒了|戒烟|锻炼|跑起来|爬山|游泳/.test(text)) add(age, 15 + heaB, "health");
+        if (text.includes("：")) add(age, 10, "fork");
+      }
+      for (const a of banned) score.delete(a);
+      let best = null;
+      for (const [age, v] of [...score.entries()].sort((a, b) => a[0] - b[0])) {
+        if (v.pts <= 0) continue;
+        const hasLine = (linesByAge.get(age) || []).some((t) => !SYS.some((p) => t.startsWith(p)));
+        const cand = { age, pts: v.pts, cat: v.cat, hasLine };
+        if (!best || cand.pts > best.pts || (cand.pts === best.pts && cand.hasLine && !best.hasLine)) best = cand;
+      }
+      if (!best) return null;
+      // 引文：先按类别在当年流水里找那件事本体，找不到退当年第一条非系统行，再退事实句
+      const CAT_RE = {
+        marry: /领证|结婚|成家|把证领了/, kid: /孩子出生|产房|生了/, house: /买房|买了房|搬进|新房/,
+        exam: /考上|录取|上岸|考进/, rare: /【稀有】/, retire: /退休|退了|退下来/,
+        dating: /处了|在一起|对象/, side: /副业|摊|小店/, pet: /狗|猫/, hobby: /书法|摄影|钓鱼|种菜|音乐|跑步|做饭|羽毛球|爱好/,
+      };
+      const FALLBACK = {
+        marry: "那一年，你和对方把证领了。", kid: "那一年，孩子出生了。", dating: "那一年，你处了一个人。",
+        house: "那一年，房子定下来了。", retire: "那一年，你退了下来。", pet: "那一年，家里添了个伴儿。",
+        exam: "那一年，你考上了。", side: "那一年，正职之外多了一摊活儿。", hobby: "那一年，你添了个爱好。",
+        health: "那一年，身体缓过来了。", rare: "那一年，撞上一件稀罕事。", fork: "那一年，你做了个大决定。",
+      };
+      const lines = (linesByAge.get(best.age) || []).filter((t) => !SYS.some((p) => t.startsWith(p)) && !t.includes("这一生停在这里"));
+      let sentence = "";
+      const re = best.cat && CAT_RE[best.cat];
+      if (re) { const hit = lines.find((t) => re.test(t)); if (hit) sentence = hit; }
+      if (!sentence && lines.length) sentence = lines[0];
+      if (sentence) {
+        sentence = sentence.split("。")[0].trim();
+        if (sentence.length > 64) sentence = sentence.slice(0, 64);
+        if (sentence) sentence += "。";
+      }
+      if (!sentence) sentence = (best.cat && FALLBACK[best.cat]) || "那一年，日子过得顺。";
+      const year = typeof S.birthYear === "number" ? S.birthYear + best.age : null;
+      return { age: best.age, year, pts: best.pts, cat: best.cat, sentence };
+    } catch (e) { return null; }
+  }
+  function bestYearHtml(view) {
+    const b = bestYearOf(view);
+    if (!b) return "";
+    const head = b.year != null ? `${b.year} 年，你 ${b.age} 岁。` : `你 ${b.age} 岁那年。`;
+    return `<div class="bestyear"><h3>回头看，有一年</h3><p>${IFY.esc(head + b.sentence)}</p></div>`;
+  }
+
   function renderEnd() {
     // 结算快进（v0.22 WP7，蓝图 7.4）：clearSave 之前先把不受控 Track 步进到死亡或保险丝（110）并置 finalized——
     // 只置内存位、不另行 save：本函数随后即 clearSave() 清档，终局屏之后没有续读路径，落盘无意义
@@ -1673,6 +1787,10 @@
     // （未交换/段不成立）时走原直读 IFY.S.log，未交换输出逐行不变。
     const tlView = playerFacts();
     const tlLog = tlView ? tlView.mergedLog : IFY.S.log;
+    // F7（圆桌决议）：影子结局一句话前置到判词之后——取第八槽同一句（shadowFinalSentence，
+    // 与九槽「另一条路」槽同源同字），完整影子篇章仍留在九槽原位。无不受控 Track 的旧档不出此行。
+    const uncF7 = uncontrolledState();
+    const shadowFirst = uncF7 ? shadowFinalSentence(uncF7) : "";
     IFY.app().innerHTML = `<section class="card">${IFY.head(null, true)}
       <div class="rev" style="--d:0s">
       <h2>${IFY.finalAge()} 岁 · 这一局走完了</h2>
@@ -1684,6 +1802,9 @@
       ${settlementSlots().map(([k, t]) => `<p class="slotline"><span class="slotk">${IFY.esc(k)}</span>${IFY.esc(t)}</p>`).join("")}
       ${houseLine}
       <p class="verdict">${IFY.esc(v.text)}</p>
+      ${shadowFirst ? `<p class="shadowfirst">${IFY.esc(shadowFirst)}</p>` : ""}
+      ${bestYearHtml(tlView)}
+      <p class="seedline">这一局的种子是 <b>${IFY.esc(IFY.S.seedStr)}</b>。<button type="button" class="textlink" id="seedcopy">复制带种子的链接</button><br>谁打开这个链接，活的就是你这同一条命，选得不一样，后来各走各的。</p>
       <p>你走了这条路：${IFY.esc(IFY.S.route.name)}。</p>
       ${covLine ? `<p>${IFY.esc(covLine)}</p>` : ""}
       </div>
@@ -1713,6 +1834,7 @@
         <div class="segpicks" id="cardtype">
           <button type="button" class="segbtn sel" data-type="verdict"><b>判词卡</b><small>判词 + 分岔路图 + 六维</small></button>
           <button type="button" class="segbtn" data-type="log"><b>流水账卡</b><small>公元年轴 + 关键节点 + 六维</small></button>
+          <button type="button" class="segbtn" data-type="mini"><b>判词小卡</b><small>判词一句 + 双轨图，竖版小图</small></button>
         </div>
         <p class="setlab">尺寸</p>
         <div class="segpicks" id="cardratio">
@@ -1755,6 +1877,12 @@
     }
     IFY.el("again-same").addEventListener("click", () => location.assign(IFY.sameSeedUrl()));
     IFY.el("again-new").addEventListener("click", () => location.assign(location.pathname));
+    IFY.el("seedcopy").addEventListener("click", async () => {
+      IFY.ANA.track("share_click", { action: "copy_seed_link" });
+      const url = IFY.sameSeedUrl();
+      try { await navigator.clipboard.writeText(url); IFY.el("seedcopy").textContent = "已复制，去发给他"; }
+      catch (e) { IFY.el("seedcopy").textContent = url; }
+    });
     IFY.el("copylink").addEventListener("click", async () => {
       IFY.ANA.track("share_click", { action: "copy_link" });
       const url = IFY.sameSeedUrl();
@@ -1803,5 +1931,7 @@
     // v0.22 WP7 新增导出：段事实视图、段版分岔反查、对面终局短句与结算快进（分享卡与断言复用同一口径）
     playerFacts, chosenOfForkIn, uncontrolledFinalLine, fastForwardUncontrolled,
     // 判词批 B 新增导出：伴侣史回放派生（断言与后续槽位复用同一口径）
-    partnerHistoryOf, s2FromHistory });
+    partnerHistoryOf, s2FromHistory,
+    // 圆桌 P0 免费层结算批新增导出：F1 选年纯函数（验收台架复用同一口径）
+    bestYearOf });
 })(window.IFY);

@@ -387,6 +387,33 @@ shadowMarry: shadow.highlights.some((h) => h.cat === "marry"), shadowKid: shadow
 };
 }
 
+// ---------- 种子档案（圆桌决议 S2）：长图与册子共用同一份内容，只许从这里出 ----------
+// 像书的版权页：种子、出生年代与出生年、这一局的起止、游戏名与网址。安静朴素，
+// 不写「防伪」「唯一码」一类字样——种子经 F2 本就公开分享，它是这一生的出生证兼
+// 复活钥匙：照着它能在开始页原样再活这一局。
+function seedArchive(d) {
+const lines = [];
+if (d.eraLabel || d.birthYear) lines.push(`出生：${d.eraLabel || ""}${d.eraLabel && d.birthYear? " · ": ""}${d.birthYear? d.birthYear + " 年": ""}`);
+if (d.birthYear) lines.push(`这一生：${d.birthYear} 年 — ${d.birthYear + d.finalAge} 年`);
+lines.push(`种子：${d.seed}`);
+lines.push("《如果那年》 · if-that-year.pages.dev");
+return lines;
+}
+
+// ---------- 面板本局事实（圆桌决议 S4）：面板打开先摆这一局的一条真事，再谈价格 ----------
+// 固定优先级取一条（写进施工报告）：孩子出生 → 成家领证 → 影子终龄 → 本人终龄 → 路线。
+// 只许并列陈述事实：不许两命差值、不许「比你早/晚」这类比较措辞。取数全走
+// buildKeepsakeData 的既有账面（大事记必入位与影子终龄），派生不出就往下一档退。
+function panelFact(d) {
+const kid = d.highlights.find((h) => h.cat === "kid");
+if (kid && kid.year) return `这一局，孩子出生在 ${kid.year} 年，那年你 ${kid.age} 岁。`;
+const marry = d.highlights.find((h) => h.cat === "marry");
+if (marry && marry.year) return `这一局，${marry.year} 年，你和对方把证领了。`;
+if (d.shadow && d.shadow.available && d.shadow.finalAge != null) return `这一局，另一条路上的他走到了 ${d.shadow.finalAge} 岁。`;
+if (d.finalAge != null) return `这一局，你走到了 ${d.finalAge} 岁。`;
+return `这一局，你走的是「${d.routeName}」这条路。`;
+}
+
 // ---------- 长图（网格派 L1：版心 936、垂直模数 8、无衬线为骨、衬线只给主标与判词） ----------
 const KS_INK = "#20241F", KS_PINE = "#2F4A3C", KS_GREY = "#8A948C", KS_MUT = "#6E6A5E",
 KS_LINE = "#DDD6C9", KS_TRACK = "#E7E1D3", KS_PAPER = "#FAF8F4";
@@ -722,6 +749,15 @@ y += colH;
 }
 }
 }
+// ---- 种子档案（S2：末尾一段，版权页气质，安静朴素） ----
+y += 64;
+x.fillStyle = KS_GREY; x.font = "700 22px " + IFY.SANS; ksTracked(x, "5px");
+x.fillText("种子档案", MX, y + 22);
+ksTracked(x, "0px");
+y += 30;
+x.fillStyle = KS_MUT; x.font = "24px " + IFY.SANS;
+for (const line of seedArchive(d)) { x.fillText(line, MX, y + 24); y += 38;}
+y -= 14;
 // ---- 页脚落款 ----
 y += 72;
 x.strokeStyle = KS_PINE; x.lineWidth = 3;
@@ -740,6 +776,7 @@ return H;
 }
 
 function drawWatermark(x, W, H) {
+try {
 if (typeof x.setTransform === "function") x.setTransform(1, 0, 0, 1);
 x.save();
 x.globalAlpha = 0.12;
@@ -750,6 +787,7 @@ x.translate(W / 2, H / 2);
 x.rotate(-Math.PI / 7);
 for (let yy = -H; yy < H; yy += 330) for (let xx = -W; xx < W; xx += 540) x.fillText("纪录典藏 · 预览", xx, yy);
 x.restore();
+} catch (e) { /* 水印画不出也不能连累预览本身（v0.55.0：无头环境 setTransform 抛错的既存问题） */ }
 }
 
 // opts: {scale} 出图尺寸系数（1=全尺寸 1080 宽）；{watermark:true} 叠水印（预览专用）
@@ -897,7 +935,11 @@ ${d.twin.solo? `<p class="book-common">${esc(d.twin.solo)}</p>`: `<div class="bo
 </div>`}
 </div>`: `<p class="book-lead">${esc(sh.finalText)}</p>`}
 </section>`: "";
-// ---- 末页落款＋手记页 ----
+// ---- 种子档案页（S2：末页，与长图同一份 seedArchive 内容）＋末页落款＋手记页 ----
+const seedPage = `<section class="book-seedpage"><div class="book-seedbox">
+<h3 class="book-h">种子档案</h3>
+${seedArchive(d).map((l) => `<p>${esc(l)}</p>`).join("")}
+</div></section>`;
 const colo = `<section class="book-colophon"><div class="book-colobox">
 <h3 class="book-h">未走之路</h3>
 ${!sh.available && sh.compareMain? `<p>${esc(sh.compareMain)}</p>`: ""}
@@ -906,6 +948,7 @@ ${sh.compareOthers.map((o) => `<p>${esc(o)}</p>`).join("")}
 <p class="book-url">if-that-year.pages.dev</p>
 <p class="book-closing">同样的运气，你会怎么选？</p>
 </div></section>
+${seedPage}
 <section class="book-note"><div class="book-notebox">
 <h3 class="book-h">手记</h3>
 <p class="book-dateline">日期：＿＿＿＿＿＿＿＿</p>
@@ -987,37 +1030,120 @@ a.href = canvas.toDataURL("image/png");
 a.click();
 }
 
+// ---------- 赠予（圆桌决议 S3）：用自己的已激活码领一枚赠予码 ----------
+// 显示形与 _codelib 的 displayCode 同制（4-4-4 连字符），前端不 import 服务端模块，这里同制拼。
+function giftDisplay(c12) {
+const c = String(c12 || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+return c.length === 12? `${c.slice(0, 4)}-${c.slice(4, 8)}-${c.slice(8)}`: c;
+}
+const GIFT_REASON_TEXT = {
+not_eligible: "这枚码领不了赠予码。只有已经解锁过的码能领，你先用自己的码在这台设备上解锁一次。",
+unconfigured: "赠予通道还没配好。等开通了再来领，你的码不会作废。",
+unavailable: "现在领不出来。过些时候再试。",
+network: "现在连不上。检查一下网络再试。",
+};
+async function requestGift(code) {
+let res;
+try {
+res = await fetch(CFG.giftPath || "/api/gift", {
+method: "POST",
+headers: { "content-type": "application/json"},
+body: JSON.stringify({ code}),
+});
+} catch (e) {
+return { ok: false, reason: "network"};
+}
+let data = null;
+try { data = await res.json();} catch (e) {}
+if (data && data.ok && data.code) return { ok: true, code: data.code, again:!!data.again};
+if (res.status === 503 && data && data.reason === "unconfigured") return { ok: false, reason: "unconfigured"};
+return { ok: false, reason: (data && data.reason) || "unavailable"};
+}
+function giftShareText(shown) {
+return `我在《如果那年》里过完了一生，把典藏送你一份。打开 if-that-year.pages.dev 玩一局，到结算页展开「把这一生订成册子带走」，输这个码：${shown}，就能把你那一局的长图和纪录册导出来。`;
+}
+function wireGift() {
+const btn = IFY.el("ks-gift");
+const box = IFY.el("ks-giftbox");
+if (!btn || !box) return;
+btn.addEventListener("click", async () => {
+const st = keepsakeState();
+const esc = IFY.esc;
+if (!st.code) {
+box.innerHTML = `<p class="hint">这台设备上没存着你的码。先在这一页用你的码解锁一次，再来领赠予码。</p>`;
+return;
+}
+btn.disabled = true;
+box.innerHTML = `<p class="hint">正在领……</p>`;
+const r = await requestGift(st.code);
+btn.disabled = false;
+if (!r.ok) {
+box.innerHTML = `<p class="hint">${esc(GIFT_REASON_TEXT[r.reason] || GIFT_REASON_TEXT.unavailable)}</p>`;
+return;
+}
+const shown = giftDisplay(r.code);
+const share = giftShareText(shown);
+box.innerHTML = `<p class="hint">${r.again? "你领过的赠予码就是这一枚，一枚码只能领一份。": "领好了。把下面这段话发给那个人就行。"}你的码还能照常用。</p>
+<p class="ks-giftcode">${esc(shown)}</p>
+<textarea class="ks-gifttext" id="ks-gifttext" rows="4" readonly>${esc(share)}</textarea>
+<div class="row"><button type="button" class="ghost" id="ks-giftcopy">复制这段话</button></div>
+<p class="hint" id="ks-gifthint"></p>`;
+const cp = IFY.el("ks-giftcopy");
+if (cp) cp.addEventListener("click", async () => {
+const ta = IFY.el("ks-gifttext");
+const hint = IFY.el("ks-gifthint");
+let done = false;
+try { await navigator.clipboard.writeText(share); done = true;} catch (e) {}
+if (!done && ta) { ta.focus(); ta.select(); try { done = document.execCommand("copy");} catch (e) {}}
+if (hint) hint.textContent = done? "复制好了，粘贴发给他就行。": "没复制成。长按上面那段话，全选复制也行。";
+});
+});
+}
+
 function renderPanel() {
 const panel = IFY.el("keepsake-panel");
 if (!panel) return;
 const esc = IFY.esc;
+// S4：面板一打开先摆本局的一条事实（两种状态都先见这一句），再谈导出与价格
+const d = buildKeepsakeData();
+const factHtml = `<p class="ks-fact">${esc(panelFact(d))}</p>`;
 if (keepsakeUnlocked()) {
 panel.innerHTML = `<div class="ks-block">
+${factHtml}
 <p class="ks-intro">这台设备已经解锁了。这一局能导出，以后每一局走完都能导出。</p>
 <div class="row">
 <button type="button" class="primary" id="ks-dl">下载长图（无水印）</button>
 <button type="button" class="ghost" id="ks-book">打开纪录册（可打印）</button>
 </div>
 <div class="cardpreview" id="ks-prevbox"></div>
+<p class="picklab">送一份给朋友</p>
+<p class="hint">用你自己的码，能领出一枚新的码，送给一个人。他玩完一局，在结算页输这枚码，就能导出他那一局的典藏。一枚码只能领一份。</p>
+<div class="row">
+<button type="button" class="ghost" id="ks-gift">领一枚赠予码</button>
+</div>
+<div id="ks-giftbox"></div>
 </div>`;
-const d = buildKeepsakeData();
 const img = renderKeepsakeImage(d, { scale: 1});
 img.className = "card-img";
 const box = IFY.el("ks-prevbox");
 box.innerHTML = ""; box.appendChild(img);
 IFY.el("ks-dl").addEventListener("click", () => downloadImage(img));
 IFY.el("ks-book").addEventListener("click", () => openBook(false));
+wireGift();
 return;
 }
 let pending = "";
 try { pending = sessionStorage.getItem(PENDING_KEY) || "";} catch (e) {}
 panel.innerHTML = `<div class="ks-block">
+${factHtml}
 <p class="ks-intro">把这一生订成一册：一张长图（判词、大事记、六维、另一条路），加一本能打印的纪录册，年表是全的。长图能存下来发给家里人看，册子打印出来能送人。买一次，这台设备以后每一局都能导出。</p>
 <div class="row">
 <button type="button" class="ghost" id="ks-preview">先看长图预览（带水印）</button>
-<a class="ghost ks-buy" href="${esc(CFG.buyPage || "buy.html")}" target="_blank" rel="noopener">去订一册 · ¥${CFG.priceJPY} / ¥${CFG.priceCNY}</a>
 </div>
 <div class="cardpreview" id="ks-prevbox"></div>
+<div class="row">
+<a class="ghost ks-buy" href="${esc(CFG.buyPage || "buy.html")}" target="_blank" rel="noopener">去订一册 · ¥${CFG.priceJPY} / ¥${CFG.priceCNY}</a>
+</div>
 <p class="picklab">已经有兑换码了？</p>
 <div class="seedrow">
 <input id="ks-code" type="text" placeholder="输入兑换码" autocomplete="off" value="${esc(pending)}">
@@ -1102,5 +1228,5 @@ window.addEventListener("storage", (e) => { if (e && e.key === LS_KEY) refreshDe
 document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshDesk();});
 } catch (e) {}
 
-Object.assign(IFY, { buildKeepsakeData, renderKeepsakeImage, buildKeepsakeBook, mountKeepsakeDesk, keepsakeUnlocked, verifyCode});
+Object.assign(IFY, { buildKeepsakeData, renderKeepsakeImage, buildKeepsakeBook, mountKeepsakeDesk, keepsakeUnlocked, verifyCode, seedArchive, panelFact});
 })(window.IFY);

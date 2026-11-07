@@ -11,4 +11,5 @@ window.IFY_KEEPSAKE = {
   buyPage: "buy.html", // 购买页（相对游戏页路径）
   claimPath: "/api/claim", // 领码页（Pages Function，付款回跳落点）
   verifyPath: "/api/verify-code", // 输码核验端点（Pages Function）
+  giftPath: "/api/gift", // 赠予端点（Pages Function，圆桌决议 S3）
 };

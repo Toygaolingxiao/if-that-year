@@ -149,6 +149,25 @@
     const refl = cardReflText();
     const c = document.createElement("canvas"); c.width = W; c.height = H;
     const x = c.getContext("2d");
+
+    if (type === "mini") {
+      // ===== 判词小卡（圆桌决议 F3，免费）：竖版小卡，只有判词一句 + 双轨图母题 + 游戏名与网址。
+      // 固定 4:5，不吃尺寸档；双轨图复用 drawRoad 同一画法（不标分岔点，与全产品同口径）。
+      x.fillStyle = "#FAF8F4"; x.fillRect(0, 0, W, H);
+      x.strokeStyle = "#DDD6C9"; x.lineWidth = 3; x.strokeRect(36, 36, W - 72, H - 72);
+      x.textAlign = "left";
+      x.fillStyle = "#2F4A3C"; x.font = "44px " + IFY.SERIF;
+      x.fillText("《如果那年》", 90, 170);
+      x.fillStyle = "#23211C"; x.font = "62px " + IFY.SERIF;
+      const vy = wrapText(x, v.text, 90, 320, 900, 92);
+      const gy = Math.min(vy + 190, H - 420);
+      drawRoad(x, gy);
+      x.font = "30px " + IFY.SERIF; x.fillStyle = "#8A948C";
+      x.fillText("22 岁", 90, gy + 58); x.textAlign = "right"; x.fillText(end + " 岁", 990, gy + 58); x.textAlign = "left";
+      x.fillStyle = "#8A948C"; x.font = "30px " + IFY.SANS;
+      x.fillText("if-that-year.pages.dev", 90, H - 96);
+      return c;
+    }
     cardBase(x, W, H);
 
     if (type === "log") {

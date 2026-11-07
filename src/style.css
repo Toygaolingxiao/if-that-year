@@ -222,6 +222,9 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
 .keepsake-panel{margin-top:6px}
 .ks-block{border-top:1.5px dashed var(--line);margin-top:10px;padding-top:12px}
 .ks-intro{font-size:14.5px;margin:4px 0 6px}
+.ks-fact{font-size:15.5px;font-family:var(--serif);color:var(--accent);margin:2px 0 8px;line-height:1.6}
+.ks-giftcode{font-family:Menlo,Consolas,monospace;font-size:22px;letter-spacing:.06em;text-align:center;color:var(--accent);border:1.5px dashed var(--accent);border-radius:10px;padding:10px 6px;margin:8px 0;word-break:break-all}
+.ks-gifttext{width:100%;box-sizing:border-box;font:inherit;font-size:13.5px;line-height:1.7;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:inherit;resize:vertical}
 .ks-buy{text-decoration:none;display:inline-block}
 .keepsake-panel .cardpreview canvas{max-width:min(100%,330px)}
 /* 典藏预览仪式（定稿 §六采 B 一条）：游戏内看长图预览时缓缓展开，约 1 秒，呈现层动效 */
@@ -290,6 +293,8 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
 .ify-book .book-url{color:#8A8B85;font-size:.85em}
 .ify-book .book-closing{font-family:var(--serif);font-size:1.25em;color:var(--accent);text-align:center;margin:2.2em 0 .6em}
 .ify-book .book-notebox{border:1px solid var(--line);padding:2.2em;min-height:56vh}
+.ify-book .book-seedbox{padding:2.2em 0 0}
+.ify-book .book-seedpage p{color:#6E6A5E;font-size:.92em;line-height:1.9;margin:.4em 0}
 .ify-book .book-dateline{text-align:right;color:#8A8B85;font-size:.9em}
 .ify-book .book-wm{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:41}
 .ify-book .book-wm span{position:absolute;left:50%;font-size:44px;font-weight:700;color:rgba(47,74,60,.10);transform:translateX(-50%) rotate(-24deg);white-space:nowrap}
@@ -310,6 +315,8 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
   body.has-book .ify-book .book-h{break-after:avoid}
   body.has-book .ify-book .book-group,body.has-book .ify-book .book-ev,body.has-book .ify-book .book-fact,body.has-book .ify-book .book-arc,body.has-book .ify-book .book-shape,body.has-book .ify-book .book-twin,body.has-book .ify-book .book-stats,body.has-book .ify-book .book-endblock{break-inside:avoid}
   body.has-book .ify-book .book-colophon{break-before:page}
+  body.has-book .ify-book .book-seedpage{break-before:page}
+  body.has-book .ify-book .book-seedbox{padding:10mm 0 0}
   body.has-book .ify-book .book-colobox{padding:10mm}
   body.has-book .ify-book .book-note{break-before:page}
   body.has-book .ify-book .book-notebox{padding:10mm;min-height:224mm}
@@ -369,3 +376,10 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
 .actions #startgo{border-radius:999px;box-shadow:0 8px 20px rgba(47,74,60,.22)}
 @media (max-width:640px){.eragrid{grid-template-columns:repeat(3,1fr)}.eracard span{font-size:11.5px}.bighero{font-size:56px}.scenerow{flex-direction:column}.birthcol .birthyear-val{font-size:28px}}
 /* ================= [/homepage-build 开始屏一单 · 独立块] ================= */
+
+/* P0 小页批 · F2 种子正式入口：开始屏折叠卡之后的一张安静小卡，权重低于选年代与主按钮；
+   输入框沿 .seedrow input 既有样式，按钮只去掉 .ghost 的上边距与行内对齐 */
+.seedentry{padding-top:16px}
+.seedentry .seedrow{align-items:center}
+.seedentry .seedrow .ghost{margin-top:0;padding:10px 16px}
+.seedentry #seedentrymsg:empty{display:none}

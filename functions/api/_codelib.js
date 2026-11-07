@@ -5,6 +5,8 @@
 // KV 键：
 //   code:{码12位}     → JSON {status: "unused"|"issued"|"activated", session?, issuedAt?, activatedAt?, activations?, flagged?}
 //   session:{Stripe 会话 id} → 码12位（发码幂等：同一笔付款重复回跳只发同一码）
+//   gift:{来源码12位}  → 赠予码12位（gift.js 写：已激活码领出的赠予码，与来源码绑死，
+//                        重复请求返回同一枚；赠予码本身就是池中普通码，issued 后走同一核验）
 //   rl:{IP}           → JSON {fails}（失败计数，TTL 600 秒）
 //   verifylog:{日期}  → 逐行 JSON（高频复核的报警式留痕）
 // 状态机：unused（码池待售/待发）→ issued（付款核验后发出）→ activated（首次输码解锁）；
@@ -31,6 +33,7 @@ export function validCodeShape(c12) {
 
 export const codeKey = (c12) => `code:${c12}`;
 export const sessionKey = (sid) => `session:${sid}`;
+export const giftKey = (c12) => `gift:${c12}`;
 
 export async function readCode(kv, c12) {
   const raw = await kv.get(codeKey(c12));
