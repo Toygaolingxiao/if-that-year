@@ -135,5 +135,42 @@ window.GAME_SYNERGY = {
       text: "你踢不动全场那年，把队长袖标交给了队里最年轻的那个。交完你们照常去吃宵夜，啤酒你只喝了一杯——膝盖还疼，回家得冰敷。后来每场比赛你都去，坐在场边，哨子和记分牌还归你管。" },
     { id: "end_trucker_million", clue: "服务区哪家的盒饭实在、哪段路雨天打滑，闭着眼都说得出来的人。", tier: "rare", ctx: { flag: "truck_veteran" }, all: ["traj_trucker"], stats: [{ k: "money", gt: 59 }], title: "跑满一百万公里", evidence: [["r_trucker_route"],[{"stat":{"k":"money","gt":59}}]],
       text: "你跑长途跑了大半辈子，里程表过了一百万公里，公司给你发了块无事故的牌子，挂在驾驶室里。你的腰落下了毛病，补觉要靠耳塞。可这条线上的服务区，哪家的盒饭实在、哪段路雨天打滑，你闭着眼都说得出来。" },
+    // ===== 人生形状批（结局扩容，17→32）：不比高下、只认形状——普通人的一生过得完整，
+    // 也落一个说得出口的名字。全批 tier=rare，排在出人头地诸条之后（同池排序口径不变）。
+    // 其中七条（end_late_partner / end_one_partner / end_long_life / end_steady_life /
+    // end_late_learner / end_early_full / end_rent_free）的定义含数据层表达不了的终局形状（终局年龄、
+    // 伴侣史任数与成伴岁数、60 岁后成长涨幅、稀有事件零发生），门落在 settlement.js
+    // specialEnding() 的形状门段（与 AN-5 R9 年龄门同位、只读、不掷骰）——本表只写
+    // 数据层能表达的那一半，形状读不准时形状门 fail-closed 剔除，只少说不多说。
+    { id: "end_care_parents", clue: "夜里老人起夜，听见动静就醒，比闹钟还准的人。", tier: "rare", stateAll: { dad: "dead", mom: "dead" }, all: ["care_self"], title: "在父母跟前", evidence: [["care_self"],["cb_care_near","c_care_self","cb_sandwich","p4_071","p4_082","p6_044","p4_074","p4_075"]],
+      text: "父母都是你送走的。最后那几年，你请了长假住回去，夜里他们起夜，你在客厅听见动静就醒。手续办完，你把老屋的钥匙收在抽屉里，隔阵子回去开一回窗，通通风。" },
+    { id: "end_solo_free", clue: "过年给自己做四个菜，吃得很慢的人。", tier: "rare", stateAll: { spouse: "single" }, stats: [{ k: "freedom", gt: 64 }, { k: "relation", gt: 44 }], title: "一个人也热闹", evidence: [["c_single"],["choir_member","team_member","hobby_run","hobby_fishing","hobby_photo","hobby_music","hobby_cooking"]],
+      text: "你一个人过了一辈子。过年给自己做四个菜，吃得很慢。平时有自己的消遣，约饭的电话没断过，老邻居串门也熟门熟路。屋子不大，收拾起来快，日子都按自己的钟点过。" },
+    { id: "end_two_home", clue: "把往后的安排列成一张表，贴在书房墙上的人。", tier: "rare", stateAll: { spouse: "partnered", kids: "none" }, all: ["kid_no"], title: "两个人的家", evidence: [["kid_no"],["c_partner","cb_dink_plan","cb_old_couple"]],
+      text: "孩子的事，你们早年就商量定了，不要。往后的安排列过一张表：钱怎么放、房子怎么办、老了谁照顾谁。亲戚问起，你们就把表指给他们看，笑笑，不多解释。两个人把日子过得清清楚楚。" },
+    { id: "end_late_partner", clue: "前半程各走各的，后来才坐到一张桌上吃饭的人。", tier: "rare", stateAll: { spouse: "partnered" }, title: "迟来的伴", evidence: [["c_partner","cb_old_couple"],[{"stat":{"k":"relation","gt":49}}]],
+      text: "这个人，是你后半程才遇上的。前头的路各走各的，遇上以后，买菜做饭、看病复查，都有了个搭手的人。一张桌上吃饭，吃到了老。" },
+    { id: "end_return_home", clue: "出去时拖着两个箱子，回来时还是两个箱子的人。", tier: "rare", routeIn: ["corp", "abroad"], ctx: { settle: "home" }, stats: [{ k: "relation", gt: 64 }], title: "落叶归根", evidence: [["back_home_stay","near_family"],["moved_city","stayed_city"]],
+      text: "年轻时你拖着箱子出去，走了大半辈子，最后还是回来了。老屋收拾出来住下，老街上的人还认得你，见面先问一句在外面怎么样。你说，挺好，就是想回来住。" },
+    { id: "end_farm_life", clue: "哪块地哪年旱、哪年涝，闭着眼都说得出来的人。", tier: "rare", route: "farm", ctx: { settle: "home" }, all: ["farm_work"], forbid: ["farm_left"], title: "守着土地", evidence: [["farm_work"],["p29_001","p29_002","p29_003","p29_004","p29_005","p29_006","p29_007","p29_008"]],
+      text: "这一辈子，你没离开过这片地。春天播、秋天收，农机换了几代，院子还是那个院子。哪块地肥、哪块地薄，你闭着眼睛都摸得清。地里的活干到干不动那年，你才把锄头挂上墙。" },
+    { id: "end_comeback", clue: "跌过一个大跟头，后来把日子重新过回原样的人。", tier: "rare", stats: [{ k: "money", gt: 54 }, { k: "health", gt: 54 }], title: "重新站起来", evidence: [["laid_off","shop_closed","r_scam_big","r_industry_overnight","r_health_operation","r_guarantee_trap","r_friend_debt"],["debt_free",{"stat":{"k":"money","gt":54}},{"stat":{"k":"health","gt":59}}]],
+      text: "中年那几年，你栽过一个大跟头，缓了好一阵。后来活重新找下、账重新算清，日子一点点回到了原来的样子。那几年的事你很少提，提起来也只说一句：过来了。" },
+    { id: "end_rent_free", clue: "东西越搬越少，最后只剩六个箱子的人。", tier: "rare", ctx: { house: "renting" }, stats: [{ k: "freedom", gt: 79 }], title: "无房一身轻", evidence: [["renting"],["c_rent",{"stat":{"k":"freedom","gt":84}}]],
+      text: "你一辈子没买房，租过的房子有五六处。东西越搬越少，最后只剩几个箱子。哪儿住腻了，或者房租涨得不像话，收拾收拾就能走。这辈子没为月供发过愁。" },
+    { id: "end_abroad_rest", clue: "永住手续批下来那天，去吃了顿好的，还是和平常一样的人。", tier: "rare", route: "abroad", ctx: { settle: "abroad" }, title: "异乡终老", evidence: [["r_abroad_pr","stayed_city"],["ab37_001","ab37_002","ab37_003","ab37_004","ab37_005","ab37_006"]],
+      text: "当年落地那天，谁也不认识你。后来语言顺了、手续齐了，买菜认准一家摊子，看病认准一家医院，老了还认了几个能说话的人。老家你也回去看过，可住下来过日子的，是这边。" },
+    { id: "end_old_hand", clue: "新来的年轻人遇上拿不准的事，都先来问一句的人。", tier: "rare", ctx: { tenureIn: [40, 999] }, stats: [{ k: "growth", gt: 64 }], title: "老把式", evidence: [["factory_work","fab_work","craft_work","teach_work","med_work","med_hosp","nurse_work","truck_work","shop_work","farm_work","dev_work","fin_work","acct_work","press_work","img_work","heavy_work","miner_work","driver_taxi","exam_landed","grad_work","write_work","care_work","gig_work","courier_work","stay_put"],["mentor_bond","legacy_sharing_done","traj_craft","took_over_job"]],
+      text: "一门活，你干了大半辈子。单位的名字换过、机器换过、年轻人换过几茬，你手里这套活一直没换。新来的遇上拿不准的事，都先来问你一句。问完你摆摆手，说，没啥，干久了就会了。" },
+    { id: "end_one_partner", clue: "吵过也和好过，到老还是一起买菜、推一辆车慢慢挑的人。", tier: "rare", stateAll: { spouse: ["partnered", "widowed"] }, title: "白头偕老", evidence: [["c_partner"],["cb_old_couple",{"stat":{"k":"relation","gt":54}}]],
+      text: "从成家到老，你身边一直是同一个人。吵过，也和好过；对方病了，你在陪护椅上睡过；你病了，药盒是对方按早中晚分好的。到老了，还是一起买菜，推一辆车慢慢挑。" },
+    { id: "end_long_life", clue: "九十多岁了，还自己下楼买早点的人。", tier: "rare", title: "九十多岁", evidence: [["retired_full"],[{"stat":{"k":"health","gt":49}}]],
+      text: "你活到了九十多岁。日子还是平常日子：自己下楼买早点，午后晒会儿太阳，谁来了坐下聊几句。儿孙辈隔阵子来看你，坐一会儿又忙去了。你说，不用常来，我这儿挺好。" },
+    { id: "end_steady_life", clue: "没发过大财，也没经过大难，年年都差不多的人。", tier: "rare", forbid: ["laid_off", "shop_closed"], stats: [{ k: "health", gt: 24 }, { k: "health", lt: 89 }, { k: "money", gt: 24 }, { k: "money", lt: 89 }, { k: "growth", gt: 24 }, { k: "freedom", gt: 24 }, { k: "freedom", lt: 89 }, { k: "relation", gt: 24 }, { k: "relation", lt: 89 }, { k: "wisdom", gt: 24 }], title: "安稳一生", evidence: [["retired_full",{"state":{"workPhase":"retired"}},{"state":{"workPhase":"part"}}],["c_partner","c_single","c_has_kid","c_no_kid","cb_old_couple","c_house","c_rent",{"state":{"kids":"has"}},{"state":{"spouse":"partnered"}}]],
+      text: "这一辈子，没发过什么大财，也没经过什么大难。年轻时该上班上班，中年该养家养家，老了按月领退休金。回头看，年年都差不多，可就是这些差不多，一年一年把日子过完了。" },
+    { id: "end_late_learner", clue: "退休以后，反倒把年轻时没学的慢慢补上的人。", tier: "rare", stats: [{ k: "growth", gt: 59 }], title: "越老越学", evidence: [[{"stat":{"k":"growth","gt":59}}],[{"stat":{"k":"wisdom","gt":54}},"legacy_sharing_done","p24_051","ai_daily"]],
+      text: "年轻时忙着过日子，没顾上学什么。倒是退休以后，你把时间捡起来了：新玩意儿一样样上手，年轻时没读完的书也翻出来读。家里人说你越老越忙，你说，这才刚开始学。" },
+    { id: "end_early_full", clue: "走的那天，送行的人多到屋里站不下的人。", tier: "rare", stats: [{ k: "relation", gt: 64 }, { k: "wisdom", gt: 54 }], title: "送行的人多", evidence: [[{"stat":{"k":"relation","gt":64}}],["c_partner","c_has_kid","cb_family3","cb_sandwich"]],
+      text: "你走的时候，年纪不算大。这些年，家里家外都有人，饭局上从不缺你，朋友有事都愿意喊你。走的那天，来送的人很多，屋里站不下，有人站在门口。" },
   ],
 };

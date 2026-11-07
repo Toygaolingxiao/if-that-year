@@ -29,6 +29,9 @@
    下标逐字、pr_child4 补到六款（带内扩轮换：新款挂旧记号、child4KeyFor 的 r 全域
    记号与旧版逐点全等扫描）、pr_teen2 单文扩四款（altTexts 逐款配齐 never/left 分文、款 0 逐字）、pr_y17/pr_y18
    单套扩四套（altSets 每套四轨＋尾句、套 0 逐字）、幕级定款 actVariantKeyFor 分布。
+   ⑰ 结局扩容批：人生形状 15 条（结局表 17→32）数据形状 + 手组终局直调
+   specialEnding——纯数据条走 met/evidence 本体，形状门条（终局年龄/伴侣史/statsLate/
+   usedRare）正反两侧都测：形状不合必须剔除。
    用法：node scripts/stateline-assert.js */
 "use strict";
 const fs = require("fs"), vm = require("vm"), path = require("path");
@@ -1086,6 +1089,84 @@ console.log("⑯ 变体扩容第二轮：early/flats 既有下标逐字 / pr_chi
     }
   }
 }
+
+// ---- ⑰ 结局扩容批（人生形状 15 条，17→32）：数据形状 + 手组终局直调 specialEnding ----
+// 纯数据五条走 met/evidence 本体；形状门六条（终局年龄/伴侣史/statsLate/usedRare）走
+// settlement.js specialEnding() 的形状门段——正反两侧都测：形状不合时必须剔除。
+console.log("⑰ 结局扩容批：人生形状 15 条数据形状 / specialEnding 命中与形状门剔除");
+vm.runInContext("window.__P.specialEnding = window.IFY.specialEnding;", sandbox, { filename: "probe-export-14" });
+{
+  const NEW_ENDS = ["end_care_parents", "end_solo_free", "end_two_home", "end_late_partner", "end_return_home", "end_farm_life", "end_comeback", "end_rent_free", "end_abroad_rest", "end_old_hand", "end_one_partner", "end_long_life", "end_steady_life", "end_late_learner", "end_early_full"];
+  const ends = P.D.endings || [];
+  const byEnd = {}; for (const e of ends) byEnd[e.id] = e;
+  ok(ends.length === 32, "⑰ 数据: 结局表共 32 条（17 旧 + 15 新）");
+  ok(NEW_ENDS.every((id) => byEnd[id] && byEnd[id].tier === "rare" && byEnd[id].title && byEnd[id].clue && byEnd[id].text), "⑰ 数据: 15 条新结局齐备（tier=rare、title/clue/text 非空）");
+  ok(NEW_ENDS.every((id) => Array.isArray(byEnd[id].evidence) && byEnd[id].evidence.length === 2 && byEnd[id].evidence.every((g) => Array.isArray(g) && g.length > 0)), "⑰ 数据: 15 条新结局各恰有 2 组非空证据点（与旧 17 条同纪律）");
+
+  const st6 = (h, m, g, f, r, w) => ({ health: h, money: m, growth: g, freedom: f, relation: r, wisdom: w });
+  const FLAT = st6(50, 50, 50, 50, 50, 50);
+  const LE = (age, to) => ({ age, kind: "state", id: "spouse>" + to });
+  const mkEnd = (seed, o) => {
+    const S = P.freshState(seed);
+    P.S = S;
+    S.route = { id: o.route || "corp" }; S.era = "c2000"; S.birthYear = 2000;
+    S.age = o.age != null ? o.age : (o.deathAge || 80);
+    S.death = { age: o.deathAge || 80, type: "health", text: "" };
+    S.stats = o.stats || FLAT;
+    S.statsLate = o.late !== undefined ? o.late : null;
+    S.ledger = o.ledger || [];
+    S.usedEvents = o.used || [];
+    S.usedRare = o.rare || [];
+    if (o.flags) Object.assign(S.flags, o.flags);
+    if (o.flagAges) S.flagAges = o.flagAges;
+    if (o.spouse) S.state.spouse = o.spouse;
+    if (o.kids) S.state.kids = o.kids;
+    if (o.dad) S.state.dad = o.dad;
+    if (o.mom) S.state.mom = o.mom;
+    return S;
+  };
+  const spId = () => { const sp = P.specialEnding(); return sp ? sp.id : null; };
+
+  mkEnd("E14-LL1", { deathAge: 92, flags: { retired_full: true } });
+  ok(spId() === "end_long_life", "⑰ 功能: 92 岁终局 + retired_full + 健康 50 → 九十多岁");
+  mkEnd("E14-LL2", { deathAge: 85, flags: { retired_full: true } });
+  ok(spId() === null, "⑰ 功能: 85 岁终局同形 → 形状门剔除九十多岁（无其他结局落定）");
+  mkEnd("E14-CP", { deathAge: 85, dad: "dead", mom: "dead", flags: { care_self: true }, used: ["cb_care_near"] });
+  ok(spId() === "end_care_parents", "⑰ 功能: 双亲已逝 + care_self + 照护组合 → 在父母跟前");
+  mkEnd("E14-TH", { deathAge: 80, spouse: "partnered", kids: "none", flags: { kid_no: true }, used: ["c_partner"] });
+  ok(spId() === "end_two_home", "⑰ 功能: partnered + kids none + kid_no → 两个人的家");
+  mkEnd("E14-SF", { deathAge: 84, spouse: "single", stats: st6(50, 50, 50, 70, 50, 50), flags: { hobby_run: true }, used: ["c_single"] });
+  ok(spId() === "end_solo_free", "⑰ 功能: 终局 single + 自由 70 + 一人过年组合 → 一个人也热闹");
+  mkEnd("E14-LP", { deathAge: 78, spouse: "partnered", stats: st6(50, 50, 50, 50, 55, 50), used: ["c_partner"], ledger: [LE(25, "partnered"), LE(50, "widowed"), LE(52, "partnered")] });
+  ok(spId() === "end_late_partner", "⑰ 功能: 丧偶后再结伴（伴侣史 2 任）+ 终局 partnered → 迟来的伴");
+  mkEnd("E14-OP", { deathAge: 80, spouse: "partnered", stats: st6(50, 50, 50, 50, 60, 50), used: ["c_partner"], ledger: [LE(28, "partnered")] });
+  ok(spId() === "end_one_partner", "⑰ 功能: 伴侣史恰 1 任、28 岁成伴至 80 岁 → 白头偕老");
+  mkEnd("E14-LN1", { deathAge: 80, stats: st6(50, 50, 62, 50, 50, 60), late: st6(50, 50, 45, 50, 50, 50) });
+  ok(spId() === "end_late_learner", "⑰ 功能: 成长 60 岁快照 45 → 终局 62（涨 17）→ 越老越学");
+  mkEnd("E14-LN2", { deathAge: 80, stats: st6(50, 50, 62, 50, 50, 60), late: st6(50, 50, 57, 50, 50, 50) });
+  ok(spId() === null, "⑰ 功能: 成长涨幅仅 5 → 形状门剔除越老越学");
+  mkEnd("E14-ST1", { deathAge: 80, flags: { retired_full: true }, used: ["c_partner"] });
+  ok(spId() === "end_steady_life", "⑰ 功能: 80 岁 + 六维全中段 + 无稀有 + retired_full → 安稳一生");
+  mkEnd("E14-ST2", { deathAge: 80, flags: { retired_full: true }, used: ["c_partner"], rare: ["r_lottery"] });
+  ok(spId() === null, "⑰ 功能: 有稀有事件在账 → 形状门剔除安稳一生");
+  mkEnd("E14-EF", { deathAge: 58, spouse: "partnered", stats: st6(50, 50, 50, 50, 70, 65), used: ["c_partner"] });
+  ok(spId() === "end_early_full", "⑰ 功能: 58 岁终局 + 关系 70/智慧 65 + 有伴 → 送行的人多");
+  mkEnd("E14-RH", { deathAge: 80, route: "corp", stats: st6(50, 50, 50, 50, 70, 50), flags: { back_home_stay: true, moved_city: true }, ledger: [{ age: 22, kind: "route", id: "corp" }, { age: 45, kind: "event", id: "p11_040", set: "back_home_stay" }] });
+  ok(spId() === "end_return_home", "⑰ 功能: corp 路线 + 45 岁回乡定居（轨迹终点 home）→ 落叶归根");
+  mkEnd("E14-FL", { deathAge: 82, route: "farm", flags: { farm_work: true }, used: ["p29_003"], ledger: [{ age: 22, kind: "route", id: "farm" }] });
+  ok(spId() === "end_farm_life", "⑰ 功能: farm 路线 + farm_work + 轨迹终点 home → 守着土地");
+  mkEnd("E14-AR", { deathAge: 80, route: "abroad", flags: { stayed_city: true }, used: ["ab37_003"], ledger: [{ age: 22, kind: "route", id: "abroad" }] });
+  ok(spId() === "end_abroad_rest", "⑰ 功能: abroad 路线 + 轨迹终点 abroad + 永住/扎根事实 → 异乡终老");
+  mkEnd("E14-RF", { deathAge: 78, stats: st6(50, 50, 50, 86, 50, 50), flags: { renting: true } });
+  ok(spId() === "end_rent_free", "⑰ 功能: 终局私租（派生 renting）+ 自由 86 → 无房一身轻");
+  mkEnd("E14-RF2", { deathAge: 45, stats: st6(50, 50, 50, 86, 50, 50), flags: { renting: true } });
+  ok(spId() === null, "⑰ 功能: 45 岁终局同形 → 形状门剔除无房一身轻（一辈子未走完）");
+  mkEnd("E14-CB", { deathAge: 80, stats: st6(55, 55, 50, 50, 50, 50), flags: { laid_off: true } });
+  ok(spId() === "end_comeback", "⑰ 功能: laid_off 在账 + 钱/健康回到 55 → 重新站起来");
+  mkEnd("E14-OH", { deathAge: 85, age: 70, stats: st6(50, 50, 70, 50, 50, 50), flags: { factory_work: true, mentor_bond: true }, flagAges: { factory_work: 25 }, ledger: [{ age: 25, kind: "event", id: "p15_006", set: "factory_work" }] });
+  ok(spId() === "end_old_hand", "⑰ 功能: 同一主线工龄 45 年 + 成长 70 + 带过徒弟 → 老把式");
+}
+
 
 console.log(`\nstateline-assert: ${pass} passed, ${fail} failed`);
 console.log(fail ? "RESULT: FAIL" : "RESULT: PASS");

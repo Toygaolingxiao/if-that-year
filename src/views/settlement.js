@@ -652,6 +652,53 @@
         else if (RETIRE_GATED[e.id] && finAge < 65 && finPhase !== "retired" && finPhase !== "part") hits.splice(i, 1);
       }
     }
+    // 人生形状批（结局扩容 17→32）：七条新结局的定义含数据层（met/evidence）表达不了的
+    // 终局形状——终局年龄（九十多岁 ≥90 / 安稳一生 ≥75 / 送行的人多 <62 / 无房一身轻 ≥60）、伴侣史任数
+    // 与成伴岁数（迟来的伴 / 白头偕老，读 partnerHistoryOf，与判词批 B 同一派生）、
+    // 60 岁后成长涨幅（越老越学，读 statsLate）、稀有事件零发生（安稳一生，读 usedRare）。
+    // 与 R9 同法在此按 id 剔除：普通通道与段通道汇合之后、排序之前；全程只读已定格
+    // 事实，不掷骰、不写状态；形状读不准（伴侣史 unknown、statsLate 缺失、终局年龄
+    // 读不到）一律 fail-closed 剔除，只少说不多说。
+    {
+      const finAgeS = typeof IFY.finalAge === "function" ? IFY.finalAge() : null;
+      const stS = (IFY.S && IFY.S.state) || {};
+      const needPH = hits.some((e) => e.id === "end_late_partner" || e.id === "end_one_partner");
+      const phS = needPH ? partnerHistoryOf(view) : null;
+      for (let i = hits.length - 1; i >= 0; i--) {
+        const e = hits[i];
+        if (e.id === "end_long_life") {
+          if (finAgeS == null || finAgeS < 90) hits.splice(i, 1);
+        } else if (e.id === "end_rent_free") {
+          // 「一辈子没买房」是整段人生的说法：终局 <60 时买房的机会窗口还没走完，不落此名。
+          if (finAgeS == null || finAgeS < 60) hits.splice(i, 1);
+        } else if (e.id === "end_steady_life") {
+          if (finAgeS == null || finAgeS < 75 || ((IFY.S.usedRare || []).length > 0)) hits.splice(i, 1);
+        } else if (e.id === "end_early_full") {
+          const fam = stS.spouse === "partnered" || stS.spouse === "dating" || stS.kids === "has";
+          if (finAgeS == null || finAgeS >= 62 || !fam) hits.splice(i, 1);
+        } else if (e.id === "end_late_learner") {
+          // 涨幅门 ≥6 按实测分布校准：525 局采样里 60 岁后成长涨幅 p50≈2、p90≈5、≥12 为 0，
+          // 原案 ≥12 在现行数值下等于不存在；≥6 取涨幅前一成的形状（结局扩容批普查诊断）。
+          const sl = IFY.S.statsLate, g = (IFY.S.stats || {}).growth;
+          if (!sl || typeof sl.growth !== "number" || typeof g !== "number" || g - sl.growth < 6) hits.splice(i, 1);
+        } else if (e.id === "end_late_partner") {
+          const parts = phS && phS.known ? phS.parts : [];
+          const last = parts.length ? parts[parts.length - 1] : null;
+          const okP = !!(last && last.settled && !last.endKind && stS.spouse === "partnered" &&
+            (parts.length >= 2 || (typeof last.settledAge === "number" && last.settledAge >= 45) || (typeof last.start === "number" && last.start >= 45)));
+          if (!okP) hits.splice(i, 1);
+        } else if (e.id === "end_one_partner") {
+          const parts = phS && phS.known ? phS.parts : [];
+          const p0 = parts.length === 1 ? parts[0] : null;
+          let dur = null;
+          if (p0 && p0.settled && typeof p0.settledAge === "number" && finAgeS != null) {
+            dur = (p0.endKind === "widowed" && typeof p0.endAge === "number" ? p0.endAge : finAgeS) - p0.settledAge;
+          }
+          const okP = !!(p0 && dur != null && dur >= 30 && (stS.spouse === "partnered" || stS.spouse === "widowed"));
+          if (!okP) hits.splice(i, 1);
+        }
+      }
+    }
     if (!hits.length) return null;
     hits.sort((a, b) => IFY.TIER_ORDER[a.tier] - IFY.TIER_ORDER[b.tier]);
     const hit = hits[0];
