@@ -34,7 +34,9 @@
      edu_bridge 旗（夜校/自考桥）；schooling=pre（无序章处境判定的年代）恒过。
    - ctx.eduGateHalf（条目级，v0.23 WP8 fix4 登记）：true——宽学历门：eduGate 口径另放行
      schooling=half。用于考试链链身与同类质地条目（补门前本可被 half 单独抽到，续读行为
-     不变，只挡 never/left 未立桥者）；链头 p16_001 仍用 eduGate。求值在 record.js ctxOk。
+     不变，只挡 never/left 未立桥者）；考试门片（审议单 #5）起，链头 p16_001 与第二链头
+     p16_012 改用本宽门——half 纳入游戏现行「有读书记录」标准；eduGate 严口径保留给在职
+     读研（p16_014）等学位级条目。求值在 record.js ctxOk。
    - ctx.anyCareTarget（条目级，v0.20.1 W8 登记）：true——在护对象门：陪床/等喊号/护工排班类
      文本须有当下还在的在护对象——父母任一在世且处于父母照护情境（care_self/care_hired/
      care_rotate 任一事实在账），或伴侣在场（partnered/dating）且有伴侣照护事实
@@ -538,9 +540,16 @@ window.GAME_REGISTRY.milestones = {
   },
   "edu_bridge": {
    "setters": [
-    "p16_073"
+    "p16_073",
+    "p16_077"
    ],
-   "note": "学历桥（v0.20.1 W6 新旗）：schooling=never/left 的人 22 岁选 study 后先走夜校/自考桥（p16_073）立旗，大学/专业/课题类文本以 ctx.eduGate 认本旗或 schooling=school"
+   "note": "学历桥（v0.20.1 W6 新旗）：schooling=never/left 的人 22–26 岁走夜校/自考桥立旗——study 路线 p16_073、home 路线 p16_077（考试门片·审议单 #5 补开到回家乡路线），学历门文本以 ctx.eduGate/eduGateHalf 认本旗或 schooling"
+  },
+  "exam_bridge_declined": {
+   "setters": [
+    "p16_077"
+   ],
+   "note": "考试桥明确不补（考试门片·审议单 #5 新旗）：home 路线桥拍 p16_077 的选项二立旗——没读书记录的人已明确表态不补这一课。消费者：record.js 的考试窗谓词 examPending（立旗即出窗，不再为不可能的考试结果空等）；本旗只记表态，不给任何岗位"
   },
   "exam_retry": {
    "setters": [

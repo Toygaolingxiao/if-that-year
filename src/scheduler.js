@@ -90,9 +90,23 @@
     return req.includes("farm_work") || req.includes("township_work");
   }
 
+  // --- 考试链身预防性关门（考试门片·审议单 #5）：require exam_retry 且不靠 chain 承接的
+  // 链身拍（现行唯 p16_006/p16_007）一律过宽学历门 eduGateHalf。链身封口本靠 chain 前置
+  // 与 require 旗的传递性：将来任何新拍在链外新立 exam_retry 时，不许直通这两拍、把没读
+  // 书记录的人放进链身无门区。关门写在 met 一处、条目数据零改动——与农民路线退出层同
+  // 口径：给条目补 ctx 键会抬高 specificity、搅动 L3 saliency 权重梯度，school 组同种子
+  // parity 实测即破（定位见 exam-build 报告）；凡 require exam_retry 且无 chain 的拍自动
+  // 入关，未来同形新拍不待逐条补门。
+  function examRetryGateApplies(e) {
+    if (!e || e.chain) return false;
+    const req = e.require ? (Array.isArray(e.require) ? e.require : [e.require]) : [];
+    return req.includes("exam_retry");
+  }
+
   // --- 统一条件求值：路线/标记组合/数值形状/前置链 ---
   function met(e) {
     if (IFY.S.flags && IFY.S.flags.farm_left && isFarmLineItem(e)) return false; // 退出层：全家进城后土地线关门
+    if (examRetryGateApplies(e) && !IFY.ctxOk({ eduGateHalf: true })) return false; // 链身关门：require 型后继过宽学历门（见 examRetryGateApplies）
     if (e.procOnly) return false; // 进程条目只由进程呈现，不进普通抽取池（v0.18.0）
     if (e.ctx && !IFY.ctxOk(e.ctx)) return false; // 职业语境门（v0.18.0）
     if (e.anyParentAlive && IFY.S.state.dad !== "alive" && IFY.S.state.mom !== "alive") return false;

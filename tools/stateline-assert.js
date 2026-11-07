@@ -43,6 +43,7 @@ vm.runInContext("window.__P.sampleStatsPeak = window.IFY.sampleStatsPeak; window
 vm.runInContext("window.__P.unmetConditions = window.IFY.unmetConditions; window.__P.anyFamilyAlive = window.IFY.anyFamilyAlive; window.__P.specificity = window.IFY.specificity;", sandbox, { filename: "probe-export-d" });
 vm.runInContext("window.__P.flatLineOk = window.IFY.flatLineOk; window.__P.flatMicroNeeds = window.IFY.flatMicroNeeds; window.__P.flatAdultNeeds = window.IFY.flatAdultNeeds; window.__P.flatAdult = window.IFY.RHYTHM.flatAdult;", sandbox, { filename: "probe-export-e" });
 vm.runInContext("window.__P.deathCausePool = window.IFY.deathCausePool; window.__P.deathCauses = window.IFY.DEATH_CAUSES; window.__P.deathCauseIds = window.IFY.DEATH_CAUSE_IDS; window.__P.withLife = window.IFY.withLife;", sandbox, { filename: "probe-export-f" });
+vm.runInContext("window.__P.examPending = window.IFY.examPending;", sandbox, { filename: "probe-export-g" });
 const P = sandbox.window.__P;
 const byId = {};
 for (const e of P.D.events || []) if (e.id) byId[e.id] = e;
@@ -578,6 +579,94 @@ const noFamily11 = (S) => { S.state.dad = "dead"; S.state.mom = "dead"; S.state.
     if (n < 2) badCells.push(`${sigName}/FH${fh}/${elev ? "电梯" : "无电梯"}/${age}岁/${fam ? "有人" : "空屋"}=${n}`);
   }
   ok(badCells.length === 0, `⑪ 断言8: 池下限网格 ${cells} 格全 ≥2（最小 ${minPool}）${badCells.length ? " 违规: " + badCells.slice(0, 4).join("; ") : ""}`);
+}
+
+// ---- ⑫ 考试门片（审议单 #5）：home 桥拍 / 链头宽门 / 考试窗派生谓词 / 链身预防性加固 ----
+console.log("⑫ 考试门片：p16_077 home 桥拍（门/立桥回路/表态旗）/ p16_001·p16_012 宽门 / examPending 出窗两侧 / p16_006·007 加固 / 影子同口径");
+const E12 = (mutate) => { const S = freshS(); S.age = 24; S.usedEvents = []; S.usedRare = []; S.state.schooling = "never"; if (mutate) mutate(S); return S; };
+{ // 数据：新拍形状、两链头宽门、加固两拍、registry 登记
+  const b = byId.p16_077;
+  ok(!!b, "⑫ 数据: p16_077 存在（pack16 最大号顺延）");
+  ok(b && JSON.stringify(b.routeIn) === "[\"home\"]" && JSON.stringify(b.state && b.state.schooling) === "[\"never\",\"left\"]" && b.w === 3 && b.min === 22 && b.max === 26, "⑫ 数据: p16_077 门 = routeIn home + schooling never/left + w3 + 22–26 岁");
+  ok(b && Array.isArray(b.forbid) && b.forbid.includes("edu_bridge"), "⑫ 数据: p16_077 forbid edu_bridge（立桥后不再出）");
+  ok(b && typeof b.text === "string" && !b.text.includes("你选了接着念") && b.text.includes("夜校") && b.text.includes("自考"), "⑫ 数据: p16_077 正文为回家乡语境新写（无 study 版开头、夜校＋自考学历界在文内）");
+  const c0 = b && b.choices && b.choices[0], c1 = b && b.choices && b.choices[1];
+  ok(c0 && c0.set === "edu_bridge" && c0.effects && c0.effects.growth === 3 && c0.effects.health === -1, "⑫ 数据: p16_077 选项一立 edu_bridge、效果与 p16_073 同值（成长+3/健康−1）");
+  ok(c1 && c1.set === "exam_bridge_declined" && c1.effects && c1.effects.money === 1, "⑫ 数据: p16_077 选项二立 exam_bridge_declined（轻旗记「已明确不补」）、钱+1");
+  ok(byId.p16_001.ctx && byId.p16_001.ctx.eduGateHalf === true && !byId.p16_001.ctx.eduGate, "⑫ 数据: p16_001 链头 ctx 改 eduGateHalf（half 纳入）");
+  ok(byId.p16_012.ctx && byId.p16_012.ctx.eduGateHalf === true && !byId.p16_012.ctx.eduGate, "⑫ 数据: p16_012 第二链头 ctx 改 eduGateHalf");
+  ok(!byId.p16_006.ctx && byId.p16_006.require === "exam_retry" && P.specificity(byId.p16_006) === 2, "⑫ 数据: p16_006 条目数据零改动（无 ctx 键、specificity 仍 2）——加固走 met 派生关门，不抬具体度");
+  ok(!byId.p16_007.ctx && byId.p16_007.require === "exam_retry" && byId.p16_007.minYear === 2012 && P.specificity(byId.p16_007) === 3, "⑫ 数据: p16_007 条目数据零改动（无 ctx 键、specificity 仍 3）、require/minYear 原样");
+  const reg12 = sandbox.window.GAME_REGISTRY;
+  ok(reg12 && reg12.milestones && reg12.milestones.edu_bridge && reg12.milestones.edu_bridge.setters.includes("p16_077"), "⑫ 数据: registry edu_bridge setters 含 p16_077");
+  ok(reg12 && reg12.milestones && reg12.milestones.exam_bridge_declined && reg12.milestones.exam_bridge_declined.setters.includes("p16_077"), "⑫ 数据: registry 已登记 exam_bridge_declined（setter p16_077）");
+  ok(typeof P.examPending === "function", "⑫ 数据: IFY.examPending 已导出（record.js 派生谓词）");
+}
+{ // 断言 1：never/left + home + 24——链头关、桥拍开；立桥后链头开、桥拍关
+  let S = E12();
+  ok(P.met(byId.p16_001) === false, "⑫ 断言1: never+home+24 链头 p16_001 不出（无读书记录进不了考场）");
+  ok(P.met(byId.p16_077) === true, "⑫ 断言1: never+home+24 桥拍 p16_077 可出");
+  S = E12((s) => { s.state.schooling = "left"; });
+  ok(P.met(byId.p16_077) === true && P.met(byId.p16_001) === false, "⑫ 断言1: left 同形（桥开、链头关）");
+  S = E12((s) => { s.flags.edu_bridge = true; });
+  ok(P.met(byId.p16_001) === true, "⑫ 断言1: 立 edu_bridge 后链头 p16_001 可出（桥真的通向考场）");
+  ok(P.met(byId.p16_077) === false, "⑫ 断言1: 立桥后桥拍 p16_077 不再出");
+  S = E12((s) => { s.state.schooling = "school"; });
+  ok(P.met(byId.p16_077) === false && P.met(byId.p16_001) === true, "⑫ 断言1: school 者桥拍不出（只给没记录的人）、链头照常");
+}
+{ // 断言 2：考试窗出窗两侧——表态立即出窗、无表态 26 仍等/27 兜底出窗（entry 代表拍 p16_016）
+  const entry = byId.p16_016;
+  let S = E12((s) => { s.age = 25; s.flags.exam_bridge_declined = true; });
+  ok(P.examPending(S) === false && P.met(entry) === true, "⑫ 断言2: never+home 置 exam_bridge_declined 后 25 岁已出窗（entry 拍可出）");
+  S = E12((s) => { s.age = 25; });
+  ok(P.examPending(S) === true && P.met(entry) === false, "⑫ 断言2: never+home 无桥无表态 25 岁仍在窗内等（entry 拍不出）");
+  S = E12((s) => { s.age = 26; });
+  ok(P.examPending(S) === true && P.met(entry) === false, "⑫ 断言2: 26 岁仍在窗内（年龄兜底不提前漏）");
+  S = E12((s) => { s.age = 27; });
+  ok(P.examPending(S) === false && P.met(entry) === true, "⑫ 断言2: 27 岁年龄兜底出窗（桥窗 22–26 已过）");
+  S = E12((s) => { s.age = 24; s.flags.edu_bridge = true; });
+  ok(P.examPending(S) === true, "⑫ 断言2: 已立桥者算有指望、照常等结果（examPending=true）");
+  S = E12((s) => { s.age = 28; s.state.schooling = "half"; });
+  ok(P.examPending(S) === true, "⑫ 断言2: half 换门后恒算有指望——28 岁仍等结果（年龄兜底不许误伤 half）");
+  S = E12((s) => { s.age = 25; s.state.schooling = "school"; });
+  ok(P.examPending(S) === true && P.met(entry) === false, "⑫ 断言2: school 组窗行为不变（25 岁未出结果仍等）");
+  S = E12((s) => { s.age = 25; s.state.schooling = "school"; s.flags.exam_passed = true; });
+  ok(P.examPending(S) === false && P.met(entry) === true, "⑫ 断言2: school 组落 exam_passed 照常放行（谓词与旧窗同形）");
+}
+{ // 断言 3：链身封口回归 + p16_006/p16_007 新加固
+  let S = E12((s) => { s.usedEvents = ["p16_001"]; s.age = 24; });
+  ok(P.met(byId.p16_002) === true, "⑫ 断言3: 伪造 usedEvents 含 p16_001 时 p16_002 可出（chain 语义不变）");
+  const retry = (sc) => E12((s) => { s.state.schooling = sc; s.flags.exam_retry = true; s.age = 26; });
+  S = retry("never");
+  ok(P.met(byId.p16_006) === false && P.met(byId.p16_007) === false, "⑫ 断言3: never+exam_retry 下 p16_006/p16_007 不出（新加固：require 型后继不再无门）");
+  S = retry("school");
+  ok(P.met(byId.p16_006) === true && P.met(byId.p16_007) === true, "⑫ 断言3: school+exam_retry 下 p16_006/p16_007 照常可出");
+  S = retry("half");
+  ok(P.met(byId.p16_006) === true && P.met(byId.p16_007) === true, "⑫ 断言3: half+exam_retry 下 p16_006/p16_007 可出（宽门）");
+  S = retry("left");
+  ok(P.met(byId.p16_006) === false && P.met(byId.p16_007) === false, "⑫ 断言3: left+exam_retry 下 p16_006/p16_007 不出（与 never 同口径）");
+}
+{ // 断言 4：宽门人群边界——half 两链头全开、never 第二链头仍关
+  let S = E12((s) => { s.state.schooling = "half"; s.age = 28; });
+  ok(P.met(byId.p16_001) === true, "⑫ 断言4: half+home 链头 p16_001 可出（换门后可达）");
+  ok(P.met(byId.p16_012) === true, "⑫ 断言4: half+home 第二链头 p16_012 可出");
+  S = E12((s) => { s.age = 28; });
+  ok(P.met(byId.p16_012) === false, "⑫ 断言4: never+home 第二链头 p16_012 仍关（没记录者不许凭空进第二个考场）");
+}
+{ // 断言 5：影子轨同口径——withLife 作用域内桥拍/链头 met 与主轨逐项一致
+  const S = E12();
+  const mainBefore = [P.met(byId.p16_077), P.met(byId.p16_001)];
+  const SB = P.freshState("ASSERT-SHADOW-EXAM");
+  SB.route = { id: "home" }; SB.era = "c2000"; SB.birthYear = 2000; SB.age = 24;
+  SB.usedEvents = []; SB.usedRare = []; SB.state.schooling = "never";
+  const trackB = { state: SB, streams: { n: 0, w: 0, a: 0 }, schedStats: null };
+  const shadowBefore = P.withLife(trackB, () => [P.met(byId.p16_077), P.met(byId.p16_001)]);
+  ok(shadowBefore[0] === mainBefore[0] && shadowBefore[1] === mainBefore[1] && shadowBefore[0] === true && shadowBefore[1] === false,
+    "⑫ 断言5: 影子 never+home+24——桥拍开/链头关，与主轨逐项一致");
+  const shadowAfter = P.withLife(trackB, () => { SB.flags.edu_bridge = true; return [P.met(byId.p16_077), P.met(byId.p16_001), P.examPending(SB)]; });
+  ok(shadowAfter[0] === false && shadowAfter[1] === true && shadowAfter[2] === true,
+    "⑫ 断言5: 影子立桥后——桥拍关/链头开/窗继续等，与主轨同读同效");
+  ok(P.met(byId.p16_077) === mainBefore[0] && P.met(byId.p16_001) === mainBefore[1], "⑫ 断言5: withLife 退出后主轨作用域还原、门结果不变");
 }
 
 console.log(`\nstateline-assert: ${pass} passed, ${fail} failed`);

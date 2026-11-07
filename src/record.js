@@ -48,10 +48,12 @@
     // 也未落 exam_failed），其他行当的纯入行拍一律不可抽——邀约只能以没落成形态缺席，
     // 不得抢先落成主入行旗；链落定（exam_passed 起）或明确落空（exam_failed，或 29 岁窗已过）
     // 后本门自动失效，其他行当照常放行。派生量，只读现算，不进存档。
+    // 考试门片（审议单 #5）起，等待条件改读派生谓词 examPending（本文件尾，与 anyFamilyAlive
+    // 同层）：链头对本人可达才值得等；schooling=never/left 且无桥的人，明确表态不补
+    // （exam_bridge_declined）立即出窗、27 岁起年龄兜底出窗，不再为不可能的结果空等满窗。
     if (ctx.entry) {
       const S = IFY.S;
-      const onHome = S && S.route && (S.route.id === "home" || (S.state && S.state.track === "home"));
-      if (onHome && S.age >= 22 && S.age <= 28 && !hasFact("exam_passed") && !hasFact("exam_landed") && !hasFact("exam_failed")) return false;
+      if (examPending(S)) return false;
       // study 在读窗（AN-3 D-2b，与 home 考试窗对称的路线未决窗）：深造路线 22–27 岁
       // 默认在读，其他行当的纯入行拍不可抽——邀约只能缺席，不得抢先落成主入行旗
       // 把「在读」叙事顶掉。带 ctx.studyLine 的条目是深造线自己的入行拍（如立研究旗
@@ -105,7 +107,9 @@
     // 宽学历门（v0.23 WP8 fix4）：ctx.eduGateHalf=true——在 eduGate 口径上另放行 schooling=half。
     // 用于考试链链身与同类质地条目：它们在补门前本就可被 half 玩家单独抽到（链头 eduGate 只管
     // 链的入口、不管链身单抽），硬约束 school/half 续读行为不变，故链身用宽门；只挡 never/left
-    // 未立桥者。链头 p16_001 仍用 eduGate 严口径，不在此列。
+    // 未立桥者。考试门片（审议单 #5）起，链头 p16_001 与第二链头 p16_012 也改用本宽门——half 是
+    // 「读了一半」的人，游戏现行「有读书记录」标准即宽口径；eduGate 严口径保留给在职读研
+    // （p16_014）等学位级条目。
     if (ctx.eduGateHalf) {
       const sc = IFY.S.state && IFY.S.state.schooling;
       if (sc && sc !== "school" && sc !== "pre" && sc !== "half" && !hasFact("edu_bridge")) return false;
@@ -156,11 +160,39 @@
   // 与 ctx.anyCareTarget 同层同法：只认当下还在的人，不认只增不减的旧旗——「家里人」类文本
   // 在空屋局（双亲已故、无伴侣、无子女）里照出，正是缺了这个单一派生、逐条目自己拼的漏。
   // 条目侧以 scheduler.met()/unmetConditions() 的顶层字段 anyFamilyAlive 消费，两处同读本函数。
+  // 考试窗谓词（考试门片·审议单 #5）：home 路线（route=home，或 route 在身且 track=home）在
+  // 22–28 岁、考试链未出结果（exam_passed/exam_landed/exam_failed 皆未落）且本人对链头
+  // 「还有指望」时，窗继续等——ctx.entry 的纯入行拍不可抽（ctxOk 消费，unmetConditions 经
+  // ctxOk 同读，不许两处各拼一份）。指望的口径：已立 edu_bridge，或 schooling 宽门可达
+  // （school/pre/half——链头 p16_001 已改 eduGateHalf）恒算有指望；never/left 且无桥者，看与
+  // home 桥拍 p16_077 的关系：已明确表态不补（exam_bridge_declined 在账）→ 不再等，立即出窗；
+  // 27 岁起桥窗（22–26）已过 → 不再等（年龄兜底）；22–26 未遇桥拍或未表态 → 继续等。
+  // 纯读传入状态的 state/flags/usedEvents/usedRare/ledger（hasFact 的同口径镜像，作用域随
+  // withLife 切换自动同源），不读旧旗、不进存档。
+  function examPending(S) {
+    const T = S || IFY.S;
+    if (!T || !T.route) return false;
+    const st = T.state || {};
+    if (T.route.id !== "home" && st.track !== "home") return false;
+    if (typeof T.age !== "number" || T.age < 22 || T.age > 28) return false;
+    const fact = (id) =>
+      !!(T.flags && T.flags[id]) ||
+      (Array.isArray(T.usedEvents) && T.usedEvents.includes(id)) ||
+      (Array.isArray(T.usedRare) && T.usedRare.includes(id)) ||
+      (Array.isArray(T.ledger) && T.ledger.some((e) => e && e.id === id));
+    if (fact("exam_passed") || fact("exam_landed") || fact("exam_failed")) return false;
+    if (fact("edu_bridge")) return true;
+    const sc = st.schooling;
+    if (!sc || sc === "school" || sc === "pre" || sc === "half") return true;
+    if (fact("exam_bridge_declined")) return false;
+    if (T.age >= 27) return false;
+    return true;
+  }
   function anyFamilyAlive(S) {
     const st = (S && S.state) || (IFY.S && IFY.S.state) || {};
     return st.dad === "alive" || st.mom === "alive" ||
       st.spouse === "partnered" || st.spouse === "dating" ||
       st.kids === "has";
   }
-  Object.assign(IFY, { rec, hasRec, hasFact, ctxOk, anyFamilyAlive });
+  Object.assign(IFY, { rec, hasRec, hasFact, ctxOk, anyFamilyAlive, examPending });
 })(window.IFY);
