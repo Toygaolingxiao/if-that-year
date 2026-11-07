@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.43.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.43.1 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -199,6 +199,7 @@ window.IFY = window.IFY || {};
     return {
       seedStr, age: START_AGE, era: "c2000", birthYear: 2000,
       stats: Object.fromEntries(STAT_META.map(([k, , init]) => [k, init])),
+      statsPeak: Object.fromEntries(STAT_META.map(([k, , init]) => [k, init])), // 判词批 C（偷艺 4.2）：六维一生峰值，初值 = 开局六维；由 sampleStatsPeak 在年度收口纯 max 并入，判词按峰值选维。旧档无此字段走 backfillStatsPeak 迁移
       route: null, unchosen: [], log: [], reflections: [], // v0.21 WP1：reflections 是玩家层字段——本字段只为 Track 同形保留、恒不作数，权威在 session.meta（蓝图 3.1）
       usedEvents: [], flags: {}, state: IFY.initialState(), crisisUsed: {}, microUsed: [], usedRare: [], cards: [],
       glimpsesSeen: 0, glimpsesSkipped: 0, lastDelta: "", wageDelta: "", // wageDelta：工资年结的标注通道（fx-fix）——wageDue 每年结算时刷新（非零整数落账记「工资 ±N」、否则清空），deltaLine 与 lastDelta 拼行呈现；旧档无此字段按空读
@@ -267,13 +268,21 @@ window.IFY = window.IFY || {};
   // 地段默认 city、购房年取落旗年龄缺则 33 岁）。实现走 house.js 的 IFY.backfillHouse（形态/档位派生都在它那边）。
   function backfillHouse(t) { if (typeof IFY.backfillHouse === "function") IFY.backfillHouse(t); }
 
+  // 判词批 C 旧档回填：无 statsPeak 的存档读入时以载入时六维现值逐维初始化峰值（峰值只从
+  // 载入点起算——只少记不多记，不追溯、不编造）；容器在但单维缺失时逐维按现值补，既有值不覆盖。
+  function backfillStatsPeak(t) {
+    if (!t || typeof t !== "object" || !t.stats) return;
+    if (!t.statsPeak || typeof t.statsPeak !== "object" || Array.isArray(t.statsPeak)) t.statsPeak = {};
+    for (const [k, , init] of STAT_META) if (typeof t.statsPeak[k] !== "number") t.statsPeak[k] = typeof t.stats[k] === "number" ? t.stats[k] : init;
+  }
+
   function loadSave() {
     try {
       const s = JSON.parse(localStorage.getItem(SAVE_KEY));
       if (!s) return null;
       // v2 的 Track 条目本体即平铺 state（route/flags 直挂条目上，与 backfillAdmitted 同口径）
-      if (s.tracks) { for (const k of Object.keys(s.tracks)) { backfillAdmitted(s.tracks[k]); backfillWage(s.tracks[k]); backfillHouse(s.tracks[k]); } const a = s.tracks[s.controlTrack || "A"] || s.tracks.A; return a && (a.route || a.mergePending || (a.phase === "prologue" && a.prologue)) ? s : null; }
-      backfillAdmitted(s); backfillWage(s); backfillHouse(s);
+      if (s.tracks) { for (const k of Object.keys(s.tracks)) { backfillAdmitted(s.tracks[k]); backfillWage(s.tracks[k]); backfillHouse(s.tracks[k]); backfillStatsPeak(s.tracks[k]); } const a = s.tracks[s.controlTrack || "A"] || s.tracks.A; return a && (a.route || a.mergePending || (a.phase === "prologue" && a.prologue)) ? s : null; }
+      backfillAdmitted(s); backfillWage(s); backfillHouse(s); backfillStatsPeak(s);
       return (s.route || s.mergePending || (s.phase === "prologue" && s.prologue)) ? s : null;
     } catch (e) { return null; }
   }
@@ -482,6 +491,26 @@ window.IFY = window.IFY || {};
     IFY.S.lastDelta = parts.join(" · ");
   }
 
+  // 判词批 C（偷艺 4.2）：六维一生峰值采样——把当前六维以纯 max 并入 S.statsPeak。
+  // 六维写入口分散（applyEffects 主通道、工资年结经 applyEffects、住房 house.js 直写
+  // money/freedom、rollDeath 内健康漂移只降不升），逐个挂钩必漏，故只在「当年写入全部
+  // 落定」的收口点采样，共三处、同调此函数、幂等可重入：① mergeIntoRoute 落路线后
+  // （序章段不经 advance()，以汇入拍为序章段收口，22 岁定格含出身与路线结算）；
+  // ② advance() 顶部（上一年收口——进程拍/事件/分岔/工资/住房诸写入都在 step 年内落定）；
+  // ③ renderDeath() 落终局变现后（死亡年收口——房产变现写入发生在最后一次年度收口之后，
+  // 不补此样峰值会低于终局值）。纯 max 运算：不掷骰、不消费任何随机流，同种子轨迹不变。
+  // 容器缺失时按当前值逐维起账（与 backfillStatsPeak 同口径，只少记不多记）。
+  function sampleStatsPeak() {
+    const S = IFY.S;
+    if (!S || !S.stats) return;
+    if (!S.statsPeak || typeof S.statsPeak !== "object" || Array.isArray(S.statsPeak)) S.statsPeak = {};
+    for (const [k] of STAT_META) {
+      const v = S.stats[k];
+      if (typeof v !== "number") continue;
+      if (typeof S.statsPeak[k] !== "number" || v > S.statsPeak[k]) S.statsPeak[k] = v;
+    }
+  }
+
   function finalAge() { return IFY.S && IFY.S.death ? IFY.S.death.age : MAX_AGE; }
 
   // ---------- 开局 ----------
@@ -625,6 +654,7 @@ window.IFY = window.IFY || {};
       delete IFY.S.endAge;
       IFY.S.stats = IFY.S.stats || {};
       for (const [k, , init] of STAT_META) if (typeof IFY.S.stats[k] !== "number") IFY.S.stats[k] = init; // 新维度迁移：旧存档缺的维度按初值补齐（如 v0.9.0 新增的智慧），不清档不报错
+      backfillStatsPeak(IFY.S); // 判词批 C：峰值迁移同处兜底（loadSave 已回填，此处防 adoptSessionSave 重组后的 Track 漏填）
       if (!IFY.S.state || typeof IFY.S.state !== "object") IFY.S.state = IFY.deriveStateFromLegacy(flat); // v0.12.0：旧存档无 state，由旧 flags 推导（docs/STATE-MATRIX.md §5）
       else for (const [dom, def] of Object.entries(IFY.REG.domains || {})) if (!(dom in IFY.S.state)) IFY.S.state[dom] = def.initial;
       // v0.17.0 回填：旧存档（v0.15/v0.16）没有阶段/温度/记号等字段——阶段按有无 route 定（老玩家恒成年段），温度按路线基线回填，序章态为空
@@ -898,6 +928,7 @@ window.IFY = window.IFY || {};
     const base = rhythmBase("route", route.id); // 进成年段，温度基线换成路线基线（轨道基线已在 16 岁写入）；之后由分岔改温
     if (base) { IFY.S.temp = base.temp; IFY.S.rhythm = base.rhythm; }
     applyEffects(route.stats); IFY.S.lastDelta = "";
+    sampleStatsPeak(); // 判词批 C：汇入收口采样——序章段（0–21 岁）的积累在此定格为峰值基线
     IFY.rec("route", route.id);
     IFY.S.log.push(`22 岁 · 出发：${route.name}`);
     // 分家记账（丙案第一步）：22 岁路口是默认分家点——序章没有搬家预约时在此落默认笔；有预约时
@@ -978,6 +1009,7 @@ window.IFY = window.IFY || {};
 
   function advance() {
     if (IFY.S.death) return renderDeath();
+    sampleStatsPeak(); // 判词批 C：上一年收口采样——当年进程拍/事件/分岔/工资/住房诸写入已在 step 年内全部落定
     IFY.S.age += 1;
     IFY.S.wageDelta = ""; // fx-fix：跨年先清工资标注——新一年的进程拍屏在工资结算之前呈，不许读到去年的；本年结算后由 wageDue 重记
     if (IFY.S.age > MAX_AGE) IFY.S.age = MAX_AGE;
@@ -994,6 +1026,7 @@ window.IFY = window.IFY || {};
     // 防重，结算处（renderEnd）再调为空转。影子轨没有自己的死亡屏，仍在结算处落账，
     // 结算时两条轨都已落账，口径不冲突。v0.32.0 起主角轨终局必经此屏（含保险丝终局），无「未死进结算」的路径。
     if (typeof IFY.houseSettleDue === "function") IFY.houseSettleDue(IFY.S);
+    sampleStatsPeak(); // 判词批 C：死亡年收口采样——终局变现（money/freedom 增量）落账后再定格，保证峰值不低于判词取数时的终局值
     IFY.curKind = "death";
     IFY.clearAutoContext();
     app().classList.remove("playwrap");
@@ -1036,7 +1069,7 @@ window.IFY = window.IFY || {};
   Object.assign(IFY, { D, CARDS, PRO, RHYTHM, PROLOGUE_ERA, hasPrologue, ANA, START_AGE, MAX_AGE, STAT_META, GLIMPSE_AGES, ERAS, SAVE_KEY,
     LIVES_KEY, PREFS_KEY, SPEED_CPS, SPEED_LABEL, SPEED_STYLE, AUTO_BASE_MS, AUTO_CAP_MS, AUTO_MODES,
     DEFAULT_AUTO_MODE, RNG, RNGW, RNGA, mulberry, rng, rngW, rngA, seedStreams, seedFromString, drawBirthYear, clamp, esc,
-    el, app, reducedMotion, freshState, save, loadSave, clearSave, loadLives, todayStr, recordLives,
+    el, app, reducedMotion, freshState, sampleStatsPeak, save, loadSave, clearSave, loadLives, todayStr, recordLives,
     STREAK_KEY, LASTLIFE_KEY, loadStreak, loadLastLife, dateStrOf, shiftedDateStr, recordDayAndLife,
     streakLine, lastLifeLine, dailyFor, loadPrefs, savePrefs, rhythmOf, rhythmBase, applyTempDelta,
     applyEffects, finalAge, renderStart, clearSave0, newGame, STAGE_LABEL, newGamePrologue, prologueHead,

@@ -8,6 +8,9 @@
    覆盖丧偶再结伴 / 离婚再结伴 / 两任终局丧偶 / 此前成过家的终局 dating 四形多任分开写，
    单任四形与无账本老档与现行文案逐字比对；lifeTags 收尾段多任改写一条；
    verdictTop.relation「一起买菜」片段的 singlePartner 门（多任局 40 局零命中、单任局有命中）。
+   ⑦ 判词批 C：六维一生峰值（statsPeak）——freshState 初值、sampleStatsPeak 纯 max 幂等、
+   verdict 按峰值选维（峰值与终局背离时 top/bottom 均走峰值）、无峰值时回落终局选维、
+   loadSave 老档迁移（无 statsPeak 按现值初始化、单维缺失逐维补、既有值不覆盖）。
    数据断言（字段在数据里）+ 功能断言（用真实引擎 met/echoText/procText 跑）两层都过才算 PASS。
    用法：node scripts/stateline-assert.js */
 "use strict";
@@ -36,6 +39,7 @@ load("src/content/prologue/cards.js"); load("src/content/rare/synergy.js"); load
 const ENGINE_FILES = ["src/engine.js", "src/world/apply.js", "src/record.js", "src/world/processes/parents.js", "src/world/processes/spouse.js", "src/world/processes/work.js", "src/world/processes/place.js", "src/world/processes/health.js", "src/scheduler.js", "src/world/shadow-life.js", "src/world/shadow-policy.js", "src/views/stream.js", "src/views/year.js", "src/views/shadow.js", "src/views/settlement.js", "src/views/share.js"]; // v0.20.0 引擎模块（各自独立包装器，共享 window.IFY），按 index.html 顺序逐个真实载入，不再拼接（engine-boot.js 不载：断言不需要开局渲染）；判词批 B 起补载 shadow-life/shadow-policy（settlementSlots 的 playerMeta 依赖，同 sim.js 装载序）
 for (const rel of ENGINE_FILES) load(rel);
 vm.runInContext("window.__P = { get S() { return window.IFY.S; }, set S(v) { window.IFY.S = v; }, freshState: window.IFY.freshState, met: window.IFY.met, echoText: window.IFY.echoText, procText: window.IFY.procText, settlementSlots: window.IFY.settlementSlots, lifeTags: window.IFY.lifeTags, verdict: window.IFY.verdict, partnerHistoryOf: window.IFY.partnerHistoryOf, D: window.IFY.D };", sandbox, { filename: "probe-export" });
+vm.runInContext("window.__P.sampleStatsPeak = window.IFY.sampleStatsPeak; window.__P.loadSave = window.IFY.loadSave;", sandbox, { filename: "probe-export-c" });
 const P = sandbox.window.__P;
 const byId = {};
 for (const e of P.D.events || []) if (e.id) byId[e.id] = e;
@@ -183,6 +187,7 @@ function slotS2(entries, spouseFinal) {
     P.S = S;
     S.route = { id: "home" }; S.era = "c2000"; S.birthYear = 2000; S.age = 80;
     S.stats = { health: 10, money: 10, growth: 10, freedom: 10, relation: 95, wisdom: 10 };
+    S.statsPeak = { ...S.stats }; // 判词批 C 适配：选维改读峰值后，手组局须给自洽峰值（峰值=终局的退化形），本组只验片段门不验选维
     S.state.spouse = spouseFinal;
     S.ledger = entries.map(([a, t]) => LE(a, t));
     if (flags) Object.assign(S.flags, flags);
@@ -197,6 +202,54 @@ function slotS2(entries, spouseFinal) {
   ok(hitMulti === 0, `丧偶再结伴局 40 局「一起买菜」命中 ${hitMulti}（应为 0）`);
   ok(hitMultiNoFlag === 0, `离婚再结伴局（无专属旗）40 局「一起买菜」命中 ${hitMultiNoFlag}（应为 0，靠 singlePartner 账本门）`);
   ok(hitSingle > 0, `单任局 40 局「一起买菜」命中 ${hitSingle}（应 > 0，片段仍在池中）`);
+}
+
+// ---- ⑦ 判词批 C：六维一生峰值 statsPeak ----
+console.log("⑦ 判词批 C：峰值记录 / 采样 / 按峰值选维 / 老档迁移");
+{
+  const KEYS6 = ["health", "money", "growth", "freedom", "relation", "wisdom"];
+  const S0 = P.freshState("PEAK-INIT");
+  ok(!!S0.statsPeak && KEYS6.every((k) => S0.statsPeak[k] === S0.stats[k]), "freshState：statsPeak 以开局六维初始化");
+  // 采样纯 max + 幂等 + 不动 stats 本身
+  const S1 = freshS();
+  S1.stats = { health: 70, money: 80, growth: 40, freedom: 50, relation: 60, wisdom: 35 };
+  S1.statsPeak = { health: 60, money: 45, growth: 50, freedom: 50, relation: 50, wisdom: 40 };
+  P.sampleStatsPeak();
+  ok(KEYS6.every((k) => S1.statsPeak[k] === Math.max({ health: 60, money: 45, growth: 50, freedom: 50, relation: 50, wisdom: 40 }[k], S1.stats[k])), "sampleStatsPeak：逐维 max 并入");
+  const snap = JSON.stringify(S1.statsPeak);
+  S1.stats = { health: 10, money: 10, growth: 10, freedom: 10, relation: 10, wisdom: 10 };
+  P.sampleStatsPeak();
+  ok(JSON.stringify(S1.statsPeak) === snap && S1.stats.health === 10, "sampleStatsPeak：低值再采样峰值不降（幂等）、stats 本身不被改写");
+  // verdict 按峰值选维：终局 top=relation/bottom=health，峰值 top=health/bottom=wisdom
+  const vRun = (withPeak) => {
+    const S = P.freshState("PEAK-V-" + (withPeak ? "Y" : "N"));
+    P.S = S;
+    S.route = { id: "home" }; S.era = "c2000"; S.birthYear = 2000; S.age = 80;
+    S.stats = { health: 20, money: 30, growth: 40, freedom: 50, relation: 60, wisdom: 35 };
+    if (withPeak) S.statsPeak = { health: 90, money: 85, growth: 40, freedom: 50, relation: 60, wisdom: 35 };
+    else delete S.statsPeak;
+    S.state.spouse = "partnered";
+    return P.verdict();
+  };
+  const vP = vRun(true);
+  ok(vP.top === "health" && vP.bottom === "wisdom", `verdict 有峰值时按峰值选维（top=${vP.top} 应 health、bottom=${vP.bottom} 应 wisdom）`);
+  const vF = vRun(false);
+  ok(vF.top === "relation" && vF.bottom === "health", `verdict 无峰值（迁移前保险读法）回落终局选维（top=${vF.top} 应 relation、bottom=${vF.bottom} 应 health）`);
+  // loadSave 老档迁移：无 statsPeak → 按现值初始化；单维缺失 → 逐维补、既有不覆盖
+  const mkSave = (peakVal) => {
+    const S = P.freshState("PEAK-OLD");
+    S.route = { id: "corp" };
+    S.stats = { health: 33, money: 44, growth: 55, freedom: 66, relation: 77, wisdom: 88 };
+    if (peakVal === undefined) delete S.statsPeak; else S.statsPeak = peakVal;
+    return JSON.stringify(S);
+  };
+  store.set("ify-save-v2", mkSave(undefined));
+  const back1 = P.loadSave();
+  ok(!!back1 && KEYS6.every((k) => back1.statsPeak[k] === back1.stats[k]), "loadSave 老档（无 statsPeak）：按载入时六维现值初始化峰值");
+  store.set("ify-save-v2", mkSave({ health: 99 }));
+  const back2 = P.loadSave();
+  ok(!!back2 && back2.statsPeak.health === 99 && KEYS6.every((k) => k === "health" || back2.statsPeak[k] === back2.stats[k]), "loadSave 老档（statsPeak 只剩一维）：既有 99 不覆盖、其余逐维按现值补");
+  store.delete("ify-save-v2");
 }
 
 console.log(`\nstateline-assert: ${pass} passed, ${fail} failed`);

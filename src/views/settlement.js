@@ -5,7 +5,13 @@
   function verdict() {
     if (IFY.S._verdict) return IFY.S._verdict;
     // 并列打破（v0.11.0）：同值维度用本局 rng 随机定序，不再按固定键序隐式优先
-    const sorted = Object.entries(IFY.S.stats).map(([k, v]) => [k, v, IFY.rng()]).sort((a, b) => (b[1] - a[1]) || (a[2] - b[2]));
+    // 判词批 C（偷艺 4.2）：选维改按一生峰值 statsPeak——判词定的是「到过的高处」，不被临终
+    // 前的塌陷（健康/金钱）带偏；top 与 bottom 同源（都按峰值：bottom = 一生峰值最低的那维，
+    // 即这一生从没真正起来过的那一面）。峰值容器或单维缺失时逐维回落终局值（迁移前保险
+    // 读法）。并列打破的 rng 消费与旧版逐项同形：条目顺序不变、每维恰抽一次。片段的
+    // needs 事实门仍读终局事实（factOkHere），不换源——词说高处，事实预设仍须对得上这一生。
+    const peak = IFY.S.statsPeak;
+    const sorted = Object.entries(IFY.S.stats).map(([k, v]) => [k, (peak && typeof peak[k] === "number") ? peak[k] : v, IFY.rng()]).sort((a, b) => (b[1] - a[1]) || (a[2] - b[2]));
     const top = sorted[0][0], bottom = sorted[sorted.length - 1][0];
     // F1/F2（v0.17.0）：片段先按 needs 对本局事实过滤再抽；过滤后为空回落中性片段（无 needs 者），事实不许将就
     const pickF = (pool) => {
