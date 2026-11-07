@@ -1026,8 +1026,9 @@
       } else {
         P.earlyText = beat.text;
       }
-      // 落账位置：来历幕的 5 岁行已在其物化时先落（拆屏机制使然），本链三行按岁插入它之前，
-      // 保住流水账/年表的年龄序（1→3→4→5）；5 岁行缺失的边缘情形才退回尾 append。
+      // 落账位置：v0.48.3 起 5 岁行改在 5 岁屏本体呈现时才落，新局本链各行按呈现序 append
+      // 即成 0→1→2→3→4→5；下面的插入支只服务旧档（5 岁行已在账、链演到一半的存档），
+      // 把后落的行插回 5 岁行之前保住年龄序。
       const line = `${beat.age} 岁 · ${P.earlyLog || beat.log}`;
       const at = S.log.findIndex((l) => typeof l === "string" && l.startsWith("5 岁 · "));
       if (at >= 0) S.log.splice(at, 0, line); else S.log.push(line);
@@ -1079,7 +1080,11 @@
       const schLog = (act.logBySchooling && S.state && act.logBySchooling[S.state.schooling]) || null;
       // 选幕制片一：性子拍流水账改记幕名（如「过年那天」），不再记「性子」二字（act.log 只作无框兜底）。
       const baseLog = (neverAlt && act.id === "pr_child1") ? "开学那天，你没去" : ((effV && effV.log) || (act.temperPick ? temperFrameOf(S, act).name : act.log));
-      S.log.push(`${act.age} 岁 · ${schLog || baseLog}`);
+      // v0.48.3：来历幕的 5 岁行先扣下、到 5 岁屏本体呈现时才落（见 present 尾段）——拆屏后
+      // 出生幕与 0–4 小段先行，物化时就落账会让 5 岁行在 0–4 岁的屏上一直挂着（用户实玩指出）。
+      // 旧档无 earlyArmed（链不演、来历幕直接呈现）照旧当场落账。
+      if (act.id === "pr_origin" && P.earlyArmed) P.originLogPending = `${act.age} 岁 · ${schLog || baseLog}`;
+      else S.log.push(`${act.age} 岁 · ${schLog || baseLog}`);
       const C = cards();
       if (act.id === "pr_origin") {
         // fix3（opt-in）：pack.originOpenNotWithFamily 按开场白下标登记与家底互斥的条目
@@ -1341,6 +1346,8 @@
     // 0–4 小段：出生幕收下后、5 岁屏本体之前，链上四幕逐幕带出（pendingState 已随出生幕带出，
     // 本链各幕恒 null，不重复落定；无出生幕拆分的空余屏局同样先走完链再落 5 岁屏）。
     if (act.id === "pr_origin" && P.earlyBuilt && P.earlyStep < EARLY_ACTS.length) return earlyView(S);
+    // v0.48.3：5 岁屏本体呈现——物化时扣下的 5 岁行在此落账（恰一次，落完清空）。
+    if (act.id === "pr_origin" && P.originLogPending) { S.log.push(P.originLogPending); P.originLogPending = null; }
     return { id: act.id, age: act.age, stage: stageFor(act.age), title: act.title || null, text: P.curText, choices: P.curChoices, pendingState: P.pendingState, isFork: act.id === "pr_fork16",
       gateNote: gateNoteOf(S, act), familyBeat: !!act.familyBeat, echo: act.familyBeat ? ((act.poolEntry && P.poolEcho) || (act.echoByQuota && (act.echoByQuota[P.quotaEchoKey] || act.echoByQuota[factOf(S, "quotaHolder")])) || act.echo || null) : null };
   }
