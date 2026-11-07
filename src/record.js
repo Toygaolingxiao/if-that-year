@@ -151,5 +151,16 @@
     }
     return true;
   }
-  Object.assign(IFY, { rec, hasRec, hasFact, ctxOk });
+  // 家里还有人门（判词批 D）：派生量、纯读现行 state、不进存档——父母任一在世，或有在世伴侣
+  // （spouse = partnered/dating），或有子女（kids = has），任一成立即「家里还有人」。
+  // 与 ctx.anyCareTarget 同层同法：只认当下还在的人，不认只增不减的旧旗——「家里人」类文本
+  // 在空屋局（双亲已故、无伴侣、无子女）里照出，正是缺了这个单一派生、逐条目自己拼的漏。
+  // 条目侧以 scheduler.met()/unmetConditions() 的顶层字段 anyFamilyAlive 消费，两处同读本函数。
+  function anyFamilyAlive(S) {
+    const st = (S && S.state) || (IFY.S && IFY.S.state) || {};
+    return st.dad === "alive" || st.mom === "alive" ||
+      st.spouse === "partnered" || st.spouse === "dating" ||
+      st.kids === "has";
+  }
+  Object.assign(IFY, { rec, hasRec, hasFact, ctxOk, anyFamilyAlive });
 })(window.IFY);

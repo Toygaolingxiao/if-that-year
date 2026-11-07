@@ -78,7 +78,7 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
     effects: { wisdom: 3, freedom: 1 } , stateAll: { spouse: "partnered" }},
   { id: "ab37_022", w: 2, min: 58, max: 70, route: "abroad", eraIn: ["c1978", "c2000"], state: { abroadKind: "europe" }, text: "这边退下来的日子，慢有慢的过法：假多，事少，社区的活动排得满。你报了个园艺的班，种出来的东西分给邻居。就是冬天的黑还是长，屋里得早早开灯。",
     effects: { health: 1, relation: 1 } },
-  { id: "ab37_023", w: 2, min: 55, max: 66, route: "abroad", eraIn: ["c1955", "c1965", "c1978", "c1985", "c1995", "c2000"], state: { abroadKind: "dispatch" }, text: "最后一个项目结了，合同到期，行李还是那两箱，就是人比来时老了。这些年挣的钱，大半在家里：房子修了，孩子的事帮了，存折上还剩一笔。你站在营地门口等车，想着回去先睡个整觉。",
+  { id: "ab37_023", anyFamilyAlive: true, w: 2, min: 55, max: 66, route: "abroad", eraIn: ["c1955", "c1965", "c1978", "c1985", "c1995", "c2000"], state: { abroadKind: "dispatch" }, text: "最后一个项目结了，合同到期，行李还是那两箱，就是人比来时老了。这些年挣的钱，大半在家里：房子修了，孩子的事帮了，存折上还剩一笔。你站在营地门口等车，想着回去先睡个整觉。",
     choices: [
       { label: "回了，往后就在家过", effects: { health: 2, relation: 2 }, set: "back_home_stay", echo: "到家那晚，饭是家里人留的，热了三遍。你说还是家里的床睡得沉。" },
       { label: "歇半年，看看还有没有短活", effects: { money: 2, health: -1 }, echo: "电话留给了项目上的人。真有电话来时，你犹豫了半天，最后还是没接。" },
@@ -92,7 +92,7 @@ window.GAME_PACKS = (window.GAME_PACKS || []).concat([
     effects: { relation: 2, wisdom: 2 } },
   { id: "ab37_026", w: 2, min: 60, max: 72, route: "abroad", eraIn: ["c1978", "c2000"], text: "两边的钱要归拢了：这边的养老钱按月打，那边还留着一份。你拿个本子记着，哪个月换多少、哪笔留着探亲用，汇率涨了跌了，你不跟着动。记满一页，合上本子，日子照过。",
     effects: { money: 1, wisdom: 2 } },
-  { id: "ab37_027", w: 2, min: 68, max: 80, route: "abroad", eraIn: ["c1978", "c2000"], text: "在这边住了大半辈子，常去的诊所医生换了第二任，超市的收银员见你就打招呼。你过日子用的词，一半是这边的，一半是家里的，混着说，家里人打电话来，有时还得停下来想想。",
+  { id: "ab37_027", anyFamilyAlive: true, w: 2, min: 68, max: 80, route: "abroad", eraIn: ["c1978", "c2000"], text: "在这边住了大半辈子，常去的诊所医生换了第二任，超市的收银员见你就打招呼。你过日子用的词，一半是这边的，一半是家里的，混着说，家里人打电话来，有时还得停下来想想。",
     effects: { wisdom: 3, relation: 1 } },
   { id: "ab37_028", w: 2, min: 66, max: 78, route: "abroad", eraIn: ["c1978", "c2000"], state: { abroadKind: ["anglo", "eastasia", "europe"] }, text: "这一趟回国，你把行李减到最小：换洗衣服、常吃的药、给老同学带的点心。飞机上你睡得少，想着要见的人，名单在心里排了一遍，有两个已经见不着了。落地时天刚亮，你在出口站了会儿，往外走。",
     effects: { relation: 2, health: -1 } },

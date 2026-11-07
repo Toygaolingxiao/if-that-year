@@ -40,6 +40,7 @@ const ENGINE_FILES = ["src/engine.js", "src/world/apply.js", "src/record.js", "s
 for (const rel of ENGINE_FILES) load(rel);
 vm.runInContext("window.__P = { get S() { return window.IFY.S; }, set S(v) { window.IFY.S = v; }, freshState: window.IFY.freshState, met: window.IFY.met, echoText: window.IFY.echoText, procText: window.IFY.procText, settlementSlots: window.IFY.settlementSlots, lifeTags: window.IFY.lifeTags, verdict: window.IFY.verdict, partnerHistoryOf: window.IFY.partnerHistoryOf, D: window.IFY.D };", sandbox, { filename: "probe-export" });
 vm.runInContext("window.__P.sampleStatsPeak = window.IFY.sampleStatsPeak; window.__P.loadSave = window.IFY.loadSave;", sandbox, { filename: "probe-export-c" });
+vm.runInContext("window.__P.unmetConditions = window.IFY.unmetConditions; window.__P.anyFamilyAlive = window.IFY.anyFamilyAlive; window.__P.specificity = window.IFY.specificity;", sandbox, { filename: "probe-export-d" });
 const P = sandbox.window.__P;
 const byId = {};
 for (const e of P.D.events || []) if (e.id) byId[e.id] = e;
@@ -250,6 +251,190 @@ console.log("⑦ 判词批 C：峰值记录 / 采样 / 按峰值选维 / 老档�
   const back2 = P.loadSave();
   ok(!!back2 && back2.statsPeak.health === 99 && KEYS6.every((k) => k === "health" || back2.statsPeak[k] === back2.stats[k]), "loadSave 老档（statsPeak 只剩一维）：既有 99 不覆盖、其余逐维按现值补");
   store.delete("ify-save-v2");
+}
+
+// ---- ⑧ 判词批 D：家族事实门一族 ----
+console.log("⑧ 判词批 D：anyFamilyAlive 派生 / 「你们」现行伴侣门 / p21_030 分版 / 「家里人」门");
+const byIdD = {};
+for (const e of [...(P.D.events || []), ...(P.D.rare || [])]) if (e.id) byIdD[e.id] = e;
+{ // 派生真值表：空屋全假、任一成立即真；旧状态（divorced/widowed/single）与未定不算
+  const fam = (patch) => { const S = freshS(); Object.assign(S.state, { dad: "dead", mom: "dead", spouse: "none", kids: "none" }, patch); return P.anyFamilyAlive(S); };
+  ok(fam({}) === false, "D 派生: 空屋（双亲故、无伴侣、无子女）= false");
+  ok(fam({ dad: "alive" }) === true && fam({ mom: "alive" }) === true, "D 派生: 父或母任一在世 = true");
+  ok(fam({ spouse: "partnered" }) === true && fam({ spouse: "dating" }) === true, "D 派生: partnered/dating = true");
+  ok(fam({ spouse: "divorced" }) === false && fam({ spouse: "widowed" }) === false && fam({ spouse: "single" }) === false, "D 派生: divorced/widowed/single 不算 = false");
+  ok(fam({ kids: "has" }) === true && fam({ kids: "undecided" }) === false, "D 派生: 有子女 = true、未定 = false");
+}
+{ // 「你们」门矩阵：坏状态（none/single/divorced/widowed）全灭、partnered/dating 可过
+  const BAD = ["none", "single", "divorced", "widowed"], GOOD = ["partnered", "dating"];
+  const cases = [
+    ["p3_044", (S) => { S.flags.together = true; S.usedEvents = ["p3_043"]; S.age = 45; }],
+    ["p3_048", (S) => { S.state.kids = "has"; S.age = 40; S.kidsAt = 40; S.kidsBornAt = 40; }],
+    ["p3_057", (S) => { S.state.kids = "has"; S.age = 50; S.kidsAt = 40; S.kidsBornAt = 40; }],
+    ["p3_061", (S) => { S.state.kids = "has"; S.age = 55; S.kidsAt = 42; S.kidsBornAt = 42; }],
+    ["p3_062", (S) => { S.state.kids = "has"; S.age = 58; S.kidsAt = 40; S.kidsBornAt = 40; }],
+    ["p3_072", (S) => { S.state.kids = "none"; S.age = 45; }],
+    ["p2_075", (S) => { S.age = 33; }],
+    ["p4_001", (S) => { S.age = 45; }],
+    ["lk_none", (S) => { S.flags.late_try = true; S.usedEvents = ["lk_wait"]; S.state.kids = "undecided"; S.age = 52; }],
+    ["lk_fade", (S) => { S.flags.late_try = true; S.state.kids = "undecided"; S.age = 54; }],
+  ];
+  for (const [id, setup] of cases) {
+    const e = byIdD[id];
+    ok(!!e, `D 「你们」: ${id} 存在`);
+    let badAll = true, goodAll = true; const detail = [];
+    for (const sp of BAD) { const S = freshS(); setup(S); S.state.spouse = sp; const m = P.met(e); detail.push(`${sp}:${m ? "过" : "灭"}`); if (m) badAll = false; }
+    for (const sp of GOOD) { const S = freshS(); setup(S); S.state.spouse = sp; const m = P.met(e); detail.push(`${sp}:${m ? "过" : "灭"}`); if (!m) goodAll = false; }
+    ok(badAll && goodAll, `D 「你们」: ${id} 坏状态全灭、partnered/dating 可过（${detail.join(" ")}）`);
+  }
+  // p3_078 不挂门、补 textState none 变体：任何无伴侣状态下解析文本不得含「你们」
+  const e78 = byIdD.p3_078;
+  ok(!!e78 && e78.textState && typeof e78.textState.spouse.none === "string", "D 「你们」: p3_078 textState.spouse.none 变体已补");
+  for (const sp of ["none", "single", "divorced", "widowed"]) {
+    const S = freshS(); S.state.kids = "none"; S.state.spouse = sp; S.age = 54;
+    const t = P.procText(e78);
+    ok(typeof t === "string" && !t.includes("你们"), `D 「你们」: p3_078 在 spouse=${sp} 时文本无「你们」`);
+  }
+  { const S = freshS(); S.state.kids = "none"; S.state.spouse = "partnered"; S.age = 54;
+    ok(P.procText(e78).includes("你们把次卧"), "D 「你们」: p3_078 在 partnered 时仍出原文"); }
+}
+{ // p21_030 分版：双亲在世出原版、只剩一位出单人版
+  const e = byIdD.p21_030;
+  ok(!!e && e.textState && e.textState.dad && e.textState.mom, "D p21_030: textState dad/mom 变体已补");
+  const setup = (S) => { S.state.kids = "has"; S.age = 60; S.kidsAt = 35; S.kidsBornAt = 35; };
+  let S = freshS(); setup(S);
+  ok(P.procText(e).includes("父母这边复查"), "D p21_030: 双亲在世出原版（父母这边复查）");
+  S = freshS(); setup(S); S.state.dad = "dead";
+  ok(P.procText(e).includes("母亲这边复查") && !P.procText(e).includes("父母这边"), "D p21_030: 父故母存出单人版（母亲这边复查）");
+  S = freshS(); setup(S); S.state.mom = "dead";
+  ok(P.procText(e).includes("父亲这边复查") && !P.procText(e).includes("父母这边"), "D p21_030: 母故父存出单人版（父亲这边复查）");
+}
+{ // 「家里人」39 条：数据形状 + met/unmetConditions 同判（空屋灭、家里有人过）
+  const FAM39 = [
+    ["p3_033", (S) => { S.state.spouse = "single"; S.age = 40; }],
+    ["p4_049", (S) => { S.age = 60; }],
+    ["p10_012", (S) => { S.flags.run_marathon = true; S.age = 55; }],
+    ["p10_037", (S) => { S.age = 35; }],
+    ["p10_056", (S) => { S.age = 50; }],
+    ["p10_073", (S) => { S.flags.warned_family_scam = true; S.age = 55; }],
+    ["p12_028", (S) => { S.age = 42; }],
+    ["p13_048", (S) => { S.flags.stay_put = true; S.flags.factory_work = true; S.age = 52; }],
+    ["p14_013", (S) => { S.age = 66; }],
+    ["p15_010", (S) => { S.flags.factory_work = true; S.age = 42; }],
+    ["p15_031", (S) => { S.era = "c1955"; S.age = 37; }],
+    ["p15_032", (S) => { S.era = "c1955"; S.flags.bought_renzheng = true; S.age = 40; }],
+    ["p15_035", (S) => { S.era = "c1955"; S.flags.factory_work = true; S.age = 38; }],
+    ["p17_050", (S) => { S.age = 44; }],
+    ["p17_053", (S) => { S.age = 46; }],
+    ["p19_031", (S) => { S.flags.shop_work = true; S.age = 42; }],
+    ["p19_041", (S) => { S.era = "c1955"; S.age = 33; }],
+    ["p19_042", (S) => { S.era = "c1955"; S.age = 33; }],
+    ["p19_060", (S) => { S.era = "c1965"; S.age = 39; }],
+    ["p19_063", (S) => { S.era = "c1965"; S.age = 41; }],
+    ["p19_069", (S) => { S.era = "c1965"; S.age = 45; }],
+    ["p20_025", (S) => { S.flags.factory_work = true; S.age = 37; }],
+    ["p20_062", (S) => { S.age = 60; }],
+    ["p21_013", (S) => { S.age = 47; }],
+    ["p21_062", (S) => { S.age = 76; }],
+    ["p22_028", (S) => { S.age = 62; }],
+    ["p23_022", (S) => { S.age = 63; }],
+    ["p23_036", (S) => { S.era = "c1955"; S.flags.factory_work = true; S.age = 62; }],
+    ["p30_001", (S) => { S.flags.factory_work = true; S.age = 45; }],
+    ["p30_008", (S) => { S.flags.shop_work = true; S.age = 45; }],
+    ["p30_010", (S) => { S.flags.factory_work = true; S.age = 42; }],
+    ["p30_011", (S) => { S.flags.bought_house = true; S.age = 40; }],
+    ["p33_018", (S) => { S.flags.hook_era_tape = true; S.age = 35; }],
+    ["p33_021", (S) => { S.flags.hook_era_olympic = true; S.age = 32; }],
+    ["farm_township", (S) => { S.flags.farm_work = true; S.route = { id: "farm" }; S.era = "c1985"; S.age = 30; }],
+    ["farm_township_back", (S) => { S.flags.township_work = true; S.usedEvents = ["farm_township"]; S.route = { id: "farm" }; S.era = "c1985"; S.age = 40; }],
+    ["ab37_023", (S) => { S.route = { id: "abroad" }; S.state.abroadKind = "dispatch"; S.age = 60; }],
+    ["ab37_027", (S) => { S.route = { id: "abroad" }; S.age = 72; }],
+    ["e78_055", (S) => { S.era = "c1978"; S.age = 58; }],
+  ];
+  ok(FAM39.length === 39, "D 家里人: 挂门清单 39 条");
+  for (const [id, setup] of FAM39) {
+    const e = byIdD[id];
+    ok(!!e && e.anyFamilyAlive === true, `D 家里人: ${id} 已挂 anyFamilyAlive`);
+    let S = freshS(); setup(S); Object.assign(S.state, { dad: "dead", mom: "dead", kids: "none" }); if (id !== "p3_033") S.state.spouse = "none"; else S.state.kids = "none";
+    const mEmpty = P.met(e), uEmpty = P.unmetConditions(e).unmet.some((u) => u.kind === "family");
+    S = freshS(); setup(S); S.state.dad = "alive";
+    const mFam = P.met(e), uFam = P.unmetConditions(e).unmet.some((u) => u.kind === "family");
+    ok(mEmpty === false && uEmpty === true && mFam === true && uFam === false,
+      `D 家里人: ${id} 空屋 met 灭 + unmet 报 family、父在世 met 过 + unmet 无 family（met ${mEmpty}/${mFam}）`);
+  }
+}
+{ // specificity 位移：仅 p3_044 因新增 stateAll 键 +1；合并入既有键与 anyFamilyAlive/textState 均 +0
+  const strip = (e, fn) => { const c = JSON.parse(JSON.stringify(e)); fn(c); return P.specificity(c); };
+  const e44 = byIdD.p3_044;
+  ok(P.specificity(e44) - strip(e44, (c) => delete c.stateAll) === 1, "D specificity: p3_044 新增 stateAll 键 +1");
+  const e48 = byIdD.p3_048;
+  ok(P.specificity(e48) - strip(e48, (c) => delete c.state.spouse) === 0, "D specificity: p3_048 spouse 合并入既有 state 键 +0");
+  const e14 = byIdD.p14_013;
+  ok(P.specificity(e14) - strip(e14, (c) => delete c.anyFamilyAlive) === 0, "D specificity: anyFamilyAlive 不在计分键表 +0（p14_013）");
+  const e21 = byIdD.p21_030;
+  ok(P.specificity(e21) - strip(e21, (c) => delete c.textState) === 0, "D specificity: p21_030 textState 不计分 +0");
+}
+
+// ---- ⑨ 判词批 D 扩展：晚育链/两地线/孩子对双亲说话型 同病条目 ----
+console.log("⑨ 判词批 D 扩展：lk_born/lk_check 现行伴侣门 / 两地线 stateAll 门 / 双亲说话型 spouse 门 / pack34 分版条目文本断言");
+{ // 门矩阵：坏状态（none/single/divorced/widowed）全灭、partnered/dating 可过
+  const BAD = ["none", "single", "divorced", "widowed"], GOOD = ["partnered", "dating"];
+  const cases = [
+    ["lk_born", (S) => { S.flags.late_try = true; S.usedEvents = ["lk_wait"]; S.state.kids = "undecided"; S.age = 50; }],
+    ["lk_check", (S) => { S.flags.late_try = true; S.age = 47; }],
+    ["lk_wait", (S) => { S.flags.late_try = true; S.usedEvents = ["lk_check"]; S.age = 48; }],
+    ["p13_026", (S) => { S.flags.two_cities = true; S.age = 42; }],
+    ["p13_027", (S) => { S.flags.two_cities = true; S.age = 48; }],
+    ["p13_028", (S) => { S.flags.two_cities = true; S.age = 52; }],
+    ["p14_034", (S) => { S.state.kids = "has"; S.age = 70; S.kidsAt = 32; S.kidsBornAt = 32; }],
+    ["p23_061", (S) => { S.state.kids = "has"; S.era = "c1965"; S.birthYear = 1965; S.age = 63; }],
+    ["p12_030", (S) => { S.state.kids = "has"; S.age = 50; S.kidsAt = 31; S.kidsBornAt = 31; }],
+  ];
+  for (const [id, setup] of cases) {
+    const e = byIdD[id];
+    ok(!!e, `D-ext 门矩阵: ${id} 存在`);
+    let badAll = true, goodAll = true; const detail = [];
+    for (const sp of BAD) { const S = freshS(); setup(S); S.state.spouse = sp; const m = P.met(e); detail.push(`${sp}:${m ? "过" : "灭"}`); if (m) badAll = false; }
+    for (const sp of GOOD) { const S = freshS(); setup(S); S.state.spouse = sp; const m = P.met(e); detail.push(`${sp}:${m ? "过" : "灭"}`); if (!m) goodAll = false; }
+    ok(badAll && goodAll, `D-ext 门矩阵: ${id} 坏状态全灭、partnered/dating 可过（${detail.join(" ")}）`);
+  }
+  // 两地线未动两条的形状登记：p13_029 既有 partnered 门保留、p13_030 不挂门
+  const e29 = byIdD.p13_029, e30 = byIdD.p13_030;
+  ok(!!e29 && e29.stateAll && e29.stateAll.spouse === "partnered", "D-ext 登记: p13_029 既有 stateAll.spouse=partnered 保留未动");
+  ok(!!e30 && !(e30.stateAll && e30.stateAll.spouse) && !(e30.state && e30.state.spouse), "D-ext 登记: p13_030 未挂 spouse 门（过去时、只讲玩家自己人脉）");
+}
+{ // pack34 分版条目：textState.spouse 四坏状态变体齐备且解析文本无伴侣断言；partnered/dating 出原文
+  const VAR4 = [
+    ["lk_night", (S) => { S.flags.late_parent = true; S.state.kids = "has"; S.age = 50; S.kidsAt = 49; S.kidsBornAt = 49; }],
+    ["lk_stuff", (S) => { S.flags.late_tried = true; S.age = 52; }],
+    ["lk_settle1", (S) => { S.flags.late_settle = true; S.age = 50; }],
+    ["lk_retire_kid", (S) => { S.flags.late_parent = true; S.state.kids = "has"; S.state.workPhase = "retired"; S.age = 65; S.kidsAt = 50; S.kidsBornAt = 50; }],
+  ];
+  for (const [id, setup] of VAR4) {
+    const e = byIdD[id];
+    const m = e && e.textState && e.textState.spouse;
+    ok(!!m && ["single", "none", "divorced", "widowed"].every((k) => typeof m[k] === "string"), `D-ext 分版: ${id} textState.spouse 四坏状态变体齐备`);
+    let clean = true; const detail = [];
+    for (const sp of ["none", "single", "divorced", "widowed"]) { const S = freshS(); setup(S); S.state.spouse = sp; const t = P.procText(e); const bad = typeof t !== "string" || t.includes("你们") || t.includes("对方"); detail.push(`${sp}:${bad ? "漏" : "净"}`); if (bad) clean = false; }
+    ok(clean, `D-ext 分版: ${id} 坏状态解析文本无「你们/对方」（${detail.join(" ")}）`);
+    let goodOk = true;
+    for (const sp of ["partnered", "dating"]) { const S = freshS(); setup(S); S.state.spouse = sp; const t = P.procText(e); if (typeof t !== "string" || !(t.includes("你们") || t.includes("对方"))) goodOk = false; }
+    ok(goodOk, `D-ext 分版: ${id} partnered/dating 仍出原文（伴侣口径）`);
+    ok(!!e && !(e.stateAll && e.stateAll.spouse) && !(e.state && e.state.spouse), `D-ext 分版: ${id} 未挂 spouse 门（分版已覆盖，照 p3_078 先例）`);
+  }
+}
+{ // specificity 位移：合并入既有 state 键 +0；新增 stateAll 键 +1（lk_check / p13_026 / p13_027 / p13_028）
+  const strip = (e, fn) => { const c = JSON.parse(JSON.stringify(e)); fn(c); return P.specificity(c); };
+  const eBorn = byIdD.lk_born;
+  ok(P.specificity(eBorn) - strip(eBorn, (c) => delete c.state.spouse) === 0, "D-ext specificity: lk_born spouse 合并入既有 state 键 +0");
+  const e34 = byIdD.p14_034;
+  ok(P.specificity(e34) - strip(e34, (c) => delete c.state.spouse) === 0, "D-ext specificity: p14_034 spouse 合并入既有 state 键 +0");
+  const eCheck = byIdD.lk_check;
+  ok(P.specificity(eCheck) - strip(eCheck, (c) => delete c.stateAll) === 1, "D-ext specificity: lk_check 新增 stateAll 键 +1");
+  const eWait = byIdD.lk_wait;
+  ok(P.specificity(eWait) - strip(eWait, (c) => delete c.stateAll) === 1, "D-ext specificity: lk_wait 新增 stateAll 键 +1（总指挥集成时并入，与 lk_check 同形）");
+  const e27 = byIdD.p13_027;
+  ok(P.specificity(e27) - strip(e27, (c) => delete c.stateAll) === 1, "D-ext specificity: p13_027 新增 stateAll 键 +1");
 }
 
 console.log(`\nstateline-assert: ${pass} passed, ${fail} failed`);

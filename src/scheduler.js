@@ -96,6 +96,7 @@
     if (e.procOnly) return false; // 进程条目只由进程呈现，不进普通抽取池（v0.18.0）
     if (e.ctx && !IFY.ctxOk(e.ctx)) return false; // 职业语境门（v0.18.0）
     if (e.anyParentAlive && IFY.S.state.dad !== "alive" && IFY.S.state.mom !== "alive") return false;
+    if (e.anyFamilyAlive && !(typeof IFY.anyFamilyAlive === "function" && IFY.anyFamilyAlive(IFY.S))) return false; // 判词批 D：家里还有人门，求值本体在 record.js 的派生层，与 unmetConditions 同读一处，不许两处各拼一份
     if (e.kidMin != null && (IFY.S.kidsAt == null || IFY.S.age - IFY.S.kidsAt < e.kidMin)) return false; // v0.18.0：孩子年龄门（按 kids 落定年龄推孩子岁数，挡「孩子 9 岁脱产备考」类错位） // 与父母进程对齐（fork52：父母都不在了不出此岔）
     if (e.kidMax != null && (IFY.S.kidsAt == null || IFY.S.age - IFY.S.kidsAt > e.kidMax)) return false; // v0.19.0 三相：孩子年龄上限门（与 kidMin 对称，挡「孩子 9 岁入园」类错位；字段形状在 tools/validate-state.js 登记核对）
     if (e.kidAgeMin != null) { const ka = kidAgeTrue(); if (ka == null || ka < e.kidAgeMin) return false; } // v0.20.1：孩子真实年龄下限门（锚出生年，口径见 kidAgeTrue）
@@ -134,6 +135,7 @@
     const S = IFY.S, F = (S && S.flags) || {};
     if (e.ctx && !IFY.ctxOk(e.ctx)) out.push({ kind: "ctx" });
     if (e.anyParentAlive && S.state.dad !== "alive" && S.state.mom !== "alive") out.push({ kind: "parents" });
+    if (e.anyFamilyAlive && !(typeof IFY.anyFamilyAlive === "function" && IFY.anyFamilyAlive(S))) out.push({ kind: "family" }); // 判词批 D：与 met() 同读 record.js 派生本体
     if (e.kidMin != null && (S.kidsAt == null || S.age - S.kidsAt < e.kidMin)) out.push({ kind: "kidAge", need: e.kidMin, have: S.kidsAt == null ? null : S.age - S.kidsAt });
     if (e.kidMax != null && (S.kidsAt == null || S.age - S.kidsAt > e.kidMax)) out.push({ kind: "kidAgeMax", need: e.kidMax, have: S.kidsAt == null ? null : S.age - S.kidsAt });
     { const kb = S.kidsBornAt != null ? S.kidsBornAt : S.kidsAt; const ka = kb == null ? null : S.age - kb;
