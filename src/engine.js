@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.46.2 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.47.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -68,12 +68,12 @@ window.IFY = window.IFY || {};
   // 咬着具体年份的内容（盘点 ~/workspace/birth-decade/SCOPE.md：D 类 77 条、E 类真钉子 3 件、c1995 五条
   // 年龄窗、奥运拍 pr_kid8_00）由后续内容片逐条改派生/改窗解决，c1955 先行，不回头动窗口。抽法见 drawBirthYear。
   const ERAS = [
-    { id: "c1955", birth: 1955, win: [1950, 1959], label: "50年代出生", descs: ["家里几个孩子挤着盖一条被子。粮票收在妈妈抽屉里，买东西前总要数一遍。", "衣服是哥哥姐姐穿小了传给你的。膝盖上的补丁，是妈妈晚上就着灯缝的。", "一年到头，过年才见到肉。妈妈把肉切得很薄，一人夹一片。", "生产队的钟一响，全村都起了。你端着碗蹲在门口吃完，才去上学。"] },
-    { id: "c1965", birth: 1965, win: [1960, 1969], label: "60年代出生", descs: ["煤球炉放在楼道里，谁家炒菜，整层楼都闻得到。", "院子里只有一个水龙头，早上全院的人排队接水。", "冬天的大白菜堆在阳台上，一进家门就是菜味。", "村口的大喇叭一响，全村都听得见。井台边排队挑水，扁担压得肩膀疼。"] },
-    { id: "c1978", birth: 1978, win: [1970, 1979], label: "70年代出生", descs: ["放学自己开门，钥匙挂在脖子上。", "家里买了第一台电视，邻居搬着小板凳来看，你站在最前面。", "晚上整栋楼的窗户里，传出同一个节目的声音。", "晒场上放露天电影，你搬着小板凳跑在最前面。幕布被风吹得直晃。"] },
-    { id: "c1985", birth: 1985, win: [1980, 1989], label: "80年代出生", descs: ["家里添了彩电，你爸不让你随便调台。", "放学后同学挤在小卖部门口，看别人打红白机。你兜里只有五毛钱。", "过生日，碗里多卧一个鸡蛋。", "赶集要走五里路。你坐在爸的自行车后座上，脚不敢乱晃。"] },
-    { id: "c1995", birth: 1995, win: [1990, 1999], label: "90年代出生", descs: ["家里有了电话和VCD。周末你爸租碟回来，全家挤在一起看。", "初中同学开始去网吧，你爸一提起网吧就皱眉。", "小卖部的辣条一毛钱一包，放学路上买一包，得在进家门前吃完。", "村里年轻人陆续往南走。你爸过年才回来，行李里有一双新球鞋。"] },
-    { id: "c2000", birth: 2000, win: [2000, 2009], label: "2000年代出生", descs: ["作业写完才能开电脑。你妈在客厅，听着你房间里键盘一直响。", "你爸的手机被你拿去玩游戏，还回去的时候只剩一格电。", "家里装上宽带那天，你爸研究了一晚上路由器。", "镇上的快递能到村口小卖部了。你奶奶学会了视频通话，屏幕举得老远。"] },
+    { id: "c1955", birth: 1955, win: [1950, 1959], label: "50年代出生", cap: "过年的肉，妈妈切得很薄", descs: ["家里几个孩子挤着盖一条被子。粮票收在妈妈抽屉里，买东西前总要数一遍。", "衣服是哥哥姐姐穿小了传给你的。膝盖上的补丁，是妈妈晚上就着灯缝的。", "一年到头，过年才见到肉。妈妈把肉切得很薄，一人夹一片。", "生产队的钟一响，全村都起了。你端着碗蹲在门口吃完，才去上学。"] },
+    { id: "c1965", birth: 1965, win: [1960, 1969], label: "60年代出生", cap: "谁家炒菜，整层楼都知道", descs: ["煤球炉放在楼道里，谁家炒菜，整层楼都闻得到。", "院子里只有一个水龙头，早上全院的人排队接水。", "冬天的大白菜堆在阳台上，一进家门就是菜味。", "村口的大喇叭一响，全村都听得见。井台边排队挑水，扁担压得肩膀疼。"] },
+    { id: "c1978", birth: 1978, win: [1970, 1979], label: "70年代出生", cap: "钥匙挂在脖子上，自己开门", descs: ["放学自己开门，钥匙挂在脖子上。", "家里买了第一台电视，邻居搬着小板凳来看，你站在最前面。", "晚上整栋楼的窗户里，传出同一个节目的声音。", "晒场上放露天电影，你搬着小板凳跑在最前面。幕布被风吹得直晃。"] },
+    { id: "c1985", birth: 1985, win: [1980, 1989], label: "80年代出生", cap: "过生日，碗里多卧个鸡蛋", descs: ["家里添了彩电，你爸不让你随便调台。", "放学后同学挤在小卖部门口，看别人打红白机。你兜里只有五毛钱。", "过生日，碗里多卧一个鸡蛋。", "赶集要走五里路。你坐在爸的自行车后座上，脚不敢乱晃。"] },
+    { id: "c1995", birth: 1995, win: [1990, 1999], label: "90年代出生", cap: "周末爸爸租碟回来，全家挤着看", descs: ["家里有了电话和VCD。周末你爸租碟回来，全家挤在一起看。", "初中同学开始去网吧，你爸一提起网吧就皱眉。", "小卖部的辣条一毛钱一包，放学路上买一包，得在进家门前吃完。", "村里年轻人陆续往南走。你爸过年才回来，行李里有一双新球鞋。"] },
+    { id: "c2000", birth: 2000, win: [2000, 2009], label: "2000年代出生", cap: "作业没写完，不许开电脑", descs: ["作业写完才能开电脑。你妈在客厅，听着你房间里键盘一直响。", "你爸的手机被你拿去玩游戏，还回去的时候只剩一格电。", "家里装上宽带那天，你爸研究了一晚上路由器。", "镇上的快递能到村口小卖部了。你奶奶学会了视频通话，屏幕举得老远。"] },
   ];
 
   const SAVE_KEY = "ify-save-v2";
@@ -547,6 +547,7 @@ window.IFY = window.IFY || {};
     const cardFx = (c) => { const parts = []; for (const [k, label] of STAT_META) if (c.effects && c.effects[k]) parts.push(`${label} ${c.effects[k] > 0 ? "+" : ""}${c.effects[k]}`); return parts.join(" · "); };
     const cardBtn = (id, i, cat) => { const c = CARDS.byId[id]; const fx = cardFx(c); return `<button type="button" class="cardpick${picked[cat] === i ? " sel" : ""}" data-cat="${cat}" data-i="${i}"><b>${esc(c.name)}</b><span>${esc(c.text)}</span>${fx ? `<small>${esc(fx)}</small>` : ""}</button>`; };
     const deckHtml = () => [["family", "家底"], ["temper", "性子"], ["era", "时代"]].map(([cat, lab]) => `<p class="setlab">${lab}</p><div class="cardrow" data-cat="${cat}">${dealt[cat].map((id, i) => cardBtn(id, i, cat)).join("")}</div>`).join("");
+    const eraShort = (e) => `${String(e.birth % 100).padStart(2, "0")[0]}0后`; // 年代卡短名：1955→50后、2000→00后（卡面用，e.label 长名仍供对局文案）
     // 旧同局链接可能带 end 参数：从本版起忽略，不报错。
     const savedCtl = saved && saved.tracks ? (saved.tracks[saved.controlTrack || "A"] || saved.tracks.A || {}) : saved; // v0.21 WP1：v2 档的展示字段在受控 Track 条目里
     const savedLabel = saved ? (savedCtl.route ? savedCtl.route.name : (savedCtl.mergePending ? "选路前" : (STAGE_LABEL[savedCtl.stage] || "序章"))) : "";
@@ -559,27 +560,25 @@ window.IFY = window.IFY || {};
       <section class="card">
         <header class="masthead">
           <p class="prodcredit">A TAKAE PRODUCTION</p>
+          <p class="eyebrow2">从出生，活到老</p>
           <p class="eyebrow">人生RESTART</p>
           <h1 class="gametitle">如果那年</h1>
-          <p class="leadline" id="starttitle">如果生在另一个年代，这一生会有什么不同？</p>
+          <p class="leadline" id="starttitle">你没走的那条路，过得怎么样？</p>
         </header>
-        <div id="intro-old">
-        <p>选一个年代，一年一年往前过。遇到的事，做过的选择，走过的路，都会成为这一生的一部分。没选的那条路，也会有它自己的后来。</p>
-        </div>
-        <div id="intro-pro" hidden>
-        <p>选一个年代，从小时候开始，一年一年往前过。遇到的事，做过的选择，走过的路，都会成为这一生的一部分。没选的那条路，也会有它自己的后来。</p>
+        <div id="intro">
+        <p>选一个年代，从小时候活到老。你没选的那条路，也会自己走完，你会时不时看见它过得怎么样。</p>
         </div>
         <div class="setblock" id="erablock">
-          <p class="setlab">年代</p>
-          <div class="segpicks" id="erapick">${ERAS.map((e) => `<button type="button" class="segbtn${e.id === "c2000" ? " sel" : ""}" data-era="${e.id}" data-birth="${e.birth}"><b>${e.label}</b></button>`).join("")}</div>
-          <p class="hint eradesc-lab">那个年代，常见的一幕</p>
+          <p class="bighero" id="bighero" aria-hidden="true"></p>
+          <p class="setlab erahead">你是哪个年代的孩子？</p>
+          <div class="eragrid" id="erapick">${ERAS.map((e) => `<button type="button" class="segbtn eracard${e.id === "c2000" ? " sel" : ""}" data-era="${e.id}" data-birth="${e.birth}"><b>${eraShort(e)}</b><span>${e.cap}</span></button>`).join("")}</div>
+          <p class="hint eradesc-lab">那个年代，家里常有的一幕</p>
           <p class="hint" id="eradesc"></p>
           <div class="birthyear-row">
-            <span class="birthyear-lab">出生年</span>
-            <button type="button" class="birthstep" id="birthminus" aria-label="出生年减一年">−</button>
+            <span class="birthyear-lab">生在</span>
             <span class="birthyear-val" id="birthyear"></span>
-            <button type="button" class="birthstep" id="birthplus" aria-label="出生年加一年">+</button>
           </div>
+          <div class="yearstrip" id="yearstrip"></div>
           <p class="hint" id="birthhint"></p>
         </div>
         ${returning ? `<div class="row"><button class="textlink" id="liveslink">活过的人生</button></div>` : ""}
@@ -699,20 +698,16 @@ window.IFY = window.IFY || {};
       const e = eraObj(); if (!e.win) return;
       const ys = birthYears();
       const y = shownBirth();
+      const hero = el("bighero"); if (hero) hero.textContent = String(y);
       const val = el("birthyear"); if (val) val.textContent = `${y} 年`;
-      const wide = ys.length > 1;
-      const i = ys.indexOf(y);
-      const bm = el("birthminus"), bp = el("birthplus");
-      if (bm) { bm.hidden = !wide; bm.disabled = i <= 0; }
-      if (bp) { bp.hidden = !wide; bp.disabled = i >= ys.length - 1; }
+      const strip = el("yearstrip");
+      if (strip) strip.innerHTML = ys.map((yy) => `<button type="button" class="yearbtn${yy === y ? " sel" : ""}" data-year="${yy}" aria-label="生在${yy}年">${String(yy % 100).padStart(2, "0")}</button>`).join("");
       const bh = el("birthhint");
       if (bh) bh.textContent = "这一年，你出生了。";
       const sg0 = el("startgo"); if (sg0 && !saved) sg0.textContent = `从${y}年开始这一生`;
     };
-    const stepBirth = (d) => { const ys = birthYears(); const i = ys.indexOf(shownBirth()); birthOverride = ys[Math.max(0, Math.min(ys.length - 1, i + d))]; syncBirth(); };
-    const bmBtn = el("birthminus"), bpBtn = el("birthplus");
-    if (bmBtn) bmBtn.addEventListener("click", () => stepBirth(-1));
-    if (bpBtn) bpBtn.addEventListener("click", () => stepBirth(1));
+    const stripEl = el("yearstrip");
+    if (stripEl) stripEl.addEventListener("click", (ev) => { const b = ev.target.closest(".yearbtn"); if (!b) return; birthOverride = Number(b.dataset.year); syncBirth(); });
     document.querySelectorAll("#erapick .segbtn").forEach((b) => b.addEventListener("click", () => { birthOverride = null; syncBirth(); }));
     if (CARDS_ON) {
       el("carddeck").addEventListener("click", (ev) => {
@@ -735,9 +730,7 @@ window.IFY = window.IFY || {};
     const startLabel = () => saved ? "重新开始一局" : `从${shownBirth()}年开始这一生`; // 有存档时主按钮让位给续玩：文案恒为重开（存档优先）
     const eraToggle = () => {
       const pro = hasPrologue(selEra());
-      const t = el("starttitle"); if (t) t.textContent = "如果生在另一个年代，这一生会有什么不同？";
-      const io = el("intro-old"); if (io) io.hidden = pro;
-      const ip = el("intro-pro"); if (ip) ip.hidden = !pro;
+      const t = el("starttitle"); if (t) t.textContent = "你没走的那条路，过得怎么样？";
       const db = el("deckblock"); if (db) db.hidden = pro;
       const ed = el("eradesc"); if (ed) { const pool = (eraObj().descs || []); if (pool.length) ed.textContent = pool[seedFromString(effSeed() + "#eradesc:" + eraObj().id) % pool.length]; } // 年代说明行：按种子+年代选条——同一开局恒同一条（与「同种子同人生」一致），换种子才换条；纯呈现，不入局不入存档
       const sg = el("startgo"); if (sg) sg.textContent = startLabel();
