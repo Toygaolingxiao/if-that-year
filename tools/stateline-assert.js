@@ -42,6 +42,7 @@ vm.runInContext("window.__P = { get S() { return window.IFY.S; }, set S(v) { win
 vm.runInContext("window.__P.sampleStatsPeak = window.IFY.sampleStatsPeak; window.__P.loadSave = window.IFY.loadSave;", sandbox, { filename: "probe-export-c" });
 vm.runInContext("window.__P.unmetConditions = window.IFY.unmetConditions; window.__P.anyFamilyAlive = window.IFY.anyFamilyAlive; window.__P.specificity = window.IFY.specificity;", sandbox, { filename: "probe-export-d" });
 vm.runInContext("window.__P.flatLineOk = window.IFY.flatLineOk; window.__P.flatMicroNeeds = window.IFY.flatMicroNeeds; window.__P.flatAdultNeeds = window.IFY.flatAdultNeeds; window.__P.flatAdult = window.IFY.RHYTHM.flatAdult;", sandbox, { filename: "probe-export-e" });
+vm.runInContext("window.__P.deathCausePool = window.IFY.deathCausePool; window.__P.deathCauses = window.IFY.DEATH_CAUSES; window.__P.deathCauseIds = window.IFY.DEATH_CAUSE_IDS; window.__P.withLife = window.IFY.withLife;", sandbox, { filename: "probe-export-f" });
 const P = sandbox.window.__P;
 const byId = {};
 for (const e of P.D.events || []) if (e.id) byId[e.id] = e;
@@ -469,6 +470,114 @@ console.log("⑩ 判词批 E：平年两池事实守卫（micro 下标侧表 / f
   S.state.mom = "dead"; S.state.dad = "dead"; S.state.workPhase = "retired"; S.state.spouse = "widowed";
   ok([0, 2, 3, 5, 6, 7].every((i) => P.flatLineOk("micro", i) === true), "E 功能: 无预设的 6 条 micro 在最坏状态下仍全可达");
   ok([0, 1, 2, 3, 4].every((i) => P.flatLineOk("flat", i) === true), "E 功能: flatAdult 5 条在最坏状态下仍全可达（侧表为空）");
+}
+
+// ---- ⑪ 死因变体片（审议单 #4）：死因文按事实分流 ----
+console.log("⑪ 死因变体片：deathCausePool 逐条事实门（信号分流/零预设兜底/池下限）");
+const DC11 = P.deathCauses, DCI11 = P.deathCauseIds;
+const poolIds11 = () => P.deathCausePool("health").map((t) => DCI11.health[DC11.health.indexOf(t)]);
+function deathS(mutate) {
+  const S = freshS();
+  S.age = 75; S.stats.health = 61; S.usedEvents = []; S.usedRare = [];
+  if (mutate) mutate(S);
+  return S;
+}
+const noFamily11 = (S) => { S.state.dad = "dead"; S.state.mom = "dead"; S.state.spouse = "none"; S.state.kids = "none"; };
+{ // 数据：原六段逐字保留、新段追加在 6 起、编号表对位、accident 池不动
+  ok(DC11.health.length === 15 && DC11.accident.length === 6, "⑪ 数据: health 池 15 段（原 6＋新 9）、accident 池 6 段");
+  ok(DC11.health[0] === "身体早几年就给过信儿。那天夜里胸口闷得睡不着，送到医院时已经晚了。" && DC11.health[3] === "冬天那次感冒拖成了肺炎。输液的第三天夜里，监护仪先响，人没能再睁开眼。" && DC11.health[4] === "血压的药断过几天。早上洗脸时眼前一黑，摔在卫生间，送到医院时已经没有自主呼吸。", "⑪ 数据: H1/H4/H5 原文逐字未动（下标 0/3/4）");
+  ok(DCI11.health.join(",") === "H1,H2,H3,H4,H5,H6,H1m,H1z,H5b,H4e,H2p,N1,N2,N3,N4" && DCI11.accident.join(",") === "A1,A2,A3,A4,A5,A6", "⑪ 数据: DEATH_CAUSE_IDS 编号表与下标对位");
+  deathS(); ok(P.deathCausePool("accident").length === 6, "⑪ 数据: accident 池不挂门、全 6 段照出");
+}
+{ // 断言 1：第 15 局形状复刻——无任何信号＋终局健康 61＋无电梯
+  deathS();
+  const p = poolIds11();
+  ok(!p.includes("H1") && !p.includes("H5") && !p.includes("H5b") && !p.includes("H2") && !p.includes("H6"), "⑪ 断言1: 无信号局池中无 H1/H5/H5b/H2/H6（第 15 局回归守卫）");
+  ok(!p.includes("H4"), "⑪ 断言1: 终局健康 61、无体弱/住院/危机时 H4 不在池");
+  ok(p.includes("H1z") && p.includes("N2") && p.length >= 2, "⑪ 断言1: 零预设段在池（H1z/N2）且池长 ≥2");
+}
+{ // 断言 2：代谢预警在账——信号版与拖延两段在池、H5 不在池、H1 原段被分流走
+  deathS((S) => { S.flags.retired_checkup_done = true; });
+  const p = poolIds11();
+  ok(p.includes("H1m") && p.includes("H2") && p.includes("H6"), "⑪ 断言2: 代谢预警 → H1m/H2/H6 在池");
+  ok(!p.includes("H5") && !p.includes("H5b") && !p.includes("H1") && !p.includes("H1z"), "⑪ 断言2: 代谢预警 → H5 族不在池、H1 原段走分流、H1z 不在池");
+}
+{ // 断言 3：降压药日常在账——H5 两段在池（心脑在管同时打开 H1 原段）
+  deathS((S) => { S.usedEvents.push("p22_027"); });
+  const p = poolIds11();
+  ok(p.includes("H5") && p.includes("H5b"), "⑪ 断言3: p22_027 在账 → H5/H5b 在池");
+  ok(p.includes("H1") && !p.includes("H1m"), "⑪ 断言3: 心脑在管 → H1 原段在池、H1m（仅代谢）不在池");
+  deathS((S) => { S.flags.meds_checked = true; });
+  const p2 = poolIds11();
+  ok(p2.includes("H5") && p2.includes("H5b"), "⑪ 断言3: meds_checked 在账 → H5/H5b 同门在池（用药在管并联）");
+}
+{ // 断言 4：预警事实（p15_013）在账、无跟进旗 → H2/H6 在池；再置 recheck_partial → 部分跟进变体在池
+  deathS((S) => { S.usedEvents.push("p15_013"); });
+  let p = poolIds11();
+  ok(p.includes("H2") && p.includes("H6") && !p.includes("H2p"), "⑪ 断言4: p15_013 在账 → H2/H6 在池、H2p 不在池");
+  deathS((S) => { S.usedEvents.push("p15_013"); S.flags.recheck_partial = true; });
+  p = poolIds11();
+  ok(p.includes("H2p"), "⑪ 断言4: 再置 recheck_partial → H2p 部分跟进变体在池");
+}
+{ // 断言 5：体弱 → H4 在池；终局健康 80＋无体弱/住院/危机 → H4 原段不在池（70 岁与 85 岁同验，年龄不作门）
+  deathS((S) => { S.flags.hook_frail = true; });
+  ok(poolIds11().includes("H4"), "⑪ 断言5: 先天体弱 → H4 在池");
+  deathS((S) => { S.stats.health = 80; S.age = 70; });
+  ok(!poolIds11().includes("H4"), "⑪ 断言5: 终局健康 80＋无体弱/住院/危机＋70 岁 → H4 不在池");
+  deathS((S) => { S.stats.health = 80; S.age = 85; S.state.spouse = "partnered"; });
+  const p = poolIds11();
+  ok(!p.includes("H4") && p.includes("H4e"), "⑪ 断言5: 85 岁同形状 → H4 原段仍不在池（年龄不作门）、H4e 高龄变体在池");
+}
+{ // 断言 6（旧门回归）：装电梯事实在账 → H3 不在池
+  deathS((S) => { S.usedEvents.push("p11_027"); });
+  ok(!poolIds11().includes("H3"), "⑪ 断言6: 装过电梯 → H3 不在池（旧门 (a) 回归）");
+}
+{ // 附加钉子：N1 的 anyFamilyAlive 门与 H4e 的年龄下限（文本明写「八十多岁」）
+  deathS((S) => { noFamily11(S); });
+  ok(!poolIds11().includes("N1"), "⑪ 附加: 空屋（双亲故/无伴侣/无子女）→ N1 不在池");
+  deathS((S) => { S.age = 79; });
+  ok(!poolIds11().includes("H4e"), "⑪ 附加: 79 岁 → H4e 不在池（八十多岁须字面成立）");
+  deathS((S) => { S.age = 85; noFamily11(S); });
+  ok(!poolIds11().includes("H4e"), "⑪ 附加: 85 岁但空屋 → H4e 不在池（「家里人守了三天」须有账）");
+}
+{ // 附加钉子：安详段年龄软分流（N2 <80、N3/N4 ≥80；文面不写年龄，仅路由摊开复读）
+  deathS((S) => { S.age = 79; });
+  let p = poolIds11();
+  ok(p.includes("N2") && !p.includes("N3") && !p.includes("N4"), "⑪ 附加: 79 岁无信号 → 安详只走 N2（<80 段）");
+  deathS((S) => { S.age = 85; });
+  p = poolIds11();
+  ok(!p.includes("N2") && p.includes("N3") && p.includes("N4"), "⑪ 附加: 85 岁无信号 → 安详走 N3/N4（≥80 段）、N2 不在池");
+}
+{ // 断言 7：影子轨作用域——withLife 切到 B 轨后 deathCausePool 读 B 的账，不串主轨
+  deathS((S) => { S.flags.retired_checkup_done = true; });
+  const mainPool = poolIds11();
+  const SB = P.freshState("ASSERT-SHADOW-B");
+  SB.age = 75; SB.stats.health = 61; SB.usedEvents = []; SB.usedRare = [];
+  const trackB = { state: SB, streams: { n: 0, w: 0, a: 0 }, schedStats: null };
+  const shadowPool = P.withLife(trackB, () => poolIds11());
+  ok(mainPool.includes("H1m") && !mainPool.includes("H1z"), "⑪ 断言7: 主轨（代谢预警）池含 H1m、不含 H1z");
+  ok(!shadowPool.includes("H1m") && shadowPool.includes("H1z") && !shadowPool.includes("H2"), "⑪ 断言7: B 轨（无信号）池不含 H1m/H2、含 H1z——读的是 B 的账");
+  ok(poolIds11().join() === mainPool.join(), "⑪ 断言7: withLife 退出后主轨作用域还原、池不变");
+}
+{ // 断言 8：池下限网格扫——信号×终局健康×电梯×年龄×家里有人，逐格池长 ≥2
+  const sigSets = [
+    ["无信号", () => {}],
+    ["代谢预警", (S) => { S.flags.retired_checkup_done = true; }],
+    ["心脑在管", (S) => { S.usedEvents.push("p22_027"); }],
+    ["住院史", (S) => { S.flags.self_hosp_done = true; }],
+    ["健康危机", (S) => { S.crisisUsed = { health: true }; }],
+    ["先天体弱", (S) => { S.flags.hook_frail = true; }],
+    ["仅recheck_partial", (S) => { S.flags.recheck_partial = true; }],
+    ["仅meds_checked", (S) => { S.flags.meds_checked = true; }],
+  ];
+  let cells = 0, minPool = 99; const badCells = [];
+  for (const [sigName, apply] of sigSets) for (const fh of [50, 61, 80]) for (const elev of [false, true]) for (const age of [65, 77, 85]) for (const fam of [true, false]) {
+    deathS((S) => { apply(S); S.stats.health = fh; S.age = age; if (elev) S.usedEvents.push("p11_027"); if (!fam) noFamily11(S); });
+    const n = P.deathCausePool("health").length;
+    cells++; if (n < minPool) minPool = n;
+    if (n < 2) badCells.push(`${sigName}/FH${fh}/${elev ? "电梯" : "无电梯"}/${age}岁/${fam ? "有人" : "空屋"}=${n}`);
+  }
+  ok(badCells.length === 0, `⑪ 断言8: 池下限网格 ${cells} 格全 ≥2（最小 ${minPool}）${badCells.length ? " 违规: " + badCells.slice(0, 4).join("; ") : ""}`);
 }
 
 console.log(`\nstateline-assert: ${pass} passed, ${fail} failed`);

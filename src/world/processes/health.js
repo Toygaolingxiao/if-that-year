@@ -23,6 +23,15 @@
       "冬天那次感冒拖成了肺炎。输液的第三天夜里，监护仪先响，人没能再睁开眼。",
       "血压的药断过几天。早上洗脸时眼前一黑，摔在卫生间，送到医院时已经没有自主呼吸。",
       "体检单上圈出的那一项，你说过节后再查。节后第一周，病床上的管子比人还多，没撑过那一晚。",
+      "体检单上那几项，医生圈出来有些年头了。那天夜里胸口发闷，你还想着天亮再说，天没亮，人就过去了。",
+      "那天夜里睡下去，就没再醒来。前一天还跟人下棋，输了那盘说好明天扳回来。",
+      "药一天没落下，复诊的单子还贴在冰箱上。那天早上起来，眼前一黑扶住门框，没能再直起身。",
+      "八十多岁那年冬天，一场咳拖了半个多月，后来烧起来送进医院，肺炎没压住。家里人守了三天。",
+      "复查只查了医生圈的那一项，另两项说下回再看。下回没来——那天你在菜市场提着菜，忽然就坐到了地上。",
+      "睡了一夜，早晨没能醒来。家里人进屋时，被子还掖得好好的，像平时午睡一样。",
+      "那天下午在阳台上晒太阳，靠在椅子里睡了过去，就没再醒来。",
+      "吃过晚饭，在藤椅上歇着，歇着歇着睡了过去，就没再醒来。",
+      "清早醒过一次，翻了个身又睡回去——这一睡，就没再醒来。",
     ],
     accident: [
       "雨天路滑，路口一辆车失控撞过来。救护车赶到时，已经晚了。",
@@ -34,21 +43,78 @@
     ],
   };
 
-  // 死因文本按本局事实过滤（v0.20.1 W5）：只动文案选取，不动死亡率、死因类型判定与年代带。
-  // (a) 居所事实：本局装过电梯（下列既有事件任一发生过，两选项回响均确认装成）→ 健康型「楼梯间」条（下标 2）不出。
-  // (b) 健康事实：终局健康 ≥60 视为长期高位（引擎不存历史健康序列，以终局值代，口径见 w5-presuppose 日志）
-  //     → 「拖延复查」型两条（下标 1 复查拖延、5 体检拖延）不出。意外池不读事实，照旧。
+  // 死因文本按本局事实分流（v0.20.1 W5 立过滤；死因变体片·审议单 #4 重做为逐条事实门）：
+  // 只动文案选取，不动死亡率、死因类型判定与年代带。旧过滤两道只留电梯一道——
+  // 「终局健康 ≥60」是「有过待复查发现」的错位代理（健康低 ≠ 有过复查单），本片起拖延
+  // 两段改挂预警类事实门；其余预设型文本各挂各自的事实门，另补按信号分流的变体与
+  // 零预设兜底段（约一半健康死亡一生无任何健康史信号，无兜底则门越严复读越集中）。
+  // 分流只读死亡时点当前轨的量（IFY.S / hasFact / flags / crisisUsed），信号与
+  // diseaseState() 的 A 档同表（代谢预警/心脑在管/住院史/健康危机/先天体弱），不新造
+  // 信号；选文仍由 writeDeath 恒抽 1 次 rngW——池构成随事实变，抽法与次数不变。
+  // 编号沿 death-text-check 的 H/A 口径（下标 0–5 为原六段，6 起为本片新段），
+  // 门表与验收登记见 docs/MORTALITY-MODEL.md「死因变体片」节。
+  const DEATH_CAUSE_IDS = {
+    health: ["H1", "H2", "H3", "H4", "H5", "H6", "H1m", "H1z", "H5b", "H4e", "H2p", "N1", "N2", "N3", "N4"],
+    accident: ["A1", "A2", "A3", "A4", "A5", "A6"],
+  };
   const ELEVATOR_EVENT_IDS = ["p11_027", "p16_061", "p14_052", "e55_049", "p24_023"];
-  const STAIR_CAUSE_IDX = 2;
-  const DELAYED_CAUSE_IDX = [1, 5];
-  const HIGH_HEALTH = 60;
-  function deathCausePool(type) {
-    let idx = DEATH_CAUSES[type].map((_, i) => i);
-    if (type === "health") {
-      if (ELEVATOR_EVENT_IDS.some((id) => IFY.hasFact(id))) idx = idx.filter((i) => i !== STAIR_CAUSE_IDX);
-      if ((IFY.S.stats.health || 0) >= HIGH_HEALTH) idx = idx.filter((i) => !DELAYED_CAUSE_IDX.includes(i));
+  function deathSignals() {
+    const S = IFY.S, F = S.flags || {};
+    const has = (id) => typeof IFY.hasFact === "function" && IFY.hasFact(id);
+    const metabolicWarn = !!F.retired_checkup_done || has("p15_013") || has("p21_032");
+    const cardioManaged = has("p22_027");
+    const hospEver = !!F.self_hosp_done || has("p25_011");
+    const crisis = !!(S.crisisUsed && S.crisisUsed.health);
+    const frail = !!F.hook_frail;
+    return {
+      metabolicWarn, cardioManaged, hospEver, crisis, frail,
+      strict: metabolicWarn || cardioManaged || hospEver || crisis || frail, // 严格口径（与 diseaseState 同组）
+      warnFacts: metabolicWarn || has("p26_015") || !!F.recheck_partial || !!F.recheck_full, // 预警类发现（H2/H6 门）
+      medsGate: cardioManaged || !!F.meds_checked, // 用药在管（H5 族门：降压药日常 ∨ 用药记录经复查整理）
+      recheckPartial: !!F.recheck_partial,
+      finalHealth: S.stats ? (S.stats.health || 0) : 0,
+      age: S.age || 0,
+      elevator: ELEVATOR_EVENT_IDS.some((id) => has(id)),
+      familyAlive: typeof IFY.anyFamilyAlive === "function" && IFY.anyFamilyAlive(S),
+    };
+  }
+  // health 池门表（下标与 DEATH_CAUSES.health / DEATH_CAUSE_IDS.health 对位）：
+  //   0 H1 信儿：住院史/危机/体弱/心脑在管任一（夜里急症送医的局）；仅代谢预警者走 6 号
+  //   1 H2 拖延复查 / 5 H6 体检拖延：预警类事实在账（旧终局健康代理门已删）
+  //   2 H3 楼梯：未装电梯（旧门 (a) 保留；文本本身与其家人预设本片不动，归家族事实族辖区）
+  //   3 H4 肺炎：体弱/住院史/危机/终局健康 <60 任一。高龄单独不作门：验收硬线格
+  //     （终局健康 ≥75 且无体弱/住院/危机）里实测年龄跨 66–90 岁（盘点 17+19 例），
+  //     「年龄 ≥78 放行」与该格 H4 必须为 0 不能两立，从硬线；高龄肺炎由 9 号承接
+  //   4 H5 血压药 / 8 H5b 未断药变体：用药在管（两段差别在断没断药，账上分不出，同门并列降复读）
+  //   6 H1m 代谢变体：仅代谢预警（无住院/危机/体弱/心脑在管）——回指账上那张体检单
+  //   7 H1z 零预设：无任何严格信号者专用（不提信儿、不提病史）
+  //   9 H4e 高龄肺炎：年龄 ≥80（文本明写「八十多岁」）且家里有人（「家里人守了三天」）
+  //   10 H2p 部分跟进：recheck_partial 在账（只复查了一项，其余仍拖着）
+  //   11 N1 安详·有人：家里还有人（「家里人进屋」预设，挂判词批 D 的 anyFamilyAlive）
+  //   12 N2 / 13 N3 / 14 N4 安详·通用：零预设，按年龄软分流（N2 <80 岁、N3/N4 ≥80 岁；
+  //     文面不写年龄，软分流只为把通用段摊开降复读——初版 N2 一段占全池两成实测后立）
+  function deathHealthOk(idx, sig) {
+    switch (idx) {
+      case 0: return sig.hospEver || sig.crisis || sig.frail || sig.cardioManaged;
+      case 1: case 5: return sig.warnFacts;
+      case 2: return !sig.elevator;
+      case 3: return sig.frail || sig.hospEver || sig.crisis || sig.finalHealth < 60;
+      case 4: case 8: return sig.medsGate;
+      case 6: return sig.metabolicWarn && !sig.hospEver && !sig.crisis && !sig.frail && !sig.cardioManaged;
+      case 7: return !sig.strict;
+      case 9: return sig.age >= 80 && sig.familyAlive;
+      case 10: return sig.recheckPartial;
+      case 11: return sig.familyAlive;
+      case 12: return sig.age < 80;
+      case 13: case 14: return sig.age >= 80;
+      default: return true;
     }
-    return idx.map((i) => DEATH_CAUSES[type][i]);
+  }
+  function deathCausePool(type) {
+    const all = DEATH_CAUSES[type];
+    if (type !== "health") return all.slice();
+    const sig = deathSignals();
+    return all.filter((_, i) => deathHealthOk(i, sig));
   }
 
   // ---------- 死亡机制 v4（v0.32.0 片 C：废 80 顶、四通道、疾病负担、保险丝 110） ----------
@@ -159,5 +225,5 @@
     if (IFY.S.death) return false;
     return writeDeath("health", true);
   }
-  Object.assign(IFY, { MORTALITY, MORTALITY_BY_ERA, DEATH_CAUSES, rollDeath, deathCausePool, DEATH_CAL, diseaseState, forceFuseDeath, eraMulOf });
+  Object.assign(IFY, { MORTALITY, MORTALITY_BY_ERA, DEATH_CAUSES, DEATH_CAUSE_IDS, rollDeath, deathCausePool, DEATH_CAL, diseaseState, forceFuseDeath, eraMulOf });
 })(window.IFY);
