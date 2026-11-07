@@ -100,7 +100,7 @@ return fg == null? []: GLIMPSE_AGES_ALL.filter((a) => a >= fg);
 function glimpseIntroHtml() {
 const ages = glimpseStationAges();
 const cn = { 30: "三十岁", 40: "四十岁", 50: "五十岁"};
-const head = "这就是你 22 岁那年没选的那条路。它过得怎么样，你只能远远看一眼";
+const head = "这就是你当年没选的那条路。它过得怎么样，你只能远远看一眼";
 if (!ages.length) return `<p class="body">${head}。</p>`;
 const list = ages.map((a) => cn[a]).join("、");
 return `<p class="body">${head}——${ages.length === 1? `${list}那年，就这一次`: `${list}，各来一次`}。</p>`;
@@ -297,7 +297,7 @@ return { main, second};
 function glimpseSkeleton(B) {
 const st = B.state || {};
 const out = [];
-if (B.route && B.route.name) out.push(`22 岁那年，走的是「${B.route.name}」那条路。`);
+if (B.route && B.route.name) out.push(`后来走的是「${B.route.name}」那条路。`);
 const sp = { partnered: "后来成了家。", divorced: "成过家，后来离了。", widowed: "成过家，对方先走了。", dating: "处过一个人，没走到成家那一步。", single: "一直没成家。", none: "一直没成家。"}[st.spouse];
 if (sp) out.push(sp);
 const kd = { has: "有了孩子。", none: "没要孩子。", undecided: "孩子的事，一直没定下来。"}[st.kids];

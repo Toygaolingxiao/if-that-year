@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.45.0 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.45.1 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -70,12 +70,12 @@ window.IFY = window.IFY || {};
   // c2000 无年份硬锚，但招牌童年拍 pr_kid8_00「奥运那年夏天」@8 只在奥运年成立，连续窗口只能取 {2000}。
   // 放宽任一窗口须先重过内容锚审计；抽法见 drawBirthYear。
   const ERAS = [
-    { id: "c1955", birth: 1955, win: [1955, 1955], label: "50年代出生", desc: "22 岁是 1977 年：恢复高考、返城、分房、下岗潮" },
-    { id: "c1965", birth: 1965, win: [1965, 1965], label: "60年代出生", desc: "22 岁是 1987 年：海南热、下海潮、房改" },
-    { id: "c1978", birth: 1978, win: [1978, 1978], label: "70年代出生", desc: "22 岁是 2000 年：互联网、非典、房价起飞" },
-    { id: "c1985", birth: 1985, win: [1985, 1985], label: "80年代出生", desc: "22 岁是 2007 年：奥运前一年、网吧正盛、房价起步" },
-    { id: "c1995", birth: 1995, win: [1995, 1995], label: "90年代出生", desc: "22 岁是 2017 年：共享单车、移动支付、短视频、毕业租房" },
-    { id: "c2000", birth: 2000, win: [2000, 2008], winSet: [2000, 2004, 2008], label: "2000年代出生", desc: "奥运、手机、短视频：现在这一代人的路" },
+    { id: "c1955", birth: 1955, win: [1955, 1955], label: "50年代出生", descs: ["家里几个孩子挤着盖一条被子。粮票收在妈妈抽屉里，买东西前总要数一遍。"] },
+    { id: "c1965", birth: 1965, win: [1965, 1965], label: "60年代出生", descs: ["煤球炉放在楼道里，谁家炒菜，整层楼都闻得到。"] },
+    { id: "c1978", birth: 1978, win: [1978, 1978], label: "70年代出生", descs: ["放学自己开门，钥匙挂在脖子上。电视就那么几个台，全楼都在看同一个。"] },
+    { id: "c1985", birth: 1985, win: [1985, 1985], label: "80年代出生", descs: ["家里添了彩电，你爸不让你随便调台。过生日，碗里多卧一个鸡蛋。"] },
+    { id: "c1995", birth: 1995, win: [1995, 1995], label: "90年代出生", descs: ["家里有了电话和VCD。初中同学开始去网吧，你爸每次提起都要说两句。"] },
+    { id: "c2000", birth: 2000, win: [2000, 2008], winSet: [2000, 2004, 2008], label: "2000年代出生", descs: ["作业写完才能开电脑。你妈在客厅，听着你房间里键盘一直响。"] },
   ];
 
   const SAVE_KEY = "ify-save-v2";
@@ -564,17 +564,18 @@ window.IFY = window.IFY || {};
           <p class="prodcredit">A TAKAE PRODUCTION</p>
           <p class="eyebrow">人生RESTART</p>
           <h1 class="gametitle">如果那年</h1>
-          <p class="leadline" id="starttitle">22 岁，宿舍要退了。</p>
+          <p class="leadline" id="starttitle">如果生在另一个年代，这一生会有什么不同？</p>
         </header>
         <div id="intro-old">
-        <p>选一个年代，从二十二岁活到老。没选的那条路，会在往后的人生里远远看着你。</p>
+        <p>选一个年代，一年一年往前过。遇到的事，做过的选择，走过的路，都会成为这一生的一部分。</p>
         </div>
         <div id="intro-pro" hidden>
-        <p>选一个年代，从小时候活到老。没选的那条路，会在往后的人生里远远看着你。</p>
+        <p>选一个年代，从小时候开始，一年一年往前过。遇到的事，做过的选择，走过的路，都会成为这一生的一部分。</p>
         </div>
         <div class="setblock" id="erablock">
           <p class="setlab">年代</p>
           <div class="segpicks" id="erapick">${ERAS.map((e) => `<button type="button" class="segbtn${e.id === "c2000" ? " sel" : ""}" data-era="${e.id}" data-birth="${e.birth}"><b>${e.label}</b></button>`).join("")}</div>
+          <p class="hint" id="eradesc"></p>
           <div class="birthyear-row">
             <span class="birthyear-lab">出生年</span>
             <button type="button" class="birthstep" id="birthminus" aria-label="出生年减一年">−</button>
@@ -583,7 +584,6 @@ window.IFY = window.IFY || {};
           </div>
           <p class="hint" id="birthhint"></p>
         </div>
-        <p class="hint" id="prohint" hidden>这一局从小时候开始，路等 22 岁再选。家里什么样是发到手里的，没有重抽。</p>
         ${returning ? `<div class="row"><button class="textlink" id="liveslink">活过的人生</button></div>` : ""}
         ${sLine ? `<p class="hint">${sLine}</p>` : ""}
         ${lLine ? `<p class="hint">${lLine}</p>` : ""}
@@ -708,7 +708,8 @@ window.IFY = window.IFY || {};
       if (bm) { bm.hidden = !wide; bm.disabled = i <= 0; }
       if (bp) { bp.hidden = !wide; bp.disabled = i >= ys.length - 1; }
       const bh = el("birthhint");
-      if (bh) bh.textContent = !wide ? "就这一年。早一年、晚一年，这个年代的故事都有讲不圆的地方。" : (e.winSet ? `选这个年代时替你抽好的。想改就拨，只能在 ${ys.join("、")} 这几年里换——隔着一届奥运会，这个年代的故事都讲得圆。` : `选这个年代时替你抽好的。想改就拨，只能在 ${e.win[0]}–${e.win[1]} 年之间——那几年的事，这个年代都讲得圆。`);
+      if (bh) bh.textContent = "这一年，你出生了。";
+      const sg0 = el("startgo"); if (sg0 && !saved) sg0.textContent = `从${y}年开始这一生`;
     };
     const stepBirth = (d) => { const ys = birthYears(); const i = ys.indexOf(shownBirth()); birthOverride = ys[Math.max(0, Math.min(ys.length - 1, i + d))]; syncBirth(); };
     const bmBtn = el("birthminus"), bpBtn = el("birthplus");
@@ -733,15 +734,15 @@ window.IFY = window.IFY || {};
     syncAutoPick();
     // 年代分流（v0.17.0）：试点年代走序章开局——藏牌面、亮序章入口；其余年代照旧。切换只改呈现，开局函数在点击时按年代走
     // v0.24.0：路线卡已撤出首页（选路回局内 22 岁汇入拍），此处只切标题/介绍/出身子区/序章提示与开始按钮文案
-    const startLabel = (pro) => saved ? "重新开始一局" : (pro ? "从童年开始这一生" : "开始这一生"); // 有存档时主按钮让位给续玩：文案恒为重开（存档优先）
+    const startLabel = () => saved ? "重新开始一局" : `从${shownBirth()}年开始这一生`; // 有存档时主按钮让位给续玩：文案恒为重开（存档优先）
     const eraToggle = () => {
       const pro = hasPrologue(selEra());
-      const t = el("starttitle"); if (t) t.textContent = pro ? "这一生，从小时候讲起。" : "22 岁，宿舍要退了。";
+      const t = el("starttitle"); if (t) t.textContent = "如果生在另一个年代，这一生会有什么不同？";
       const io = el("intro-old"); if (io) io.hidden = pro;
       const ip = el("intro-pro"); if (ip) ip.hidden = !pro;
       const db = el("deckblock"); if (db) db.hidden = pro;
-      const ph = el("prohint"); if (ph) ph.hidden = !pro;
-      const sg = el("startgo"); if (sg) sg.textContent = startLabel(pro);
+      const ed = el("eradesc"); if (ed) { const pool = (eraObj().descs || []); if (pool.length) ed.textContent = pool[Math.floor(Math.random() * pool.length)]; } // 年代说明行：纯呈现轮换，不入局、不碰种子与存档
+      const sg = el("startgo"); if (sg) sg.textContent = startLabel();
     };
     document.querySelectorAll("#erapick .segbtn").forEach((b) => b.addEventListener("click", eraToggle));
     eraToggle();
