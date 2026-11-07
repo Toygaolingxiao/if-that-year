@@ -1,4 +1,4 @@
-// 《如果那年》引擎 v0.51.1 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
+// 《如果那年》引擎 v0.51.2 —— 版本号规则见 docs/DEVLOG.md 卷首// 要点：选择写标记→回响事件 / 年度小选择+当场回响 / 数值阈值危机 / 瞥视先给标题、点开才看全文（计数真实）
 //      / 判词按数值形状拼装 / 全程自动存档可续玩 / 种子可输入、可复制分享链接 / 在线零 LLM 调用
 // [模块]本引擎自 v0.20.0 起拆为各自独立的模块文件（独立包装器 + window.IFY 共享命名空间），按 index.html 的顺序加载：本文件（建 IFY + 编排）→ src/world/apply.js → src/record.js → src/world/processes/{parents,spouse,work,place,health}.js → src/scheduler.js → src/views/{stream,year,shadow,settlement,share}.js → src/engine-boot.js（收尾，调用 IFY.renderStart()）。跨模块引用一律 IFY.<名>，可变量收编为 IFY 属性。
 window.IFY = window.IFY || {};
@@ -579,6 +579,15 @@ window.IFY = window.IFY || {};
     // 旧同局链接可能带 end 参数：从本版起忽略，不报错。
     const savedCtl = saved && saved.tracks ? (saved.tracks[saved.controlTrack || "A"] || saved.tracks.A || {}) : saved; // v0.21 WP1：v2 档的展示字段在受控 Track 条目里
     const savedLabel = saved ? (savedCtl.route ? savedCtl.route.name : (savedCtl.mergePending ? "选路前" : (STAGE_LABEL[savedCtl.stage] || "序章"))) : "";
+    // v0.51.2：0–4 岁小段期间存档的 age 恒是开局时盖的 5（序章的基准岁），按钮若照读会把停在 3 岁的人写成 5 岁——
+    // 链还在演时按当前幕报岁数，链还没建（出生幕）报 0；链演完/旧档无武装位时照旧读存档岁数。
+    const EARLY_AGES = { pr_grab: 1, pr_early2: 2, pr_early3: 3, pr_early4: 4 };
+    let savedAge = saved ? savedCtl.age : null;
+    const spx = saved ? savedCtl.prologue : null;
+    if (saved && savedCtl.phase === "prologue" && spx && !spx.done && spx.earlyArmed) {
+      if (spx.earlyBuilt && spx.earlyStep < 4 && EARLY_AGES[spx.earlyOn] != null) savedAge = EARLY_AGES[spx.earlyOn];
+      else if (spx.earlyStep === 0 && !spx.earlyOn) savedAge = 0; // 链已建但一幕未演＝停在出生幕（来历幕物化时就建链，earlyBuilt 出生屏上已是 true）
+    }
     const linkDriven = !!(seedParam || cardsParam);
     let foldOpen = false, foldGuide = false;
     if (linkDriven) foldOpen = true;
@@ -620,7 +629,7 @@ window.IFY = window.IFY || {};
         ${lLine ? `<p class="hint">${lLine}</p>` : ""}
       </section>
       <div class="actions">
-        ${saved ? `<button class="primary" id="resume">继续上次的人生（${savedCtl.age} 岁 · ${esc(savedLabel)}）</button>` : ""}
+        ${saved ? `<button class="primary" id="resume">继续上次的人生（${savedAge} 岁 · ${esc(savedLabel)}）</button>` : ""}
         <button id="startgo" class="${saved ? "ghost" : "primary"}">${saved ? "重新开始一局" : "开始这一生"}</button>
       </div>
       <section class="card foldcard">
